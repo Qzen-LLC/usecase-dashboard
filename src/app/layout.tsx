@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "@fontsource/raleway/700.css";
+import "@fontsource/raleway/600.css";
+import "@fontsource/source-sans-pro/400.css";
+import "@fontsource/source-sans-pro/600.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,8 +29,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} font-body antialiased`}
+        style={{ fontFamily: '"Source Sans Pro", Arial, Helvetica, sans-serif' }}
       >
+        <style>{`
+          .font-heading, h1, h2, h3, h4 {
+            font-family: 'Raleway', Arial, Helvetica, sans-serif;
+            font-weight: 700;
+          }
+          .font-body, body, p, span, label, input, textarea, button {
+            font-family: 'Source Sans Pro', Arial, Helvetica, sans-serif;
+            font-weight: 400;
+          }
+        `}</style>
         {children}
       </body>
     </html>
