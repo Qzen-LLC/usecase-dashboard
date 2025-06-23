@@ -1,10 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter, Lora, Nunito, Merriweather } from "next/font/google";
 import "./globals.css";
-import "@fontsource/raleway/700.css";
-import "@fontsource/raleway/600.css";
-import "@fontsource/source-sans-pro/400.css";
-import "@fontsource/source-sans-pro/600.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,6 +10,28 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
+
+const lora = Lora({
+  subsets: ["latin"],
+  variable: "--font-lora",
+});
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  variable: "--font-nunito",
+  weight: ["600"],
+});
+
+const merriweather = Merriweather({
+  subsets: ["latin"],
+  variable: "--font-merriweather",
+  weight: ["400"],
 });
 
 export const metadata: Metadata = {
@@ -29,19 +47,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-body antialiased`}
-        style={{ fontFamily: '"Source Sans Pro", Arial, Helvetica, sans-serif' }}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${lora.variable} ${nunito.variable} ${merriweather.variable} antialiased`}
       >
-        <style>{`
-          .font-heading, h1, h2, h3, h4 {
-            font-family: 'Raleway', Arial, Helvetica, sans-serif;
-            font-weight: 700;
-          }
-          .font-body, body, p, span, label, input, textarea, button {
-            font-family: 'Source Sans Pro', Arial, Helvetica, sans-serif;
-            font-weight: 400;
-          }
-        `}</style>
         {children}
       </body>
     </html>
