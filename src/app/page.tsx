@@ -183,10 +183,45 @@ const AIUseCaseTool = () => {
   };
 
   const renderStep1 = () => (
+<<<<<<< Updated upstream
     <div className="space-y-6">
       <div className="bg-blue-50 p-4 rounded-lg">
         <h3 className="text-lg font-semibold text-blue-800 mb-2">Use Case Documentation</h3>
         <p className="text-blue-700">Define and structure your AI use case with clear problem statements and success criteria.</p>
+=======
+    <>
+      <h2 className="text-2xl font-bold mb-4">Use Case Documentation</h2>
+      <p className="text-base text-gray-600 mb-8">Define and structure your AI use case with clear problem statements and success criteria.</p>
+      <div className="grid grid-cols-1 gap-8 bg-blue-50 rounded-2xl shadow-lg px-8 py-10">
+        <div>
+          <Label className="block text-lg font-semibold text-gray-700 mb-3">Use Case Title</Label>
+          <Input type="text" value={formData.title} onChange={e => handleInputChange('title', e.target.value)} placeholder="e.g., Automated Customer Support Ticket Classification" className="w-full px-5 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base" />
+        </div>
+        <div>
+          <Label className="block text-lg font-semibold text-gray-700 mb-3">Problem Statement</Label>
+          <Textarea value={formData.problemStatement} onChange={e => handleInputChange('problemStatement', e.target.value)} placeholder="Describe the current business problem or opportunity..." rows={4} className="w-full px-5 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base" />
+        </div>
+        <div>
+          <Label className="block text-lg font-semibold text-gray-700 mb-3">Proposed AI Solution</Label>
+          <Textarea value={formData.proposedSolution} onChange={e => handleInputChange('proposedSolution', e.target.value)} placeholder="Describe how AI will solve this problem..." rows={4} className="w-full px-5 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <Label className="block text-lg font-semibold text-gray-700 mb-3">Current State</Label>
+            <Textarea value={formData.currentState} onChange={e => handleInputChange('currentState', e.target.value)} placeholder="How is this handled today?" rows={3} className="w-full px-5 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base" />
+          </div>
+          <div>
+            <Label className="block text-lg font-semibold text-gray-700 mb-3">Desired State</Label>
+            <Textarea value={formData.desiredState} onChange={e => handleInputChange('desiredState', e.target.value)} placeholder="What will the future state look like?" rows={3} className="w-full px-5 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base" />
+          </div>
+        </div>
+        <div>
+          <Label className="block text-lg font-semibold text-gray-700 mb-3">Primary Stakeholder</Label>
+          <Input type="text" value={formData.primaryStakeholder} onChange={e => handleInputChange('primaryStakeholder', e.target.value)} placeholder="e.g., Customer Support Manager" className="w-full px-5 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base" />
+        </div>
+        <ArrayInput label="Secondary Stakeholders" field="secondaryStakeholders" placeholder="Add stakeholder (press Enter or click +)" />
+        <ArrayInput label="Success Criteria" field="successCriteria" placeholder="Add success criterion (press Enter or click +)" />
+>>>>>>> Stashed changes
       </div>
       
       <div className="grid grid-cols-1 gap-6">
@@ -254,10 +289,37 @@ const AIUseCaseTool = () => {
   );
 
   const renderStep2 = () => (
+<<<<<<< Updated upstream
     <div className="space-y-6">
       <div className="bg-green-50 p-4 rounded-lg">
         <h3 className="text-lg font-semibold text-green-800 mb-2">Lean Business Case</h3>
         <p className="text-green-700">Build a lightweight business case focusing on problem-solution fit and key assumptions.</p>
+=======
+    <>
+      <h2 className="text-2xl font-bold mb-4">Lean Business Case</h2>
+      <p className="text-base text-gray-600 mb-8">Build a lightweight business case focusing on problem-solution fit and key assumptions.</p>
+      <div className="grid grid-cols-1 gap-8 bg-yellow-50 rounded-2xl shadow-lg px-8 py-10">
+        <div>
+          <Label className="block text-lg font-semibold text-gray-700 mb-3">Problem Validation</Label>
+          <Textarea value={formData.problemValidation} onChange={e => handleInputChange('problemValidation', e.target.value)} placeholder="Describe how you validated the problem..." rows={4} className="w-full px-5 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base" />
+        </div>
+        <div>
+          <Label className="block text-lg font-semibold text-gray-700 mb-3">Solution Hypothesis</Label>
+          <Textarea value={formData.solutionHypothesis} onChange={e => handleInputChange('solutionHypothesis', e.target.value)} placeholder="Describe your solution hypothesis..." rows={4} className="w-full px-5 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base" />
+        </div>
+        <div>
+          <Label className="block text-lg font-semibold text-gray-700 mb-3">Key Assumptions</Label>
+          <ArrayInput label="Key Assumptions" field="keyAssumptions" placeholder="Add key assumption (press Enter or click +)" />
+        </div>
+        <div>
+          <Label className="block text-lg font-semibold text-gray-700 mb-3">Initial ROI</Label>
+          <Input type="text" value={formData.initialROI} onChange={e => handleInputChange('initialROI', e.target.value)} placeholder="e.g., $100,000" className="w-full px-5 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base" />
+        </div>
+        <div>
+          <Label className="block text-lg font-semibold text-gray-700 mb-3">Confidence Level</Label>
+          <SliderInput label="Confidence Level" field="confidenceLevel" min={1} max={10} description="How confident are you in the business case?" />
+        </div>
+>>>>>>> Stashed changes
       </div>
 
       <div className="space-y-6">
@@ -315,6 +377,7 @@ const AIUseCaseTool = () => {
   );
 
   const renderStep3 = () => (
+<<<<<<< Updated upstream
     <div className="space-y-6">
       <div className="bg-purple-50 p-4 rounded-lg">
         <h3 className="text-lg font-semibold text-purple-800 mb-2">Multi-Dimensional Scoring</h3>
@@ -334,6 +397,15 @@ const AIUseCaseTool = () => {
             value={formData.operationalScore}
             onChange={handleChange}
           />
+=======
+    <div className="bg-purple-50 rounded-2xl shadow-lg px-8 py-10">
+      <h2 className="text-2xl font-bold mb-4">Multi-Dimensional Scoring</h2>
+      <p className="text-base text-gray-600 mb-8">Quantify your use case across the three strategic dimensions.</p>
+      <div className="grid grid-cols-1 gap-8">
+        <div>
+          <Label className="block text-lg font-semibold text-gray-700 mb-3">Operational Score</Label>
+          <SliderInput label="Operational Score" field="operationalScore" min={1} max={10} description="How operational is the solution?" />
+>>>>>>> Stashed changes
         </div>
 
         <div className="bg-white p-6 rounded-lg border-2 border-pink-200">
