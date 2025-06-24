@@ -49,11 +49,22 @@ type UseCase = {
   requiredResources: string;
   createdAt: string;
   updatedAt: string;
-  // Add more fields if needed
-  stage?: string; // for frontend only
-  priority?: keyof typeof priorities; // for frontend only
-  owner?: string; // for frontend only
-  lastUpdated?: string; // for frontend only
+  // Add these for frontend mapping
+  stage?: string;
+  priority?: keyof typeof priorities;
+  owner?: string;
+  lastUpdated?: string;
+  scores?: {
+    operational: number;
+    productivity: number;
+    revenue: number;
+  };
+  description?: string;
+  complexity?: number;
+  roi?: string;
+  timeline?: string;
+  stakeholders?: string[];
+  risks?: string[];
 };
 
 const Dashboard = () => {
@@ -127,22 +138,22 @@ const Dashboard = () => {
           <div className="grid grid-cols-4 gap-4 mb-6">
             <div className="bg-orange-50 p-3 rounded-lg text-center">
               <TrendingUp className="w-6 h-6 text-orange-500 mx-auto mb-1" />
-              <div className="text-lg font-bold text-orange-600">{useCase.scores.operational}</div>
+              <div className="text-lg font-bold text-orange-600">{useCase.scores?.operational}</div>
               <div className="text-xs text-orange-800">Operational</div>
             </div>
             <div className="bg-pink-50 p-3 rounded-lg text-center">
               <Zap className="w-6 h-6 text-pink-500 mx-auto mb-1" />
-              <div className="text-lg font-bold text-pink-600">{useCase.scores.productivity}</div>
+              <div className="text-lg font-bold text-pink-600">{useCase.scores?.productivity}</div>
               <div className="text-xs text-pink-800">Productivity</div>
             </div>
             <div className="bg-blue-50 p-3 rounded-lg text-center">
               <DollarSign className="w-6 h-6 text-blue-500 mx-auto mb-1" />
-              <div className="text-lg font-bold text-blue-600">{useCase.scores.revenue}</div>
+              <div className="text-lg font-bold text-blue-600">{useCase.scores?.revenue}</div>
               <div className="text-xs text-blue-800">Revenue</div>
             </div>
             <div className="bg-gray-50 p-3 rounded-lg text-center">
               <span className="inline-block w-6 h-6 text-gray-500 mx-auto mb-1">🎯</span>
-              <div className="text-lg font-bold text-gray-700">{getOverallScore(useCase.scores)}</div>
+              <div className="text-lg font-bold text-gray-700">{getOverallScore(useCase.scores || { operational: 0, productivity: 0, revenue: 0 })}</div>
               <div className="text-xs text-gray-600">Overall</div>
             </div>
           </div>
@@ -292,10 +303,10 @@ const Dashboard = () => {
                       </span>
                     </div>
                     <div className="flex justify-between mb-2 text-xs">
-                      <div className="flex items-center"><TrendingUp className="w-3 h-3 text-orange-500 mr-1" />{useCase.scores.operational}</div>
-                      <div className="flex items-center"><Zap className="w-3 h-3 text-pink-500 mr-1" />{useCase.scores.productivity}</div>
-                      <div className="flex items-center"><DollarSign className="w-3 h-3 text-blue-500 mr-1" />{useCase.scores.revenue}</div>
-                      <div className="font-semibold text-gray-700">{getOverallScore(useCase.scores)}</div>
+                      <div className="flex items-center"><TrendingUp className="w-3 h-3 text-orange-500 mr-1" />{useCase.scores?.operational}</div>
+                      <div className="flex items-center"><Zap className="w-3 h-3 text-pink-500 mr-1" />{useCase.scores?.productivity}</div>
+                      <div className="flex items-center"><DollarSign className="w-3 h-3 text-blue-500 mr-1" />{useCase.scores?.revenue}</div>
+                      <div className="font-semibold text-gray-700">{getOverallScore(useCase.scores || { operational: 0, productivity: 0, revenue: 0 })}</div>
                     </div>
                     <div className="flex justify-between items-center text-xs text-gray-500">
                       <div className="flex items-center"><User className="w-3 h-3 mr-1" />{useCase.owner}</div>
