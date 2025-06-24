@@ -111,33 +111,6 @@ const ArrayInput = ({
   );
 };
 
-const SliderInput = ({
-  label,
-  field,
-  value,
-  onChange,
-  min = 1,
-  max = 10,
-}: {
-  label: string;
-  field: keyof FormData;
-  value: number;
-  onChange: (field: keyof FormData, val: number) => void;
-  min?: number;
-  max?: number;
-}) => (
-  <div className="space-y-2">
-    <Label>{label}</Label>
-    <Slider
-      min={min}
-      max={max}
-      defaultValue={[value]}
-      onValueChange={([val]) => onChange(field, val)}
-    />
-    <div className="text-sm text-muted-foreground">Current: {value}</div>
-  </div>
-);
-
 type ArrayField = 'secondaryStakeholders' | 'successCriteria' | 'keyAssumptions';
 type NumberField = 'confidenceLevel' | 'operationalScore' | 'productivityScore' | 'revenueScore' | 'complexity';
 
@@ -189,8 +162,8 @@ const AIUseCaseTool = () => {
         <p className="text-blue-700">Define and structure your AI use case with clear problem statements and success criteria.</p>
       </div>
       
-      <div className="grid grid-cols-1 gap-6">
-      <Card className="p-6 space-y-4">
+      <div className="grid grid-cols-1">
+      <Card className="p-6">
         <Label htmlFor="title">Use Case Title</Label>
         <Input
           id="title"
@@ -261,7 +234,7 @@ const AIUseCaseTool = () => {
       </div>
 
       <div className="space-y-6">
-        <Card className='p-6 space y-4'>
+        <Card className='p-6'>
         <Label htmlFor="problemValidation">Problem Validation</Label>
         <Textarea
           id="problemValidation"
@@ -290,13 +263,23 @@ const AIUseCaseTool = () => {
           value={formData.initialROI}
           onChange={(e) => handleChange("initialROI", e.target.value)}
         />
-
-        <SliderInput
-          label="Confidence Level"
-          field="confidenceLevel"
-          value={formData.confidenceLevel}
-          onChange={handleChange}
+        <div className="flex justify-between items-center mb-1">
+          <Label htmlFor="confidenceLevel">Confidence Level</Label>
+          <span className="text-blue-600 font-bold">{formData.confidenceLevel}</span>
+        </div>
+        <Slider
+          min={1}
+          max={10}
+          value={[formData.confidenceLevel]}
+          onValueChange={([val]) => handleChange("confidenceLevel", val)}
         />
+        <div className='space-y-1'>
+        <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <span>Low (1)</span>
+          <span>High (10)</span>
+        </div>
+        <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800'>How confident are you in your estimates?</Label>
+        </div>
         <Label htmlFor="initialROI">Estimated Timeline</Label>
         <Input
           id="initialROI"
@@ -326,14 +309,26 @@ const AIUseCaseTool = () => {
           <div className="flex items-center mb-4">
             <TrendingUp className="w-6 h-6 text-orange-500 mr-2" />
             {/* <h4 className="text-lg font-semibold text-orange-800">Operational Enhancers</h4> */}
-            <Label htmlFor="initialROI" className='text-lg font-semibold text-orange-800'>Required Resources</Label>
+            <Label htmlFor="initialROI" className='text-lg font-semibold text-orange-800'>Operational Enhancers</Label>
           </div>
-          <SliderInput
-            label="Operational Impact Score"
-            field="operationalScore"
-            value={formData.operationalScore}
-            onChange={handleChange}
-          />
+          <div className="space-y-4">
+            <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800 mb-2'>Operational Impact Score</Label>
+            <div className="flex justify-between items-center mb-1">
+              <span></span>
+              <span className="text-blue-600 font-bold">{formData.operationalScore}</span>
+            </div>
+            <Slider
+            min={1}
+            max={10}
+            value={[formData.operationalScore]}
+            onValueChange={([val]) => handleChange("operationalScore", val)}
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>Low (1)</span>
+              <span>High (10)</span>
+            </div>
+            <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800 mb-4'>How much will this improve operational efficiency, reduce costs, or streamline processes?</Label>
+          </div>
         </div>
 
         <div className="bg-white p-6 rounded-lg border-2 border-pink-200">
@@ -341,12 +336,24 @@ const AIUseCaseTool = () => {
             <Zap className="w-6 h-6 text-pink-500 mr-2" />
             <Label htmlFor="initialROI" className='text-lg font-semibold text-pink-800'>Productivity Driver</Label>
           </div>
-          <SliderInput
-            label="Productivity Impact Score"
-            field="productivityScore"
-            value={formData.productivityScore}
-            onChange={handleChange}
-          />
+          <div className="space-y-4">
+            <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800 mb-2'>Productivity Impact Score</Label>
+            <div className="flex justify-between items-center mb-1">
+              <span></span>
+              <span className="text-blue-600 font-bold">{formData.productivityScore}</span>
+            </div>
+            <Slider
+            min={1}
+            max={10}
+            value={[formData.productivityScore]}
+            onValueChange={([val]) => handleChange("productivityScore", val)}
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>Low (1)</span>
+              <span>High (10)</span>
+            </div>
+            <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800 mb-4'>How significantly will this boost employee productivity or automate manual tasks?</Label>
+          </div>
         </div>
 
         <div className="bg-white p-6 rounded-lg border-2 border-blue-200">
@@ -354,22 +361,48 @@ const AIUseCaseTool = () => {
             <DollarSign className="w-6 h-6 text-blue-500 mr-2" />
             <Label htmlFor="initialROI" className='text-lg font-semibold text-blue-800'>Revenue Accelerators</Label>
           </div>
-          <SliderInput
-            label="Revenue Impact Score"
-            field="revenueScore"
-            value={formData.revenueScore}
-            onChange={handleChange}
-          />
+          <div className="space-y-4">
+            <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800 mb-2'>Revenue Impact Score</Label>
+            <div className="flex justify-between items-center mb-1">
+              <span></span>
+              <span className="text-blue-600 font-bold">{formData.revenueScore}</span>
+            </div>
+            <Slider
+            min={1} 
+            max={10}
+            value={[formData.revenueScore]}
+            onValueChange={([val]) => handleChange("revenueScore", val)}
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>Low (1)</span>
+              <span>High (10)</span>
+            </div>
+            <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800 mb-4'>What is the potential for direct revenue generation or customer value creation?</Label>
+          </div>
         </div>
 
-        <div className="bg-gray-50 p-6 rounded-lg">
-        <Label htmlFor="initialROI" className='text-lg font-semibold text-gray-800'>Additional Metrics</Label>
-          <SliderInput
-            label="Implementation Complexity"
-            field="complexity"
-            value={formData.complexity}
-            onChange={handleChange}
-          />
+        <div className="bg-gray-75 p-6 rounded-lg">
+          <div className="flex items-center mb-4">
+            <Label htmlFor="initialROI" className='text-lg font-semibold text-black-800'>Additional Metrics</Label>
+          </div>
+          <div className="space-y-4">
+            <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800 mb-2'>Implementation Complexity</Label>
+            <div className="flex justify-between items-center mb-1">
+            <span></span>
+            <span className="text-blue-600 font-bold">{formData.complexity}</span>
+            </div>
+            <Slider
+            min={1}
+            max={10}
+            defaultValue={[formData.operationalScore]}
+            onValueChange={([val]) => handleChange("complexity", val)}
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>Low (1)</span>
+              <span>High (10)</span>
+            </div>
+            <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800 mb-4'>How complex will this be to implement? (1 = Very Simple, 10 = Very Complex)</Label>
+          </div>
         </div>
 
         {/* Visual Summary */}
