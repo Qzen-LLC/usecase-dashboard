@@ -1,15 +1,13 @@
 'use client'
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, ChevronLeft, Target, Users, TrendingUp, Zap, DollarSign, Save, Download, Plus, Minus } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Target, TrendingUp, Zap, DollarSign, Save, Download, Plus, Minus } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
-
-// 1. Define FormData type
 
 type FormData = {
   title: string;
@@ -55,18 +53,22 @@ const initialFormData: FormData = {
   resources: "",
 };
 
+type ArrayField = 'secondaryStakeholders' | 'successCriteria' | 'keyAssumptions';
+
 const ArrayInput = ({
   label,
   field,
   value,
   onAdd,
   onRemove,
+  invalid,
 }: {
   label: string;
   field: keyof FormData;
   value: string[];
   onAdd: (field: ArrayField, val: string) => void;
   onRemove: (field: ArrayField, idx: number) => void;
+  invalid?: boolean;
 }) => {
   const [inputVal, setInputVal] = useState("");
 
@@ -77,6 +79,7 @@ const ArrayInput = ({
         <Input
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
+          className={invalid ? 'border-red-500' : ''}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               onAdd(field as ArrayField, inputVal);
@@ -111,29 +114,18 @@ const ArrayInput = ({
   );
 };
 
-type ArrayField = 'secondaryStakeholders' | 'successCriteria' | 'keyAssumptions';
-type NumberField = 'confidenceLevel' | 'operationalScore' | 'productivityScore' | 'revenueScore' | 'complexity';
-
-type StringField = Exclude<keyof FormData, ArrayField | NumberField>;
-
 const AIUseCaseTool = () => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [invalidFields, setInvalidFields] = useState<string[]>([]);
+  const [showError, setShowError] = useState(false);
   const router = useRouter();
-
 
   const steps = [
     { id: 1, title: 'Use Case Documentation', icon: Target },
     { id: 2, title: 'Lean Business Case', icon: TrendingUp },
     { id: 3, title: 'Multi-Dimensional Scoring', icon: Zap }
   ];
-
-  const handleInputChange = (field: keyof FormData, value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
 
   const handleArrayAdd = (field: ArrayField, value: string) => {
     if (value.trim()) {
@@ -155,72 +147,89 @@ const AIUseCaseTool = () => {
     setFormData((prev) => ({ ...prev, [field]: val }));
   };
 
+  // Validation logic
+  const validateForm = () => {
+    const invalid: string[] = [];
+    Object.entries(formData).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        if (value.length === 0) invalid.push(key);
+      } else if (typeof value === 'string') {
+        if (!value.trim()) invalid.push(key);
+      } else if (typeof value === 'number') {
+        if (value === null || value === undefined) invalid.push(key);
+      }
+    });
+    setInvalidFields(invalid);
+    setShowError(invalid.length > 0);
+    return invalid.length === 0;
+  };
+
   const renderStep1 = () => (
     <div className="space-y-6">
       <div className="bg-blue-50 p-4 rounded-lg">
         <h3 className="text-lg font-semibold text-blue-800 mb-2">Use Case Documentation</h3>
         <p className="text-blue-700">Define and structure your AI use case with clear problem statements and success criteria.</p>
       </div>
-      
       <div className="grid grid-cols-1">
-      <Card className="p-6">
-        <Label htmlFor="title">Use Case Title</Label>
-        <Input
-          id="title"
-          value={formData.title}
-          onChange={(e) => handleChange("title", e.target.value)}
-        />
-
-        <Label htmlFor="problemStatement">Problem Statement</Label>
-        <Textarea
-          id="problemStatement"
-          value={formData.problemStatement}
-          onChange={(e) => handleChange("problemStatement", e.target.value)}
-        />
-
-        <Label htmlFor="proposedSolution">Proposed Solution</Label>
-        <Textarea
-          id="proposedSolution"
-          value={formData.proposedSolution}
-          onChange={(e) => handleChange("proposedSolution", e.target.value)}
-        />
-
-        <Label htmlFor="currentState">Current State</Label>
-        <Textarea
-          id="currentState"
-          value={formData.currentState}
-          onChange={(e) => handleChange("currentState", e.target.value)}
-        />
-
-        <Label htmlFor="desiredState">Desired State</Label>
-        <Textarea
-          id="desiredState"
-          value={formData.desiredState}
-          onChange={(e) => handleChange("desiredState", e.target.value)}
-        />
-
-        <Label htmlFor="primaryStakeholder">Primary Stakeholder</Label>
-        <Input
-          id="primaryStakeholder"
-          value={formData.primaryStakeholder}
-          onChange={(e) => handleChange("primaryStakeholder", e.target.value)}
-        />
-
-        <ArrayInput
-          label="Secondary Stakeholders"
-          field="secondaryStakeholders"
-          value={formData.secondaryStakeholders}
-          onAdd={handleArrayAdd}
-          onRemove={handleArrayRemove}
-        />
-
-        <ArrayInput
-          label="Success Criteria"
-          field="successCriteria"
-          value={formData.successCriteria}
-          onAdd={handleArrayAdd}
-          onRemove={handleArrayRemove}
-        />
+        <Card className="p-6">
+          <Label htmlFor="title">Use Case Title</Label>
+          <Input
+            id="title"
+            value={formData.title}
+            onChange={(e) => handleChange("title", e.target.value)}
+            className={invalidFields.includes('title') ? 'border-red-500' : ''}
+          />
+          <Label htmlFor="problemStatement">Problem Statement</Label>
+          <Textarea
+            id="problemStatement"
+            value={formData.problemStatement}
+            onChange={(e) => handleChange("problemStatement", e.target.value)}
+            className={invalidFields.includes('problemStatement') ? 'border-red-500' : ''}
+          />
+          <Label htmlFor="proposedSolution">Proposed Solution</Label>
+          <Textarea
+            id="proposedSolution"
+            value={formData.proposedSolution}
+            onChange={(e) => handleChange("proposedSolution", e.target.value)}
+            className={invalidFields.includes('proposedSolution') ? 'border-red-500' : ''}
+          />
+          <Label htmlFor="currentState">Current State</Label>
+          <Textarea
+            id="currentState"
+            value={formData.currentState}
+            onChange={(e) => handleChange("currentState", e.target.value)}
+            className={invalidFields.includes('currentState') ? 'border-red-500' : ''}
+          />
+          <Label htmlFor="desiredState">Desired State</Label>
+          <Textarea
+            id="desiredState"
+            value={formData.desiredState}
+            onChange={(e) => handleChange("desiredState", e.target.value)}
+            className={invalidFields.includes('desiredState') ? 'border-red-500' : ''}
+          />
+          <Label htmlFor="primaryStakeholder">Primary Stakeholder</Label>
+          <Input
+            id="primaryStakeholder"
+            value={formData.primaryStakeholder}
+            onChange={(e) => handleChange("primaryStakeholder", e.target.value)}
+            className={invalidFields.includes('primaryStakeholder') ? 'border-red-500' : ''}
+          />
+          <ArrayInput
+            label="Secondary Stakeholders"
+            field="secondaryStakeholders"
+            value={formData.secondaryStakeholders}
+            onAdd={handleArrayAdd}
+            onRemove={handleArrayRemove}
+            invalid={invalidFields.includes('secondaryStakeholders')}
+          />
+          <ArrayInput
+            label="Success Criteria"
+            field="successCriteria"
+            value={formData.successCriteria}
+            onAdd={handleArrayAdd}
+            onRemove={handleArrayRemove}
+            invalid={invalidFields.includes('successCriteria')}
+          />
         </Card>
       </div>
     </div>
@@ -232,66 +241,68 @@ const AIUseCaseTool = () => {
         <h3 className="text-lg font-semibold text-green-800 mb-2">Lean Business Case</h3>
         <p className="text-green-700">Build a lightweight business case focusing on problem-solution fit and key assumptions.</p>
       </div>
-
       <div className="space-y-6">
         <Card className='p-6'>
-        <Label htmlFor="problemValidation">Problem Validation</Label>
-        <Textarea
-          id="problemValidation"
-          value={formData.problemValidation}
-          onChange={(e) => handleChange("problemValidation", e.target.value)}
-        />
-
-        <Label htmlFor="solutionHypothesis">Solution Hypothesis</Label>
-        <Textarea
-          id="solutionHypothesis"
-          value={formData.solutionHypothesis}
-          onChange={(e) => handleChange("solutionHypothesis", e.target.value)}
-        />
-
-        <ArrayInput
-          label="Key Assumptions"
-          field="keyAssumptions"
-          value={formData.keyAssumptions}
-          onAdd={handleArrayAdd}
-          onRemove={handleArrayRemove}
-        />
-
-        <Label htmlFor="initialROI">Initial ROI</Label>
-        <Input
-          id="initialROI"
-          value={formData.initialROI}
-          onChange={(e) => handleChange("initialROI", e.target.value)}
-        />
-        <div className="flex justify-between items-center mb-1">
-          <Label htmlFor="confidenceLevel">Confidence Level</Label>
-          <span className="text-blue-600 font-bold">{formData.confidenceLevel}</span>
-        </div>
-        <Slider
-          min={1}
-          max={10}
-          value={[formData.confidenceLevel]}
-          onValueChange={([val]) => handleChange("confidenceLevel", val)}
-        />
-        <div className='space-y-1'>
-        <div className="flex justify-between text-xs text-gray-500 mt-1">
-          <span>Low (1)</span>
-          <span>High (10)</span>
-        </div>
-        <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800'>How confident are you in your estimates?</Label>
-        </div>
-        <Label htmlFor="initialROI">Estimated Timeline</Label>
-        <Input
-          id="initialROI"
-          value={formData.initialROI}
-          onChange={(e) => handleChange("initialROI", e.target.value)}
-        />
-        <Label htmlFor="initialROI">Required Resources</Label>
-        <Input
-          id="initialROI"
-          value={formData.initialROI}
-          onChange={(e) => handleChange("initialROI", e.target.value)}
-        />
+          <Label htmlFor="problemValidation">Problem Validation</Label>
+          <Textarea
+            id="problemValidation"
+            value={formData.problemValidation}
+            onChange={(e) => handleChange("problemValidation", e.target.value)}
+            className={invalidFields.includes('problemValidation') ? 'border-red-500' : ''}
+          />
+          <Label htmlFor="solutionHypothesis">Solution Hypothesis</Label>
+          <Textarea
+            id="solutionHypothesis"
+            value={formData.solutionHypothesis}
+            onChange={(e) => handleChange("solutionHypothesis", e.target.value)}
+            className={invalidFields.includes('solutionHypothesis') ? 'border-red-500' : ''}
+          />
+          <ArrayInput
+            label="Key Assumptions"
+            field="keyAssumptions"
+            value={formData.keyAssumptions}
+            onAdd={handleArrayAdd}
+            onRemove={handleArrayRemove}
+            invalid={invalidFields.includes('keyAssumptions')}
+          />
+          <Label htmlFor="initialROI">Initial ROI</Label>
+          <Input
+            id="initialROI"
+            value={formData.initialROI}
+            onChange={(e) => handleChange("initialROI", e.target.value)}
+            className={invalidFields.includes('initialROI') ? 'border-red-500' : ''}
+          />
+          <div className="flex justify-between items-center mb-1">
+            <Label htmlFor="confidenceLevel">Confidence Level</Label>
+            <span className="text-blue-600 font-bold">{formData.confidenceLevel}</span>
+          </div>
+          <Slider
+            min={1}
+            max={10}
+            value={[formData.confidenceLevel]}
+            onValueChange={([val]) => handleChange("confidenceLevel", val)}
+          />
+          <div className='space-y-1'>
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>Low (1)</span>
+              <span>High (10)</span>
+            </div>
+            <Label htmlFor="confidenceLevel" className='text-sm font-normal text-gray-800'>How confident are you in your estimates?</Label>
+          </div>
+          <Label htmlFor="timeline">Estimated Timeline</Label>
+          <Input
+            id="timeline"
+            value={formData.timeline}
+            onChange={(e) => handleChange("timeline", e.target.value)}
+            className={invalidFields.includes('timeline') ? 'border-red-500' : ''}
+          />
+          <Label htmlFor="resources">Required Resources</Label>
+          <Input
+            id="resources"
+            value={formData.resources}
+            onChange={(e) => handleChange("resources", e.target.value)}
+            className={invalidFields.includes('resources') ? 'border-red-500' : ''}
+          />
         </Card>
       </div>
     </div>
@@ -303,109 +314,102 @@ const AIUseCaseTool = () => {
         <h3 className="text-lg font-semibold text-purple-800 mb-2">Multi-Dimensional Scoring</h3>
         <p className="text-purple-700">Quantify your use case across the three strategic dimensions.</p>
       </div>
-
       <div className="space-y-8">
         <div className="bg-white p-6 rounded-lg border-2 border-orange-200">
           <div className="flex items-center mb-4">
             <TrendingUp className="w-6 h-6 text-orange-500 mr-2" />
-            {/* <h4 className="text-lg font-semibold text-orange-800">Operational Enhancers</h4> */}
-            <Label htmlFor="initialROI" className='text-lg font-semibold text-orange-800'>Operational Enhancers</Label>
+            <Label htmlFor="operationalScore" className='text-lg font-semibold text-orange-800'>Operational Enhancers</Label>
           </div>
           <div className="space-y-4">
-            <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800 mb-2'>Operational Impact Score</Label>
+            <Label htmlFor="operationalScore" className='text-sm font-normal text-gray-800 mb-2'>Operational Impact Score</Label>
             <div className="flex justify-between items-center mb-1">
               <span></span>
               <span className="text-blue-600 font-bold">{formData.operationalScore}</span>
             </div>
             <Slider
-            min={1}
-            max={10}
-            value={[formData.operationalScore]}
-            onValueChange={([val]) => handleChange("operationalScore", val)}
+              min={1}
+              max={10}
+              value={[formData.operationalScore]}
+              onValueChange={([val]) => handleChange("operationalScore", val)}
             />
             <div className="flex justify-between text-xs text-gray-500 mt-1">
               <span>Low (1)</span>
               <span>High (10)</span>
             </div>
-            <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800 mb-4'>How much will this improve operational efficiency, reduce costs, or streamline processes?</Label>
+            <Label htmlFor="operationalScore" className='text-sm font-normal text-gray-800 mb-4'>How much will this improve operational efficiency, reduce costs, or streamline processes?</Label>
           </div>
         </div>
-
         <div className="bg-white p-6 rounded-lg border-2 border-pink-200">
           <div className="flex items-center mb-4">
             <Zap className="w-6 h-6 text-pink-500 mr-2" />
-            <Label htmlFor="initialROI" className='text-lg font-semibold text-pink-800'>Productivity Driver</Label>
+            <Label htmlFor="productivityScore" className='text-lg font-semibold text-pink-800'>Productivity Driver</Label>
           </div>
           <div className="space-y-4">
-            <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800 mb-2'>Productivity Impact Score</Label>
+            <Label htmlFor="productivityScore" className='text-sm font-normal text-gray-800 mb-2'>Productivity Impact Score</Label>
             <div className="flex justify-between items-center mb-1">
               <span></span>
               <span className="text-blue-600 font-bold">{formData.productivityScore}</span>
             </div>
             <Slider
-            min={1}
-            max={10}
-            value={[formData.productivityScore]}
-            onValueChange={([val]) => handleChange("productivityScore", val)}
+              min={1}
+              max={10}
+              value={[formData.productivityScore]}
+              onValueChange={([val]) => handleChange("productivityScore", val)}
             />
             <div className="flex justify-between text-xs text-gray-500 mt-1">
               <span>Low (1)</span>
               <span>High (10)</span>
             </div>
-            <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800 mb-4'>How significantly will this boost employee productivity or automate manual tasks?</Label>
+            <Label htmlFor="productivityScore" className='text-sm font-normal text-gray-800 mb-4'>How significantly will this boost employee productivity or automate manual tasks?</Label>
           </div>
         </div>
-
         <div className="bg-white p-6 rounded-lg border-2 border-blue-200">
           <div className="flex items-center mb-4">
             <DollarSign className="w-6 h-6 text-blue-500 mr-2" />
-            <Label htmlFor="initialROI" className='text-lg font-semibold text-blue-800'>Revenue Accelerators</Label>
+            <Label htmlFor="revenueScore" className='text-lg font-semibold text-blue-800'>Revenue Accelerators</Label>
           </div>
           <div className="space-y-4">
-            <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800 mb-2'>Revenue Impact Score</Label>
+            <Label htmlFor="revenueScore" className='text-sm font-normal text-gray-800 mb-2'>Revenue Impact Score</Label>
             <div className="flex justify-between items-center mb-1">
               <span></span>
               <span className="text-blue-600 font-bold">{formData.revenueScore}</span>
             </div>
             <Slider
-            min={1} 
-            max={10}
-            value={[formData.revenueScore]}
-            onValueChange={([val]) => handleChange("revenueScore", val)}
+              min={1}
+              max={10}
+              value={[formData.revenueScore]}
+              onValueChange={([val]) => handleChange("revenueScore", val)}
             />
             <div className="flex justify-between text-xs text-gray-500 mt-1">
               <span>Low (1)</span>
               <span>High (10)</span>
             </div>
-            <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800 mb-4'>What is the potential for direct revenue generation or customer value creation?</Label>
+            <Label htmlFor="revenueScore" className='text-sm font-normal text-gray-800 mb-4'>What is the potential for direct revenue generation or customer value creation?</Label>
           </div>
         </div>
-
         <div className="bg-gray-75 p-6 rounded-lg">
           <div className="flex items-center mb-4">
-            <Label htmlFor="initialROI" className='text-lg font-semibold text-black-800'>Additional Metrics</Label>
+            <Label htmlFor="complexity" className='text-lg font-semibold text-black-800'>Additional Metrics</Label>
           </div>
           <div className="space-y-4">
-            <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800 mb-2'>Implementation Complexity</Label>
+            <Label htmlFor="complexity" className='text-sm font-normal text-gray-800 mb-2'>Implementation Complexity</Label>
             <div className="flex justify-between items-center mb-1">
-            <span></span>
-            <span className="text-blue-600 font-bold">{formData.complexity}</span>
+              <span></span>
+              <span className="text-blue-600 font-bold">{formData.complexity}</span>
             </div>
             <Slider
-            min={1}
-            max={10}
-            defaultValue={[formData.operationalScore]}
-            onValueChange={([val]) => handleChange("complexity", val)}
+              min={1}
+              max={10}
+              value={[formData.complexity]}
+              onValueChange={([val]) => handleChange("complexity", val)}
             />
             <div className="flex justify-between text-xs text-gray-500 mt-1">
               <span>Low (1)</span>
               <span>High (10)</span>
             </div>
-            <Label htmlFor="initialROI" className='text-sm font-normal text-gray-800 mb-4'>How complex will this be to implement? (1 = Very Simple, 10 = Very Complex)</Label>
+            <Label htmlFor="complexity" className='text-sm font-normal text-gray-800 mb-4'>How complex will this be to implement? (1 = Very Simple, 10 = Very Complex)</Label>
           </div>
         </div>
-
-        {/* Visual Summary */}
         <div className="bg-white p-6 rounded-lg border-2 border-gray-200">
           <h4 className="text-lg font-semibold text-gray-800 mb-4">Use Case Profile</h4>
           <div className="grid grid-cols-3 gap-4 text-center">
@@ -439,23 +443,25 @@ const AIUseCaseTool = () => {
     const dataStr = JSON.stringify(formData, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
     const exportFileDefaultName = `${formData.title || 'ai-use-case'}.json`;
-    
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
   };
 
+  const handleGoToPipeline = () => {
+    if (validateForm()) {
+      router.push('/dashboard-test');
+    }
+  };
+
   return (
     <div className="min-h-screen flex justify-center items-start bg-gray-50 p-0 sm:p-4">
       <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden border-0 sm:border sm:mt-6 sm:mb-6 sm:mx-0 mx-0">
-        {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 sm:p-6">
           <h1 className="text-2xl font-bold mb-2">AI Use Case Refinement Tool</h1>
           <p className="text-blue-100">Transform AI ideas into structured, quantified business opportunities</p>
         </div>
-
-        {/* Progress Steps */}
         <div className="bg-gray-100 px-2 py-3 sm:px-6 sm:py-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0">
             {steps.map((step, index) => (
@@ -479,19 +485,20 @@ const AIUseCaseTool = () => {
             ))}
           </div>
         </div>
-
-        {/* Content */}
         <div className="bg-white border-t border-gray-200">
           <div className="p-6">
+            {showError && (
+              <div className="mb-4 text-red-600 font-semibold">
+                Please fill all required fields before proceeding.
+              </div>
+            )}
             <main>
               {currentStep === 1 && renderStep1()}
               {currentStep === 2 && renderStep2()}
               {currentStep === 3 && renderStep3()}
             </main>
           </div>
-          {/* Navigation */}
           <div className="flex justify-between items-center p-6 border-t">
-            {/* Left Group */}
             <div className="flex items-center gap-2">
               <Button
                 onClick={() => setCurrentStep(prev => prev > 1 ? prev - 1 : prev)}
@@ -518,15 +525,13 @@ const AIUseCaseTool = () => {
                 Save Draft
               </Button>
             </div>
-
-            {/* Right Group */}
             <div className="flex items-center gap-4">
               <div className="text-sm font-medium text-gray-500">
                 Step {currentStep} of {steps.length}
               </div>
               {currentStep === steps.length ? (
                 <Button
-                  onClick={() => router.push('/dashboard-test')}
+                  onClick={handleGoToPipeline}
                   className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white"
                 >
                   Go to Pipeline
