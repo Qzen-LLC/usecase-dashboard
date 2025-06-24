@@ -76,12 +76,12 @@ const ArrayInput = ({
 
   return (
     <div className="space-y-2">
-      <Label>{label}</Label>
+      <Label className="text-white">{label}</Label>
       <div className="flex gap-2">
         <Input
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
-          className={invalid ? 'border-red-500' : ''}
+          className={`bg-[#23233a] text-white placeholder-[#e0cfff] focus:border-[#a259e6] focus:ring-[#a259e6] ${invalid ? 'border-red-500' : 'border-[#bdbdd7]'}`}
           placeholder={placeholder}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -96,8 +96,9 @@ const ArrayInput = ({
             onAdd(field as ArrayField, inputVal);
             setInputVal("");
           }}
+          className="bg-[#a259e6] hover:bg-[#d26be8] text-white"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 text-white" />
         </Button>
       </div>
       <div className="space-y-1">
@@ -170,58 +171,58 @@ const AIUseCaseTool = () => {
 
   const renderStep1 = () => (
     <div className="space-y-6">
-      <div className="bg-blue-50 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold text-blue-800 mb-2">Use Case Documentation</h3>
-        <p className="text-blue-700">Define and structure your AI use case with clear problem statements and success criteria.</p>
+      <div className="bg-[#23233a] p-4 rounded-lg border border-[#bdbdd7]">
+        <h3 className="text-lg font-semibold text-[#d26be8] mb-2">Use Case Documentation</h3>
+        <p className="text-[#e0cfff]">Define and structure your AI use case with clear problem statements and success criteria.</p>
       </div>
       <div className="grid grid-cols-1">
-        <Card className="p-6">
-          <Label htmlFor="title">Use Case Title</Label>
+        <Card className="p-6 bg-[#18182c] border border-[#23233a]">
+          <Label className="text-white" htmlFor="title">Use Case Title</Label>
           <Input
             id="title"
             value={formData.title}
             onChange={(e) => handleChange("title", e.target.value)}
-            className={invalidFields.includes('title') ? 'border-red-500' : ''}
+            className={`bg-[#23233a] text-white placeholder-[#e0cfff] focus:border-[#a259e6] focus:ring-[#a259e6] ${invalidFields.includes('title') ? 'border-red-500' : 'border-[#bdbdd7]'}`}
             placeholder="e.g., Automated Customer Support Ticket Categorization"
           />
-          <Label htmlFor="problemStatement">Problem Statement</Label>
+          <Label className="text-white" htmlFor="problemStatement">Problem Statement</Label>
           <Textarea
             id="problemStatement"
             value={formData.problemStatement}
             onChange={(e) => handleChange("problemStatement", e.target.value)}
-            className={invalidFields.includes('problemStatement') ? 'border-red-500' : ''}
+            className={`bg-[#23233a] text-white placeholder-[#e0cfff] focus:border-[#a259e6] focus:ring-[#a259e6] ${invalidFields.includes('problemStatement') ? 'border-red-500' : 'border-[#bdbdd7]'}`}
             placeholder="e.g., Customer support agents spend 2 hours daily manually categorizing tickets, leading to delays and misrouting."
           />
-          <Label htmlFor="proposedSolution">Proposed Solution</Label>
+          <Label className="text-white" htmlFor="proposedSolution">Proposed Solution</Label>
           <Textarea
             id="proposedSolution"
             value={formData.proposedSolution}
             onChange={(e) => handleChange("proposedSolution", e.target.value)}
-            className={invalidFields.includes('proposedSolution') ? 'border-red-500' : ''}
+            className={`bg-[#23233a] text-white placeholder-[#e0cfff] focus:border-[#a259e6] focus:ring-[#a259e6] ${invalidFields.includes('proposedSolution') ? 'border-red-500' : 'border-[#bdbdd7]'}`}
             placeholder="e.g., Implement an AI model that automatically categorizes incoming support tickets based on their content."
           />
-          <Label htmlFor="currentState">Current State</Label>
+          <Label className="text-white" htmlFor="currentState">Current State</Label>
           <Textarea
             id="currentState"
             value={formData.currentState}
             onChange={(e) => handleChange("currentState", e.target.value)}
-            className={invalidFields.includes('currentState') ? 'border-red-500' : ''}
+            className={`bg-[#23233a] text-white placeholder-[#e0cfff] focus:border-[#a259e6] focus:ring-[#a259e6] ${invalidFields.includes('currentState') ? 'border-red-500' : 'border-[#bdbdd7]'}`}
             placeholder="e.g., Tickets are manually read and categorized by a team of 5 agents."
           />
-          <Label htmlFor="desiredState">Desired State</Label>
+          <Label className="text-white" htmlFor="desiredState">Desired State</Label>
           <Textarea
             id="desiredState"
             value={formData.desiredState}
             onChange={(e) => handleChange("desiredState", e.target.value)}
-            className={invalidFields.includes('desiredState') ? 'border-red-500' : ''}
+            className={`bg-[#23233a] text-white placeholder-[#e0cfff] focus:border-[#a259e6] focus:ring-[#a259e6] ${invalidFields.includes('desiredState') ? 'border-red-500' : 'border-[#bdbdd7]'}`}
             placeholder="e.g., 90% of tickets are automatically and accurately categorized within 1 minute of arrival."
           />
-          <Label htmlFor="primaryStakeholder">Primary Stakeholder</Label>
+          <Label className="text-white" htmlFor="primaryStakeholder">Primary Stakeholder</Label>
           <Input
             id="primaryStakeholder"
             value={formData.primaryStakeholder}
             onChange={(e) => handleChange("primaryStakeholder", e.target.value)}
-            className={invalidFields.includes('primaryStakeholder') ? 'border-red-500' : ''}
+            className={`bg-[#23233a] text-white placeholder-[#e0cfff] focus:border-[#a259e6] focus:ring-[#a259e6] ${invalidFields.includes('primaryStakeholder') ? 'border-red-500' : 'border-[#bdbdd7]'}`}
             placeholder="e.g., Head of Customer Support"
           />
           <ArrayInput
@@ -249,26 +250,26 @@ const AIUseCaseTool = () => {
 
   const renderStep2 = () => (
     <div className="space-y-6">
-      <div className="bg-green-50 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold text-green-800 mb-2">Lean Business Case</h3>
-        <p className="text-green-700">Build a lightweight business case focusing on problem-solution fit and key assumptions.</p>
+      <div className="bg-[#23233a] p-4 rounded-lg border border-[#bdbdd7]">
+        <h3 className="text-lg font-semibold text-[#5be6b9] mb-2">Lean Business Case</h3>
+        <p className="text-[#e0cfff]">Build a lightweight business case focusing on problem-solution fit and key assumptions.</p>
       </div>
       <div className="space-y-6">
-        <Card className='p-6'>
-          <Label htmlFor="problemValidation">Problem Validation</Label>
+        <Card className='p-6 bg-[#18182c] border border-[#23233a]'>
+          <Label className="text-white" htmlFor="problemValidation">Problem Validation</Label>
           <Textarea
             id="problemValidation"
             value={formData.problemValidation}
             onChange={(e) => handleChange("problemValidation", e.target.value)}
-            className={invalidFields.includes('problemValidation') ? 'border-red-500' : ''}
+            className={`bg-[#23233a] text-white placeholder-[#e0cfff] focus:border-[#a259e6] focus:ring-[#a259e6] ${invalidFields.includes('problemValidation') ? 'border-red-500' : 'border-[#bdbdd7]'}`}
             placeholder="e.g., Conducted interviews with 5 support agents, 4 confirmed this is a major pain point."
           />
-          <Label htmlFor="solutionHypothesis">Solution Hypothesis</Label>
+          <Label className="text-white" htmlFor="solutionHypothesis">Solution Hypothesis</Label>
           <Textarea
             id="solutionHypothesis"
             value={formData.solutionHypothesis}
             onChange={(e) => handleChange("solutionHypothesis", e.target.value)}
-            className={invalidFields.includes('solutionHypothesis') ? 'border-red-500' : ''}
+            className={`bg-[#23233a] text-white placeholder-[#e0cfff] focus:border-[#a259e6] focus:ring-[#a259e6] ${invalidFields.includes('solutionHypothesis') ? 'border-red-500' : 'border-[#bdbdd7]'}`}
             placeholder="e.g., If we auto-categorize tickets, we will reduce resolution time by 25%."
           />
           <ArrayInput
@@ -280,16 +281,16 @@ const AIUseCaseTool = () => {
             invalid={invalidFields.includes('keyAssumptions')}
             placeholder="e.g., The AI model can achieve at least 90% accuracy."
           />
-          <Label htmlFor="initialROI">Initial ROI</Label>
+          <Label className="text-white" htmlFor="initialROI">Initial ROI</Label>
           <Input
             id="initialROI"
             value={formData.initialROI}
             onChange={(e) => handleChange("initialROI", e.target.value)}
-            className={invalidFields.includes('initialROI') ? 'border-red-500' : ''}
+            className={`bg-[#23233a] text-white placeholder-[#e0cfff] focus:border-[#a259e6] focus:ring-[#a259e6] ${invalidFields.includes('initialROI') ? 'border-red-500' : 'border-[#bdbdd7]'}`}
             placeholder="e.g., Estimated $50,000 annual savings from reduced agent hours."
           />
           <div className="flex justify-between items-center mb-1">
-            <Label htmlFor="confidenceLevel">Confidence Level</Label>
+            <Label className="text-white" htmlFor="confidenceLevel">Confidence Level</Label>
             <span className="text-blue-600 font-bold">{formData.confidenceLevel}</span>
           </div>
           <Slider
@@ -299,26 +300,26 @@ const AIUseCaseTool = () => {
             onValueChange={([val]) => handleChange("confidenceLevel", val)}
           />
           <div className='space-y-1'>
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <div className="flex justify-between text-xs text-[#bdbdd7] mt-1">
               <span>Low (1)</span>
               <span>High (10)</span>
             </div>
-            <Label htmlFor="confidenceLevel" className='text-sm font-normal text-gray-800'>How confident are you in your estimates?</Label>
+            <Label htmlFor="confidenceLevel" className="text-white text-sm font-normal text-[#e0cfff]">How confident are you in your estimates?</Label>
           </div>
-          <Label htmlFor="timeline">Estimated Timeline</Label>
+          <Label className="text-white" htmlFor="timeline">Estimated Timeline</Label>
           <Input
             id="timeline"
             value={formData.timeline}
             onChange={(e) => handleChange("timeline", e.target.value)}
-            className={invalidFields.includes('timeline') ? 'border-red-500' : ''}
+            className={`bg-[#23233a] text-white placeholder-[#e0cfff] focus:border-[#a259e6] focus:ring-[#a259e6] ${invalidFields.includes('timeline') ? 'border-red-500' : 'border-[#bdbdd7]'}`}
             placeholder="e.g., 3 months"
           />
-          <Label htmlFor="resources">Required Resources</Label>
+          <Label className="text-white" htmlFor="resources">Required Resources</Label>
           <Input
             id="resources"
             value={formData.resources}
             onChange={(e) => handleChange("resources", e.target.value)}
-            className={invalidFields.includes('resources') ? 'border-red-500' : ''}
+            className={`bg-[#23233a] text-white placeholder-[#e0cfff] focus:border-[#a259e6] focus:ring-[#a259e6] ${invalidFields.includes('resources') ? 'border-red-500' : 'border-[#bdbdd7]'}`}
             placeholder="e.g., 1 AI Engineer, 1 Product Manager, access to historical ticket data."
           />
         </Card>
@@ -328,21 +329,21 @@ const AIUseCaseTool = () => {
 
   const renderStep3 = () => (
     <div className="space-y-6">
-      <div className="bg-purple-50 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold text-purple-800 mb-2">Multi-Dimensional Scoring</h3>
-        <p className="text-purple-700">Quantify your use case across the three strategic dimensions.</p>
+      <div className="bg-[#23233a] p-4 rounded-lg border border-[#bdbdd7]">
+        <h3 className="text-lg font-semibold text-[#d26be8] mb-2">Multi-Dimensional Scoring</h3>
+        <p className="text-[#e0cfff]">Quantify your use case across the three strategic dimensions.</p>
       </div>
       <div className="space-y-8">
-        <div className="bg-white p-6 rounded-lg border-2 border-orange-200">
+        <div className="bg-[#18182c] p-6 rounded-lg border-2 border-[#d26be8]">
           <div className="flex items-center mb-4">
-            <TrendingUp className="w-6 h-6 text-orange-500 mr-2" />
-            <Label htmlFor="operationalScore" className='text-lg font-semibold text-orange-800'>Operational Enhancers</Label>
+            <TrendingUp className="w-6 h-6 text-[#d26be8] mr-2" />
+            <Label htmlFor="operationalScore" className="text-white text-lg font-semibold text-[#d26be8]">Operational Enhancers</Label>
           </div>
           <div className="space-y-4">
-            <Label htmlFor="operationalScore" className='text-sm font-normal text-gray-800 mb-2'>Operational Impact Score</Label>
+            <Label htmlFor="operationalScore" className="text-white text-sm font-normal text-[#e0cfff] mb-2">Operational Impact Score</Label>
             <div className="flex justify-between items-center mb-1">
               <span></span>
-              <span className="text-blue-600 font-bold">{formData.operationalScore}</span>
+              <span className="text-[#a259e6] font-bold">{formData.operationalScore}</span>
             </div>
             <Slider
               min={1}
@@ -350,23 +351,23 @@ const AIUseCaseTool = () => {
               value={[formData.operationalScore]}
               onValueChange={([val]) => handleChange("operationalScore", val)}
             />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <div className="flex justify-between text-xs text-[#bdbdd7] mt-1">
               <span>Low (1)</span>
               <span>High (10)</span>
             </div>
-            <Label htmlFor="operationalScore" className='text-sm font-normal text-gray-800 mb-4'>How much will this improve operational efficiency, reduce costs, or streamline processes?</Label>
+            <Label htmlFor="operationalScore" className="text-white text-sm font-normal text-[#e0cfff] mb-4">How much will this improve operational efficiency, reduce costs, or streamline processes?</Label>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-lg border-2 border-pink-200">
+        <div className="bg-[#18182c] p-6 rounded-lg border-2 border-[#a259e6]">
           <div className="flex items-center mb-4">
-            <Zap className="w-6 h-6 text-pink-500 mr-2" />
-            <Label htmlFor="productivityScore" className='text-lg font-semibold text-pink-800'>Productivity Driver</Label>
+            <Zap className="w-6 h-6 text-[#a259e6] mr-2" />
+            <Label htmlFor="productivityScore" className="text-white text-lg font-semibold text-[#a259e6]">Productivity Driver</Label>
           </div>
           <div className="space-y-4">
-            <Label htmlFor="productivityScore" className='text-sm font-normal text-gray-800 mb-2'>Productivity Impact Score</Label>
+            <Label htmlFor="productivityScore" className="text-white text-sm font-normal text-[#e0cfff] mb-2">Productivity Impact Score</Label>
             <div className="flex justify-between items-center mb-1">
               <span></span>
-              <span className="text-blue-600 font-bold">{formData.productivityScore}</span>
+              <span className="text-[#d26be8] font-bold">{formData.productivityScore}</span>
             </div>
             <Slider
               min={1}
@@ -374,23 +375,23 @@ const AIUseCaseTool = () => {
               value={[formData.productivityScore]}
               onValueChange={([val]) => handleChange("productivityScore", val)}
             />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <div className="flex justify-between text-xs text-[#bdbdd7] mt-1">
               <span>Low (1)</span>
               <span>High (10)</span>
             </div>
-            <Label htmlFor="productivityScore" className='text-sm font-normal text-gray-800 mb-4'>How significantly will this boost employee productivity or automate manual tasks?</Label>
+            <Label htmlFor="productivityScore" className="text-white text-sm font-normal text-[#e0cfff] mb-4">How significantly will this boost employee productivity or automate manual tasks?</Label>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-lg border-2 border-blue-200">
+        <div className="bg-[#18182c] p-6 rounded-lg border-2 border-[#5be6b9]">
           <div className="flex items-center mb-4">
-            <DollarSign className="w-6 h-6 text-blue-500 mr-2" />
-            <Label htmlFor="revenueScore" className='text-lg font-semibold text-blue-800'>Revenue Accelerators</Label>
+            <DollarSign className="w-6 h-6 text-[#5be6b9] mr-2" />
+            <Label htmlFor="revenueScore" className="text-white text-lg font-semibold text-[#5be6b9]">Revenue Accelerators</Label>
           </div>
           <div className="space-y-4">
-            <Label htmlFor="revenueScore" className='text-sm font-normal text-gray-800 mb-2'>Revenue Impact Score</Label>
+            <Label htmlFor="revenueScore" className="text-white text-sm font-normal text-[#e0cfff] mb-2">Revenue Impact Score</Label>
             <div className="flex justify-between items-center mb-1">
               <span></span>
-              <span className="text-blue-600 font-bold">{formData.revenueScore}</span>
+              <span className="text-[#5be6b9] font-bold">{formData.revenueScore}</span>
             </div>
             <Slider
               min={1}
@@ -398,22 +399,22 @@ const AIUseCaseTool = () => {
               value={[formData.revenueScore]}
               onValueChange={([val]) => handleChange("revenueScore", val)}
             />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <div className="flex justify-between text-xs text-[#bdbdd7] mt-1">
               <span>Low (1)</span>
               <span>High (10)</span>
             </div>
-            <Label htmlFor="revenueScore" className='text-sm font-normal text-gray-800 mb-4'>What is the potential for direct revenue generation or customer value creation?</Label>
+            <Label htmlFor="revenueScore" className="text-white text-sm font-normal text-[#e0cfff] mb-4">What is the potential for direct revenue generation or customer value creation?</Label>
           </div>
         </div>
-        <div className="bg-gray-75 p-6 rounded-lg">
+        <div className="bg-[#18182c] p-6 rounded-lg border-2 border-[#bdbdd7]">
           <div className="flex items-center mb-4">
-            <Label htmlFor="complexity" className='text-lg font-semibold text-black-800'>Additional Metrics</Label>
+            <Label htmlFor="complexity" className="text-white text-lg font-semibold text-[#e0cfff]">Additional Metrics</Label>
           </div>
           <div className="space-y-4">
-            <Label htmlFor="complexity" className='text-sm font-normal text-gray-800 mb-2'>Implementation Complexity</Label>
+            <Label htmlFor="complexity" className="text-white text-sm font-normal text-[#e0cfff] mb-2">Implementation Complexity</Label>
             <div className="flex justify-between items-center mb-1">
               <span></span>
-              <span className="text-blue-600 font-bold">{formData.complexity}</span>
+              <span className="text-[#a259e6] font-bold">{formData.complexity}</span>
             </div>
             <Slider
               min={1}
@@ -421,34 +422,34 @@ const AIUseCaseTool = () => {
               value={[formData.complexity]}
               onValueChange={([val]) => handleChange("complexity", val)}
             />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <div className="flex justify-between text-xs text-[#bdbdd7] mt-1">
               <span>Low (1)</span>
               <span>High (10)</span>
             </div>
-            <Label htmlFor="complexity" className='text-sm font-normal text-gray-800 mb-4'>How complex will this be to implement? (1 = Very Simple, 10 = Very Complex)</Label>
+            <Label htmlFor="complexity" className="text-white text-sm font-normal text-[#e0cfff] mb-4">How complex will this be to implement? (1 = Very Simple, 10 = Very Complex)</Label>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-lg border-2 border-gray-200">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">Use Case Profile</h4>
+        <div className="bg-[#23233a] p-6 rounded-lg border-2 border-[#23233a]">
+          <h4 className="text-lg font-semibold text-[#d26be8] mb-4">Use Case Profile</h4>
           <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="bg-orange-100 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-orange-600">{formData.operationalScore}</div>
-              <div className="text-sm text-orange-800">Operational</div>
+            <div className="bg-[#23233a] p-4 rounded-lg border border-[#d26be8]">
+              <div className="text-2xl font-bold text-[#d26be8]">{formData.operationalScore}</div>
+              <div className="text-sm text-[#e0cfff]">Operational</div>
             </div>
-            <div className="bg-pink-100 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-pink-600">{formData.productivityScore}</div>
-              <div className="text-sm text-pink-800">Productivity</div>
+            <div className="bg-[#23233a] p-4 rounded-lg border border-[#a259e6]">
+              <div className="text-2xl font-bold text-[#a259e6]">{formData.productivityScore}</div>
+              <div className="text-sm text-[#e0cfff]">Productivity</div>
             </div>
-            <div className="bg-blue-100 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{formData.revenueScore}</div>
-              <div className="text-sm text-blue-800">Revenue</div>
+            <div className="bg-[#23233a] p-4 rounded-lg border border-[#5be6b9]">
+              <div className="text-2xl font-bold text-[#5be6b9]">{formData.revenueScore}</div>
+              <div className="text-sm text-[#e0cfff]">Revenue</div>
             </div>
           </div>
           <div className="mt-4 text-center">
-            <div className="text-lg font-semibold text-gray-700">
+            <div className="text-lg font-semibold text-[#e0cfff]">
               Overall Score: {((formData.operationalScore + formData.productivityScore + formData.revenueScore) / 3).toFixed(1)}
             </div>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-[#bdbdd7]">
               Complexity: {formData.complexity}/10
             </div>
           </div>
@@ -518,39 +519,43 @@ const AIUseCaseTool = () => {
   };
 
   return (
-    <div className="min-h-screen flex justify-center items-start bg-gray-50 p-0 sm:p-4">
-      <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden border-0 sm:border sm:mt-6 sm:mb-6 sm:mx-0 mx-0">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 sm:p-6">
-          <h1 className="text-2xl font-bold mb-2">AI Use Case Refinement Tool</h1>
-          <p className="text-blue-100">Transform AI ideas into structured, quantified business opportunities</p>
+    <div className="min-h-screen flex justify-center items-start bg-[#101024] p-0 sm:p-4">
+      <div className="w-full max-w-4xl bg-[#23233a] rounded-2xl shadow-2xl border-4 border-[#a259e6] sm:mt-10 sm:mb-10 sm:mx-0 mx-0 relative z-10">
+        {/* QZen AI Branding Header */}
+        <div className="flex items-center gap-4 justify-center py-8 bg-[#18182c] rounded-t-2xl">
+          <img src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MDc4NTQ3NywiZXhwIjoxOTA4NDY1NDc3fQ.v6nh5VRRDin2cGatgU3yHbUweQEulxqEAupCj8Mbgeg" alt="QZen AI Logo" className="h-14 w-14 object-contain" />
+          <span className="text-4xl font-extrabold bg-gradient-to-r from-[#5b5be6] via-[#a259e6] to-[#d26be8] bg-clip-text text-transparent font-sans">QZen AI</span>
         </div>
-        <div className="bg-gray-100 px-2 py-3 sm:px-6 sm:py-4">
+        <div className="w-full flex justify-center bg-[#18182c] rounded-b-2xl pb-4">
+          <p className="text-[#e0cfff] text-lg text-center font-medium">Transform AI ideas into structured, quantified business opportunities</p>
+        </div>
+        <div className="bg-[#23233a] px-2 py-3 sm:px-6 sm:py-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0">
             {steps.map((step, index) => (
               <div key={step.id} className="flex items-center mb-2 sm:mb-0">
                 <div className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full ${
-                  currentStep >= step.id ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
+                  currentStep >= step.id ? 'bg-[#a259e6] text-white' : 'bg-[#18182c] text-[#bdbdd7] border border-[#bdbdd7]'
                 }`}>
                   <step.icon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
                 <div className="ml-2 sm:ml-3">
                   <div className={`text-xs sm:text-sm font-medium ${
-                    currentStep >= step.id ? 'text-blue-600' : 'text-gray-500'
+                    currentStep >= step.id ? 'text-[#a259e6]' : 'text-[#bdbdd7]'
                   }`}>
                     {step.title}
                   </div>
                 </div>
                 {index < steps.length - 1 && (
-                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mx-2 sm:mx-4" />
+                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-[#bdbdd7] mx-2 sm:mx-4" />
                 )}
               </div>
             ))}
           </div>
         </div>
-        <div className="bg-white border-t border-gray-200">
+        <div className="bg-[#18182c] border-t border-[#23233a]">
           <div className="p-6">
             {showError && (
-              <div className="mb-4 text-red-600 font-semibold">
+              <div className="mb-4 text-[#ff6b6b] font-semibold">
                 Please fill all required fields before proceeding.
               </div>
             )}
@@ -560,42 +565,40 @@ const AIUseCaseTool = () => {
               {currentStep === 3 && renderStep3()}
             </main>
           </div>
-          <div className="flex justify-between items-center p-6 border-t">
+          <div className="flex justify-between items-center p-6 border-t border-[#23233a]">
             <div className="flex items-center gap-2">
               <Button
                 onClick={() => setCurrentStep(prev => prev > 1 ? prev - 1 : prev)}
                 disabled={currentStep === 1}
-                className={`flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white ${currentStep === 1 ? 'invisible' : ''}`}
+                className={`flex items-center gap-2 bg-[#a259e6] hover:bg-[#d26be8] text-white ${currentStep === 1 ? 'invisible' : ''}`}
               >
                 <ChevronLeft className="w-4 h-4" />
                 Previous
               </Button>
               <Button
                 onClick={exportData}
-                variant="outline"
-                className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
+                className="flex items-center gap-2 bg-[#a259e6] hover:bg-[#d26be8] text-black border-none shadow-md px-6 py-2 rounded-lg"
               >
                 <Download className="w-4 h-4" />
                 Export
               </Button>
               <Button
                 onClick={() => console.log('Saved:', formData)}
-                variant="outline"
-                className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
+                className="flex items-center gap-2 bg-[#5be6b9] hover:bg-[#3ad29f] text-black border-none shadow-md px-6 py-2 rounded-lg"
               >
                 <Save className="w-4 h-4" />
                 Save Draft
               </Button>
             </div>
             <div className="flex items-center gap-4">
-              <div className="text-sm font-medium text-gray-500">
+              <div className="text-sm font-medium text-[#bdbdd7]">
                 Step {currentStep} of {steps.length}
               </div>
               {currentStep === steps.length ? (
                 <Button
                   onClick={handleGoToPipeline}
                   disabled={isSubmitting}
-                  className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white"
+                  className="flex items-center gap-2 bg-[#5be6b9] hover:bg-[#3ad29f] text-[#101024]"
                 >
                   {isSubmitting ? 'Submitting...' : 'Go to Pipeline'}
                   <ChevronRight className="w-4 h-4" />
@@ -603,7 +606,7 @@ const AIUseCaseTool = () => {
               ) : (
                 <Button
                   onClick={() => setCurrentStep(prev => prev < steps.length ? prev + 1 : prev)}
-                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+                  className="flex items-center gap-2 bg-[#d26be8] hover:bg-[#a259e6] text-white"
                 >
                   Next
                   <ChevronRight className="w-4 h-4" />
