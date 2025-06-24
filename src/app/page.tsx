@@ -1,5 +1,6 @@
 'use client'
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ChevronRight, ChevronLeft, Target, Users, TrendingUp, Zap, DollarSign, Save, Download, Plus, Minus } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -64,8 +65,8 @@ const ArrayInput = ({
   label: string;
   field: keyof FormData;
   value: string[];
-  onAdd: (field: keyof FormData, val: string) => void;
-  onRemove: (field: keyof FormData, idx: number) => void;
+  onAdd: (field: ArrayField, val: string) => void;
+  onRemove: (field: ArrayField, idx: number) => void;
 }) => {
   const [inputVal, setInputVal] = useState("");
 
@@ -78,7 +79,7 @@ const ArrayInput = ({
           onChange={(e) => setInputVal(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
-              onAdd(field, inputVal);
+              onAdd(field as ArrayField, inputVal);
               setInputVal("");
             }
           }}
@@ -86,7 +87,7 @@ const ArrayInput = ({
         <Button
           type="button"
           onClick={() => {
-            onAdd(field, inputVal);
+            onAdd(field as ArrayField, inputVal);
             setInputVal("");
           }}
         >
@@ -100,7 +101,7 @@ const ArrayInput = ({
             className="flex justify-between items-center border p-2 rounded"
           >
             <span>{item}</span>
-            <Button variant="destructive" size="icon" onClick={() => onRemove(field, i)}>
+            <Button variant="destructive" size="icon" onClick={() => onRemove(field as ArrayField, i)}>
               <Minus className="w-4 h-4" />
             </Button>
           </div>
@@ -145,6 +146,7 @@ type StringField = Exclude<keyof FormData, ArrayField | NumberField>;
 const AIUseCaseTool = () => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const router = useRouter();
 
 
   const steps = [
@@ -176,93 +178,9 @@ const AIUseCaseTool = () => {
     }));
   };
 
-  type ArrayInputProps = {
-    label: string;
-    field: ArrayField;
-    placeholder: string;
-  };
   const handleChange = (field: keyof FormData, val: any) => {
     setFormData((prev) => ({ ...prev, [field]: val }));
   };
-
-  const ArrayInput: React.FC<ArrayInputProps> = ({ label, field, placeholder }) => {
-    const [inputValue, setInputValue] = useState<string>('');
-    
-    return (
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder={placeholder}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                handleArrayAdd(field, inputValue);
-                setInputValue('');
-              }
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => {
-              handleArrayAdd(field, inputValue);
-              setInputValue('');
-            }}
-            className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="space-y-1">
-          {formData[field].map((item: string, index: number) => (
-            <div key={index} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md">
-              <span className="text-sm">{item}</span>
-              <button
-                type="button"
-                onClick={() => handleArrayRemove(field, index)}
-                className="text-red-500 hover:text-red-700"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  type SliderInputProps = {
-    label: string;
-    field: NumberField;
-    min?: number;
-    max?: number;
-    description?: string;
-  };
-
-  const SliderInput: React.FC<SliderInputProps> = ({ label, field, min = 1, max = 10, description }) => (
-    <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
-        <span className="text-lg font-semibold text-blue-600">{formData[field]}</span>
-      </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        value={formData[field]}
-        onChange={(e) => handleInputChange(field, parseInt(e.target.value))}
-        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-      />
-      <div className="flex justify-between text-xs text-gray-500">
-        <span>Low ({min})</span>
-        <span>High ({max})</span>
-      </div>
-      {description && <p className="text-sm text-gray-600">{description}</p>}
-    </div>
-  );
 
   const renderStep1 = () => (
     <div className="space-y-6">
@@ -413,7 +331,8 @@ const AIUseCaseTool = () => {
           <SliderInput
             label="Operational Impact Score"
             field="operationalScore"
-            description="How much will this improve operational efficiency, reduce costs, or streamline processes?"
+            value={formData.operationalScore}
+            onChange={handleChange}
           />
         </div>
 
@@ -425,7 +344,8 @@ const AIUseCaseTool = () => {
           <SliderInput
             label="Productivity Impact Score"
             field="productivityScore"
-            description="How significantly will this boost employee productivity or automate manual tasks?"
+            value={formData.productivityScore}
+            onChange={handleChange}
           />
         </div>
 
@@ -437,7 +357,8 @@ const AIUseCaseTool = () => {
           <SliderInput
             label="Revenue Impact Score"
             field="revenueScore"
-            description="What is the potential for direct revenue generation or customer value creation?"
+            value={formData.revenueScore}
+            onChange={handleChange}
           />
         </div>
 
@@ -446,7 +367,8 @@ const AIUseCaseTool = () => {
           <SliderInput
             label="Implementation Complexity"
             field="complexity"
-            description="How complex will this be to implement? (1 = Very Simple, 10 = Very Complex)"
+            value={formData.complexity}
+            onChange={handleChange}
           />
         </div>
 
@@ -526,55 +448,68 @@ const AIUseCaseTool = () => {
         </div>
 
         {/* Content */}
-        <div className="p-2 sm:p-6">
-          {currentStep === 1 && renderStep1()}
-          {currentStep === 2 && renderStep2()}
-          {currentStep === 3 && renderStep3()}
-        </div>
-
-        {/* Navigation */}
-        <div className="bg-gray-50 px-2 py-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0">
-          <Button
-            onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
-            disabled={currentStep === 1}
-            className={`flex items-center px-3 py-2 sm:px-4 rounded-md text-sm sm:text-base ${
-              currentStep === 1 
-                ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            <ChevronLeft className="w-4 h-4 mr-2" />
-            Previous
-          </Button>
-          <div className="flex flex-row space-x-2 w-full sm:w-auto justify-center">
-            <Button
-            onClick={exportData}
-            className="bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export
-            </Button>
-            <Button
-            onClick={() => console.log('Saved:', formData)}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Save Draft
-          </Button>
+        <div className="bg-white border-t border-gray-200">
+          <div className="p-6">
+            <main>
+              {currentStep === 1 && renderStep1()}
+              {currentStep === 2 && renderStep2()}
+              {currentStep === 3 && renderStep3()}
+            </main>
           </div>
+          {/* Navigation */}
+          <div className="flex justify-between items-center p-6 border-t">
+            {/* Left Group */}
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setCurrentStep(prev => prev > 1 ? prev - 1 : prev)}
+                disabled={currentStep === 1}
+                className={`flex items-center gap-2 ${currentStep === 1 ? 'invisible' : ''}`}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </Button>
+              <Button
+                onClick={exportData}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Export
+              </Button>
+              <Button
+                onClick={() => console.log('Saved:', formData)}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                Save Draft
+              </Button>
+            </div>
 
-          <Button
-            onClick={() => setCurrentStep(Math.min(3, currentStep + 1))}
-            disabled={currentStep === 3}
-            className={`flex items-center px-3 py-2 sm:px-4 rounded-md text-sm sm:text-base ${
-              currentStep === 3 
-                ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
-          >
-            Next
-            <ChevronRight className="w-4 h-4 ml-2" />
-          </Button>
+            {/* Right Group */}
+            <div className="flex items-center gap-4">
+              <div className="text-sm font-medium text-gray-500">
+                Step {currentStep} of {steps.length}
+              </div>
+              {currentStep === steps.length ? (
+                <Button
+                  onClick={() => router.push('/dashboard-test')}
+                  className="flex items-center gap-2 bg-green-500 hover:bg-green-600"
+                >
+                  Go to Pipeline
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => setCurrentStep(prev => prev < steps.length ? prev + 1 : prev)}
+                  className="flex items-center gap-2"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

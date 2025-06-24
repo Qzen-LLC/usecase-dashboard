@@ -5,12 +5,6 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 const stages = [
   { id: 'discovery', title: 'Discovery', color: 'bg-gray-100', textColor: 'text-gray-700' },
   { id: 'business-case', title: 'Business Case', color: 'bg-blue-100', textColor: 'text-blue-700' },
@@ -73,34 +67,41 @@ const Dashboard = () => {
   const [useCases, setUseCases] = useState<UseCase[]>([]);
   const [selectedUseCase, setSelectedUseCase] = useState<UseCase | null>(null);
 
-  // Fetch use cases from Supabase
+  // Fetch use cases from API
   useEffect(() => {
     const fetchUseCases = async () => {
-      const { data, error } = await supabase.from('UseCase').select('*');
-      if (error) {
+      try {
+        const response = await fetch('/api/read-usecases');
+        if (!response.ok) {
+          throw new Error('Failed to fetch use cases');
+        }
+        const data = await response.json();
+
+        // Add default frontend fields
+        const mapped = (data || []).map((uc: any) => ({
+          ...uc,
+          stage: 'discovery', // All start in discovery
+          priority: 'medium', // You can adjust this logic
+          owner: uc.primaryStakeholders?.[0] || 'Unknown',
+          lastUpdated: uc.updatedAt
+            ? new Date(uc.updatedAt).toLocaleDateString()
+            : '',
+          description: uc.problemStatement || '',
+          scores: {
+            operational: uc.operationalImpactScore,
+            productivity: uc.productivityImpactScore,
+            revenue: uc.revenueImpactScore,
+          },
+          complexity: uc.implementationComplexity,
+          roi: uc.initialROI,
+          timeline: uc.estimatedTimeline,
+          stakeholders: uc.primaryStakeholders,
+          risks: uc.keyAssumptions,
+        }));
+        setUseCases(mapped);
+      } catch (error) {
         console.error('Error fetching use cases:', error);
-        return;
       }
-      // Add default frontend fields
-      const mapped = (data || []).map((uc: any) => ({
-        ...uc,
-        stage: 'discovery', // All start in discovery
-        priority: 'medium', // You can adjust this logic
-        owner: uc.primaryStakeholders?.[0] || 'Unknown',
-        lastUpdated: uc.updatedAt ? new Date(uc.updatedAt).toLocaleDateString() : '',
-        description: uc.problemStatement || '',
-        scores: {
-          operational: uc.operationalImpactScore,
-          productivity: uc.productivityImpactScore,
-          revenue: uc.revenueImpactScore
-        },
-        complexity: uc.implementationComplexity,
-        roi: uc.initialROI,
-        timeline: uc.estimatedTimeline,
-        stakeholders: uc.primaryStakeholders,
-        risks: uc.keyAssumptions
-      }));
-      setUseCases(mapped);
     };
     fetchUseCases();
   }, []);
