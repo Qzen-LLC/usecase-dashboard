@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,6 +67,7 @@ const Dashboard = () => {
   const [filterBy, setFilterBy] = useState('all');
   const [useCases, setUseCases] = useState<UseCase[]>([]);
   const [selectedUseCase, setSelectedUseCase] = useState<UseCase | null>(null);
+  const router = useRouter();
 
   // Fetch use cases from API
   useEffect(() => {
@@ -228,7 +230,10 @@ const Dashboard = () => {
             <h1 className="text-3xl font-bold text-gray-900">AI Use Case Pipeline</h1>
             <p className="text-gray-600 mt-1">Track and manage AI initiatives across your organization</p>
           </div>
-          <Button className="bg-black text-white px-5 py-2 rounded-lg hover:bg-gray-800">
+          <Button
+            className="bg-black text-white px-5 py-2 rounded-lg hover:bg-gray-800"
+            onClick={() => router.push('/')}
+          >
             <Plus className="w-5 h-5 mr-2" />
             New Use Case
           </Button>

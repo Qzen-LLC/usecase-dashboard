@@ -62,6 +62,7 @@ const ArrayInput = ({
   onAdd,
   onRemove,
   invalid,
+  placeholder,
 }: {
   label: string;
   field: keyof FormData;
@@ -69,6 +70,7 @@ const ArrayInput = ({
   onAdd: (field: ArrayField, val: string) => void;
   onRemove: (field: ArrayField, idx: number) => void;
   invalid?: boolean;
+  placeholder?: string;
 }) => {
   const [inputVal, setInputVal] = useState("");
 
@@ -80,6 +82,7 @@ const ArrayInput = ({
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
           className={invalid ? 'border-red-500' : ''}
+          placeholder={placeholder}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               onAdd(field as ArrayField, inputVal);
@@ -119,6 +122,7 @@ const AIUseCaseTool = () => {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [invalidFields, setInvalidFields] = useState<string[]>([]);
   const [showError, setShowError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
   const steps = [
@@ -178,6 +182,7 @@ const AIUseCaseTool = () => {
             value={formData.title}
             onChange={(e) => handleChange("title", e.target.value)}
             className={invalidFields.includes('title') ? 'border-red-500' : ''}
+            placeholder="e.g., Automated Customer Support Ticket Categorization"
           />
           <Label htmlFor="problemStatement">Problem Statement</Label>
           <Textarea
@@ -185,6 +190,7 @@ const AIUseCaseTool = () => {
             value={formData.problemStatement}
             onChange={(e) => handleChange("problemStatement", e.target.value)}
             className={invalidFields.includes('problemStatement') ? 'border-red-500' : ''}
+            placeholder="e.g., Customer support agents spend 2 hours daily manually categorizing tickets, leading to delays and misrouting."
           />
           <Label htmlFor="proposedSolution">Proposed Solution</Label>
           <Textarea
@@ -192,6 +198,7 @@ const AIUseCaseTool = () => {
             value={formData.proposedSolution}
             onChange={(e) => handleChange("proposedSolution", e.target.value)}
             className={invalidFields.includes('proposedSolution') ? 'border-red-500' : ''}
+            placeholder="e.g., Implement an AI model that automatically categorizes incoming support tickets based on their content."
           />
           <Label htmlFor="currentState">Current State</Label>
           <Textarea
@@ -199,6 +206,7 @@ const AIUseCaseTool = () => {
             value={formData.currentState}
             onChange={(e) => handleChange("currentState", e.target.value)}
             className={invalidFields.includes('currentState') ? 'border-red-500' : ''}
+            placeholder="e.g., Tickets are manually read and categorized by a team of 5 agents."
           />
           <Label htmlFor="desiredState">Desired State</Label>
           <Textarea
@@ -206,6 +214,7 @@ const AIUseCaseTool = () => {
             value={formData.desiredState}
             onChange={(e) => handleChange("desiredState", e.target.value)}
             className={invalidFields.includes('desiredState') ? 'border-red-500' : ''}
+            placeholder="e.g., 90% of tickets are automatically and accurately categorized within 1 minute of arrival."
           />
           <Label htmlFor="primaryStakeholder">Primary Stakeholder</Label>
           <Input
@@ -213,6 +222,7 @@ const AIUseCaseTool = () => {
             value={formData.primaryStakeholder}
             onChange={(e) => handleChange("primaryStakeholder", e.target.value)}
             className={invalidFields.includes('primaryStakeholder') ? 'border-red-500' : ''}
+            placeholder="e.g., Head of Customer Support"
           />
           <ArrayInput
             label="Secondary Stakeholders"
@@ -221,6 +231,7 @@ const AIUseCaseTool = () => {
             onAdd={handleArrayAdd}
             onRemove={handleArrayRemove}
             invalid={invalidFields.includes('secondaryStakeholders')}
+            placeholder="e.g., IT Operations Manager"
           />
           <ArrayInput
             label="Success Criteria"
@@ -229,6 +240,7 @@ const AIUseCaseTool = () => {
             onAdd={handleArrayAdd}
             onRemove={handleArrayRemove}
             invalid={invalidFields.includes('successCriteria')}
+            placeholder="e.g., Reduce average ticket resolution time by 25%"
           />
         </Card>
       </div>
@@ -249,6 +261,7 @@ const AIUseCaseTool = () => {
             value={formData.problemValidation}
             onChange={(e) => handleChange("problemValidation", e.target.value)}
             className={invalidFields.includes('problemValidation') ? 'border-red-500' : ''}
+            placeholder="e.g., Conducted interviews with 5 support agents, 4 confirmed this is a major pain point."
           />
           <Label htmlFor="solutionHypothesis">Solution Hypothesis</Label>
           <Textarea
@@ -256,6 +269,7 @@ const AIUseCaseTool = () => {
             value={formData.solutionHypothesis}
             onChange={(e) => handleChange("solutionHypothesis", e.target.value)}
             className={invalidFields.includes('solutionHypothesis') ? 'border-red-500' : ''}
+            placeholder="e.g., If we auto-categorize tickets, we will reduce resolution time by 25%."
           />
           <ArrayInput
             label="Key Assumptions"
@@ -264,6 +278,7 @@ const AIUseCaseTool = () => {
             onAdd={handleArrayAdd}
             onRemove={handleArrayRemove}
             invalid={invalidFields.includes('keyAssumptions')}
+            placeholder="e.g., The AI model can achieve at least 90% accuracy."
           />
           <Label htmlFor="initialROI">Initial ROI</Label>
           <Input
@@ -271,6 +286,7 @@ const AIUseCaseTool = () => {
             value={formData.initialROI}
             onChange={(e) => handleChange("initialROI", e.target.value)}
             className={invalidFields.includes('initialROI') ? 'border-red-500' : ''}
+            placeholder="e.g., Estimated $50,000 annual savings from reduced agent hours."
           />
           <div className="flex justify-between items-center mb-1">
             <Label htmlFor="confidenceLevel">Confidence Level</Label>
@@ -295,6 +311,7 @@ const AIUseCaseTool = () => {
             value={formData.timeline}
             onChange={(e) => handleChange("timeline", e.target.value)}
             className={invalidFields.includes('timeline') ? 'border-red-500' : ''}
+            placeholder="e.g., 3 months"
           />
           <Label htmlFor="resources">Required Resources</Label>
           <Input
@@ -302,6 +319,7 @@ const AIUseCaseTool = () => {
             value={formData.resources}
             onChange={(e) => handleChange("resources", e.target.value)}
             className={invalidFields.includes('resources') ? 'border-red-500' : ''}
+            placeholder="e.g., 1 AI Engineer, 1 Product Manager, access to historical ticket data."
           />
         </Card>
       </div>
@@ -449,9 +467,53 @@ const AIUseCaseTool = () => {
     linkElement.click();
   };
 
-  const handleGoToPipeline = () => {
+  const handleGoToPipeline = async () => {
     if (validateForm()) {
-      router.push('/dashboard-test');
+      setIsSubmitting(true);
+      try {
+        const { 
+          proposedSolution, 
+          operationalScore, 
+          productivityScore, 
+          revenueScore, 
+          complexity, 
+          timeline, 
+          resources,
+          primaryStakeholder,
+          ...rest 
+        } = formData;
+
+        const response = await fetch('/api/write-usecases', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...rest,
+            proposedAISolution: proposedSolution,
+            operationalImpactScore: operationalScore,
+            productivityImpactScore: productivityScore,
+            revenueImpactScore: revenueScore,
+            implementationComplexity: complexity,
+            estimatedTimeline: timeline,
+            requiredResources: resources,
+            primaryStakeholders: [primaryStakeholder],
+          }),
+        });
+
+        if (response.ok) {
+          router.push('/dashboard-test');
+        } else {
+          // Handle error, maybe show a notification
+          console.error('Failed to save use case');
+          setShowError(true); // Or a more specific error message
+        }
+      } catch (error) {
+        console.error('Error submitting form:', error);
+        setShowError(true); // Or a more specific error message
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -532,9 +594,10 @@ const AIUseCaseTool = () => {
               {currentStep === steps.length ? (
                 <Button
                   onClick={handleGoToPipeline}
+                  disabled={isSubmitting}
                   className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white"
                 >
-                  Go to Pipeline
+                  {isSubmitting ? 'Submitting...' : 'Go to Pipeline'}
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               ) : (
