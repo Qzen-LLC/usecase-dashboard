@@ -463,7 +463,7 @@ const AIUseCaseTool = () => {
               <Button
                 onClick={() => setCurrentStep(prev => prev > 1 ? prev - 1 : prev)}
                 disabled={currentStep === 1}
-                className={`flex items-center gap-2 ${currentStep === 1 ? 'invisible' : ''}`}
+                className={`flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white ${currentStep === 1 ? 'invisible' : ''}`}
               >
                 <ChevronLeft className="w-4 h-4" />
                 Previous
@@ -471,7 +471,7 @@ const AIUseCaseTool = () => {
               <Button
                 onClick={exportData}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
               >
                 <Download className="w-4 h-4" />
                 Export
@@ -479,7 +479,7 @@ const AIUseCaseTool = () => {
               <Button
                 onClick={() => console.log('Saved:', formData)}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
               >
                 <Save className="w-4 h-4" />
                 Save Draft
@@ -494,7 +494,7 @@ const AIUseCaseTool = () => {
               {currentStep === steps.length ? (
                 <Button
                   onClick={() => router.push('/dashboard-test')}
-                  className="flex items-center gap-2 bg-green-500 hover:bg-green-600"
+                  className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white"
                 >
                   Go to Pipeline
                   <ChevronRight className="w-4 h-4" />
@@ -502,7 +502,7 @@ const AIUseCaseTool = () => {
               ) : (
                 <Button
                   onClick={() => setCurrentStep(prev => prev < steps.length ? prev + 1 : prev)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
                 >
                   Next
                   <ChevronRight className="w-4 h-4" />
