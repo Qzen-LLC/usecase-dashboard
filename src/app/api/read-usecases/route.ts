@@ -4,9 +4,9 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
     try {
         const db_res = await prismaClient.useCase.findMany();
-        const usecases = db_res.json();
+        const usecases = db_res;
         console.log(usecases);  
-        NextResponse.json(db_res);
+        return NextResponse.json(usecases);
     } catch (error) {
         console.error("Error Reading UseCases");
         return Response.json(
@@ -14,4 +14,4 @@ export async function GET(req: Request) {
             { status: 500},
         );
     }
-}
+}   
