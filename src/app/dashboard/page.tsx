@@ -344,7 +344,7 @@ const Dashboard = () => {
               {stages.map(stage => (
                 <div
                   key={stage.id}
-                  className="w-96 bg-gradient-to-b from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] bg-opacity-10 rounded-2xl p-5 flex flex-col shadow-lg flex-grow max-w-full sm:w-96 border border-gray-100 transition hover:shadow-xl"
+                  className="w-96 min-h-[350px] bg-gradient-to-b from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] bg-opacity-10 rounded-2xl p-5 flex flex-col shadow-lg flex-grow max-w-full sm:w-96 border border-gray-100 transition hover:shadow-xl"
                   onDragOver={e => e.preventDefault()}
                   onDrop={e => {
                     const useCaseId = e.dataTransfer.getData('useCaseId');
