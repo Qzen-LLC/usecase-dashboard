@@ -505,7 +505,7 @@ const AIUseCaseTool = () => {
       {
         console.error("Unable to submit Use Case")
       }
-      router.push('/dashboard-test');
+      router.push('/dashboard');
     }
   };
 
