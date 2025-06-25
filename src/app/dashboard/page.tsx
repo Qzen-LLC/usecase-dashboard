@@ -135,7 +135,7 @@ const Dashboard = () => {
     ((scores.operational + scores.productivity + scores.revenue) / 3).toFixed(1);
 
   // Handler to update the stage of a use case
-  const handleMoveToStage = (useCaseId: string, newStage: string) => {
+  const handleMoveToStage = async (useCaseId: string, newStage: string) => {
     setUseCases(prev =>
       prev.map(uc =>
         uc.id === useCaseId ? { ...uc, stage: newStage } : uc
@@ -144,8 +144,20 @@ const Dashboard = () => {
     setSelectedUseCase(prev =>
       prev ? { ...prev, stage: newStage } : prev
     );
+    try {
+      const res = await fetch('/api/update-stage', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          useCaseId, newStage
+        })
+      });
+    } catch(error) {
+      console.error("Unable to update stage");
+    }
     setSelectedUseCase(null)
-    // TODO: Optionally call API to persist the change
   };
 
   // Modal for use case details
