@@ -29,6 +29,7 @@ type FormData = {
   implementationComplexity: number;
   estimatedTimeline: string;
   requiredResources: string;
+  businessFunction: string;
 };
 
 const initialFormData: FormData = {
@@ -51,6 +52,7 @@ const initialFormData: FormData = {
   implementationComplexity: 5,
   estimatedTimeline: "",
   requiredResources: "",
+  businessFunction: "",
 };
 
 type ArrayField = 'primaryStakeholders' | 'secondaryStakeholders' | 'successCriteria' | 'keyAssumptions';
@@ -167,9 +169,9 @@ const AIUseCaseTool = () => {
 
   const renderStep1 = () => (
     <div className="space-y-6">
-      <div className="bg-blue-50 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold text-blue-800 mb-2">Use Case Documentation</h3>
-        <p className="text-blue-700">Define and structure your AI use case with clear problem statements and success criteria.</p>
+      <div className="bg-gradient-to-r from-[#f5eaff] via-[#fbeaff] to-[#ffeafd] p-4 rounded-lg">
+        <h3 className="text-lg font-semibold mb-2 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] bg-clip-text text-transparent">Use Case Documentation</h3>
+        <p className="text-[#8f4fff]">Define and structure your AI use case with clear problem statements and success criteria.</p>
       </div>
       <div className="grid grid-cols-1">
         <Card className="p-6">
@@ -215,6 +217,33 @@ const AIUseCaseTool = () => {
             onChange={(e) => handleChange("primaryStakeholders", e.target.value)}
             className={invalidFields.includes('primaryStakeholders') ? 'border-red-500' : ''}
           /> */}
+          <Label htmlFor="businessFunction">Business Function</Label>
+          <select
+            id="businessFunction"
+            value={formData.businessFunction}
+            onChange={e => handleChange("businessFunction", e.target.value)}
+            className={"mb-4 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 " + (invalidFields.includes('businessFunction') ? 'border-red-500' : '')}
+          >
+            <option value="" disabled>Select a business function</option>
+            <option value="Sales">Sales</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Product Development">Product Development</option>
+            <option value="Operations">Operations</option>
+            <option value="Customer Support">Customer Support</option>
+            <option value="HR">HR</option>
+            <option value="Finance">Finance</option>
+            <option value="IT">IT</option>
+            <option value="Legal">Legal</option>
+            <option value="Procurement">Procurement</option>
+            <option value="Facilities">Facilities</option>
+            <option value="Strategy">Strategy</option>
+            <option value="Communications">Communications</option>
+            <option value="Risk & Audit">Risk & Audit</option>
+            <option value="Innovation Office">Innovation Office</option>
+            <option value="ESG">ESG</option>
+            <option value="Data Office">Data Office</option>
+            <option value="PMO">PMO</option>
+          </select>
           <ArrayInput
             label="Primary Stakeholders"
             field="primaryStakeholders"
@@ -246,9 +275,9 @@ const AIUseCaseTool = () => {
 
   const renderStep2 = () => (
     <div className="space-y-6">
-      <div className="bg-green-50 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold text-green-800 mb-2">Lean Business Case</h3>
-        <p className="text-green-700">Build a lightweight business case focusing on problem-solution fit and key assumptions.</p>
+      <div className="bg-gradient-to-r from-[#f5eaff] via-[#fbeaff] to-[#ffeafd] p-4 rounded-lg">
+        <h3 className="text-lg font-semibold mb-2 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] bg-clip-text text-transparent">Lean Business Case</h3>
+        <p className="text-[#b84fff]">Build a lightweight business case focusing on problem-solution fit and key assumptions.</p>
       </div>
       <div className="space-y-6">
         <Card className='p-6'>
@@ -319,9 +348,9 @@ const AIUseCaseTool = () => {
 
   const renderStep3 = () => (
     <div className="space-y-6">
-      <div className="bg-purple-50 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold text-purple-800 mb-2">Multi-Dimensional Scoring</h3>
-        <p className="text-purple-700">Quantify your use case across the three strategic dimensions.</p>
+      <div className="bg-gradient-to-r from-[#f5eaff] via-[#fbeaff] to-[#ffeafd] p-4 rounded-lg">
+        <h3 className="text-lg font-semibold mb-2 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] bg-clip-text text-transparent">Multi-Dimensional Scoring</h3>
+        <p className="text-[#8f4fff]">Quantify your use case across the three strategic dimensions.</p>
       </div>
       <div className="space-y-8">
         <div className="bg-white p-6 rounded-lg border-2 border-orange-200">
@@ -467,7 +496,10 @@ const AIUseCaseTool = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({
+            ...formData,
+            businessFunction: formData.businessFunction,
+          }),
       });
       } catch(error)
       {
@@ -480,23 +512,39 @@ const AIUseCaseTool = () => {
   return (
     <div className="min-h-screen flex justify-center items-start bg-gray-50 p-0 sm:p-4">
       <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden border-0 sm:border sm:mt-6 sm:mb-6 sm:mx-0 mx-0">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 sm:p-6">
-          <h1 className="text-2xl font-bold mb-2">AI Use Case Refinement Tool</h1>
-          <p className="text-blue-100">Transform AI ideas into structured, quantified business opportunities</p>
+        <div className="flex flex-col items-center bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] rounded-t-2xl border-b border-gray-200 shadow-lg">
+          <div className="flex items-center gap-3 justify-center py-6">
+            <div className="bg-white rounded-2xl shadow-lg flex items-center gap-3 px-6 py-3">
+              <img src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MDc4NTQ3NywiZXhwIjoxOTA4NDY1NDc3fQ.v6nh5VRRDin2cGatgU3yHbUweQEulxqEAupCj8Mbgeg" alt="QZen AI Logo" className="h-12 w-12 object-contain drop-shadow-xl" />
+              <span className="text-3xl font-extrabold bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] bg-clip-text text-transparent font-sans tracking-tight">QZen AI</span>
+            </div>
+          </div>
+          <div className="w-full flex justify-center pb-6">
+            <p className="text-white text-lg text-center font-medium tracking-wide whitespace-nowrap overflow-x-auto">Empowering Enterprises to Transform AI Ideas into Quantified Business Value</p>
+          </div>
         </div>
         <div className="bg-gray-100 px-2 py-3 sm:px-6 sm:py-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0">
             {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center mb-2 sm:mb-0">
-                <div className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full ${
-                  currentStep >= step.id ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
-                }`}>
+              <div
+                key={step.id}
+                className="flex items-center mb-2 sm:mb-0 cursor-pointer group"
+                onClick={() => setCurrentStep(step.id)}
+                tabIndex={0}
+                role="button"
+                aria-label={`Go to ${step.title}`}
+              >
+                <div className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-all duration-150 ${
+                  currentStep === step.id ? 'bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white scale-110 shadow-lg' : currentStep > step.id ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
+                } group-hover:scale-110`}
+                >
                   <step.icon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
                 <div className="ml-2 sm:ml-3">
                   <div className={`text-xs sm:text-sm font-medium ${
-                    currentStep >= step.id ? 'text-blue-600' : 'text-gray-500'
-                  }`}>
+                    currentStep === step.id ? 'text-[#8f4fff]' : currentStep > step.id ? 'text-blue-600' : 'text-gray-500'
+                  } group-hover:text-[#b84fff]`}
+                  >
                     {step.title}
                   </div>
                 </div>
@@ -538,14 +586,6 @@ const AIUseCaseTool = () => {
                 <Download className="w-4 h-4" />
                 Export
               </Button>
-              <Button
-                onClick={() => console.log('Saved:', formData)}
-                variant="outline"
-                className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
-              >
-                <Save className="w-4 h-4" />
-                Save Draft
-              </Button>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-sm font-medium text-gray-500">
@@ -554,7 +594,7 @@ const AIUseCaseTool = () => {
               {currentStep === steps.length ? (
                 <Button
                   onClick={handleGoToPipeline}
-                  className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white"
+                  className="flex items-center gap-2 bg-[#10b981] hover:bg-[#059669] text-white"
                 >
                   Go to Pipeline
                   <ChevronRight className="w-4 h-4" />
@@ -562,7 +602,7 @@ const AIUseCaseTool = () => {
               ) : (
                 <Button
                   onClick={() => setCurrentStep(prev => prev < steps.length ? prev + 1 : prev)}
-                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+                  className="flex items-center gap-2 bg-[#10b981] hover:bg-[#059669] text-white"
                 >
                   Next
                   <ChevronRight className="w-4 h-4" />
