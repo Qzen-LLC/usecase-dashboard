@@ -5,6 +5,12 @@ import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X } from 'lucid
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 const stages = [
   { id: 'discovery', title: 'Discovery', color: 'bg-gray-100', textColor: 'text-gray-700' },
@@ -83,7 +89,7 @@ const Dashboard = () => {
         const mapped = (data || []).map((uc: any) => ({
           ...uc,
           stage: 'discovery', // All start in discovery
-          priority: 'medium', // You can adjust this logic
+          priority: uc.priority, // Directly use value from DB, no default
           owner: uc.primaryStakeholders?.[0] || 'Unknown',
           lastUpdated: uc.updatedAt
             ? new Date(uc.updatedAt).toLocaleDateString()
@@ -122,13 +128,28 @@ const Dashboard = () => {
   const getOverallScore = (scores: { operational: number, productivity: number, revenue: number }) =>
     ((scores.operational + scores.productivity + scores.revenue) / 3).toFixed(1);
 
+  // Handler to update the stage of a use case
+  const handleMoveToStage = (useCaseId: string, newStage: string) => {
+    setUseCases(prev =>
+      prev.map(uc =>
+        uc.id === useCaseId ? { ...uc, stage: newStage } : uc
+      )
+    );
+    setSelectedUseCase(prev =>
+      prev ? { ...prev, stage: newStage } : prev
+    );
+    // TODO: Optionally call API to persist the change
+  };
+
   // Modal for use case details
   const UseCaseDetailModal = ({ useCase, onClose }: { useCase: UseCase, onClose: () => void }) => {
     if (!useCase) return null;
+    const availableStages = stages.filter(s => s.id !== useCase.stage);
+
     return (
       <div className="fixed inset-0 bg-white/50 backdrop-blur-xs flex items-center justify-center z-50">
-
         <div className="bg-white rounded-xl max-w-2xl w-full p-8 relative shadow-2xl">
+          {/* Remove dropdown from top right, keep only close button */}
           <button
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
             onClick={onClose}
@@ -214,7 +235,24 @@ const Dashboard = () => {
           {/* Actions */}
           <div className="flex justify-end gap-3 mt-6">
             <Button className="bg-blue-600 hover:bg-blue-700 text-white">Edit Use Case</Button>
-            <Button className="bg-green-600 hover:bg-green-700 text-white">Move to Next Stage</Button>
+            {/* Move dropdown here */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="bg-[#a259e6] text-white px-4 py-2 rounded-lg font-semibold shadow hover:bg-[#5b5be6] transition">
+                  Move to Stage
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {availableStages.map(stage => (
+                  <DropdownMenuItem
+                    key={stage.id}
+                    onSelect={() => handleMoveToStage(useCase.id, stage.id)}
+                  >
+                    {stage.title}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
