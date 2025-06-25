@@ -75,7 +75,11 @@ const Dashboard = () => {
   const [selectedUseCase, setSelectedUseCase] = useState<UseCase | null>(null);
   const router = useRouter();
 
-  // Fetch use cases from API
+  const handleEdit = (id: string) => {
+    router.push(`/edit-usecase/${id}`);
+  }
+
+  // Fetch use case s from API
   useEffect(() => {
     const fetchUseCases = async () => {
       try {
@@ -138,6 +142,7 @@ const Dashboard = () => {
     setSelectedUseCase(prev =>
       prev ? { ...prev, stage: newStage } : prev
     );
+    setSelectedUseCase(null)
     // TODO: Optionally call API to persist the change
   };
 
@@ -234,7 +239,7 @@ const Dashboard = () => {
           )}
           {/* Actions */}
           <div className="flex justify-end gap-3 mt-6">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">Edit Use Case</Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => {handleEdit(useCase.id as string)}}>Edit Use Case</Button>
             {/* Move dropdown here */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -302,7 +307,7 @@ const Dashboard = () => {
             </select>
             <Button
               className="bg-[#5be6b9] hover:bg-[#3ad29f] text-black px-5 py-2 rounded-lg shadow-md"
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/new-usecase')}
             >
               <Plus className="w-5 h-5 mr-2" />
               New Use Case
