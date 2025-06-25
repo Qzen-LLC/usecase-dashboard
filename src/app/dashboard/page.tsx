@@ -94,7 +94,7 @@ const Dashboard = () => {
         // Add default frontend fields
         const mapped = (data || []).map((uc: any) => ({
           ...uc,
-          stage: 'discovery', // All start in discovery
+          stage: uc.stage, // All start in discovery
           priority: uc.priority, // Directly use value from DB, no default
           owner: uc.primaryStakeholders?.[0] || 'Unknown',
           lastUpdated: uc.updatedAt
@@ -358,10 +358,29 @@ const Dashboard = () => {
                   key={stage.id}
                   className="w-96 min-h-[350px] bg-gradient-to-b from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] bg-opacity-10 rounded-2xl p-5 flex flex-col shadow-lg flex-grow max-w-full sm:w-96 border border-gray-100 transition hover:shadow-xl"
                   onDragOver={e => e.preventDefault()}
-                  onDrop={e => {
-                    const useCaseId = e.dataTransfer.getData('useCaseId');
-                    setUseCases(prev => prev.map(uc => uc.id === useCaseId ? { ...uc, stage: stage.id } : uc));
-                  }}
+                  onDrop={async e => {
+  const useCaseId = e.dataTransfer.getData('useCaseId');
+
+  // Update UI immediately
+  setUseCases(prev => prev.map(uc =>
+    uc.id === useCaseId ? { ...uc, stage: stage.id } : uc
+  ));
+
+  // Make DB update call
+  try {
+    await fetch('/api/update-stage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        useCaseId,
+        newStage: stage.id
+      })
+    });
+  } catch (error) {
+    console.error('Error updating stage:', error);
+  }
+}}
+
                 >
                   <div className="flex items-center justify-between mb-5">
                     <h3 className="font-semibold text-base text-white tracking-tight">{stage.title}</h3>
