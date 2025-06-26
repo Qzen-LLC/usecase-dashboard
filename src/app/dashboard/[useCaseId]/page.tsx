@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   Database,
   TrendingUp,
@@ -30,6 +31,7 @@ interface UseCase {
 }
 
 export default function AssessmentPage() {
+  const router = useRouter();
   const params = useParams();
   const useCaseId = params.useCaseId as string;
   const [useCase, setUseCase] = useState<UseCase | null>(null);
@@ -58,6 +60,9 @@ export default function AssessmentPage() {
   const handleNext = () => {
     if (!isLastStep) {
       setCurrentStep(prev => prev + 1);
+    }
+    else {
+      router.push(`/dashboard/${useCaseId}/assess/financial-dashboard`);
     }
   };
 
@@ -146,8 +151,8 @@ export default function AssessmentPage() {
         </button>
 
         <button
-          className={`flex items-center px-4 py-2 rounded-md ${isLastStep ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-          disabled={isLastStep}
+          className={`flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700`}
+          // disabled={isLastStep}
           onClick={handleNext}
         >
           Next
