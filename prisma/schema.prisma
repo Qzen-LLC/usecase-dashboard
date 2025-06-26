@@ -15,7 +15,6 @@ model UseCase {
   proposedAISolution       String
   currentState             String
   desiredState             String
-  businessFunction         String
   primaryStakeholders      String[]
   secondaryStakeholders    String[]
   successCriteria          String[]
