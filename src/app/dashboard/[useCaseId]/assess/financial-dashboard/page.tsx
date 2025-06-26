@@ -56,7 +56,7 @@ interface FinOpsMonth {
   cumCost?: number;
   totalLifetimeValue?: number;
   netValue?: number;
-  roi?: number;
+  ROI?: number;
   monthlyProfit?: number;
 }
 
@@ -185,6 +185,7 @@ const FinancialDashboard = () => {
       const devCost = selectedIdx === 0 ? Number(finopsData[0]?.devCost || initialDevCost) : 0;
       const netValue = totalLifetimeValue - devCost - cumCost;
       const roi = (devCost + cumCost) > 0 ? totalLifetimeValue / (devCost + cumCost) : 0;
+      const safeROI = isNaN(roi) || roi === undefined ? 0 : roi;
       const monthlyProfit = netValue - prevNetValue;
       const monthData = {
         ...finopsData[selectedIdx],
@@ -193,7 +194,7 @@ const FinancialDashboard = () => {
         cumCost,
         totalLifetimeValue,
         netValue,
-        roi,
+        ROI: safeROI,
         monthlyProfit,
       };
       const res = await fetch('/api/update-finops', {
@@ -219,6 +220,7 @@ const FinancialDashboard = () => {
       const devCost = idx === 0 ? Number(row.devCost || 0) : 0;
       const netValue = totalLifetimeValue - devCost - cumCost;
       const roi = (devCost + cumCost) > 0 ? totalLifetimeValue / (devCost + cumCost) : 0;
+      const safeROI = isNaN(roi) || roi === undefined ? 0 : roi;
       const monthlyProfit = netValue - prevNetValue;
       prevNetValue = netValue;
       return {
@@ -227,7 +229,7 @@ const FinancialDashboard = () => {
         cumCost,
         totalLifetimeValue,
         netValue,
-        roi,
+        ROI: safeROI,
         monthlyProfit
       };
     });
@@ -239,7 +241,7 @@ const FinancialDashboard = () => {
     const last = rows[rows.length - 1] || {};
     const totalInvestment = (rows[0]?.devCost ?? 0) + (last.cumCost ?? 0);
     const totalValue = last.totalLifetimeValue ?? 0;
-    const netROI = (last.roi ?? 0);
+    const netROI = (last.ROI ?? 0);
     const payback = getPaybackPeriod(rows);
     return {
       totalInvestment,
@@ -310,7 +312,7 @@ const FinancialDashboard = () => {
       },
       {
         label: 'ROI',
-        data: rows.map(r => r.roi ?? 0),
+        data: rows.map(r => r.ROI ?? 0),
         borderColor: '#10b981',
         backgroundColor: 'rgba(16,185,129,0.1)',
         yAxisID: 'y1',
