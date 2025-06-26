@@ -34,4 +34,23 @@ model UseCase {
   updatedAt                DateTime @updatedAt
   priority                 String?
   stage                    String?
+  finopsData               FinOps[]
 }
+
+model FinOps {
+  monthYear                String    
+  useCaseId                String
+  devCost                  Float
+  infraCost                Float
+  apiCost                  Float
+  opCost                   Float
+  cumCost                  Float
+  valueGenerated           Float
+  ROI                      Float
+  netValue                 Float
+  monthlyProfit            Float
+  totalLifetimeValue       Float
+  useCase                  UseCase @relation(fields: [useCaseId], references: [id])
+  @@id([monthYear, useCaseId])
+}
+
