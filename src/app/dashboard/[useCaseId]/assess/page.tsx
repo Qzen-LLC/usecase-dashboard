@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import TechnicalFeasibility from '@/components/TechnicalFeasibility';
+import EthicalImpact from '@/components/EthicalImpact';
+import RiskAssessment from '@/components/RiskAssessment';
 import {
   TrendingUp,
   Shield,
@@ -130,7 +132,11 @@ export default function AssessmentPage() {
       <div className="flex-1 px-8 py-10 bg-white">
         {currentStep === 1 ? (
           <TechnicalFeasibility />
-        ) : (
+        ) : currentStep === 3 ? (
+    <EthicalImpact />
+  ) : (
+    currentStep === 4 ? (
+    <RiskAssessment /> ):
           <div className="text-gray-600 text-lg font-medium">
             You are on <strong>{assessmentSteps[currentStep - 1].title}</strong> step.
           </div>

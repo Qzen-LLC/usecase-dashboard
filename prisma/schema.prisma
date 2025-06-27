@@ -34,30 +34,30 @@ model UseCase {
   priority                 String?
   stage                    String?
   businessFunction         String
-  finopsData               FinOps[]
-  assessData               Assess[]
+  assessData               Assess?
+  finopsData               FinOps?
 }
 
-model FinOps {   
-  useCaseId                String   @id
-  useCase                  UseCase  @relation(fields: [useCaseId], references: [id])
-  devCostBase              Float
-  infraCostBase            Float
-  apiCostBase              Float
-  opCostBase               Float
-  valueBase                Float
-  valueGrowthRate          Float
-  cumOpCost                Float
-  totalInvestment          Float
-  cumValue                 Float
-  netValue                 Float
-  ROI                      Float  
+model FinOps {
+  useCaseId       String  @id
+  ROI             Float
+  netValue        Float
+  apiCostBase     Float
+  cumOpCost       Float
+  cumValue        Float
+  devCostBase     Float
+  infraCostBase   Float
+  opCostBase      Float
+  totalInvestment Float
+  valueBase       Float
+  valueGrowthRate Float
+  useCase         UseCase @relation(fields: [useCaseId], references: [id])
 }
 
 model Assess {
-  useCaseId                String @id
-  useCase                  UseCase @relation(fields: [useCaseId], references: [id])
-  stepsData                Json
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt 
+  useCaseId String   @id
+  createdAt DateTime @default(now())
+  stepsData Json
+  updatedAt DateTime @updatedAt
+  useCase   UseCase  @relation(fields: [useCaseId], references: [id])
 }
