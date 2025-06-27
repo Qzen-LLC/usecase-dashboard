@@ -1,8 +1,30 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import isEqual from 'lodash.isequal';
 import { Checkbox } from '@/components/ui/checkbox';
 
-export default function EthicalImpactAssessment() {
+
+type Props = {
+  onChange?: (data: {
+    biasFairness: {
+      historicalBias: boolean;
+      demographicGaps: boolean;
+      geographicBias: boolean;
+      selectionBias: boolean;
+      confirmationBias: boolean;
+      temporalBias: boolean;
+    };
+    privacySecurity: {
+      dataMinimization: boolean;
+      consentManagement: boolean;
+      dataAnonymization: boolean;
+    };
+  }) => void;
+};
+
+
+export default function EthicalImpact({ onChange }: Props) {
+  const lastSent = useRef<any>(null);
   const [biasFairness, setBiasFairness] = useState({
     historicalBias: false,
     demographicGaps: false,
@@ -12,11 +34,26 @@ export default function EthicalImpactAssessment() {
     temporalBias: false,
   });
 
+
   const [privacySecurity, setPrivacySecurity] = useState({
     dataMinimization: false,
     consentManagement: false,
     dataAnonymization: false,
   });
+
+
+  useEffect(() => {
+    const currentData = {
+      biasFairness,
+      privacySecurity,
+    };
+ 
+    if (onChange && !isEqual(currentData, lastSent.current)) {
+      onChange(currentData);
+      lastSent.current = currentData;
+    }
+  }, [biasFairness, privacySecurity, onChange]);
+
 
   return (
     <div className="space-y-8">
@@ -26,6 +63,7 @@ export default function EthicalImpactAssessment() {
           Evaluate potential ethical implications and ensure responsible AI implementation.
         </div>
       </div>
+
 
       {/* Bias and Fairness */}
       <div className="space-y-4">
@@ -92,6 +130,7 @@ export default function EthicalImpactAssessment() {
             </div>
           </div>
         </div>
+
 
         {/* Privacy and Security */}
         <div>

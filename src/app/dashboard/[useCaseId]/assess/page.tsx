@@ -85,7 +85,12 @@ export default function AssessmentPage() {
   const [error, setError] = useState("");
   const [currentStep, setCurrentStep] = useState(1);
   const [technicalFeasibility, setTechnicalFeasibility] = useState(null);
-  const [assessData, setAssessData] = useState(null);
+  const [assessData, setAssessData] = useState({});
+  const [ethicalImpact, setEthicalImpact] = useState(null);
+  const handleEthicalChange = (updatedData: any) => {
+    setEthicalImpact(updatedData);
+    console.log("Received from child:", ethicalImpact);
+  };
   const handleFeasibilityChange = (updatedData: any) => {
     setTechnicalFeasibility(updatedData);
     console.log("Received from child:", technicalFeasibility);
@@ -110,7 +115,10 @@ export default function AssessmentPage() {
   const isLastStep = currentStep === assessmentSteps.length;
   
   const handleSave = async () => {
-    const newData =   technicalFeasibility;
+    console.log("technicalFeasibility:", technicalFeasibility);
+    console.log("ethicalImpact:", ethicalImpact);
+   const newData =   { technicalFeasibility, ethicalImpact };
+   console.log(newData);
    setAssessData(newData);   
    const res = await fetch("/api/post-stepdata", {
     method: "POST",
@@ -198,7 +206,7 @@ export default function AssessmentPage() {
         ) : currentStep === 2 ? (
           <BusinessFeasibility />
         ) : currentStep === 3 ? (
-          <EthicalImpact />
+          <EthicalImpact onChange={handleEthicalChange} />
         ) : currentStep === 4 ? (
           <RiskAssessment /> 
         ): currentStep === 5 ? (
