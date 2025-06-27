@@ -34,8 +34,8 @@ model UseCase {
   priority                 String?
   stage                    String?
   businessFunction         String
-  Assess                   Assess?
-  finopsData               FinOps?
+  finopsData               FinOps[]
+  assessData               Assess[]
 }
 
 model FinOps {
