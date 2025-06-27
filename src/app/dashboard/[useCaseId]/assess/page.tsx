@@ -4,6 +4,8 @@ import { useParams, useRouter } from "next/navigation";
 import TechnicalFeasibility from '@/components/TechnicalFeasibility';
 import EthicalImpact from '@/components/EthicalImpact';
 import RiskAssessment from '@/components/RiskAssessment';
+import BusinessFeasibility from "@/components/BusinessFeasibility";
+import BudgetPlanning from "@/components/BudgetPlanning";
 import {
   TrendingUp,
   Shield,
@@ -14,6 +16,7 @@ import {
   ChevronRight,
   ChevronLeft,
 } from "lucide-react";
+import RoadmapPosition from "@/components/RoadmapPosition";
 
 const assessmentSteps = [
   { id: 1, title: "Technical Feasibility" },
@@ -21,8 +24,8 @@ const assessmentSteps = [
   { id: 3, title: "Ethical Impact" },
   { id: 4, title: "Risk Assessment" },
   { id: 5, title: "Data Readiness" },
-  { id: 6, title: "Budget Planning" },
-  { id: 7, title: "Roadmap Position" },
+  { id: 6, title: "Roadmap Position" },
+  { id: 7, title: "Budget Planning" },
 ];
 
 interface UseCase {
@@ -132,11 +135,18 @@ export default function AssessmentPage() {
       <div className="flex-1 px-8 py-10 bg-white">
         {currentStep === 1 ? (
           <TechnicalFeasibility />
+        ) : currentStep === 2 ? (
+          <BusinessFeasibility />
         ) : currentStep === 3 ? (
-    <EthicalImpact />
-  ) : (
-    currentStep === 4 ? (
-    <RiskAssessment /> ):
+          <EthicalImpact />
+        ) : currentStep === 4 ? (
+          <RiskAssessment /> 
+        ) : currentStep === 6 ? (
+          <RoadmapPosition />
+        ) : currentStep === 7 ? (
+          <BudgetPlanning />
+        ) :
+         (
           <div className="text-gray-600 text-lg font-medium">
             You are on <strong>{assessmentSteps[currentStep - 1].title}</strong> step.
           </div>
