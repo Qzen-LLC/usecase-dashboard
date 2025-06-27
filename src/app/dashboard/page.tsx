@@ -421,6 +421,9 @@ const Dashboard = () => {
                           <button
                             className="mt-2 px-3 py-1 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white text-xs font-semibold rounded-full shadow hover:opacity-90 transition"
                             type="button"
+                            onClick={() => {
+                              router.push(`/dashboard/${useCase.id}/assess`)
+                            }}
                           >
                             Assess
                           </button>
