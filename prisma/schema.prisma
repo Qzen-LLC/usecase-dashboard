@@ -33,23 +33,31 @@ model UseCase {
   updatedAt                DateTime @updatedAt
   priority                 String?
   stage                    String?
-  finopsData               FinOps[]
+  businessFunction         String
+  Assess                   Assess?
+  finopsData               FinOps?
 }
 
 model FinOps {
-  monthYear                String    
-  useCaseId                String
-  devCost                  Float
-  infraCost                Float
-  apiCost                  Float
-  opCost                   Float
-  cumCost                  Float
-  valueGenerated           Float
-  ROI                      Float
-  netValue                 Float
-  monthlyProfit            Float
-  totalLifetimeValue       Float
-  useCase                  UseCase @relation(fields: [useCaseId], references: [id])
-  @@id([monthYear, useCaseId])
+  useCaseId       String  @id
+  ROI             Float
+  netValue        Float
+  apiCostBase     Float
+  cumOpCost       Float
+  cumValue        Float
+  devCostBase     Float
+  infraCostBase   Float
+  opCostBase      Float
+  totalInvestment Float
+  valueBase       Float
+  valueGrowthRate Float
+  useCase         UseCase @relation(fields: [useCaseId], references: [id])
 }
 
+model Assess {
+  useCaseId String   @id
+  createdAt DateTime @default(now())
+  stepsData Json
+  updatedAt DateTime
+  UseCase   UseCase  @relation(fields: [useCaseId], references: [id])
+}

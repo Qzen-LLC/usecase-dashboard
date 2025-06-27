@@ -1,58 +1,52 @@
 import { prismaClient } from "@/utils/db";
 import { NextResponse } from "next/server";
 
-
 export async function POST(req: Request) {
     const body = await req.json();
-    const {           
-        monthYear,                  
-        useCaseId,               
-        devCost,                 
-        infraCost,               
-        apiCost,                 
-        opCost,                  
-        cumCost,                  
-        valueGenerated,
+    const {
+        useCaseId,
         ROI,
         netValue,
-        monthlyProfit,
-        totalLifetimeValue,        
-        }  = body;
+        apiCostBase,
+        cumOpCost,
+        cumValue,
+        devCostBase,
+        infraCostBase,
+        opCostBase,
+        totalInvestment,
+        valueBase,
+        valueGrowthRate,
+    } = body;
 
     const res = await prismaClient.finOps.upsert({
-        where: {
-            monthYear_useCaseId: {
-                monthYear,
-                useCaseId,
-            },
-        },
-        update: {   
-            devCost,                 
-            infraCost,               
-            apiCost,                 
-            opCost,                  
-            cumCost,                  
-            valueGenerated,
+        where: { useCaseId },
+        update: {
             ROI,
             netValue,
-            monthlyProfit,
-            totalLifetimeValue,
+            apiCostBase,
+            cumOpCost,
+            cumValue,
+            devCostBase,
+            infraCostBase,
+            opCostBase,
+            totalInvestment,
+            valueBase,
+            valueGrowthRate,
         },
         create: {
-            monthYear,
             useCaseId,
-            devCost,                 
-            infraCost,               
-            apiCost,                 
-            opCost,                  
-            cumCost,                  
-            valueGenerated,
             ROI,
             netValue,
-            monthlyProfit,
-            totalLifetimeValue,
+            apiCostBase,
+            cumOpCost,
+            cumValue,
+            devCostBase,
+            infraCostBase,
+            opCostBase,
+            totalInvestment,
+            valueBase,
+            valueGrowthRate,
         },
     });
-    return NextResponse.json({success: true});
-
+    return NextResponse.json({ success: true });
 }

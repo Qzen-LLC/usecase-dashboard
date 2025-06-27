@@ -29,6 +29,17 @@ interface UseCase {
   owner: string;
 }
 
+const MONTHS = [
+  'Jan 2025', 'Feb 2025', 'Mar 2025', 'Apr 2025', 'May 2025', 'Jun 2025'
+];
+
+const defaultFinOps = { apiCost: 0, infraCost: 0, opCost: 0, valueGenerated: 0 };
+
+// Helper to normalize month keys (e.g., 'Jan 2025' <-> 'Jan2025')
+function normalizeMonthKey(month: string) {
+  return month.replace(' ', '');
+}
+
 export default function AssessmentPage() {
   const params = useParams();
   const useCaseId = params.useCaseId as string;
@@ -36,6 +47,10 @@ export default function AssessmentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
+  const [finops, setFinops] = useState<{ [month: string]: any }>({});
+  const [selectedMonth, setSelectedMonth] = useState(MONTHS[0]);
+  const [finopsLoading, setFinopsLoading] = useState(false);
+  const [finopsAlert, setFinopsAlert] = useState('');
 
   useEffect(() => {
     if (!useCaseId) return;
@@ -49,6 +64,28 @@ export default function AssessmentPage() {
       .catch(() => {
         setError('Failed to load use case');
         setLoading(false);
+      });
+  }, [useCaseId]);
+
+  useEffect(() => {
+    if (!useCaseId) return;
+    setFinopsLoading(true);
+    fetch(`/api/get-finops?id=${useCaseId}`)
+      .then(res => res.json())
+      .then((data: any[]) => {
+        console.log('Fetched finops:', data);
+        const byMonth: { [month: string]: any } = {};
+        data.forEach((row: any) => {
+          const key = normalizeMonthKey(row.monthYear);
+          byMonth[key] = row;
+        });
+        console.log('Mapped byMonth:', byMonth);
+        setFinops(byMonth);
+        setFinopsLoading(false);
+      })
+      .catch(() => {
+        setFinops({});
+        setFinopsLoading(false);
       });
   }, [useCaseId]);
 
@@ -66,6 +103,52 @@ export default function AssessmentPage() {
       setCurrentStep(prev => prev - 1);
     }
   };
+
+  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const month = e.target.value;
+    setSelectedMonth(month);
+    const idx = MONTHS.indexOf(month);
+    for (let i = 0; i < idx; i++) {
+      if (!finops[normalizeMonthKey(MONTHS[i])]) {
+        setFinopsAlert('Please fill in the data for all previous months before proceeding. The graph requires continuous data.');
+        return;
+      }
+    }
+    setFinopsAlert('');
+  };
+
+  const handleFinopsFieldChange = (field: string, value: number) => {
+    setFinops(prev => ({
+      ...prev,
+      [normalizeMonthKey(selectedMonth)]: {
+        ...((prev[normalizeMonthKey(selectedMonth)]) || { ...defaultFinOps, monthYear: normalizeMonthKey(selectedMonth) }),
+        [field]: value,
+        monthYear: normalizeMonthKey(selectedMonth),
+      }
+    }));
+  };
+
+  const handleFinopsSave = async () => {
+    setFinopsLoading(true);
+    const data = finops[normalizeMonthKey(selectedMonth)] || { ...defaultFinOps, monthYear: normalizeMonthKey(selectedMonth) };
+    try {
+      await fetch('/api/update-finops', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ useCaseId, ...data })
+      });
+      setFinopsAlert('Saved!');
+    } catch {
+      setFinopsAlert('Failed to save.');
+    }
+    setFinopsLoading(false);
+  };
+
+  // Always print debug logs on every render
+  console.log('currentStep:', currentStep);
+  console.log('All finops keys:', Object.keys(finops));
+  console.log('normalizeMonthKey(selectedMonth):', normalizeMonthKey(selectedMonth));
+  console.log('Current finops for', selectedMonth, finops[normalizeMonthKey(selectedMonth)]);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-lg text-gray-500">Loading...</div>;
@@ -128,6 +211,84 @@ export default function AssessmentPage() {
           {/* Replace this with form for each step */}
           You are on <strong>{assessmentSteps[currentStep - 1].title}</strong> step.
         </div>
+        {/* Budget Planning Step (step 6) */}
+        {currentStep === 6 && (
+          <div className="mt-8 p-6 rounded-xl bg-gradient-to-br from-[#f5eaff] to-[#ffeafd] shadow-lg">
+            <div className="mb-4">
+              <label className="font-semibold mr-2">Select Month:</label>
+              <select
+                value={selectedMonth}
+                onChange={handleMonthChange}
+                className="border rounded px-3 py-1"
+                disabled={finopsLoading}
+              >
+                {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            {finopsAlert && <div className="mb-2 text-red-500 font-medium">{finopsAlert}</div>}
+            <div className="bg-white rounded-xl shadow border p-4 mb-4">
+              <table className="min-w-full text-base">
+                <thead>
+                  <tr className="bg-gradient-to-r from-[#e9eafc] via-[#f5eaff] to-[#ffeafd]">
+                    <th className="px-6 py-3 text-left font-bold text-[#23235b]">API Cost</th>
+                    <th className="px-6 py-3 text-left font-bold text-[#23235b]">Infra Cost</th>
+                    <th className="px-6 py-3 text-left font-bold text-[#23235b]">Operations Cost</th>
+                    <th className="px-6 py-3 text-left font-bold text-[#23235b]">Value Generated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="bg-white">
+                    <td className="px-6 py-4">
+                      <input
+                        type="number"
+                        value={finops[normalizeMonthKey(selectedMonth)]?.apiCost ?? 0}
+                        min={0}
+                        onChange={e => handleFinopsFieldChange('apiCost', Number(e.target.value))}
+                        disabled={finopsLoading}
+                        className="w-28 text-base border border-gray-200 rounded-lg focus:border-[#5b5be6] focus:ring-[#5b5be6]"
+                      />
+                    </td>
+                    <td className="px-6 py-4">
+                      <input
+                        type="number"
+                        value={finops[normalizeMonthKey(selectedMonth)]?.infraCost ?? 0}
+                        min={0}
+                        onChange={e => handleFinopsFieldChange('infraCost', Number(e.target.value))}
+                        disabled={finopsLoading}
+                        className="w-28 text-base border border-gray-200 rounded-lg focus:border-[#5b5be6] focus:ring-[#5b5be6]"
+                      />
+                    </td>
+                    <td className="px-6 py-4">
+                      <input
+                        type="number"
+                        value={finops[normalizeMonthKey(selectedMonth)]?.opCost ?? 0}
+                        min={0}
+                        onChange={e => handleFinopsFieldChange('opCost', Number(e.target.value))}
+                        disabled={finopsLoading}
+                        className="w-28 text-base border border-gray-200 rounded-lg focus:border-[#5b5be6] focus:ring-[#5b5be6]"
+                      />
+                    </td>
+                    <td className="px-6 py-4">
+                      <input
+                        type="number"
+                        value={finops[normalizeMonthKey(selectedMonth)]?.valueGenerated ?? 0}
+                        min={0}
+                        onChange={e => handleFinopsFieldChange('valueGenerated', Number(e.target.value))}
+                        disabled={finopsLoading}
+                        className="w-28 text-base border border-gray-200 rounded-lg focus:border-[#5b5be6] focus:ring-[#5b5be6]"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <button
+                className="mt-6 w-full bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] hover:from-[#ff4fa3] hover:to-[#8f4fff] text-white px-6 py-3 rounded-xl shadow-lg font-semibold text-lg transition"
+                onClick={handleFinopsSave}
+                disabled={finopsLoading}
+              >Save</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Bottom Navigation Buttons */}
