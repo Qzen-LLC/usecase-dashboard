@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 const statusOptions = ["Approved", "Rejected", "Pending"];
 const businessFunctions = ["Function A", "Function B", "Function C"];
@@ -16,6 +16,7 @@ const finalQualifications = [
 export default function ApprovalsPage() {
   const params = useParams();
   const useCaseId = params.useCaseId as string;
+  const router = useRouter();
   const [form, setForm] = useState({
     governanceName: "",
     governanceStatus: "",
@@ -66,6 +67,11 @@ export default function ApprovalsPage() {
       setTimeout(() => setError("") , 3000);
     }
     setSaving(false);
+  };
+
+  const handleComplete = async () => {
+    await handleSave();
+    router.push(`/dashboard/${useCaseId}`);
   };
 
   return (
@@ -128,7 +134,7 @@ export default function ApprovalsPage() {
             <Input placeholder="Comments" value={form.businessComment} onChange={e => setForm(f => ({ ...f, businessComment: e.target.value }))} />
           </Card>
         </div>
-        <Button className="mt-6 w-full bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white px-6 py-3 rounded-xl shadow-lg font-semibold text-lg transition" onClick={handleSave} disabled={saving}>Complete Assessment</Button>
+        <Button className="mt-6 w-full bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white px-6 py-3 rounded-xl shadow-lg font-semibold text-lg transition" onClick={handleComplete} disabled={saving}>Complete Assessment</Button>
       </div>
     </div>
   );
