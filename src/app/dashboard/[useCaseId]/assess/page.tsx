@@ -35,6 +35,47 @@ interface UseCase {
   owner: string;
 }
 
+// const assessmentData = {
+//   "technicalFeasibility": {
+//     "dataAvailability": "",
+//     "technicalComplexity": "",
+//     "infrastructureReadiness": "",
+//     "teamExpertise": "",
+//     "integrationRequirements": "",
+//     "aiPoweredRecommendations": "",
+//   },
+//   "businessFeasibility": {
+//     "strategicAlignment": "",
+//     "marketOpportunity": "",
+//     "stakeholderReadiness": [],
+//   },
+//   "ethicalImpact": {
+//     "biasAndFairnessAnalysis": [],
+//     "privacyAndSecurity": [],
+//   },
+//   "riskAssessment": {
+//     "technicalRisks": "",
+//     "businessRisks": "",
+//   },
+//   "dataReadiness": {
+//     "todo": "",
+//   },
+//     "roadmapPosition": {
+//     "priorityLevel": "",
+//     "recommendedTimeline": "",
+//     "dependencies": [],
+//     "successMetrics": "",
+//     "roadmapRecommendation": ""
+//   },
+//     "budgetPlanning": {
+//     "personnel": "",
+//     "infraAndTools": "",
+//     "externalServices": "",
+//     "totalBudget": "",
+//   },
+// }
+
+
 export default function AssessmentPage() {
   const router = useRouter();
   const params = useParams();
@@ -43,6 +84,12 @@ export default function AssessmentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentStep, setCurrentStep] = useState(1);
+  const [technicalFeasibility, setTechnicalFeasibility] = useState(null);
+  const [assessData, setAssessData] = useState(null);
+  const handleFeasibilityChange = (updatedData: any) => {
+    setTechnicalFeasibility(updatedData);
+    console.log("Received from child:", technicalFeasibility);
+  };
 
   useEffect(() => {
     if (!useCaseId) return;
@@ -61,6 +108,18 @@ export default function AssessmentPage() {
 
   const isFirstStep = currentStep === 1;
   const isLastStep = currentStep === assessmentSteps.length;
+  
+  const handleSave = async () => {
+    const newData =   technicalFeasibility;
+   setAssessData(newData);   
+   const res = await fetch("/api/post-stepdata", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({useCaseId, assessData}),
+   });
+}
 
   const handleNext = () => {
     if (!isLastStep) {
@@ -135,7 +194,7 @@ export default function AssessmentPage() {
       {/* Main Content Area */}
       <div className="flex-1 px-8 py-10 bg-white">
         {currentStep === 1 ? (
-          <TechnicalFeasibility />
+          <TechnicalFeasibility onChange={handleFeasibilityChange} />
         ) : currentStep === 2 ? (
           <BusinessFeasibility />
         ) : currentStep === 3 ? (
@@ -167,7 +226,9 @@ export default function AssessmentPage() {
           Previous
         </button>
 
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold">
+        <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold"
+                onClick={handleSave}
+        >
           Save Progress
         </button>
 

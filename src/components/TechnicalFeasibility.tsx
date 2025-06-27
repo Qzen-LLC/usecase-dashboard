@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import isEqual from 'lodash.isequal';
 import {
   Select,
   SelectTrigger,
@@ -10,19 +11,53 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 
-export default function TechnicalFeasibility() {
-  const [dataAvailability, setDataAvailability] = useState("excellent");
-  const [technicalComplexity, setTechnicalComplexity] = useState(2);
+
+
+type Props = {
+  onChange?: (data: {
+    dataAvailability: string;
+    technicalComplexity: number;
+    infraReadiness: {
+      cloud: boolean;
+      mlPlatform: boolean;
+      dataPipeline: boolean;
+    };
+    teamExpertise: {
+      dataScience: boolean;
+      mlEngineering: boolean;
+    };
+    integrationReqs: string;
+  }) => void;
+};
+
+export default function TechnicalFeasibility({ onChange }: Props) {
+  const lastSent = useRef<any>(null);
+  const [dataAvailability, setDataAvailability] = useState("");
+  const [technicalComplexity, setTechnicalComplexity] = useState(0);
   const [infraReadiness, setInfraReadiness] = useState({
-    cloud: true,
+    cloud: false,
     mlPlatform: false,
     dataPipeline: false,
   });
   const [teamExpertise, setTeamExpertise] = useState({
-    dataScience: true,
-    mlEngineering: true,
+    dataScience: false,
+    mlEngineering: false,
   });
   const [integrationReqs, setIntegrationReqs] = useState("");
+  useEffect(() => {
+    const currentData = {
+      dataAvailability,
+      technicalComplexity,
+      infraReadiness,
+      teamExpertise,
+      integrationReqs,
+    };
+  
+    if (onChange && !isEqual(currentData, lastSent.current)) {
+      onChange(currentData);
+      lastSent.current = currentData;
+    }
+  }, [dataAvailability, technicalComplexity, infraReadiness, teamExpertise, integrationReqs, onChange]);
 
   return (
     <div className="space-y-8">

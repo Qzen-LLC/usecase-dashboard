@@ -4,18 +4,18 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
     const {useCaseId,
-           stepsData,
+           assessData,
     } = await req.json();
     await prismaClient.assess.upsert({
         where: {
             useCaseId,
         },
         update: {
-            stepsData,
+            stepsData: assessData,
         },
         create: {
             useCaseId,
-            stepsData,
+            stepsData: assessData,
         },
     });
     return NextResponse.json({"success": "true"});
