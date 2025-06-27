@@ -17,6 +17,7 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import RoadmapPosition from "@/components/RoadmapPosition";
+import DataReadiness from "@/components/DataReadiness";
 
 const assessmentSteps = [
   { id: 1, title: "Technical Feasibility" },
@@ -141,7 +142,9 @@ export default function AssessmentPage() {
           <EthicalImpact />
         ) : currentStep === 4 ? (
           <RiskAssessment /> 
-        ) : currentStep === 6 ? (
+        ): currentStep === 5 ? (
+          <DataReadiness />  
+        ): currentStep === 6 ? (
           <RoadmapPosition />
         ) : currentStep === 7 ? (
           <BudgetPlanning />
