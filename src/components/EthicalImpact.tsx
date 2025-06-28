@@ -1,11 +1,10 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import isEqual from 'lodash.isequal';
 import { Checkbox } from '@/components/ui/checkbox';
 
-
 type Props = {
-  onChange?: (data: {
+  value: {
     biasFairness: {
       historicalBias: boolean;
       demographicGaps: boolean;
@@ -19,41 +18,23 @@ type Props = {
       consentManagement: boolean;
       dataAnonymization: boolean;
     };
-  }) => void;
+  };
+  onChange: (data: Props['value']) => void;
 };
 
+export default function EthicalImpact({ value, onChange }: Props) {
+  const lastSent = React.useRef<any>(null);
 
-export default function EthicalImpact({ onChange }: Props) {
-  const lastSent = useRef<any>(null);
-  const [biasFairness, setBiasFairness] = useState({
-    historicalBias: false,
-    demographicGaps: false,
-    geographicBias: false,
-    selectionBias: false,
-    confirmationBias: false,
-    temporalBias: false,
-  });
-
-
-  const [privacySecurity, setPrivacySecurity] = useState({
-    dataMinimization: false,
-    consentManagement: false,
-    dataAnonymization: false,
-  });
-
-
-  useEffect(() => {
+  React.useEffect(() => {
     const currentData = {
-      biasFairness,
-      privacySecurity,
+      ...value,
     };
  
     if (onChange && !isEqual(currentData, lastSent.current)) {
       onChange(currentData);
       lastSent.current = currentData;
     }
-  }, [biasFairness, privacySecurity, onChange]);
-
+  }, [value, onChange]);
 
   return (
     <div className="space-y-8">
@@ -64,7 +45,6 @@ export default function EthicalImpact({ onChange }: Props) {
         </div>
       </div>
 
-
       {/* Bias and Fairness */}
       <div className="space-y-4">
         <div>
@@ -73,27 +53,27 @@ export default function EthicalImpact({ onChange }: Props) {
             <div className="space-y-2">
               <label className="flex items-center space-x-2">
                 <Checkbox
-                  checked={biasFairness.historicalBias}
+                  checked={value.biasFairness.historicalBias}
                   onCheckedChange={(val) =>
-                    setBiasFairness((prev) => ({ ...prev, historicalBias: !!val }))
+                    onChange({ ...value, biasFairness: { ...value.biasFairness, historicalBias: !!val } } as Props['value'])
                   }
                 />
                 <span className="text-sm">Historical bias in training data</span>
               </label>
               <label className="flex items-center space-x-2">
                 <Checkbox
-                  checked={biasFairness.demographicGaps}
+                  checked={value.biasFairness.demographicGaps}
                   onCheckedChange={(val) =>
-                    setBiasFairness((prev) => ({ ...prev, demographicGaps: !!val }))
+                    onChange({ ...value, biasFairness: { ...value.biasFairness, demographicGaps: !!val } } as Props['value'])
                   }
                 />
                 <span className="text-sm">Demographic representation gaps</span>
               </label>
               <label className="flex items-center space-x-2">
                 <Checkbox
-                  checked={biasFairness.geographicBias}
+                  checked={value.biasFairness.geographicBias}
                   onCheckedChange={(val) =>
-                    setBiasFairness((prev) => ({ ...prev, geographicBias: !!val }))
+                    onChange({ ...value, biasFairness: { ...value.biasFairness, geographicBias: !!val } } as Props['value'])
                   }
                 />
                 <span className="text-sm">Geographic bias</span>
@@ -102,27 +82,27 @@ export default function EthicalImpact({ onChange }: Props) {
             <div className="space-y-2">
               <label className="flex items-center space-x-2">
                 <Checkbox
-                  checked={biasFairness.selectionBias}
+                  checked={value.biasFairness.selectionBias}
                   onCheckedChange={(val) =>
-                    setBiasFairness((prev) => ({ ...prev, selectionBias: !!val }))
+                    onChange({ ...value, biasFairness: { ...value.biasFairness, selectionBias: !!val } } as Props['value'])
                   }
                 />
                 <span className="text-sm">Selection bias</span>
               </label>
               <label className="flex items-center space-x-2">
                 <Checkbox
-                  checked={biasFairness.confirmationBias}
+                  checked={value.biasFairness.confirmationBias}
                   onCheckedChange={(val) =>
-                    setBiasFairness((prev) => ({ ...prev, confirmationBias: !!val }))
+                    onChange({ ...value, biasFairness: { ...value.biasFairness, confirmationBias: !!val } } as Props['value'])
                   }
                 />
                 <span className="text-sm">Confirmation bias</span>
               </label>
               <label className="flex items-center space-x-2">
                 <Checkbox
-                  checked={biasFairness.temporalBias}
+                  checked={value.biasFairness.temporalBias}
                   onCheckedChange={(val) =>
-                    setBiasFairness((prev) => ({ ...prev, temporalBias: !!val }))
+                    onChange({ ...value, biasFairness: { ...value.biasFairness, temporalBias: !!val } } as Props['value'])
                   }
                 />
                 <span className="text-sm">Temporal bias</span>
@@ -131,34 +111,33 @@ export default function EthicalImpact({ onChange }: Props) {
           </div>
         </div>
 
-
         {/* Privacy and Security */}
         <div>
           <h4 className="font-semibold text-gray-800 mb-2">Privacy and Security</h4>
           <div className="space-y-2">
             <label className="flex items-center space-x-2">
               <Checkbox
-                checked={privacySecurity.dataMinimization}
+                checked={value.privacySecurity.dataMinimization}
                 onCheckedChange={(val) =>
-                  setPrivacySecurity((prev) => ({ ...prev, dataMinimization: !!val }))
+                  onChange({ ...value, privacySecurity: { ...value.privacySecurity, dataMinimization: !!val } } as Props['value'])
                 }
               />
               <span className="text-sm">Data minimization principle</span>
             </label>
             <label className="flex items-center space-x-2">
               <Checkbox
-                checked={privacySecurity.consentManagement}
+                checked={value.privacySecurity.consentManagement}
                 onCheckedChange={(val) =>
-                  setPrivacySecurity((prev) => ({ ...prev, consentManagement: !!val }))
+                  onChange({ ...value, privacySecurity: { ...value.privacySecurity, consentManagement: !!val } } as Props['value'])
                 }
               />
               <span className="text-sm">Consent management</span>
             </label>
             <label className="flex items-center space-x-2">
               <Checkbox
-                checked={privacySecurity.dataAnonymization}
+                checked={value.privacySecurity.dataAnonymization}
                 onCheckedChange={(val) =>
-                  setPrivacySecurity((prev) => ({ ...prev, dataAnonymization: !!val }))
+                  onChange({ ...value, privacySecurity: { ...value.privacySecurity, dataAnonymization: !!val } } as Props['value'])
                 }
               />
               <span className="text-sm">Data anonymization</span>

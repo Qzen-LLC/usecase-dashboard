@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import isEqual from 'lodash.isequal';
 import {
   Checkbox
@@ -105,9 +105,24 @@ const ENCRYPTION_STANDARDS = [
   "In-transit Encryption",
   "Key Management System",
 ];
+const OUTPUT_TYPES = [
+  "Predictions/Scores",
+  "Classifications",
+  "Recommendations",
+  "Generated Content",
+  "Automated Actions",
+  "Insights/Analytics",
+];
+const CONFIDENCE_SCORES = [
+  "Not Provided",
+  "Binary (Yes/No)",
+  "Percentage/Probability",
+  "Multi-level Categories",
+  "Detailed Explanations",
+];
 
 type Props = {
-  onChange?: (data: {
+  value: {
     modelTypes: string[];
     modelSizes: string[];
     deploymentModels: string[];
@@ -118,49 +133,20 @@ type Props = {
     authMethods: string[];
     encryptionStandards: string[];
     technicalComplexity: number;
-  }) => void;
+    outputTypes: string[];
+    confidenceScore: string;
+  };
+  onChange: (data: Props['value']) => void;
 };
 
-export default function TechnicalFeasibility({ onChange }: Props) {
-  const lastSent = useRef<any>(null);
-  const [technicalComplexity, setTechnicalComplexity] = useState(0);
-
-  // --- New state for technical complexity fields ---
-  const [modelTypes, setModelTypes] = useState<string[]>([]);
-  const [modelSizes, setModelSizes] = useState<string[]>([]);
-  const [deploymentModels, setDeploymentModels] = useState<string[]>([]);
-  const [cloudProviders, setCloudProviders] = useState<string[]>([]);
-  const [computeRequirements, setComputeRequirements] = useState<string[]>([]);
-  const [integrationPoints, setIntegrationPoints] = useState<string[]>([]);
-  const [apiSpecs, setApiSpecs] = useState<string[]>([]);
-  const [authMethods, setAuthMethods] = useState<string[]>([]);
-  const [encryptionStandards, setEncryptionStandards] = useState<string[]>([]);
-
-  useEffect(() => {
-    const currentData = {
-      technicalComplexity,
-      modelTypes,
-      modelSizes,
-      deploymentModels,
-      cloudProviders,
-      computeRequirements,
-      integrationPoints,
-      apiSpecs,
-      authMethods,
-      encryptionStandards,
-    };
-    if (onChange && !isEqual(currentData, lastSent.current)) {
-      onChange(currentData);
-      lastSent.current = currentData;
-    }
-  }, [technicalComplexity, modelTypes, modelSizes, deploymentModels, cloudProviders, computeRequirements, integrationPoints, apiSpecs, authMethods, encryptionStandards, onChange]);
-
-  // --- Helper for multi-select checkboxes ---
-  function handleMultiSelectChange(value: string, selected: string[], setSelected: (v: string[]) => void) {
-    if (selected.includes(value)) {
-      setSelected(selected.filter((v) => v !== value));
+export default function TechnicalFeasibility({ value, onChange }: Props) {
+  // Helper for multi-select checkboxes
+  function handleMultiSelectChange(field: keyof Props['value'], v: string) {
+    const arr = value[field] as string[];
+    if (arr.includes(v)) {
+      onChange({ ...value, [field]: arr.filter((x) => x !== v) });
     } else {
-      setSelected([...selected, value]);
+      onChange({ ...value, [field]: [...arr, v] });
     }
   }
 
@@ -186,12 +172,12 @@ export default function TechnicalFeasibility({ onChange }: Props) {
               min={1}
               max={10}
               step={1}
-              value={[technicalComplexity]}
-              onValueChange={([val]) => setTechnicalComplexity(val)}
+              value={[value.technicalComplexity]}
+              onValueChange={([val]) => onChange({ ...value, technicalComplexity: val })}
               className="w-full"
             />
             <span className="text-gray-500 text-sm ml-2">Complex</span>
-            <span className="ml-4 px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-semibold text-sm">{technicalComplexity}</span>
+            <span className="ml-4 px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-semibold text-sm">{value.technicalComplexity}</span>
           </div>
         </CardContent>
       </Card>
@@ -207,7 +193,7 @@ export default function TechnicalFeasibility({ onChange }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
             {MODEL_TYPES.map((type) => (
               <Label key={type} className="flex items-center gap-1 hover:bg-blue-50 rounded px-1 py-0.5 cursor-pointer transition">
-                <Checkbox checked={modelTypes.includes(type)} onCheckedChange={() => handleMultiSelectChange(type, modelTypes, setModelTypes)} />
+                <Checkbox checked={value.modelTypes.includes(type)} onCheckedChange={() => handleMultiSelectChange('modelTypes', type)} />
                 <span className="text-sm">{type}</span>
               </Label>
             ))}
@@ -216,7 +202,7 @@ export default function TechnicalFeasibility({ onChange }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             {MODEL_SIZES.map((size) => (
               <Label key={size} className="flex items-center gap-1 hover:bg-blue-50 rounded px-1 py-0.5 cursor-pointer transition">
-                <Checkbox checked={modelSizes.includes(size)} onCheckedChange={() => handleMultiSelectChange(size, modelSizes, setModelSizes)} />
+                <Checkbox checked={value.modelSizes.includes(size)} onCheckedChange={() => handleMultiSelectChange('modelSizes', size)} />
                 <span className="text-sm">{size}</span>
               </Label>
             ))}
@@ -235,7 +221,7 @@ export default function TechnicalFeasibility({ onChange }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
             {DEPLOYMENT_MODELS.map((model) => (
               <Label key={model} className="flex items-center gap-1 hover:bg-green-50 rounded px-1 py-0.5 cursor-pointer transition">
-                <Checkbox checked={deploymentModels.includes(model)} onCheckedChange={() => handleMultiSelectChange(model, deploymentModels, setDeploymentModels)} />
+                <Checkbox checked={value.deploymentModels.includes(model)} onCheckedChange={() => handleMultiSelectChange('deploymentModels', model)} />
                 <span className="text-sm">{model}</span>
               </Label>
             ))}
@@ -244,7 +230,7 @@ export default function TechnicalFeasibility({ onChange }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
             {CLOUD_PROVIDERS.map((provider) => (
               <Label key={provider} className="flex items-center gap-1 hover:bg-green-50 rounded px-1 py-0.5 cursor-pointer transition">
-                <Checkbox checked={cloudProviders.includes(provider)} onCheckedChange={() => handleMultiSelectChange(provider, cloudProviders, setCloudProviders)} />
+                <Checkbox checked={value.cloudProviders.includes(provider)} onCheckedChange={() => handleMultiSelectChange('cloudProviders', provider)} />
                 <span className="text-sm">{provider}</span>
               </Label>
             ))}
@@ -253,7 +239,7 @@ export default function TechnicalFeasibility({ onChange }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             {COMPUTE_REQUIREMENTS.map((req) => (
               <Label key={req} className="flex items-center gap-1 hover:bg-green-50 rounded px-1 py-0.5 cursor-pointer transition">
-                <Checkbox checked={computeRequirements.includes(req)} onCheckedChange={() => handleMultiSelectChange(req, computeRequirements, setComputeRequirements)} />
+                <Checkbox checked={value.computeRequirements.includes(req)} onCheckedChange={() => handleMultiSelectChange('computeRequirements', req)} />
                 <span className="text-sm">{req}</span>
               </Label>
             ))}
@@ -272,7 +258,7 @@ export default function TechnicalFeasibility({ onChange }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
             {INTEGRATION_POINTS.map((point) => (
               <Label key={point} className="flex items-center gap-1 hover:bg-orange-50 rounded px-1 py-0.5 cursor-pointer transition">
-                <Checkbox checked={integrationPoints.includes(point)} onCheckedChange={() => handleMultiSelectChange(point, integrationPoints, setIntegrationPoints)} />
+                <Checkbox checked={value.integrationPoints.includes(point)} onCheckedChange={() => handleMultiSelectChange('integrationPoints', point)} />
                 <span className="text-sm">{point}</span>
               </Label>
             ))}
@@ -281,7 +267,7 @@ export default function TechnicalFeasibility({ onChange }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             {API_SPECS.map((api) => (
               <Label key={api} className="flex items-center gap-1 hover:bg-orange-50 rounded px-1 py-0.5 cursor-pointer transition">
-                <Checkbox checked={apiSpecs.includes(api)} onCheckedChange={() => handleMultiSelectChange(api, apiSpecs, setApiSpecs)} />
+                <Checkbox checked={value.apiSpecs.includes(api)} onCheckedChange={() => handleMultiSelectChange('apiSpecs', api)} />
                 <span className="text-sm">{api}</span>
               </Label>
             ))}
@@ -300,7 +286,7 @@ export default function TechnicalFeasibility({ onChange }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
             {AUTH_METHODS.map((auth) => (
               <Label key={auth} className="flex items-center gap-1 hover:bg-purple-50 rounded px-1 py-0.5 cursor-pointer transition">
-                <Checkbox checked={authMethods.includes(auth)} onCheckedChange={() => handleMultiSelectChange(auth, authMethods, setAuthMethods)} />
+                <Checkbox checked={value.authMethods.includes(auth)} onCheckedChange={() => handleMultiSelectChange('authMethods', auth)} />
                 <span className="text-sm">{auth}</span>
               </Label>
             ))}
@@ -309,11 +295,39 @@ export default function TechnicalFeasibility({ onChange }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             {ENCRYPTION_STANDARDS.map((enc) => (
               <Label key={enc} className="flex items-center gap-1 hover:bg-purple-50 rounded px-1 py-0.5 cursor-pointer transition">
-                <Checkbox checked={encryptionStandards.includes(enc)} onCheckedChange={() => handleMultiSelectChange(enc, encryptionStandards, setEncryptionStandards)} />
+                <Checkbox checked={value.encryptionStandards.includes(enc)} onCheckedChange={() => handleMultiSelectChange('encryptionStandards', enc)} />
                 <span className="text-sm">{enc}</span>
               </Label>
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* AI Output Characteristics */}
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2 mb-2">
+          <Brain className="w-6 h-6 text-cyan-500" />
+          <CardTitle>AI Output Characteristics</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Label className="block font-medium mb-1">Output Type</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+            {OUTPUT_TYPES.map((type) => (
+              <Label key={type} className="flex items-center gap-1 hover:bg-cyan-50 rounded px-1 py-0.5 cursor-pointer transition">
+                <Checkbox checked={value.outputTypes.includes(type)} onCheckedChange={() => handleMultiSelectChange('outputTypes', type)} />
+                <span className="text-sm">{type}</span>
+              </Label>
+            ))}
+          </div>
+          <Label className="block font-medium mb-1">Confidence Scores</Label>
+          <RadioGroup value={value.confidenceScore} onValueChange={(newValue) => onChange({ ...value, confidenceScore: newValue })} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            {CONFIDENCE_SCORES.map((score) => (
+              <Label key={score} className="flex items-center gap-2 cursor-pointer">
+                <RadioGroupItem value={score} />
+                <span className="text-sm">{score}</span>
+              </Label>
+            ))}
+          </RadioGroup>
         </CardContent>
       </Card>
     </div>

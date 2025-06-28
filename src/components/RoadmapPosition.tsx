@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useRef } from "react";
+import React from 'react';
 import isEqual from 'lodash.isequal';
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -8,9 +8,26 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 
+const PROJECT_STAGES = [
+  "Ideation/Planning",
+  "Proof of Concept",
+  "Pilot/Testing",
+  "Production Rollout",
+  "Operational/Mature",
+];
+const TIMELINE_CONSTRAINTS = [
+  "No Specific Timeline",
+  "3-6 months",
+  "6-12 months",
+  "12-24 months",
+  "> 24 months",
+];
+
 type Props = {
-  onChange?: (data: {
+  value: {
     priority: string;
+    projectStage: string;
+    timelineConstraints: string[];
     timeline: string;
     dependencies: {
       dataPlatform: boolean;
@@ -18,32 +35,27 @@ type Props = {
       hiring: boolean;
     };
     metrics: string;
-  }) => void;
+  };
+  onChange: (data: Props['value']) => void;
 };
 
-export default function RoadmapPosition({ onChange }: Props) {
-  const lastSent = useRef<any>(null);
-  const [priority, setPriority] = useState("high");
-  const [timeline, setTimeline] = useState("q2");
-  const [dependencies, setDependencies] = useState({
-    dataPlatform: false,
-    security: false,
-    hiring: false,
-  });
-  const [metrics, setMetrics] = useState("");
+export default function RoadmapPosition({ value, onChange }: Props) {
+  const lastSent = React.useRef<any>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const currentData = {
-      priority,
-      timeline,
-      dependencies,
-      metrics,
+      priority: value.priority,
+      projectStage: value.projectStage,
+      timelineConstraints: value.timelineConstraints,
+      timeline: value.timeline,
+      dependencies: value.dependencies,
+      metrics: value.metrics,
     };
     if (onChange && !isEqual(currentData, lastSent.current)) {
       onChange(currentData);
       lastSent.current = currentData;
     }
-  }, [priority, timeline, dependencies, metrics, onChange]);
+  }, [value.priority, value.projectStage, value.timelineConstraints, value.timeline, value.dependencies, value.metrics, onChange]);
 
   return (
     <div className="space-y-6">
@@ -58,7 +70,7 @@ export default function RoadmapPosition({ onChange }: Props) {
         <div className="space-y-4">
           <div>
             <Label className="mb-2">Priority Level</Label>
-            <Select value={priority} onValueChange={setPriority}>
+            <Select value={value.priority} onValueChange={(newValue) => onChange({ ...value, priority: newValue })}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select priority" />
               </SelectTrigger>
@@ -71,8 +83,32 @@ export default function RoadmapPosition({ onChange }: Props) {
           </div>
 
           <div>
+            <Label className="mb-2">Project Stage</Label>
+            <RadioGroup value={value.projectStage} onValueChange={(newValue) => onChange({ ...value, projectStage: newValue })} className="space-y-2 mb-4">
+              {PROJECT_STAGES.map((stage) => (
+                <div key={stage} className="flex items-center">
+                  <RadioGroupItem value={stage} id={`stage-${stage}`} className="mr-2" />
+                  <Label htmlFor={`stage-${stage}`} className="text-sm">{stage}</Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
+
+          <div>
+            <Label className="mb-2">Timeline Constraints</Label>
+            <div className="flex flex-col gap-2 mb-4">
+              {TIMELINE_CONSTRAINTS.map((constraint) => (
+                <label key={constraint} className="flex items-center gap-2">
+                  <Checkbox checked={value.timelineConstraints.includes(constraint)} onCheckedChange={() => onChange({ ...value, timelineConstraints: value.timelineConstraints.includes(constraint) ? value.timelineConstraints.filter(c => c !== constraint) : [...value.timelineConstraints, constraint] })} />
+                  <span className="text-sm">{constraint}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
             <Label className="mb-2">Recommended Timeline</Label>
-            <RadioGroup value={timeline} onValueChange={setTimeline} className="space-y-2">
+            <RadioGroup value={value.timeline} onValueChange={(newValue) => onChange({ ...value, timeline: newValue })} className="space-y-2">
               <div className="flex items-center">
                 <RadioGroupItem value="q1" id="q1" className="mr-2" />
                 <Label htmlFor="q1" className="text-sm">Q1 2025 - Immediate start</Label>
@@ -92,15 +128,15 @@ export default function RoadmapPosition({ onChange }: Props) {
             <Label className="mb-2">Dependencies</Label>
             <div className="flex flex-col gap-2">
               <label className="flex items-center gap-2">
-                <Checkbox checked={dependencies.dataPlatform} onCheckedChange={val => setDependencies(d => ({ ...d, dataPlatform: !!val }))} />
+                <Checkbox checked={value.dependencies.dataPlatform} onCheckedChange={(newValue) => onChange({ ...value, dependencies: { ...value.dependencies, dataPlatform: !!newValue } })} />
                 <span className="text-sm">Data platform upgrade</span>
               </label>
               <label className="flex items-center gap-2">
-                <Checkbox checked={dependencies.security} onCheckedChange={val => setDependencies(d => ({ ...d, security: !!val }))} />
+                <Checkbox checked={value.dependencies.security} onCheckedChange={(newValue) => onChange({ ...value, dependencies: { ...value.dependencies, security: !!newValue } })} />
                 <span className="text-sm">Security framework implementation</span>
               </label>
               <label className="flex items-center gap-2">
-                <Checkbox checked={dependencies.hiring} onCheckedChange={val => setDependencies(d => ({ ...d, hiring: !!val }))} />
+                <Checkbox checked={value.dependencies.hiring} onCheckedChange={(newValue) => onChange({ ...value, dependencies: { ...value.dependencies, hiring: !!newValue } })} />
                 <span className="text-sm">Team hiring and training</span>
               </label>
             </div>
@@ -109,8 +145,8 @@ export default function RoadmapPosition({ onChange }: Props) {
           <div>
             <Label className="mb-2">Success Metrics</Label>
             <Textarea
-              value={metrics}
-              onChange={e => setMetrics(e.target.value)}
+              value={value.metrics}
+              onChange={(e) => onChange({ ...value, metrics: e.target.value })}
               placeholder="Define key performance indicators..."
               className="w-full min-w-0"
               style={{ maxWidth: '100vw' }}

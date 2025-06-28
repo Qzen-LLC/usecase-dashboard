@@ -39,46 +39,122 @@ interface UseCase {
   owner: string;
 }
 
-// const assessmentData = {
-//   "technicalFeasibility": {
-//     "dataAvailability": "",
-//     "technicalComplexity": "",
-//     "infrastructureReadiness": "",
-//     "teamExpertise": "",
-//     "integrationRequirements": "",
-//     "aiPoweredRecommendations": "",
-//   },
-//   "businessFeasibility": {
-//     "strategicAlignment": "",
-//     "marketOpportunity": "",
-//     "stakeholderReadiness": [],
-//   },
-//   "ethicalImpact": {
-//     "biasAndFairnessAnalysis": [],
-//     "privacyAndSecurity": [],
-//   },
-//   "riskAssessment": {
-//     "technicalRisks": "",
-//     "businessRisks": "",
-//   },
-//   "dataReadiness": {
-//     "todo": "",
-//   },
-//     "roadmapPosition": {
-//     "priorityLevel": "",
-//     "recommendedTimeline": "",
-//     "dependencies": [],
-//     "successMetrics": "",
-//     "roadmapRecommendation": ""
-//   },
-//     "budgetPlanning": {
-//     "personnel": "",
-//     "infraAndTools": "",
-//     "externalServices": "",
-//     "totalBudget": "",
-//   },
-// }
-
+const defaultAssessmentData = {
+  technicalFeasibility: {
+    modelTypes: [],
+    modelSizes: [],
+    deploymentModels: [],
+    cloudProviders: [],
+    computeRequirements: [],
+    integrationPoints: [],
+    apiSpecs: [],
+    authMethods: [],
+    encryptionStandards: [],
+    technicalComplexity: 0,
+    outputTypes: [],
+    confidenceScore: '',
+  },
+  businessFeasibility: {
+    strategicAlignment: 8,
+    marketOpportunity: 'large',
+    stakeholder: { exec: true, endUser: false, it: true },
+    annualSavings: '2.4M',
+    efficiencyGain: 35,
+    paybackPeriod: 8,
+    availabilityRequirement: '',
+    responseTimeRequirement: '',
+    concurrentUsers: '',
+    revenueImpactType: '',
+    estimatedFinancialImpact: '',
+    userCategories: [],
+    systemCriticality: '',
+    failureImpact: '',
+    executiveSponsorLevel: '',
+    stakeholderGroups: [],
+  },
+  ethicalImpact: {
+    biasFairness: {
+      historicalBias: false,
+      demographicGaps: false,
+      geographicBias: false,
+      selectionBias: false,
+      confirmationBias: false,
+      temporalBias: false,
+    },
+    privacySecurity: {
+      dataMinimization: false,
+      consentManagement: false,
+      dataAnonymization: false,
+    },
+  },
+  riskAssessment: {
+    technicalRisks: [
+      { risk: 'Model accuracy degradation', probability: 'None', impact: 'None' },
+      { risk: 'Data quality issues', probability: 'None', impact: 'None' },
+      { risk: 'Integration failures', probability: 'None', impact: 'None' },
+    ],
+    businessRisks: [
+      { risk: 'User adoption resistance', probability: 'None', impact: 'None' },
+      { risk: 'Regulatory changes', probability: 'None', impact: 'None' },
+      { risk: 'Competitive response', probability: 'None', impact: 'None' },
+    ],
+  },
+  dataReadiness: {
+    trainingDataVolume: 'Sufficient (100K+ records)',
+    historicalDataDepth: '3+ years',
+    qualityScores: {
+      completeness: 85,
+      accuracy: 92,
+      consistency: 78,
+      timeliness: 95,
+    },
+    sources: {
+      internal: true,
+      logs: true,
+      external: false,
+      thirdParty: false,
+    },
+    pipeline: {
+      'Data Extraction': false,
+      'Data Transformation': false,
+      'Data Loading/Storage': false,
+      'Real-time Processing': false,
+    },
+    governance: {
+      'Data Catalog': true,
+      'Lineage Tracking': true,
+      'Quality Monitoring': false,
+      'Privacy Controls': true,
+    },
+    featureEngineeringReqs: '',
+    criticalDataGaps: '',
+    dataCollectionStrategy: '',
+    dataReadinessTimeline: '',
+  },
+  roadmapPosition: {
+    priority: 'high',
+    projectStage: '',
+    timelineConstraints: [],
+    timeline: 'q2',
+    dependencies: {
+      dataPlatform: false,
+      security: false,
+      hiring: false,
+    },
+    metrics: '',
+  },
+  budgetPlanning: {
+    initialDevCost: 150000,
+    baseApiCost: 8000,
+    baseInfraCost: 2000,
+    baseOpCost: 5000,
+    baseMonthlyValue: 25000,
+    valueGrowthRate: 0.15,
+    budgetRange: '',
+    error: '',
+    loading: false,
+  },
+};
 
 export default function AssessmentPage() {
   const router = useRouter();
@@ -88,24 +164,19 @@ export default function AssessmentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentStep, setCurrentStep] = useState(1);
-  const [assessmentData, setAssessmentData] = useState<any>({
-    technicalFeasibility: null,
-    businessFeasibility: null,
-    ethicalImpact: null,
-    riskAssessment: null,
-    dataReadiness: null,
-    roadmapPosition: null,
-    budgetPlanning: null,
-  });
+  const [assessmentData, setAssessmentData] = useState<{ [key: string]: any }>(defaultAssessmentData);
   const budgetPlanningRef = useRef<{ saveFinops: () => Promise<void> }>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const approvalsPageRef = useRef<{ handleComplete: () => Promise<void> }>(null);
 
   const handleAssessmentChange = (section: string, data: any) => {
-    setAssessmentData((prevData: any) => ({
-      ...prevData,
-      [section]: data,
-    }));
+    setAssessmentData((prevData: any) => {
+      // @ts-ignore
+      return {
+        ...prevData,
+        [section]: data,
+      };
+    });
   };
 
   useEffect(() => {
@@ -122,6 +193,16 @@ export default function AssessmentPage() {
         setLoading(false);
       });
   }, [useCaseId]);
+
+  useEffect(() => {
+    setAssessmentData((prev: any) => {
+      const next = { ...defaultAssessmentData, ...prev };
+      for (const key in defaultAssessmentData) {
+        if (!next[key]) next[key] = (defaultAssessmentData as any)[key];
+      }
+      return next;
+    });
+  }, []);
 
   const isFirstStep = currentStep === 1;
   const isLastStep = currentStep === assessmentSteps.length;
@@ -213,19 +294,40 @@ export default function AssessmentPage() {
       {/* Main Content Area */}
          <div className="flex-1 px-8 py-10 bg-white">
         {currentStep === 1 ? (
-          <TechnicalFeasibility onChange={(data) => handleAssessmentChange('technicalFeasibility', data)} />
+          <TechnicalFeasibility
+            value={assessmentData.technicalFeasibility}
+            onChange={data => handleAssessmentChange('technicalFeasibility', data)}
+          />
         ) : currentStep === 2 ? (
-          <BusinessFeasibility onChange={(data) => handleAssessmentChange('businessFeasibility', data)} />
+          <BusinessFeasibility
+            value={assessmentData.businessFeasibility}
+            onChange={data => handleAssessmentChange('businessFeasibility', data)}
+          />
         ) : currentStep === 3 ? (
-          <EthicalImpact onChange={(data) => handleAssessmentChange('ethicalImpact', data)} />
+          <EthicalImpact
+            value={assessmentData.ethicalImpact}
+            onChange={data => handleAssessmentChange('ethicalImpact', data)}
+          />
         ) : currentStep === 4 ? (
-          <RiskAssessment onChange={(data) => handleAssessmentChange('riskAssessment', data)} />
+          <RiskAssessment
+            value={assessmentData.riskAssessment}
+            onChange={data => handleAssessmentChange('riskAssessment', data)}
+          />
         ) : currentStep === 5 ? (
-          <DataReadiness onChange={(data) => handleAssessmentChange('dataReadiness', data)} />
+          <DataReadiness
+            value={assessmentData.dataReadiness}
+            onChange={data => handleAssessmentChange('dataReadiness', data)}
+          />
         ) : currentStep === 6 ? (
-          <RoadmapPosition onChange={(data) => handleAssessmentChange('roadmapPosition', data)} />
+          <RoadmapPosition
+            value={assessmentData.roadmapPosition}
+            onChange={data => handleAssessmentChange('roadmapPosition', data)}
+          />
         ) : currentStep === 7 ? (
-          <BudgetPlanning useCaseId={useCaseId} ref={budgetPlanningRef} />
+          <BudgetPlanning
+            value={assessmentData.budgetPlanning}
+            onChange={data => handleAssessmentChange('budgetPlanning', data)}
+          />
         ) : currentStep === 8 ? (
           <FinancialDashboard />
         ) : currentStep === 9 ? (

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import isEqual from 'lodash.isequal';
 import {
   Select,
@@ -79,9 +79,26 @@ const FAILURE_IMPACT = [
   'Severe Business Impact',
   'Catastrophic/Life Safety',
 ];
+const EXEC_SPONSOR_LEVELS = [
+  "C-Suite",
+  "VP/Director",
+  "Manager",
+  "Team Lead",
+];
+const STAKEHOLDER_GROUPS = [
+  "Board of Directors",
+  "Executive Team",
+  "Legal/Compliance",
+  "IT/Security",
+  "Business Users",
+  "Customers",
+  "Regulators",
+  "Partners",
+  "Public/Media",
+];
 
 type Props = {
-  onChange?: (data: {
+  value: {
     strategicAlignment: number;
     marketOpportunity: string;
     stakeholder: {
@@ -92,7 +109,6 @@ type Props = {
     annualSavings: string;
     efficiencyGain: number;
     paybackPeriod: number;
-    // Updated fields
     availabilityRequirement: string;
     responseTimeRequirement: string;
     concurrentUsers: string;
@@ -101,60 +117,47 @@ type Props = {
     userCategories: string[];
     systemCriticality: string;
     failureImpact: string;
-  }) => void;
+    executiveSponsorLevel: string;
+    stakeholderGroups: string[];
+  };
+  onChange: (data: Props['value']) => void;
 };
 
-export default function BusinessFeasibility({ onChange }: Props) {
+export default function BusinessFeasibility({ value, onChange }: Props) {
   const lastSent = useRef<any>(null);
-  const [strategicAlignment, setStrategicAlignment] = useState(8);
-  const [marketOpportunity, setMarketOpportunity] = useState('large');
-  const [stakeholder, setStakeholder] = useState({
-    exec: true,
-    endUser: false,
-    it: true,
-  });
-  const [annualSavings, setAnnualSavings] = useState('2.4M');
-  const [efficiencyGain, setEfficiencyGain] = useState(35);
-  const [paybackPeriod, setPaybackPeriod] = useState(8);
-  // Updated state for business feasibility fields
-  const [availabilityRequirement, setAvailabilityRequirement] = useState('');
-  const [responseTimeRequirement, setResponseTimeRequirement] = useState('');
-  const [concurrentUsers, setConcurrentUsers] = useState('');
-  const [revenueImpactType, setRevenueImpactType] = useState('');
-  const [estimatedFinancialImpact, setEstimatedFinancialImpact] = useState('');
-  const [userCategories, setUserCategories] = useState<string[]>([]);
-  const [systemCriticality, setSystemCriticality] = useState('');
-  const [failureImpact, setFailureImpact] = useState('');
 
   useEffect(() => {
     const currentData = {
-      strategicAlignment,
-      marketOpportunity,
-      stakeholder,
-      annualSavings,
-      efficiencyGain,
-      paybackPeriod,
-      availabilityRequirement,
-      responseTimeRequirement,
-      concurrentUsers,
-      revenueImpactType,
-      estimatedFinancialImpact,
-      userCategories,
-      systemCriticality,
-      failureImpact,
+      strategicAlignment: value.strategicAlignment,
+      marketOpportunity: value.marketOpportunity,
+      stakeholder: value.stakeholder,
+      annualSavings: value.annualSavings,
+      efficiencyGain: value.efficiencyGain,
+      paybackPeriod: value.paybackPeriod,
+      availabilityRequirement: value.availabilityRequirement,
+      responseTimeRequirement: value.responseTimeRequirement,
+      concurrentUsers: value.concurrentUsers,
+      revenueImpactType: value.revenueImpactType,
+      estimatedFinancialImpact: value.estimatedFinancialImpact,
+      userCategories: value.userCategories,
+      systemCriticality: value.systemCriticality,
+      failureImpact: value.failureImpact,
+      executiveSponsorLevel: value.executiveSponsorLevel,
+      stakeholderGroups: value.stakeholderGroups,
     };
     if (onChange && !isEqual(currentData, lastSent.current)) {
       onChange(currentData);
       lastSent.current = currentData;
     }
-  }, [strategicAlignment, marketOpportunity, stakeholder, annualSavings, efficiencyGain, paybackPeriod, availabilityRequirement, responseTimeRequirement, concurrentUsers, revenueImpactType, estimatedFinancialImpact, userCategories, systemCriticality, failureImpact, onChange]);
+  }, [value.strategicAlignment, value.marketOpportunity, value.stakeholder, value.annualSavings, value.efficiencyGain, value.paybackPeriod, value.availabilityRequirement, value.responseTimeRequirement, value.concurrentUsers, value.revenueImpactType, value.estimatedFinancialImpact, value.userCategories, value.systemCriticality, value.failureImpact, value.executiveSponsorLevel, value.stakeholderGroups, onChange]);
 
   // Helper for multi-select checkboxes
-  function handleMultiSelectChange(value: string, selected: string[], setSelected: (v: string[]) => void) {
-    if (selected.includes(value)) {
-      setSelected(selected.filter((v) => v !== value));
+  function handleMultiSelectChange(field: keyof Props['value'], v: string) {
+    const arr = value[field] as string[];
+    if (arr.includes(v)) {
+      onChange({ ...value, [field]: arr.filter((x) => x !== v) });
     } else {
-      setSelected([...selected, value]);
+      onChange({ ...value, [field]: [...arr, v] });
     }
   }
 
@@ -180,8 +183,8 @@ export default function BusinessFeasibility({ onChange }: Props) {
               min={1}
               max={10}
               step={1}
-              value={[strategicAlignment]}
-              onValueChange={([val]) => setStrategicAlignment(val)}
+              value={[value.strategicAlignment]}
+              onValueChange={([val]) => onChange({ ...value, strategicAlignment: val })}
               className="w-full"
             />
             <span className="text-gray-500 text-sm ml-2">High</span>
@@ -197,7 +200,7 @@ export default function BusinessFeasibility({ onChange }: Props) {
         </CardHeader>
         <CardContent>
           <Label className="block font-medium mb-1">Market Opportunity</Label>
-          <Select value={marketOpportunity} onValueChange={setMarketOpportunity}>
+          <Select value={value.marketOpportunity} onValueChange={(v) => onChange({ ...value, marketOpportunity: v })}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select market opportunity" />
             </SelectTrigger>
@@ -220,15 +223,15 @@ export default function BusinessFeasibility({ onChange }: Props) {
           <Label className="block font-medium mb-1">Stakeholder Readiness</Label>
           <div className="flex flex-col gap-2 mt-2">
             <label className="flex items-center gap-2">
-              <Checkbox checked={stakeholder.exec} onCheckedChange={val => setStakeholder(s => ({ ...s, exec: !!val }))} />
+              <Checkbox checked={value.stakeholder.exec} onCheckedChange={(val) => onChange({ ...value, stakeholder: { ...value.stakeholder, exec: !!val } })} />
               <span>Executive Sponsorship</span>
             </label>
             <label className="flex items-center gap-2">
-              <Checkbox checked={stakeholder.endUser} onCheckedChange={val => setStakeholder(s => ({ ...s, endUser: !!val }))} />
+              <Checkbox checked={value.stakeholder.endUser} onCheckedChange={(val) => onChange({ ...value, stakeholder: { ...value.stakeholder, endUser: !!val } })} />
               <span>End User Buy-in</span>
             </label>
             <label className="flex items-center gap-2">
-              <Checkbox checked={stakeholder.it} onCheckedChange={val => setStakeholder(s => ({ ...s, it: !!val }))} />
+              <Checkbox checked={value.stakeholder.it} onCheckedChange={(val) => onChange({ ...value, stakeholder: { ...value.stakeholder, it: !!val } })} />
               <span>IT Support</span>
             </label>
           </div>
@@ -243,7 +246,7 @@ export default function BusinessFeasibility({ onChange }: Props) {
         </CardHeader>
         <CardContent>
           <Label className="block font-medium mb-1">Availability Requirements</Label>
-          <RadioGroup value={availabilityRequirement} onValueChange={setAvailabilityRequirement} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+          <RadioGroup value={value.availabilityRequirement} onValueChange={(v) => onChange({ ...value, availabilityRequirement: v })} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
             {AVAILABILITY_REQS.map((item) => (
               <Label key={item} className="flex items-center gap-2 hover:bg-blue-50 rounded px-1 py-0.5 cursor-pointer transition">
                 <RadioGroupItem value={item} id={`availability-${item}`} />
@@ -252,7 +255,7 @@ export default function BusinessFeasibility({ onChange }: Props) {
             ))}
           </RadioGroup>
           <Label className="block font-medium mb-1">Response Time Requirements</Label>
-          <RadioGroup value={responseTimeRequirement} onValueChange={setResponseTimeRequirement} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+          <RadioGroup value={value.responseTimeRequirement} onValueChange={(v) => onChange({ ...value, responseTimeRequirement: v })} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
             {RESPONSE_TIME_REQS.map((item) => (
               <Label key={item} className="flex items-center gap-2 hover:bg-blue-50 rounded px-1 py-0.5 cursor-pointer transition">
                 <RadioGroupItem value={item} id={`response-${item}`} />
@@ -261,7 +264,7 @@ export default function BusinessFeasibility({ onChange }: Props) {
             ))}
           </RadioGroup>
           <Label className="block font-medium mb-1">Concurrent Users</Label>
-          <RadioGroup value={concurrentUsers} onValueChange={setConcurrentUsers} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+          <RadioGroup value={value.concurrentUsers} onValueChange={(v) => onChange({ ...value, concurrentUsers: v })} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             {CONCURRENT_USERS.map((item) => (
               <Label key={item} className="flex items-center gap-2 hover:bg-blue-50 rounded px-1 py-0.5 cursor-pointer transition">
                 <RadioGroupItem value={item} id={`users-${item}`} />
@@ -280,7 +283,7 @@ export default function BusinessFeasibility({ onChange }: Props) {
         </CardHeader>
         <CardContent>
           <Label className="block font-medium mb-1">Revenue Impact Type</Label>
-          <RadioGroup value={revenueImpactType} onValueChange={setRevenueImpactType} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+          <RadioGroup value={value.revenueImpactType} onValueChange={(v) => onChange({ ...value, revenueImpactType: v })} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
             {REVENUE_IMPACT_TYPE.map((item) => (
               <Label key={item} className="flex items-center gap-2 hover:bg-green-50 rounded px-1 py-0.5 cursor-pointer transition">
                 <RadioGroupItem value={item} id={`revenue-${item}`} />
@@ -289,7 +292,7 @@ export default function BusinessFeasibility({ onChange }: Props) {
             ))}
           </RadioGroup>
           <Label className="block font-medium mb-1">Estimated Financial Impact</Label>
-          <RadioGroup value={estimatedFinancialImpact} onValueChange={setEstimatedFinancialImpact} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+          <RadioGroup value={value.estimatedFinancialImpact} onValueChange={(v) => onChange({ ...value, estimatedFinancialImpact: v })} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
             {ESTIMATED_FINANCIAL_IMPACT.map((item) => (
               <Label key={item} className="flex items-center gap-2 hover:bg-green-50 rounded px-1 py-0.5 cursor-pointer transition">
                 <RadioGroupItem value={item} id={`finimpact-${item}`} />
@@ -301,7 +304,7 @@ export default function BusinessFeasibility({ onChange }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             {USER_CATEGORIES.map((item) => (
               <Label key={item} className="flex items-center gap-1 hover:bg-green-50 rounded px-1 py-0.5 cursor-pointer transition">
-                <Checkbox checked={userCategories.includes(item)} onCheckedChange={() => handleMultiSelectChange(item, userCategories, setUserCategories)} />
+                <Checkbox checked={value.userCategories.includes(item)} onCheckedChange={() => handleMultiSelectChange('userCategories', item)} />
                 <span className="text-sm">{item}</span>
               </Label>
             ))}
@@ -317,7 +320,7 @@ export default function BusinessFeasibility({ onChange }: Props) {
         </CardHeader>
         <CardContent>
           <Label className="block font-medium mb-1">System Criticality</Label>
-          <RadioGroup value={systemCriticality} onValueChange={setSystemCriticality} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+          <RadioGroup value={value.systemCriticality} onValueChange={(v) => onChange({ ...value, systemCriticality: v })} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
             {SYSTEM_CRITICALITY.map((item) => (
               <Label key={item} className="flex items-center gap-2 hover:bg-orange-50 rounded px-1 py-0.5 cursor-pointer transition">
                 <RadioGroupItem value={item} id={`syscrit-${item}`} />
@@ -326,7 +329,7 @@ export default function BusinessFeasibility({ onChange }: Props) {
             ))}
           </RadioGroup>
           <Label className="block font-medium mb-1">Failure Impact</Label>
-          <RadioGroup value={failureImpact} onValueChange={setFailureImpact} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+          <RadioGroup value={value.failureImpact} onValueChange={(v) => onChange({ ...value, failureImpact: v })} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             {FAILURE_IMPACT.map((item) => (
               <Label key={item} className="flex items-center gap-2 hover:bg-orange-50 rounded px-1 py-0.5 cursor-pointer transition">
                 <RadioGroupItem value={item} id={`failimpact-${item}`} />
@@ -334,6 +337,34 @@ export default function BusinessFeasibility({ onChange }: Props) {
               </Label>
             ))}
           </RadioGroup>
+        </CardContent>
+      </Card>
+
+      {/* Stakeholder Information */}
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2 mb-2">
+          <Users className="w-6 h-6 text-blue-500" />
+          <CardTitle>Stakeholder Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Label className="block font-medium mb-1">Executive Sponsor Level</Label>
+          <RadioGroup value={value.executiveSponsorLevel} onValueChange={(v) => onChange({ ...value, executiveSponsorLevel: v })} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+            {EXEC_SPONSOR_LEVELS.map((level) => (
+              <Label key={level} className="flex items-center gap-2 cursor-pointer">
+                <RadioGroupItem value={level} />
+                <span className="text-sm">{level}</span>
+              </Label>
+            ))}
+          </RadioGroup>
+          <Label className="block font-medium mb-1">Stakeholder Groups</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            {STAKEHOLDER_GROUPS.map((group) => (
+              <Label key={group} className="flex items-center gap-1 hover:bg-blue-50 rounded px-1 py-0.5 cursor-pointer transition">
+                <Checkbox checked={value.stakeholderGroups.includes(group)} onCheckedChange={() => handleMultiSelectChange('stakeholderGroups', group)} />
+                <span className="text-sm">{group}</span>
+              </Label>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>
