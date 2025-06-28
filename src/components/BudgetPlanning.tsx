@@ -1,9 +1,10 @@
 'use client';
-import React from 'react';
+import React, { useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useParams } from 'next/navigation';
 
 interface BudgetPlanningProps {
   value: {
@@ -28,11 +29,89 @@ const BUDGET_RANGES = [
   '> $5M',
 ];
 
-const BudgetPlanning = React.forwardRef<null, BudgetPlanningProps>(({ value, onChange }, ref) => {
-  // Remove all useState for form fields
-  // Replace all state usages with value.field and onChange
-  // For example, instead of setInitialDevCost, use onChange({ ...value, initialDevCost: newValue })
-  // ... existing code ...
+const BudgetPlanning = forwardRef<{ saveFinops: () => Promise<void> }, BudgetPlanningProps>(({ value, onChange }, ref) => {
+  const params = useParams();
+  const useCaseId = params.useCaseId as string;
+
+  useEffect(() => {
+    if (!useCaseId) return;
+    onChange({ ...value, loading: true });
+    fetch(`/api/get-finops?id=${useCaseId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          const d = data[0];
+          onChange({
+            ...value,
+            initialDevCost: d.devCostBase ?? value.initialDevCost,
+            baseApiCost: d.apiCostBase ?? value.baseApiCost,
+            baseInfraCost: d.infraCostBase ?? value.baseInfraCost,
+            baseOpCost: d.opCostBase ?? value.baseOpCost,
+            baseMonthlyValue: d.valueBase ?? value.baseMonthlyValue,
+            valueGrowthRate: d.valueGrowthRate ?? value.valueGrowthRate,
+            budgetRange: d.budgetRange ?? value.budgetRange,
+            loading: false,
+            error: '',
+          });
+        } else {
+          onChange({ ...value, loading: false });
+        }
+      })
+      .catch(() => {
+        onChange({ ...value, loading: false, error: 'Failed to load budget data' });
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [useCaseId]);
+
+  useImperativeHandle(ref, () => ({
+    async saveFinops() {
+      if (!useCaseId) return;
+      // --- Calculations for 36 months (same as FinancialDashboard) ---
+      const FORECAST_MONTHS = 36;
+      let cumulativeValue = 0;
+      let cumulativeOpCosts = 0;
+      let breakEvenMonth = null;
+      let last = {};
+      for (let month = 1; month <= FORECAST_MONTHS; month++) {
+        const apiCost = value.baseApiCost * Math.pow(1.12, month / 12);
+        const infraCost = value.baseInfraCost * Math.pow(1.05, month / 12);
+        const opCost = value.baseOpCost * Math.pow(1.08, month / 12);
+        const totalMonthlyCost = apiCost + infraCost + opCost;
+        const monthlyValue = value.baseMonthlyValue * Math.pow(1 + value.valueGrowthRate, month / 12);
+        cumulativeValue += monthlyValue;
+        cumulativeOpCosts += totalMonthlyCost;
+        const totalInvestment = value.initialDevCost + cumulativeOpCosts;
+        const monthlyProfit = monthlyValue - totalMonthlyCost;
+        const netValue = cumulativeValue - totalInvestment;
+        const ROI = totalInvestment > 0 ? (netValue / totalInvestment) * 100 : 0;
+        if (breakEvenMonth === null && netValue >= 0) breakEvenMonth = month;
+        if (month === FORECAST_MONTHS) {
+          last = {
+            ROI,
+            netValue,
+            apiCostBase: value.baseApiCost,
+            cumOpCost: cumulativeOpCosts,
+            cumValue: cumulativeValue,
+            devCostBase: value.initialDevCost,
+            infraCostBase: value.baseInfraCost,
+            opCostBase: value.baseOpCost,
+            totalInvestment,
+            valueBase: value.baseMonthlyValue,
+            valueGrowthRate: value.valueGrowthRate,
+            budgetRange: value.budgetRange,
+          };
+        }
+      }
+      await fetch('/api/update-finops', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          useCaseId,
+          ...last,
+        }),
+      });
+    }
+  }), [useCaseId, value]);
 
   return (
     <Card className="mb-8 p-6 bg-white border border-gray-200 shadow-md rounded-xl">

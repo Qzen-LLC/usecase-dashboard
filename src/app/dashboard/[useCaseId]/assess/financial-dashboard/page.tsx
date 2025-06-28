@@ -79,9 +79,7 @@ const FinancialDashboard = () => {
     fetch(`/api/get-finops?id=${useCaseId}`)
       .then(res => res.json())
       .then(data => {
-        // If data is an array and has at least one entry, use the first (or latest) entry
         if (Array.isArray(data) && data.length > 0) {
-          // Use the latest entry (assuming only one per useCaseId)
           const d = data[0];
           if (d) {
             setInitialDevCost(d.devCostBase ?? 150000);

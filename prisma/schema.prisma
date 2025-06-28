@@ -52,6 +52,7 @@ model FinOps {
   totalInvestment Float
   valueBase       Float
   valueGrowthRate Float
+  budgetRange     String?
   useCase         UseCase @relation(fields: [useCaseId], references: [id])
 }
 

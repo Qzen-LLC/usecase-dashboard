@@ -259,15 +259,24 @@ export default function AssessmentPage() {
         <div className="flex items-center space-x-4">
           {assessmentSteps.map((step, idx) => (
             <div key={step.id} className="flex items-center">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full ${currentStep === step.id ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-600"}`}>
-                {/* You can add icons here if desired */}
+              <button
+                type="button"
+                className={`flex items-center justify-center w-10 h-10 rounded-full focus:outline-none transition-colors duration-150 ${currentStep === step.id ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-600 hover:bg-blue-100"}`}
+                style={{ cursor: 'pointer' }}
+                onClick={() => setCurrentStep(step.id)}
+                aria-current={currentStep === step.id ? 'step' : undefined}
+              >
                 {step.title[0]}
-              </div>
-              <div className="ml-2 whitespace-nowrap">
-                <div className={`text-sm font-medium ${currentStep === step.id ? "text-blue-600" : "text-gray-500"}`}>
-                  {step.title}
-                </div>
-              </div>
+              </button>
+              <button
+                type="button"
+                className={`ml-2 whitespace-nowrap text-sm font-medium bg-transparent border-none p-0 m-0 focus:outline-none transition-colors duration-150 ${currentStep === step.id ? "text-blue-600" : "text-gray-500 hover:text-blue-600"}`}
+                style={{ cursor: 'pointer' }}
+                onClick={() => setCurrentStep(step.id)}
+                aria-current={currentStep === step.id ? 'step' : undefined}
+              >
+                {step.title}
+              </button>
               {idx < assessmentSteps.length - 1 && (
                 <ChevronRight className="w-5 h-5 text-gray-400 mx-2" />
               )}
@@ -310,6 +319,7 @@ export default function AssessmentPage() {
           />
         ) : currentStep === 7 ? (
           <BudgetPlanning
+            ref={budgetPlanningRef}
             value={assessmentData.budgetPlanning}
             onChange={data => handleAssessmentChange('budgetPlanning', data)}
           />

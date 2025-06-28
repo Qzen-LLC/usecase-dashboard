@@ -16,6 +16,7 @@ export async function POST(req: Request) {
         totalInvestment,
         valueBase,
         valueGrowthRate,
+        budgetRange,
     } = body;
 
     const res = await prismaClient.finOps.upsert({
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
             totalInvestment,
             valueBase,
             valueGrowthRate,
+            budgetRange,
         },
         create: {
             useCaseId,
@@ -46,6 +48,7 @@ export async function POST(req: Request) {
             totalInvestment,
             valueBase,
             valueGrowthRate,
+            budgetRange,
         },
     });
     return NextResponse.json({ success: true });
