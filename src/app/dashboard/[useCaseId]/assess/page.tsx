@@ -229,21 +229,6 @@ export default function AssessmentPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Top Navigation */}
-      <div className="flex items-center border-b px-6 py-3 bg-white">
-        <div className="flex space-x-8">
-          <button className="text-gray-600 font-medium hover:text-blue-700 flex items-center">
-            <span className="mr-2">📊</span> Pipeline
-          </button>
-          <button className="text-blue-700 font-semibold border-b-2 border-blue-700 flex items-center">
-            <span className="mr-2">🛡️</span> Assessment
-          </button>
-          <button className="text-gray-600 font-medium hover:text-blue-700 flex items-center">
-            <span className="mr-2">📁</span> Portfolio
-          </button>
-        </div>
-        <div className="ml-auto text-xl font-bold text-gray-900">AI Strategic Enablement</div>
-      </div>
 
       {/* Use Case Title Section */}
       <div className="px-8 py-6 border-b bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -304,7 +289,7 @@ export default function AssessmentPage() {
           />
         ) : currentStep === 4 ? (
           <RiskAssessment
-            // value={assessmentData.riskAssessment}
+            value={assessmentData.riskAssessment}
             onChange={data => handleAssessmentChange('riskAssessment', data)}
           />
         ) : currentStep === 5 ? (

@@ -18,7 +18,6 @@ const DATA_TYPES = [
   'Images/Video of People',
   'Voice Recordings',
   'Genetic Data',
-  
   "Children's Data (under 16)",
   'Criminal Records',
   'Employment Records',
