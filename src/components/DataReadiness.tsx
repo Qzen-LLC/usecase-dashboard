@@ -1,9 +1,32 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import isEqual from 'lodash.isequal';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
-export default function DataReadinessAssessment() {
+type Props = {
+  onChange?: (data: {
+    trainingDataVolume: string;
+    historicalDataDepth: string;
+    qualityScores: Record<string, number>;
+    sources: Record<string, boolean>;
+    pipeline: Record<string, boolean>;
+    governance: Record<string, boolean>;
+    featureEngineeringReqs: string;
+    criticalDataGaps: string;
+    dataCollectionStrategy: string;
+    dataReadinessTimeline: string;
+  }) => void;
+};
+
+export default function DataReadinessAssessment({ onChange }: Props) {
+  const lastSent = useRef<any>(null);
+
+  const [trainingDataVolume, setTrainingDataVolume] = useState('Sufficient (100K+ records)');
+  const [historicalDataDepth, setHistoricalDataDepth] = useState('3+ years');
+
   const [qualityScores, setQualityScores] = useState<Record<string, number>>({
     completeness: 85,
     accuracy: 92,
@@ -32,6 +55,42 @@ export default function DataReadinessAssessment() {
     'Privacy Controls': true,
   });
 
+  const [featureEngineeringReqs, setFeatureEngineeringReqs] = useState('');
+  const [criticalDataGaps, setCriticalDataGaps] = useState('');
+  const [dataCollectionStrategy, setDataCollectionStrategy] = useState('');
+  const [dataReadinessTimeline, setDataReadinessTimeline] = useState('');
+
+  useEffect(() => {
+    const currentData = {
+      trainingDataVolume,
+      historicalDataDepth,
+      qualityScores,
+      sources,
+      pipeline,
+      governance,
+      featureEngineeringReqs,
+      criticalDataGaps,
+      dataCollectionStrategy,
+      dataReadinessTimeline,
+    };
+    if (onChange && !isEqual(currentData, lastSent.current)) {
+      onChange(currentData);
+      lastSent.current = currentData;
+    }
+  }, [
+    trainingDataVolume,
+    historicalDataDepth,
+    qualityScores,
+    sources,
+    pipeline,
+    governance,
+    featureEngineeringReqs,
+    criticalDataGaps,
+    dataCollectionStrategy,
+    dataReadinessTimeline,
+    onChange,
+  ]);
+
   const getSliderColor = (value: number) => {
     if (value >= 90) return 'bg-green-500';
     if (value >= 70) return 'bg-yellow-500';
@@ -54,21 +113,31 @@ export default function DataReadinessAssessment() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-700">Training Data Volume</span>
-              <select className="text-sm border rounded px-2 py-1 w-64">
-                <option>Sufficient (100K+ records)</option>
-                <option>Moderate (10K-100K records)</option>
-                <option>Limited (1K-10K records)</option>
-                <option>Insufficient (&lt;1K records)</option>
-              </select>
+              <Select value={trainingDataVolume} onValueChange={setTrainingDataVolume}>
+                <SelectTrigger className="w-64">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Sufficient (100K+ records)">Sufficient (100K+ records)</SelectItem>
+                  <SelectItem value="Moderate (10K-100K records)">Moderate (10K-100K records)</SelectItem>
+                  <SelectItem value="Limited (1K-10K records)">Limited (1K-10K records)</SelectItem>
+                  <SelectItem value="Insufficient (<1K records)">Insufficient (&lt;1K records)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-700">Historical Data Depth</span>
-              <select className="text-sm border rounded px-2 py-1 w-64">
-                <option>3+ years</option>
-                <option>1-3 years</option>
-                <option>6-12 months</option>
-                <option>&lt;6 months</option>
-              </select>
+              <Select value={historicalDataDepth} onValueChange={setHistoricalDataDepth}>
+                <SelectTrigger className="w-64">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="3+ years">3+ years</SelectItem>
+                  <SelectItem value="1-3 years">1-3 years</SelectItem>
+                  <SelectItem value="6-12 months">6-12 months</SelectItem>
+                  <SelectItem value="<6 months">&lt;6 months</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
@@ -164,8 +233,10 @@ export default function DataReadinessAssessment() {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Feature Engineering Requirements
           </label>
-          <textarea
+          <Textarea
             rows={3}
+            value={featureEngineeringReqs}
+            onChange={(e) => setFeatureEngineeringReqs(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md"
             placeholder="Describe required data transformations and feature engineering needs..."
           />
@@ -176,12 +247,18 @@ export default function DataReadinessAssessment() {
       <div className="space-y-4">
         <h4 className="font-semibold text-gray-800">Data Gaps & Action Plan</h4>
         <div className="space-y-4">
-          {['Critical Data Gaps', 'Data Collection Strategy', 'Data Readiness Timeline'].map((label) => (
-            <div key={label}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-              <textarea rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
-            </div>
-          ))}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Critical Data Gaps</label>
+            <Textarea rows={3} value={criticalDataGaps} onChange={e => setCriticalDataGaps(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Data Collection Strategy</label>
+            <Textarea rows={3} value={dataCollectionStrategy} onChange={e => setDataCollectionStrategy(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Data Readiness Timeline</label>
+            <Textarea rows={3} value={dataReadinessTimeline} onChange={e => setDataReadinessTimeline(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+          </div>
         </div>
       </div>
 

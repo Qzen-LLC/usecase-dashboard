@@ -16,6 +16,7 @@ export async function POST(req: Request) {
         create: {
             useCaseId,
             stepsData: assessData,
+            updatedAt: new Date(),
         },
     });
     return NextResponse.json({"success": "true"});

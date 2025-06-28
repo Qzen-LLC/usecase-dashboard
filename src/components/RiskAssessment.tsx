@@ -1,5 +1,6 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import isEqual from 'lodash.isequal';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
 const riskLevels = ['None', 'Low', 'Medium', 'High'];
@@ -12,18 +13,43 @@ const riskLevelColors: Record<string, string> = {
   High: 'bg-red-100 text-red-700',
 };
 
-export default function RiskAssessment() {
-  const [technicalRisks, setTechnicalRisks] = useState([
+type Risk = {
+  risk: string;
+  probability: string;
+  impact: string;
+};
+
+type Props = {
+  onChange?: (data: {
+    technicalRisks: Risk[];
+    businessRisks: Risk[];
+  }) => void;
+};
+
+export default function RiskAssessment({ onChange }: Props) {
+  const lastSent = useRef<any>(null);
+  const [technicalRisks, setTechnicalRisks] = useState<Risk[]>([
     { risk: 'Model accuracy degradation', probability: 'None', impact: 'None' },
     { risk: 'Data quality issues', probability: 'None', impact: 'None' },
     { risk: 'Integration failures', probability: 'None', impact: 'None' },
   ]);
 
-  const [businessRisks, setBusinessRisks] = useState([
+  const [businessRisks, setBusinessRisks] = useState<Risk[]>([
     { risk: 'User adoption resistance', probability: 'None', impact: 'None' },
     { risk: 'Regulatory changes', probability: 'None', impact: 'None' },
     { risk: 'Competitive response', probability: 'None', impact: 'None'},
   ]);
+
+  useEffect(() => {
+    const currentData = {
+      technicalRisks,
+      businessRisks,
+    };
+    if (onChange && !isEqual(currentData, lastSent.current)) {
+      onChange(currentData);
+      lastSent.current = currentData;
+    }
+  }, [technicalRisks, businessRisks, onChange]);
 
   const handleSelectChange = (
     type: 'technical' | 'business',
@@ -32,12 +58,14 @@ export default function RiskAssessment() {
     value: string
   ) => {
     const updater = type === 'technical' ? setTechnicalRisks : setBusinessRisks;
-    const risks = type === 'technical' ? [...technicalRisks] : [...businessRisks];
-    risks[index][field] = value;
-    updater(risks);
+    updater((prevRisks) => {
+      const newRisks = [...prevRisks];
+      newRisks[index] = { ...newRisks[index], [field]: value };
+      return newRisks;
+    });
   };
 
-  const renderRiskRow = (item: any, index: number, type: 'technical' | 'business') => (
+  const renderRiskRow = (item: Risk, index: number, type: 'technical' | 'business') => (
     <div
       key={index}
       className="flex items-center justify-between border rounded-lg p-4"

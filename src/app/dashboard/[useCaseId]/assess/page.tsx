@@ -84,16 +84,21 @@ export default function AssessmentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentStep, setCurrentStep] = useState(1);
-  const [technicalFeasibility, setTechnicalFeasibility] = useState(null);
-  const [assessData, setAssessData] = useState({});
-  const [ethicalImpact, setEthicalImpact] = useState(null);
-  const handleEthicalChange = (updatedData: any) => {
-    setEthicalImpact(updatedData);
-    console.log("Received from child:", ethicalImpact);
-  };
-  const handleFeasibilityChange = (updatedData: any) => {
-    setTechnicalFeasibility(updatedData);
-    console.log("Received from child:", technicalFeasibility);
+  const [assessmentData, setAssessmentData] = useState<any>({
+    technicalFeasibility: null,
+    businessFeasibility: null,
+    ethicalImpact: null,
+    riskAssessment: null,
+    dataReadiness: null,
+    roadmapPosition: null,
+    budgetPlanning: null,
+  });
+
+  const handleAssessmentChange = (section: string, data: any) => {
+    setAssessmentData((prevData: any) => ({
+      ...prevData,
+      [section]: data,
+    }));
   };
 
   useEffect(() => {
@@ -115,19 +120,13 @@ export default function AssessmentPage() {
   const isLastStep = currentStep === assessmentSteps.length;
   
   const handleSave = async () => {
-    console.log("technicalFeasibility:", technicalFeasibility);
-    console.log("ethicalImpact:", ethicalImpact);
-   const newData =   { technicalFeasibility, ethicalImpact };
-   console.log(newData);
-   setAssessData(newData);   
-   const res = await fetch("/api/post-stepdata", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({useCaseId, assessData}),
-   });
-}
+    console.log("Saving data:", assessmentData);
+    const res = await fetch("/api/post-stepdata", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ useCaseId, assessData: assessmentData }),
+    });
+  };
 
   const handleNext = () => {
     if (!isLastStep) {
@@ -200,21 +199,21 @@ export default function AssessmentPage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 px-8 py-10 bg-white">
+         <div className="flex-1 px-8 py-10 bg-white">
         {currentStep === 1 ? (
-          <TechnicalFeasibility onChange={handleFeasibilityChange} />
+          <TechnicalFeasibility onChange={(data) => handleAssessmentChange('technicalFeasibility', data)} />
         ) : currentStep === 2 ? (
-          <BusinessFeasibility />
+          <BusinessFeasibility onChange={(data) => handleAssessmentChange('businessFeasibility', data)} />
         ) : currentStep === 3 ? (
-          <EthicalImpact onChange={handleEthicalChange} />
+          <EthicalImpact onChange={(data) => handleAssessmentChange('ethicalImpact', data)} />
         ) : currentStep === 4 ? (
-          <RiskAssessment /> 
-        ): currentStep === 5 ? (
-          <DataReadiness />  
-        ): currentStep === 6 ? (
-          <RoadmapPosition />
+          <RiskAssessment onChange={(data) => handleAssessmentChange('riskAssessment', data)} />
+        ) : currentStep === 5 ? (
+          <DataReadiness onChange={(data) => handleAssessmentChange('dataReadiness', data)} />
+        ) : currentStep === 6 ? (
+          <RoadmapPosition onChange={(data) => handleAssessmentChange('roadmapPosition', data)} />
         ) : currentStep === 7 ? (
-          <BudgetPlanning />
+          <BudgetPlanning onChange={(data) => handleAssessmentChange('budgetPlanning', data)} />
         ) :
          (
           <div className="text-gray-600 text-lg font-medium">

@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+'use client';
+import React, { useState, useEffect, useRef } from 'react';
+import isEqual from 'lodash.isequal';
 import {
   Select,
   SelectTrigger,
@@ -8,8 +10,25 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 
-export default function BusinessFeasibility() {
+type Props = {
+  onChange?: (data: {
+    strategicAlignment: number;
+    marketOpportunity: string;
+    stakeholder: {
+      exec: boolean;
+      endUser: boolean;
+      it: boolean;
+    };
+    annualSavings: string;
+    efficiencyGain: number;
+    paybackPeriod: number;
+  }) => void;
+};
+
+export default function BusinessFeasibility({ onChange }: Props) {
+  const lastSent = useRef<any>(null);
   const [strategicAlignment, setStrategicAlignment] = useState(8);
   const [marketOpportunity, setMarketOpportunity] = useState('large');
   const [stakeholder, setStakeholder] = useState({
@@ -17,6 +36,24 @@ export default function BusinessFeasibility() {
     endUser: false,
     it: true,
   });
+  const [annualSavings, setAnnualSavings] = useState('2.4M');
+  const [efficiencyGain, setEfficiencyGain] = useState(35);
+  const [paybackPeriod, setPaybackPeriod] = useState(8);
+
+  useEffect(() => {
+    const currentData = {
+      strategicAlignment,
+      marketOpportunity,
+      stakeholder,
+      annualSavings,
+      efficiencyGain,
+      paybackPeriod,
+    };
+    if (onChange && !isEqual(currentData, lastSent.current)) {
+      onChange(currentData);
+      lastSent.current = currentData;
+    }
+  }, [strategicAlignment, marketOpportunity, stakeholder, annualSavings, efficiencyGain, paybackPeriod, onChange]);
 
   return (
     <div className="space-y-8">
@@ -80,18 +117,27 @@ export default function BusinessFeasibility() {
       {/* Business Impact Projection */}
       <div className="bg-white border border-gray-200 rounded-lg p-6 mt-8 flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex-1 text-center">
-          <div className="text-green-600 text-2xl font-bold">$2.4M</div>
+          <div className="flex items-center justify-center">
+            <span className="text-green-600 text-2xl font-bold">$</span>
+            <Input type="text" value={annualSavings} onChange={(e) => setAnnualSavings(e.target.value)} className="w-24 text-2xl font-bold text-green-600 bg-transparent border-none text-center" />
+          </div>
           <div className="text-xs text-gray-500 mt-1">Annual Savings</div>
         </div>
         <div className="flex-1 text-center">
-          <div className="text-blue-600 text-2xl font-bold">35%</div>
+          <div className="flex items-center justify-center">
+            <Input type="number" value={efficiencyGain} onChange={(e) => setEfficiencyGain(Number(e.target.value))} className="w-20 text-2xl font-bold text-blue-600 bg-transparent border-none text-center" />
+            <span className="text-blue-600 text-2xl font-bold">%</span>
+          </div>
           <div className="text-xs text-gray-500 mt-1">Efficiency Gain</div>
         </div>
         <div className="flex-1 text-center">
-          <div className="text-purple-600 text-2xl font-bold">8 months</div>
+          <div className="flex items-center justify-center">
+            <Input type="number" value={paybackPeriod} onChange={(e) => setPaybackPeriod(Number(e.target.value))} className="w-20 text-2xl font-bold text-purple-600 bg-transparent border-none text-center" />
+            <span className="text-purple-600 text-2xl font-bold">months</span>
+          </div>
           <div className="text-xs text-gray-500 mt-1">Payback Period</div>
         </div>
       </div>
     </div>
   );
-} 
+}

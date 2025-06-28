@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+'use client';
+import React, { useState, useEffect, useRef } from "react";
+import isEqual from 'lodash.isequal';
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -6,7 +8,21 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 
-export default function RoadmapPosition() {
+type Props = {
+  onChange?: (data: {
+    priority: string;
+    timeline: string;
+    dependencies: {
+      dataPlatform: boolean;
+      security: boolean;
+      hiring: boolean;
+    };
+    metrics: string;
+  }) => void;
+};
+
+export default function RoadmapPosition({ onChange }: Props) {
+  const lastSent = useRef<any>(null);
   const [priority, setPriority] = useState("high");
   const [timeline, setTimeline] = useState("q2");
   const [dependencies, setDependencies] = useState({
@@ -15,6 +31,19 @@ export default function RoadmapPosition() {
     hiring: false,
   });
   const [metrics, setMetrics] = useState("");
+
+  useEffect(() => {
+    const currentData = {
+      priority,
+      timeline,
+      dependencies,
+      metrics,
+    };
+    if (onChange && !isEqual(currentData, lastSent.current)) {
+      onChange(currentData);
+      lastSent.current = currentData;
+    }
+  }, [priority, timeline, dependencies, metrics, onChange]);
 
   return (
     <div className="space-y-6">
@@ -99,4 +128,4 @@ export default function RoadmapPosition() {
       </Card>
     </div>
   );
-} 
+}
