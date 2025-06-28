@@ -1,91 +1,187 @@
 import React, { useState, useEffect, useRef } from 'react';
 import isEqual from 'lodash.isequal';
 import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+  Checkbox
+} from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
+import { Label } from '@/components/ui/label';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Brain, Server, Plug, Shield as ShieldIcon } from 'lucide-react';
 
-
+// --- New options for technical complexity fields ---
+const MODEL_TYPES = [
+  "Large Language Model (LLM)",
+  "Computer Vision",
+  "Natural Language Processing",
+  "Time Series Forecasting",
+  "Recommendation System",
+  "Classification",
+  "Regression",
+  "Clustering",
+  "Anomaly Detection",
+  "Reinforcement Learning",
+  "Generative AI",
+  "Multi-modal Models",
+  "Custom/Proprietary",
+];
+const MODEL_SIZES = [
+  "< 1M parameters",
+  "1M - 100M parameters",
+  "100M - 1B parameters",
+  "1B - 10B parameters",
+  "10B - 100B parameters",
+  "> 100B parameters",
+];
+const DEPLOYMENT_MODELS = [
+  "Public Cloud",
+  "Private Cloud",
+  "Hybrid Cloud",
+  "On-premise",
+  "Edge Computing",
+  "Distributed/Federated",
+  "Multi-cloud",
+];
+const CLOUD_PROVIDERS = [
+  "AWS",
+  "Azure",
+  "Google Cloud",
+  "IBM Cloud",
+  "Oracle Cloud",
+  "Alibaba Cloud",
+  "Other Regional Providers",
+];
+const COMPUTE_REQUIREMENTS = [
+  "CPU only",
+  "GPU required",
+  "TPU required",
+  "Specialized hardware",
+  "Quantum computing",
+];
+const INTEGRATION_POINTS = [
+  "ERP Systems (SAP, Oracle, etc.)",
+  "CRM Systems (Salesforce, etc.)",
+  "Payment Systems",
+  "Banking/Financial Systems",
+  "Healthcare Systems (EHR/EMR)",
+  "Supply Chain Systems",
+  "HR Systems",
+  "Marketing Platforms",
+  "Communication Systems",
+  "IoT Platforms",
+  "Data Warehouses",
+  "Business Intelligence Tools",
+  "Custom Applications",
+  "Legacy Systems",
+];
+const API_SPECS = [
+  "No API",
+  "Internal API only",
+  "Partner API",
+  "Public API",
+  "GraphQL",
+  "REST",
+  "gRPC",
+  "WebSocket",
+  "Message Queue",
+];
+const AUTH_METHODS = [
+  "Username/Password",
+  "Multi-factor Authentication",
+  "SSO/SAML",
+  "OAuth",
+  "API Keys",
+  "Certificate-based",
+  "Biometric",
+  "Token-based",
+  "Zero Trust",
+];
+const ENCRYPTION_STANDARDS = [
+  "TLS 1.3",
+  "AES-256",
+  "End-to-end Encryption",
+  "Homomorphic Encryption",
+  "At-rest Encryption",
+  "In-transit Encryption",
+  "Key Management System",
+];
 
 type Props = {
   onChange?: (data: {
-    dataAvailability: string;
+    modelTypes: string[];
+    modelSizes: string[];
+    deploymentModels: string[];
+    cloudProviders: string[];
+    computeRequirements: string[];
+    integrationPoints: string[];
+    apiSpecs: string[];
+    authMethods: string[];
+    encryptionStandards: string[];
     technicalComplexity: number;
-    infraReadiness: {
-      cloud: boolean;
-      mlPlatform: boolean;
-      dataPipeline: boolean;
-    };
-    teamExpertise: {
-      dataScience: boolean;
-      mlEngineering: boolean;
-    };
-    integrationReqs: string;
   }) => void;
 };
 
 export default function TechnicalFeasibility({ onChange }: Props) {
   const lastSent = useRef<any>(null);
-  const [dataAvailability, setDataAvailability] = useState("");
   const [technicalComplexity, setTechnicalComplexity] = useState(0);
-  const [infraReadiness, setInfraReadiness] = useState({
-    cloud: false,
-    mlPlatform: false,
-    dataPipeline: false,
-  });
-  const [teamExpertise, setTeamExpertise] = useState({
-    dataScience: false,
-    mlEngineering: false,
-  });
-  const [integrationReqs, setIntegrationReqs] = useState("");
+
+  // --- New state for technical complexity fields ---
+  const [modelTypes, setModelTypes] = useState<string[]>([]);
+  const [modelSizes, setModelSizes] = useState<string[]>([]);
+  const [deploymentModels, setDeploymentModels] = useState<string[]>([]);
+  const [cloudProviders, setCloudProviders] = useState<string[]>([]);
+  const [computeRequirements, setComputeRequirements] = useState<string[]>([]);
+  const [integrationPoints, setIntegrationPoints] = useState<string[]>([]);
+  const [apiSpecs, setApiSpecs] = useState<string[]>([]);
+  const [authMethods, setAuthMethods] = useState<string[]>([]);
+  const [encryptionStandards, setEncryptionStandards] = useState<string[]>([]);
+
   useEffect(() => {
     const currentData = {
-      dataAvailability,
       technicalComplexity,
-      infraReadiness,
-      teamExpertise,
-      integrationReqs,
+      modelTypes,
+      modelSizes,
+      deploymentModels,
+      cloudProviders,
+      computeRequirements,
+      integrationPoints,
+      apiSpecs,
+      authMethods,
+      encryptionStandards,
     };
-  
     if (onChange && !isEqual(currentData, lastSent.current)) {
       onChange(currentData);
       lastSent.current = currentData;
     }
-  }, [dataAvailability, technicalComplexity, infraReadiness, teamExpertise, integrationReqs, onChange]);
+  }, [technicalComplexity, modelTypes, modelSizes, deploymentModels, cloudProviders, computeRequirements, integrationPoints, apiSpecs, authMethods, encryptionStandards, onChange]);
+
+  // --- Helper for multi-select checkboxes ---
+  function handleMultiSelectChange(value: string, selected: string[], setSelected: (v: string[]) => void) {
+    if (selected.includes(value)) {
+      setSelected(selected.filter((v) => v !== value));
+    } else {
+      setSelected([...selected, value]);
+    }
+  }
 
   return (
     <div className="space-y-8">
-      <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+      {/* Assessment Banner */}
+      <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded-lg">
         <div className="font-semibold text-blue-800 text-lg mb-1">Technical Feasibility Assessment</div>
         <div className="text-blue-700">Evaluate the technical requirements and constraints for implementing this AI solution.</div>
       </div>
 
-      <div className="space-y-4">
-        <div>
-          <label className="block font-medium mb-1">Data Availability</label>
-          <Select value={dataAvailability} onValueChange={setDataAvailability}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select data availability" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="excellent">Excellent - Rich, clean datasets available</SelectItem>
-              <SelectItem value="good">Good - Some cleaning required</SelectItem>
-              <SelectItem value="limited">Limited - Data gaps exist</SelectItem>
-              <SelectItem value="poor">Poor - Data not available</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <label className="block font-medium mb-1">Technical Complexity</label>
-          <div className="flex items-center space-x-4">
-            <span className="text-gray-500 text-sm">Simple</span>
+      {/* Technical Complexity Slider */}
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2 mb-2">
+          <Brain className="w-6 h-6 text-blue-500" />
+          <CardTitle>Technical Complexity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Label className="block font-medium mb-1">Technical Complexity</Label>
+          <div className="flex items-center w-full">
+            <span className="text-gray-500 text-sm mr-2">Simple</span>
             <Slider
               min={1}
               max={10}
@@ -94,62 +190,132 @@ export default function TechnicalFeasibility({ onChange }: Props) {
               onValueChange={([val]) => setTechnicalComplexity(val)}
               className="w-full"
             />
-            <span className="text-gray-500 text-sm">Complex</span>
+            <span className="text-gray-500 text-sm ml-2">Complex</span>
+            <span className="ml-4 px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-semibold text-sm">{technicalComplexity}</span>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div>
-          <label className="block font-medium mb-1">Infrastructure Readiness</label>
-          <div className="flex flex-col space-y-2">
-            <label className="flex items-center space-x-2">
-              <Checkbox checked={infraReadiness.cloud} onCheckedChange={val => setInfraReadiness(r => ({ ...r, cloud: !!val }))} />
-              <span>Cloud infrastructure available</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <Checkbox checked={infraReadiness.mlPlatform} onCheckedChange={val => setInfraReadiness(r => ({ ...r, mlPlatform: !!val }))} />
-              <span>ML/AI platform in place</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <Checkbox checked={infraReadiness.dataPipeline} onCheckedChange={val => setInfraReadiness(r => ({ ...r, dataPipeline: !!val }))} />
-              <span>Data pipeline capabilities</span>
-            </label>
+      {/* AI/ML Model Specifications */}
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2 mb-2">
+          <Brain className="w-6 h-6 text-blue-500" />
+          <CardTitle>AI/ML Model Specifications</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Label className="block font-medium mb-1">Model Type</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+            {MODEL_TYPES.map((type) => (
+              <Label key={type} className="flex items-center gap-1 hover:bg-blue-50 rounded px-1 py-0.5 cursor-pointer transition">
+                <Checkbox checked={modelTypes.includes(type)} onCheckedChange={() => handleMultiSelectChange(type, modelTypes, setModelTypes)} />
+                <span className="text-sm">{type}</span>
+              </Label>
+            ))}
           </div>
-        </div>
-
-        <div>
-          <label className="block font-medium mb-1">Team Expertise</label>
-          <div className="flex items-center space-x-8">
-            <label className="flex items-center space-x-2">
-              <Checkbox checked={teamExpertise.dataScience} onCheckedChange={val => setTeamExpertise(r => ({ ...r, dataScience: !!val }))} />
-              <span>Data Science</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <Checkbox checked={teamExpertise.mlEngineering} onCheckedChange={val => setTeamExpertise(r => ({ ...r, mlEngineering: !!val }))} />
-              <span>ML Engineering</span>
-            </label>
+          <Label className="block font-medium mb-1">Model Size/Complexity</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            {MODEL_SIZES.map((size) => (
+              <Label key={size} className="flex items-center gap-1 hover:bg-blue-50 rounded px-1 py-0.5 cursor-pointer transition">
+                <Checkbox checked={modelSizes.includes(size)} onCheckedChange={() => handleMultiSelectChange(size, modelSizes, setModelSizes)} />
+                <span className="text-sm">{size}</span>
+              </Label>
+            ))}
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div>
-          <label className="block font-medium mb-1">Integration Requirements</label>
-          <Textarea
-            value={integrationReqs}
-            onChange={e => setIntegrationReqs(e.target.value)}
-            placeholder="Describe integration requirements with existing systems..."
-            className="w-full"
-          />
-        </div>
+      {/* Infrastructure & Deployment */}
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2 mb-2">
+          <Server className="w-6 h-6 text-green-500" />
+          <CardTitle>Infrastructure & Deployment</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Label className="block font-medium mb-1">Deployment Model</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+            {DEPLOYMENT_MODELS.map((model) => (
+              <Label key={model} className="flex items-center gap-1 hover:bg-green-50 rounded px-1 py-0.5 cursor-pointer transition">
+                <Checkbox checked={deploymentModels.includes(model)} onCheckedChange={() => handleMultiSelectChange(model, deploymentModels, setDeploymentModels)} />
+                <span className="text-sm">{model}</span>
+              </Label>
+            ))}
+          </div>
+          <Label className="block font-medium mb-1">Cloud Providers</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+            {CLOUD_PROVIDERS.map((provider) => (
+              <Label key={provider} className="flex items-center gap-1 hover:bg-green-50 rounded px-1 py-0.5 cursor-pointer transition">
+                <Checkbox checked={cloudProviders.includes(provider)} onCheckedChange={() => handleMultiSelectChange(provider, cloudProviders, setCloudProviders)} />
+                <span className="text-sm">{provider}</span>
+              </Label>
+            ))}
+          </div>
+          <Label className="block font-medium mb-1">Compute Requirements</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            {COMPUTE_REQUIREMENTS.map((req) => (
+              <Label key={req} className="flex items-center gap-1 hover:bg-green-50 rounded px-1 py-0.5 cursor-pointer transition">
+                <Checkbox checked={computeRequirements.includes(req)} onCheckedChange={() => handleMultiSelectChange(req, computeRequirements, setComputeRequirements)} />
+                <span className="text-sm">{req}</span>
+              </Label>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* AI-Powered Recommendations */}
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-6 w-full">
-          <div className="font-semibold text-gray-800 mb-2">AI-Powered Recommendations</div>
-          <ul className="list-disc pl-5 text-gray-700 text-sm space-y-1">
-            <li>Consider using pre-trained models to reduce complexity</li>
-            <li>Implement incremental data collection strategy</li>
-            <li>Plan for 3-month technical proof-of-concept phase</li>
-          </ul>
-        </div>
-      </div>
+      {/* System Integration */}
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2 mb-2">
+          <Plug className="w-6 h-6 text-orange-500" />
+          <CardTitle>System Integration</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Label className="block font-medium mb-1">Integration Points</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+            {INTEGRATION_POINTS.map((point) => (
+              <Label key={point} className="flex items-center gap-1 hover:bg-orange-50 rounded px-1 py-0.5 cursor-pointer transition">
+                <Checkbox checked={integrationPoints.includes(point)} onCheckedChange={() => handleMultiSelectChange(point, integrationPoints, setIntegrationPoints)} />
+                <span className="text-sm">{point}</span>
+              </Label>
+            ))}
+          </div>
+          <Label className="block font-medium mb-1">API Specifications</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            {API_SPECS.map((api) => (
+              <Label key={api} className="flex items-center gap-1 hover:bg-orange-50 rounded px-1 py-0.5 cursor-pointer transition">
+                <Checkbox checked={apiSpecs.includes(api)} onCheckedChange={() => handleMultiSelectChange(api, apiSpecs, setApiSpecs)} />
+                <span className="text-sm">{api}</span>
+              </Label>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Security Architecture */}
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-2 mb-2">
+          <ShieldIcon className="w-6 h-6 text-purple-500" />
+          <CardTitle>Security Architecture</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Label className="block font-medium mb-1">Authentication Methods</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+            {AUTH_METHODS.map((auth) => (
+              <Label key={auth} className="flex items-center gap-1 hover:bg-purple-50 rounded px-1 py-0.5 cursor-pointer transition">
+                <Checkbox checked={authMethods.includes(auth)} onCheckedChange={() => handleMultiSelectChange(auth, authMethods, setAuthMethods)} />
+                <span className="text-sm">{auth}</span>
+              </Label>
+            ))}
+          </div>
+          <Label className="block font-medium mb-1">Encryption Standards</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            {ENCRYPTION_STANDARDS.map((enc) => (
+              <Label key={enc} className="flex items-center gap-1 hover:bg-purple-50 rounded px-1 py-0.5 cursor-pointer transition">
+                <Checkbox checked={encryptionStandards.includes(enc)} onCheckedChange={() => handleMultiSelectChange(enc, encryptionStandards, setEncryptionStandards)} />
+                <span className="text-sm">{enc}</span>
+              </Label>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 } 
