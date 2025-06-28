@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X } from 'lucide-react';
+import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X, Eye } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,6 +79,14 @@ const Dashboard = () => {
 
   const handleEdit = (id: string) => {
     router.push(`/edit-usecase/${id}`);
+  }
+
+  const handleView = (id: string) => {
+    router.push(`/view-usecase/${id}`);
+  }
+
+  const handleAssess = (id: string) => {
+    router.push(`/dashboard/${id}/assess`);
   }
 
   // Fetch use case s from API
@@ -251,8 +259,28 @@ const Dashboard = () => {
             </div>
           )}
           {/* Actions */}
-          <div className="flex justify-end gap-2 mt-4">
-            <Button className="bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] hover:from-[#ff4fa3] hover:to-[#8f4fff] text-white px-3 py-1.5 rounded-lg shadow font-semibold text-xs transition" onClick={() => {handleEdit(useCase.id as string)}}>Edit Use Case</Button>
+          <div className="flex flex-wrap gap-2 mt-4">
+            <Button 
+              className="bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] hover:from-[#ff4fa3] hover:to-[#8f4fff] text-white px-3 py-1.5 rounded-lg shadow font-semibold text-xs transition" 
+              onClick={() => {handleEdit(useCase.id as string)}}
+            >
+              Edit Use Case
+            </Button>
+            <Button 
+              className="bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] hover:from-[#ff4fa3] hover:to-[#8f4fff] text-white px-3 py-1.5 rounded-lg shadow font-semibold text-xs transition flex items-center gap-1" 
+              onClick={() => {handleView(useCase.id as string)}}
+            >
+              <Eye className="w-3 h-3" />
+              View Use Case
+            </Button>
+            {useCase.stage === 'proof-of-value' && (
+              <Button 
+                className="bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] hover:from-[#ff4fa3] hover:to-[#8f4fff] text-white px-3 py-1.5 rounded-lg shadow font-semibold text-xs transition" 
+                onClick={() => {handleAssess(useCase.id as string)}}
+              >
+                Assess
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="bg-gray-100 text-[#23235b] px-3 py-1.5 rounded-lg font-semibold shadow hover:bg-gray-200 transition border border-gray-200 text-xs">
@@ -417,17 +445,6 @@ const Dashboard = () => {
                           <div className="flex items-center"><Clock className="w-3 h-3 mr-1" />{useCase.timeline}</div>
                         </div>
                         <div className="mt-2 text-xs text-gray-400">Updated {useCase.lastUpdated}</div>
-                        {useCase.stage === 'proof-of-value' && (
-                          <button
-                            className="mt-2 px-3 py-1 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white text-xs font-semibold rounded-full shadow hover:opacity-90 transition"
-                            type="button"
-                            onClick={() => {
-                              router.push(`/dashboard/${useCase.id}/assess`)
-                            }}
-                          >
-                            Assess
-                          </button>
-                        )}
                       </Card>
                     ))}
                     {getUseCasesByStage(stage.id).length === 0 && (
