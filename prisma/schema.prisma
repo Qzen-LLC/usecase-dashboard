@@ -9,7 +9,7 @@ datasource db {
 }
 
 model UseCase {
-  id                       String   @id @default(uuid())
+  id                       String     @id @default(uuid())
   title                    String
   problemStatement         String
   proposedAISolution       String
@@ -29,13 +29,14 @@ model UseCase {
   implementationComplexity Int
   estimatedTimeline        String
   requiredResources        String
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  createdAt                DateTime   @default(now())
+  updatedAt                DateTime   @updatedAt
   priority                 String?
   stage                    String?
   businessFunction         String
   finopsData               FinOps[]
   assessData               Assess[]
+  Approval                 Approval[]
 }
 
 model FinOps {
@@ -60,4 +61,26 @@ model Assess {
   stepsData Json
   updatedAt DateTime
   UseCase   UseCase  @relation(fields: [useCaseId], references: [id])
+}
+
+model Approval {
+  id                 String   @id @default(uuid())
+  useCaseId          String   @unique // Foreign key to UseCase
+  governanceName     String?
+  governanceStatus   String?
+  governanceComment  String?
+  riskName           String?
+  riskStatus         String?
+  riskComment        String?
+  legalName          String?
+  legalStatus        String?
+  legalComment       String?
+  businessFunction   String?
+  businessName       String?
+  businessStatus     String?
+  businessComment    String?
+  finalQualification String?
+  updatedAt          DateTime @updatedAt
+  createdAt          DateTime @default(now())
+  useCase            UseCase  @relation(fields: [useCaseId], references: [id])
 }
