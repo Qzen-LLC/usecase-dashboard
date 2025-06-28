@@ -508,10 +508,6 @@ const AIUseCaseTool = () => {
   return (
     <div className="min-h-screen flex justify-center items-start bg-gray-50 p-0 sm:p-4">
       <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden border-0 sm:border sm:mt-6 sm:mb-6 sm:mx-0 mx-0">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 sm:p-6">
-          <h1 className="text-2xl font-bold mb-2">AI Use Case Refinement Tool</h1>
-          <p className="text-blue-100">Transform AI ideas into structured, quantified business opportunities</p>
-        </div>
         <div className="bg-gray-100 px-2 py-3 sm:px-6 sm:py-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0">
             {steps.map((step, index) => (

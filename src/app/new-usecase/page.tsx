@@ -150,18 +150,11 @@ const AIUseCaseTool = () => {
     setFormData((prev) => ({ ...prev, [field]: val }));
   };
 
-  // Validation logic
+  // Only require title and problemStatement for initial add
   const validateForm = () => {
     const invalid: string[] = [];
-    Object.entries(formData).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
-        if (value.length === 0) invalid.push(key);
-      } else if (typeof value === 'string') {
-        if (!value.trim()) invalid.push(key);
-      } else if (typeof value === 'number') {
-        if (value === null || value === undefined) invalid.push(key);
-      }
-    });
+    if (!formData.title.trim()) invalid.push('title');
+    if (!formData.problemStatement.trim()) invalid.push('problemStatement');
     setInvalidFields(invalid);
     setShowError(invalid.length > 0);
     return invalid.length === 0;
@@ -175,14 +168,14 @@ const AIUseCaseTool = () => {
       </div>
       <div className="grid grid-cols-1">
         <Card className="p-6">
-          <Label htmlFor="title">Use Case Title</Label>
+          <Label htmlFor="title">Use Case Title <span className="text-red-500">*</span></Label>
           <Input
             id="title"
             value={formData.title}
             onChange={(e) => handleChange("title", e.target.value)}
             className={invalidFields.includes('title') ? 'border-red-500' : ''}
           />
-          <Label htmlFor="problemStatement">Problem Statement</Label>
+          <Label htmlFor="problemStatement">Problem Statement <span className="text-red-500">*</span></Label>
           <Textarea
             id="problemStatement"
             value={formData.problemStatement}
@@ -489,6 +482,18 @@ const AIUseCaseTool = () => {
 
   const handleGoToPipeline = async () => {
     if (validateForm()) {
+      // Check if all fields (except id, createdAt, updatedAt) are filled
+      const requiredFields = Object.keys(formData).filter(
+        k => !['id','createdAt','updatedAt'].includes(k)
+      );
+      const allFilled = requiredFields.every(k => {
+        const v = (formData as any)[k];
+        if (Array.isArray(v)) return v.length > 0;
+        if (typeof v === 'string') return !!v.trim();
+        if (typeof v === 'number') return v !== null && v !== undefined;
+        return true;
+      });
+      const stage = allFilled ? 'business-case' : 'discovery';
       try {
         const res = await fetch("/api/write-usecases",
           {
@@ -499,30 +504,25 @@ const AIUseCaseTool = () => {
           body: JSON.stringify({
             ...formData,
             businessFunction: formData.businessFunction,
+            stage,
           }),
       });
+      if (res.ok) {
+        router.push('/dashboard');
+      } else {
+        alert("Failed to save use case. Please try again.");
+      }
       } catch(error)
       {
         console.error("Unable to submit Use Case")
+        alert("Unable to submit Use Case. Please try again.");
       }
-      router.push('/dashboard');
     }
   };
 
   return (
     <div className="min-h-screen flex justify-center items-start bg-gray-50 p-0 sm:p-4">
       <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden border-0 sm:border sm:mt-6 sm:mb-6 sm:mx-0 mx-0">
-        <div className="flex flex-col items-center bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] rounded-t-2xl border-b border-gray-200 shadow-lg">
-          <div className="flex items-center gap-3 justify-center py-6">
-            <div className="bg-white rounded-2xl shadow-lg flex items-center gap-3 px-6 py-3">
-              <img src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MDc4NTQ3NywiZXhwIjoxOTA4NDY1NDc3fQ.v6nh5VRRDin2cGatgU3yHbUweQEulxqEAupCj8Mbgeg" alt="QZen AI Logo" className="h-12 w-12 object-contain drop-shadow-xl" />
-              <span className="text-3xl font-extrabold bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] bg-clip-text text-transparent font-sans tracking-tight">QZen AI</span>
-            </div>
-          </div>
-          <div className="w-full flex justify-center pb-6">
-            <p className="text-white text-lg text-center font-medium tracking-wide whitespace-nowrap overflow-x-auto">Empowering Enterprises to Transform AI Ideas into Quantified Business Value</p>
-          </div>
-        </div>
         <div className="bg-gray-100 px-2 py-3 sm:px-6 sm:py-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0">
             {steps.map((step, index) => (

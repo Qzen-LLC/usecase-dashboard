@@ -136,8 +136,37 @@ const Dashboard = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const getUseCasesByStage = (stageId: string) =>
-    filteredUseCases.filter(useCase => useCase.stage === stageId);
+  // Helper to check if all required fields are filled
+  const isUseCaseComplete = (useCase: UseCase) => {
+    // List all required fields except id, createdAt, updatedAt, and frontend-only fields
+    const requiredFields = Object.keys(useCase).filter(
+      k => !['id','createdAt','updatedAt','stage','priority','owner','lastUpdated','scores','description','complexity','roi','timeline','stakeholders','risks'].includes(k)
+    );
+    return requiredFields.every(k => {
+      const v = (useCase as any)[k];
+      if (Array.isArray(v)) return v.length > 0;
+      if (typeof v === 'string') return !!v.trim();
+      if (typeof v === 'number') return v !== null && v !== undefined;
+      return true;
+    });
+  };
+
+  // Modified getUseCasesByStage to enforce visual logic
+  const getUseCasesByStage = (stageId: string) => {
+    if (stageId === 'business-case') {
+      // Show use cases that are complete AND either already in business-case or in discovery
+      return filteredUseCases.filter(useCase => 
+        isUseCaseComplete(useCase) && 
+        (useCase.stage === 'business-case' || useCase.stage === 'discovery')
+      );
+    }
+    if (stageId === 'discovery') {
+      // Show ALL incomplete use cases, regardless of their current stage
+      return filteredUseCases.filter(useCase => !isUseCaseComplete(useCase));
+    }
+    // For all other stages, use the actual stage value from database
+    return filteredUseCases.filter(useCase => useCase.stage === stageId);
+  };
 
   const getOverallScore = (scores: { operational: number, productivity: number, revenue: number }) =>
     ((scores.operational + scores.productivity + scores.revenue) / 3).toFixed(1);
@@ -281,23 +310,50 @@ const Dashboard = () => {
                 Assess
               </Button>
             )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="bg-gray-100 text-[#23235b] px-3 py-1.5 rounded-lg font-semibold shadow hover:bg-gray-200 transition border border-gray-200 text-xs">
-                  Move to Stage
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {availableStages.map(stage => (
-                  <DropdownMenuItem
-                    key={stage.id}
-                    onSelect={() => handleMoveToStage(useCase.id, stage.id)}
-                  >
-                    {stage.title}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex gap-2">
+              <Button
+                className="bg-gray-100 text-[#23235b] px-3 py-1.5 rounded-lg font-semibold shadow hover:bg-gray-200 transition border border-gray-200 text-xs"
+                disabled={stages.findIndex(s => s.id === useCase.stage) === 0}
+                onClick={async () => {
+                  const currentStageIdx = stages.findIndex(s => s.id === useCase.stage);
+                  if (currentStageIdx <= 0) return;
+                  const prevStage = stages[currentStageIdx - 1].id;
+                  await handleMoveToStage(useCase.id, prevStage);
+                }}
+              >
+                Move to Previous Stage
+              </Button>
+              <Button
+                className="bg-gray-100 text-[#23235b] px-3 py-1.5 rounded-lg font-semibold shadow hover:bg-gray-200 transition border border-gray-200 text-xs"
+                onClick={async () => {
+                  // Only allow moving one step forward
+                  const currentStageIdx = stages.findIndex(s => s.id === useCase.stage);
+                  if (currentStageIdx === -1 || currentStageIdx === stages.length - 1) return;
+                  const nextStage = stages[currentStageIdx + 1].id;
+                  // If moving from discovery to business-case, validate all fields
+                  if (useCase.stage === 'discovery' && nextStage === 'business-case') {
+                    // Validate all fields except id, createdAt, updatedAt, and frontend-only fields
+                    const requiredFields = Object.keys(useCase).filter(
+                      k => !['id','createdAt','updatedAt','stage','priority','owner','lastUpdated','scores','description','complexity','roi','timeline','stakeholders','risks'].includes(k)
+                    );
+                    const missing = requiredFields.filter(k => {
+                      const v = (useCase as any)[k];
+                      if (Array.isArray(v)) return v.length === 0;
+                      if (typeof v === 'string') return !v.trim();
+                      if (typeof v === 'number') return v === null || v === undefined;
+                      return false;
+                    });
+                    if (missing.length > 0) {
+                      alert('Please fill all fields before moving to Business Case. Missing: ' + missing.join(', '));
+                      return;
+                    }
+                  }
+                  await handleMoveToStage(useCase.id, nextStage);
+                }}
+              >
+                Move to Next Stage
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -305,166 +361,130 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center">
-      <div className="w-full max-w-7xl bg-white rounded-2xl shadow-2xl border border-gray-200 mt-6 mb-6 mx-auto relative z-10">
-        {/* QZen AI Branding Header */}
-        <div className="flex flex-col items-center bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] rounded-t-2xl border-b border-gray-200 shadow-lg">
-          <div className="flex items-center gap-3 justify-center py-6">
-            <div className="bg-white rounded-2xl shadow-lg flex items-center gap-3 px-6 py-3">
-              <img src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MDc4NTQ3NywiZXhwIjoxOTA4NDY1NDc3fQ.v6nh5VRRDin2cGatgU3yHbUweQEulxqEAupCj8Mbgeg" alt="QZen AI Logo" className="h-12 w-12 object-contain drop-shadow-xl" />
-              <span className="text-3xl font-extrabold bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] bg-clip-text text-transparent font-sans tracking-tight">QZen AI</span>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center m-8">
+      <div className="w-full max-w-screen-2xl mx-8 bg-white rounded-2xl shadow-2xl border border-gray-200 mt-6 mb-6 mx-auto relative z-10">
+        <div className="px-8 py-8">
+          {/* Main Content */}
+          <div className="p-4">
+            {/* Filters and Add Button */}
+            <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-3 mb-5">
+              <div className="relative flex-1 max-w-md w-full">
+                <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[#5b5be6]" />
+                <Input
+                  type="text"
+                  placeholder="Search use cases..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:border-[#5b5be6] focus:ring-[#5b5be6] shadow-sm transition text-sm"
+                />
+              </div>
+              <select
+                value={filterBy}
+                onChange={e => setFilterBy(e.target.value)}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg bg-white text-gray-900 focus:border-[#5b5be6] focus:ring-[#5b5be6] shadow-sm transition text-sm"
+              >
+                <option value="all">All Departments</option>
+                <option value="high">High Priority</option>
+                <option value="medium">Medium Priority</option>
+                <option value="low">Low Priority</option>
+                <option value="customer service">Customer Service</option>
+                <option value="sales">Sales</option>
+                <option value="finance">Finance</option>
+                <option value="manufacturing">Manufacturing</option>
+              </select>
+              <Button
+                className="bg-[#10b981] hover:bg-[#059669] text-white px-6 py-2 rounded-lg shadow-lg font-semibold text-base transition"
+                onClick={() => router.push('/new-usecase')}
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                New Use Case
+              </Button>
             </div>
-          </div>
-          <div className="w-full flex justify-center pb-6">
-            <p className="text-white text-lg text-center font-medium tracking-wide whitespace-nowrap overflow-x-auto">Empowering Enterprises to Transform AI Ideas into Quantified Business Value</p>
-          </div>
-        </div>
-        {/* Main Content */}
-        <div className="p-4">
-          {/* Filters and Add Button */}
-          <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-3 mb-5">
-            <div className="relative flex-1 max-w-md w-full">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[#5b5be6]" />
-              <Input
-                type="text"
-                placeholder="Search use cases..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:border-[#5b5be6] focus:ring-[#5b5be6] shadow-sm transition text-sm"
-              />
+            {/* Stage Stats */}
+            <div className="bg-gradient-to-r from-[#f5eaff] via-[#fbeaff] to-[#ffeafd] border border-gray-200 p-4 rounded-xl mb-8 shadow-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 text-center">
+                {stages.map(stage => {
+                  const count = getUseCasesByStage(stage.id).length;
+                  const icon = stage.id === 'discovery' ? <Search className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
+                    stage.id === 'business-case' ? <DollarSign className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
+                    stage.id === 'proof-of-value' ? <TrendingUp className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
+                    stage.id === 'backlog' ? <Clock className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
+                    stage.id === 'in-progress' ? <Zap className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
+                    stage.id === 'solution-validation' ? <User className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
+                    stage.id === 'pilot' ? <User className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
+                    <Clock className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" />;
+                  return (
+                    <div key={stage.id} className="p-2 rounded-xl bg-gradient-to-br from-[#f5eaff] via-[#fbeaff] to-[#ffeafd] border border-gray-100 shadow flex flex-col items-center transition hover:shadow-md min-w-24">
+                      {React.cloneElement(icon, { className: 'w-5 h-5 mx-auto mb-0.5 text-[#5b5be6]' })}
+                      <div className="text-lg font-bold text-[#23235b]">{count}</div>
+                      <div className="text-xs text-gray-600 font-medium mt-0.5">{stage.title}</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <select
-              value={filterBy}
-              onChange={e => setFilterBy(e.target.value)}
-              className="px-3 py-1.5 border border-gray-200 rounded-lg bg-white text-gray-900 focus:border-[#5b5be6] focus:ring-[#5b5be6] shadow-sm transition text-sm"
-            >
-              <option value="all">All Departments</option>
-              <option value="high">High Priority</option>
-              <option value="medium">Medium Priority</option>
-              <option value="low">Low Priority</option>
-              <option value="customer service">Customer Service</option>
-              <option value="sales">Sales</option>
-              <option value="finance">Finance</option>
-              <option value="manufacturing">Manufacturing</option>
-            </select>
-            <Button
-              className="bg-[#10b981] hover:bg-[#059669] text-white px-6 py-2 rounded-lg shadow-lg font-semibold text-base transition"
-              onClick={() => router.push('/new-usecase')}
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              New Use Case
-            </Button>
-          </div>
-          {/* Stage Stats */}
-          <div className="bg-gradient-to-r from-[#f5eaff] via-[#fbeaff] to-[#ffeafd] border border-gray-200 p-4 rounded-xl mb-8 shadow-sm">
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 text-center">
-              {stages.map(stage => {
-                const count = getUseCasesByStage(stage.id).length;
-                const icon = stage.id === 'discovery' ? <Search className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
-                  stage.id === 'business-case' ? <DollarSign className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
-                  stage.id === 'proof-of-value' ? <TrendingUp className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
-                  stage.id === 'backlog' ? <Clock className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
-                  stage.id === 'in-progress' ? <Zap className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
-                  stage.id === 'solution-validation' ? <User className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
-                  stage.id === 'pilot' ? <User className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
-                  <Clock className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" />;
-                return (
-                  <div key={stage.id} className="p-2 rounded-xl bg-gradient-to-br from-[#f5eaff] via-[#fbeaff] to-[#ffeafd] border border-gray-100 shadow flex flex-col items-center transition hover:shadow-md min-w-24">
-                    {React.cloneElement(icon, { className: 'w-5 h-5 mx-auto mb-0.5 text-[#5b5be6]' })}
-                    <div className="text-lg font-bold text-[#23235b]">{count}</div>
-                    <div className="text-xs text-gray-600 font-medium mt-0.5">{stage.title}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          {/* Kanban Board with Drag and Drop */}
-          <div className="overflow-x-auto">
-            <div className="flex space-x-8 min-w-max items-stretch">
-              {stages.map(stage => (
-                <div
-                  key={stage.id}
-                  className="w-96 min-h-[350px] bg-gradient-to-b from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] bg-opacity-10 rounded-2xl p-5 flex flex-col shadow-lg flex-grow max-w-full sm:w-96 border border-gray-100 transition hover:shadow-xl"
-                  onDragOver={e => e.preventDefault()}
-                  onDrop={async e => {
-  const useCaseId = e.dataTransfer.getData('useCaseId');
-
-  // Update UI immediately
-  setUseCases(prev => prev.map(uc =>
-    uc.id === useCaseId ? { ...uc, stage: stage.id } : uc
-  ));
-
-  // Make DB update call
-  try {
-    await fetch('/api/update-stage', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        useCaseId,
-        newStage: stage.id
-      })
-    });
-  } catch (error) {
-    console.error('Error updating stage:', error);
-  }
-}}
-
-                >
-                  <div className="flex items-center justify-between mb-5">
-                    <h3 className="font-semibold text-base text-white tracking-tight">{stage.title}</h3>
-                    <span className="bg-white text-[#5b5be6] px-3 py-1 rounded-full text-sm border border-[#e9eafc] font-medium shadow-sm">
-                      {getUseCasesByStage(stage.id).length}
-                    </span>
-                  </div>
-                  <div className="flex-1 space-y-5">
-                    {getUseCasesByStage(stage.id).map(useCase => (
-                      <Card
-                        key={useCase.id}
-                        className="bg-white rounded-xl shadow-md hover:shadow-2xl transition-shadow cursor-pointer p-4 border border-gray-100 w-full group"
-                        draggable
-                        onDragStart={e => e.dataTransfer.setData('useCaseId', useCase.id)}
-                        onClick={() => setSelectedUseCase(useCase)}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h4 className="font-semibold text-[#23235b] text-base group-hover:text-[#5b5be6] transition-colors">{useCase.title}</h4>
-                            <p className="text-xs text-gray-500">{useCase.owner}</p>
+            {/* Kanban Board with Drag and Drop */}
+            <div className="overflow-x-auto">
+              <div className="flex space-x-8 min-w-max items-stretch">
+                {stages.map(stage => (
+                  <div
+                    key={stage.id}
+                    className="w-96 min-h-[350px] bg-gradient-to-b from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] bg-opacity-10 rounded-2xl p-5 flex flex-col shadow-lg flex-grow max-w-full sm:w-96 border border-gray-100 transition hover:shadow-xl"
+                  >
+                    <div className="flex items-center justify-between mb-5">
+                      <h3 className="font-semibold text-base text-white tracking-tight">{stage.title}</h3>
+                      <span className="bg-white text-[#5b5be6] px-3 py-1 rounded-full text-sm border border-[#e9eafc] font-medium shadow-sm">
+                        {getUseCasesByStage(stage.id).length}
+                      </span>
+                    </div>
+                    <div className="flex-1 space-y-5">
+                      {getUseCasesByStage(stage.id).map(useCase => (
+                        <Card
+                          key={useCase.id}
+                          className="bg-white rounded-xl shadow-md hover:shadow-2xl transition-shadow cursor-pointer p-4 border border-gray-100 w-full group"
+                          onClick={() => setSelectedUseCase(useCase)}
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h4 className="font-semibold text-[#23235b] text-base group-hover:text-[#5b5be6] transition-colors">{useCase.title}</h4>
+                              <p className="text-xs text-gray-500">{useCase.owner}</p>
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium border ${priorities[useCase.priority ?? 'medium'].color} shadow-sm`}>
+                              {priorities[useCase.priority ?? 'medium'].label}
+                            </span>
                           </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium border ${priorities[useCase.priority ?? 'medium'].color} shadow-sm`}>
-                            {priorities[useCase.priority ?? 'medium'].label}
-                          </span>
+                          <div className="flex justify-between mb-2 text-xs">
+                            <div className="flex items-center"><TrendingUp className="w-3 h-3 text-[#5b5be6] mr-1" />{useCase.scores?.operational}</div>
+                            <div className="flex items-center"><Zap className="w-3 h-3 text-[#5b5be6] mr-1" />{useCase.scores?.productivity}</div>
+                            <div className="flex items-center"><DollarSign className="w-3 h-3 text-[#5b5be6] mr-1" />{useCase.scores?.revenue}</div>
+                            <div className="font-semibold text-[#5b5be6]">{getOverallScore(useCase.scores || { operational: 0, productivity: 0, revenue: 0 })}</div>
+                          </div>
+                          <div className="flex justify-between items-center text-xs text-gray-500">
+                            <div className="flex items-center"><User className="w-3 h-3 mr-1" />{useCase.owner}</div>
+                            <div className="flex items-center"><Clock className="w-3 h-3 mr-1" />{useCase.timeline}</div>
+                          </div>
+                          <div className="mt-2 text-xs text-gray-400">Updated {useCase.lastUpdated}</div>
+                        </Card>
+                      ))}
+                      {getUseCasesByStage(stage.id).length === 0 && (
+                        <div className="text-center text-gray-400 py-10">
+                          <div className="text-4xl mb-2">📋</div>
+                          <p className="text-xs text-white">No use cases in this stage</p>
                         </div>
-                        <div className="flex justify-between mb-2 text-xs">
-                          <div className="flex items-center"><TrendingUp className="w-3 h-3 text-[#5b5be6] mr-1" />{useCase.scores?.operational}</div>
-                          <div className="flex items-center"><Zap className="w-3 h-3 text-[#5b5be6] mr-1" />{useCase.scores?.productivity}</div>
-                          <div className="flex items-center"><DollarSign className="w-3 h-3 text-[#5b5be6] mr-1" />{useCase.scores?.revenue}</div>
-                          <div className="font-semibold text-[#5b5be6]">{getOverallScore(useCase.scores || { operational: 0, productivity: 0, revenue: 0 })}</div>
-                        </div>
-                        <div className="flex justify-between items-center text-xs text-gray-500">
-                          <div className="flex items-center"><User className="w-3 h-3 mr-1" />{useCase.owner}</div>
-                          <div className="flex items-center"><Clock className="w-3 h-3 mr-1" />{useCase.timeline}</div>
-                        </div>
-                        <div className="mt-2 text-xs text-gray-400">Updated {useCase.lastUpdated}</div>
-                      </Card>
-                    ))}
-                    {getUseCasesByStage(stage.id).length === 0 && (
-                      <div className="text-center text-gray-400 py-10">
-                        <div className="text-4xl mb-2">📋</div>
-                        <p className="text-xs text-white">No use cases in this stage</p>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
+            {/* Modal */}
+            {selectedUseCase && (
+              <UseCaseDetailModal
+                useCase={selectedUseCase}
+                onClose={() => setSelectedUseCase(null)}
+              />
+            )}
           </div>
-          {/* Modal */}
-          {selectedUseCase && (
-            <UseCaseDetailModal
-              useCase={selectedUseCase}
-              onClose={() => setSelectedUseCase(null)}
-            />
-          )}
         </div>
       </div>
     </div>
