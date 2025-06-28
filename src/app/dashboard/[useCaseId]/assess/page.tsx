@@ -100,36 +100,21 @@ const defaultAssessmentData = {
     ],
   },
   dataReadiness: {
-    trainingDataVolume: 'Sufficient (100K+ records)',
-    historicalDataDepth: '3+ years',
-    qualityScores: {
-      completeness: 85,
-      accuracy: 92,
-      consistency: 78,
-      timeliness: 95,
-    },
-    sources: {
-      internal: true,
-      logs: true,
-      external: false,
-      thirdParty: false,
-    },
-    pipeline: {
-      'Data Extraction': false,
-      'Data Transformation': false,
-      'Data Loading/Storage': false,
-      'Real-time Processing': false,
-    },
-    governance: {
-      'Data Catalog': true,
-      'Lineage Tracking': true,
-      'Quality Monitoring': false,
-      'Privacy Controls': true,
-    },
-    featureEngineeringReqs: '',
-    criticalDataGaps: '',
-    dataCollectionStrategy: '',
-    dataReadinessTimeline: '',
+    dataTypes: [],
+    dataVolume: '',
+    growthRate: '',
+    numRecords: '',
+    primarySources: [],
+    dataQualityScore: 5,
+    dataCompleteness: 0,
+    dataAccuracyConfidence: 0,
+    dataFreshness: '',
+    dataSubjectLocations: '',
+    dataStorageLocations: '',
+    dataProcessingLocations: '',
+    crossBorderTransfer: false,
+    dataLocalization: '',
+    dataRetention: '',
   },
   roadmapPosition: {
     priority: 'high',
@@ -310,7 +295,7 @@ export default function AssessmentPage() {
           />
         ) : currentStep === 4 ? (
           <RiskAssessment
-            value={assessmentData.riskAssessment}
+            // value={assessmentData.riskAssessment}
             onChange={data => handleAssessmentChange('riskAssessment', data)}
           />
         ) : currentStep === 5 ? (

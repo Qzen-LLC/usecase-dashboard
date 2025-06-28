@@ -1,283 +1,256 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
-import isEqual from 'lodash.isequal';
+import React from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 
-type Props = {
-  onChange?: (data: {
-    trainingDataVolume: string;
-    historicalDataDepth: string;
-    qualityScores: Record<string, number>;
-    sources: Record<string, boolean>;
-    pipeline: Record<string, boolean>;
-    governance: Record<string, boolean>;
-    featureEngineeringReqs: string;
-    criticalDataGaps: string;
-    dataCollectionStrategy: string;
-    dataReadinessTimeline: string;
-  }) => void;
+const DATA_TYPES = [
+  'Personal Identifiable Information (PII)',
+  'Sensitive Personal Data (race, religion, politics)',
+  'Financial Records',
+  'Health/Medical Records',
+  'Biometric Data',
+  'Location/GPS Data',
+  'Behavioral Data',
+  'Communications (emails, messages)',
+  'Images/Video of People',
+  'Voice Recordings',
+  'Genetic Data',
+  
+  "Children's Data (under 16)",
+  'Criminal Records',
+  'Employment Records',
+  'Educational Records',
+  'Publicly Available Data',
+  'Proprietary Business Data',
+  'Trade Secrets',
+  'Third-party Data',
+];
+
+const DATA_VOLUME_OPTIONS = [
+  '< 1 GB',
+  '1 GB - 100 GB',
+  '100 GB - 1 TB',
+  '1 TB - 10 TB',
+  '10 TB - 100 TB',
+  '> 100 TB',
+];
+
+const GROWTH_RATE_OPTIONS = [
+  '< 10%',
+  '10-50%',
+  '50-100%',
+  '100-500%',
+  '> 500%',
+];
+
+const NUM_RECORDS_OPTIONS = [
+  '< 10,000',
+  '10,000 - 100,000',
+  '100,000 - 1 million',
+  '1 million - 10 million',
+  '10 million - 100 million',
+  '> 100 million',
+];
+
+const PRIMARY_DATA_SOURCES = [
+  'Internal Databases',
+  'Customer Input Forms',
+  'IoT Devices/Sensors',
+  'Mobile Applications',
+  'Web Applications',
+  'Third-party APIs',
+  'Public Datasets',
+  'Social Media',
+  'Partner Organizations',
+  'Government Databases',
+  'Purchased Data',
+  'Web Scraping',
+  'Manual Entry',
+  'Legacy Systems',
+  'Cloud Storage',
+  'Edge Devices',
+];
+
+const FRESHNESS_OPTIONS = [
+  'Real-time (< 1 second)',
+  'Near real-time (1-60 seconds)',
+  'Micro-batch (1-5 minutes)',
+  'Batch (hourly)',
+  'Daily',
+  'Weekly or less frequent',
+];
+
+const RETENTION_OPTIONS = [
+  '< 30 days',
+  '30 days - 1 year',
+  '1-3 years',
+  '3-7 years',
+  '7+ years',
+  'Indefinite',
+  'Varies by data type',
+];
+
+// Controlled component props
+type DataReadinessValue = {
+  dataTypes: string[];
+  dataVolume: string;
+  growthRate: string;
+  numRecords: string;
+  primarySources: string[];
+  dataQualityScore: number;
+  dataCompleteness: number;
+  dataAccuracyConfidence: number;
+  dataFreshness: string;
+  dataSubjectLocations: string;
+  dataStorageLocations: string;
+  dataProcessingLocations: string;
+  crossBorderTransfer: boolean;
+  dataLocalization: string;
+  dataRetention: string;
 };
 
-export default function DataReadinessAssessment({ onChange }: Props) {
-  const lastSent = useRef<any>(null);
+type Props = {
+  value: DataReadinessValue;
+  onChange: (data: DataReadinessValue) => void;
+};
 
-  const [trainingDataVolume, setTrainingDataVolume] = useState('Sufficient (100K+ records)');
-  const [historicalDataDepth, setHistoricalDataDepth] = useState('3+ years');
-
-  const [qualityScores, setQualityScores] = useState<Record<string, number>>({
-    completeness: 85,
-    accuracy: 92,
-    consistency: 78,
-    timeliness: 95,
-  });
-
-  const [sources, setSources] = useState<Record<string, boolean>>({
-    internal: true,
-    logs: true,
-    external: false,
-    thirdParty: false,
-  });
-
-  const [pipeline, setPipeline] = useState<Record<string, boolean>>({
-    'Data Extraction': false,
-    'Data Transformation': false,
-    'Data Loading/Storage': false,
-    'Real-time Processing': false,
-  });
-
-  const [governance, setGovernance] = useState<Record<string, boolean>>({
-    'Data Catalog': true,
-    'Lineage Tracking': true,
-    'Quality Monitoring': false,
-    'Privacy Controls': true,
-  });
-
-  const [featureEngineeringReqs, setFeatureEngineeringReqs] = useState('');
-  const [criticalDataGaps, setCriticalDataGaps] = useState('');
-  const [dataCollectionStrategy, setDataCollectionStrategy] = useState('');
-  const [dataReadinessTimeline, setDataReadinessTimeline] = useState('');
-
-  useEffect(() => {
-    const currentData = {
-      trainingDataVolume,
-      historicalDataDepth,
-      qualityScores,
-      sources,
-      pipeline,
-      governance,
-      featureEngineeringReqs,
-      criticalDataGaps,
-      dataCollectionStrategy,
-      dataReadinessTimeline,
-    };
-    if (onChange && !isEqual(currentData, lastSent.current)) {
-      onChange(currentData);
-      lastSent.current = currentData;
+export default function DataReadiness({ value, onChange }: Props) {
+  // Multi-select checkbox handler
+  function handleMultiSelect(field: keyof DataReadinessValue, option: string) {
+    const arr = value[field] as string[];
+    if (arr.includes(option)) {
+      onChange({ ...value, [field]: arr.filter((x) => x !== option) });
+    } else {
+      onChange({ ...value, [field]: [...arr, option] });
     }
-  }, [
-    trainingDataVolume,
-    historicalDataDepth,
-    qualityScores,
-    sources,
-    pipeline,
-    governance,
-    featureEngineeringReqs,
-    criticalDataGaps,
-    dataCollectionStrategy,
-    dataReadinessTimeline,
-    onChange,
-  ]);
-
-  const getSliderColor = (value: number) => {
-    if (value >= 90) return 'bg-green-500';
-    if (value >= 70) return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
+  }
 
   return (
     <div className="space-y-8">
       <div className="bg-cyan-50 p-4 rounded-lg">
         <h3 className="text-lg font-semibold text-cyan-800 mb-2">Data Readiness Assessment</h3>
-        <p className="text-cyan-700">Evaluate data availability, quality, and preparedness for AI model development.</p>
+        <p className="text-cyan-700">Comprehensive data characteristics, quality, and governance inputs.</p>
       </div>
 
-      <div className="space-y-6">
-        <h4 className="font-semibold text-gray-800 text-md">Data Availability & Quality</h4>
-
-        {/* Dropdowns */}
-        <div className="space-y-4">
-          <label className="block text-sm font-semibold text-gray-800">Data Volume Assessment</label>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">Training Data Volume</span>
-              <Select value={trainingDataVolume} onValueChange={setTrainingDataVolume}>
-                <SelectTrigger className="w-64">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Sufficient (100K+ records)">Sufficient (100K+ records)</SelectItem>
-                  <SelectItem value="Moderate (10K-100K records)">Moderate (10K-100K records)</SelectItem>
-                  <SelectItem value="Limited (1K-10K records)">Limited (1K-10K records)</SelectItem>
-                  <SelectItem value="Insufficient (<1K records)">Insufficient (&lt;1K records)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">Historical Data Depth</span>
-              <Select value={historicalDataDepth} onValueChange={setHistoricalDataDepth}>
-                <SelectTrigger className="w-64">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="3+ years">3+ years</SelectItem>
-                  <SelectItem value="1-3 years">1-3 years</SelectItem>
-                  <SelectItem value="6-12 months">6-12 months</SelectItem>
-                  <SelectItem value="<6 months">&lt;6 months</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        {/* Sliders */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-2">Data Quality Metrics</label>
-          <div className="space-y-4">
-            {Object.entries(qualityScores).map(([metric, value]) => (
-              <div key={metric} className="flex items-center justify-between">
-                <span className="text-sm text-gray-700 capitalize w-32">{metric}</span>
-                <div className="flex items-center space-x-2 w-full max-w-md">
-                  <div className="w-full relative">
-                    <Slider
-                      defaultValue={[value]}
-                      max={100}
-                      step={1}
-                      onValueChange={(val) =>
-                        setQualityScores((prev) => ({ ...prev, [metric]: val[0] }))
-                      }
-                      className={`h-2 ${getSliderColor(value)} rounded-full`}
-                    />
-                  </div>
-                  <span className="text-sm font-medium w-10 text-right">{value}%</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Data Sources */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Data Sources</label>
-          <div className="space-y-2">
-            {Object.entries(sources).map(([key, val]) => (
-              <label key={key} className="flex items-center space-x-2">
-                <Checkbox
-                  checked={val}
-                  onCheckedChange={(v) =>
-                    setSources((prev) => ({ ...prev, [key]: !!v }))
-                  }
-                />
-                <span className="text-sm capitalize">
-                  {{
-                    internal: 'Internal databases (CRM, ERP)',
-                    logs: 'Customer interaction logs',
-                    external: 'External data feeds',
-                    thirdParty: 'Third-party datasets',
-                  }[key]}
-                </span>
-              </label>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Pipeline and Governance */}
-      <div className="space-y-6">
-        <h4 className="font-semibold text-gray-800 text-md">Data Infrastructure & Governance</h4>
-
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">Data Pipeline Readiness</label>
-          {Object.entries(pipeline).map(([key, val]) => (
-            <label key={key} className="flex items-center space-x-2">
-              <Checkbox
-                checked={val}
-                onCheckedChange={(v) =>
-                  setPipeline((prev) => ({ ...prev, [key]: !!v }))
-                }
-              />
-              <span className="text-sm">{key}</span>
+      {/* Data Types */}
+      <div>
+        <label className="block font-semibold mb-2">Data Types (multi-select)</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+          {DATA_TYPES.map((type) => (
+            <label key={type} className="flex items-center gap-2">
+              <Checkbox checked={value.dataTypes.includes(type)} onCheckedChange={() => handleMultiSelect('dataTypes', type)} />
+              <span className="text-sm">{type}</span>
             </label>
           ))}
         </div>
+      </div>
 
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">Data Governance</label>
-          {Object.entries(governance).map(([key, val]) => (
-            <label key={key} className="flex items-center space-x-2">
-              <Checkbox
-                checked={val}
-                onCheckedChange={(v) =>
-                  setGovernance((prev) => ({ ...prev, [key]: !!v }))
-                }
-              />
-              <span className="text-sm">{key}</span>
+      {/* Data Volume & Scale */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label className="block font-semibold mb-1">Current Data Volume</label>
+          <Select value={value.dataVolume} onValueChange={(v) => onChange({ ...value, dataVolume: v })}>
+            <SelectTrigger><SelectValue placeholder="Select volume" /></SelectTrigger>
+            <SelectContent>
+              {DATA_VOLUME_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="block font-semibold mb-1">Expected Growth Rate (Annual)</label>
+          <Select value={value.growthRate} onValueChange={(v) => onChange({ ...value, growthRate: v })}>
+            <SelectTrigger><SelectValue placeholder="Select growth" /></SelectTrigger>
+            <SelectContent>
+              {GROWTH_RATE_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="block font-semibold mb-1">Number of Records</label>
+          <Select value={value.numRecords} onValueChange={(v) => onChange({ ...value, numRecords: v })}>
+            <SelectTrigger><SelectValue placeholder="Select records" /></SelectTrigger>
+            <SelectContent>
+              {NUM_RECORDS_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Primary Data Sources */}
+      <div>
+        <label className="block font-semibold mb-2">Primary Data Sources (multi-select)</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+          {PRIMARY_DATA_SOURCES.map((src) => (
+            <label key={src} className="flex items-center gap-2">
+              <Checkbox checked={value.primarySources.includes(src)} onCheckedChange={() => handleMultiSelect('primarySources', src)} />
+              <span className="text-sm">{src}</span>
             </label>
           ))}
         </div>
+      </div>
 
-        {/* Feature Engineering */}
+      {/* Data Quality & Governance */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Feature Engineering Requirements
-          </label>
-          <Textarea
-            rows={3}
-            value={featureEngineeringReqs}
-            onChange={(e) => setFeatureEngineeringReqs(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            placeholder="Describe required data transformations and feature engineering needs..."
-          />
+          <label className="block font-semibold mb-1">Data Quality Score</label>
+          <Slider value={[value.dataQualityScore]} min={1} max={10} step={1} onValueChange={([v]) => onChange({ ...value, dataQualityScore: v })} />
+          <span className="text-xs text-gray-600">{value.dataQualityScore}/10</span>
+        </div>
+        <div>
+          <label className="block font-semibold mb-1">Data Completeness (%)</label>
+          <Input type="number" min={0} max={100} value={value.dataCompleteness} onChange={e => onChange({ ...value, dataCompleteness: Number(e.target.value) })} />
+        </div>
+        <div>
+          <label className="block font-semibold mb-1">Data Accuracy Confidence (%)</label>
+          <Input type="number" min={0} max={100} value={value.dataAccuracyConfidence} onChange={e => onChange({ ...value, dataAccuracyConfidence: Number(e.target.value) })} />
+        </div>
+      </div>
+      <div>
+        <label className="block font-semibold mb-1">Data Freshness Requirement</label>
+        <Select value={value.dataFreshness} onValueChange={v => onChange({ ...value, dataFreshness: v })}>
+          <SelectTrigger><SelectValue placeholder="Select freshness" /></SelectTrigger>
+          <SelectContent>
+            {FRESHNESS_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Geographic & Jurisdictional */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block font-semibold mb-1">Data Subject Locations (countries/regions)</label>
+          <Input value={value.dataSubjectLocations} onChange={e => onChange({ ...value, dataSubjectLocations: e.target.value })} placeholder="e.g. US, EU, India" />
+        </div>
+        <div>
+          <label className="block font-semibold mb-1">Data Storage Locations</label>
+          <Input value={value.dataStorageLocations} onChange={e => onChange({ ...value, dataStorageLocations: e.target.value })} placeholder="e.g. AWS eu-west-1, on-premise" />
+        </div>
+        <div>
+          <label className="block font-semibold mb-1">Data Processing Locations</label>
+          <Input value={value.dataProcessingLocations} onChange={e => onChange({ ...value, dataProcessingLocations: e.target.value })} placeholder="e.g. US, Singapore" />
+        </div>
+        <div>
+          <label className="block font-semibold mb-1">Cross-border Transfer Required</label>
+          <Checkbox checked={value.crossBorderTransfer} onCheckedChange={v => onChange({ ...value, crossBorderTransfer: !!v })} />
+        </div>
+        <div className="md:col-span-2">
+          <label className="block font-semibold mb-1">Data Localization Requirements (countries)</label>
+          <Input value={value.dataLocalization} onChange={e => onChange({ ...value, dataLocalization: e.target.value })} placeholder="e.g. Russia, China" />
         </div>
       </div>
 
-      {/* Data Gaps & Action Plan */}
-      <div className="space-y-4">
-        <h4 className="font-semibold text-gray-800">Data Gaps & Action Plan</h4>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Critical Data Gaps</label>
-            <Textarea rows={3} value={criticalDataGaps} onChange={e => setCriticalDataGaps(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Data Collection Strategy</label>
-            <Textarea rows={3} value={dataCollectionStrategy} onChange={e => setDataCollectionStrategy(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Data Readiness Timeline</label>
-            <Textarea rows={3} value={dataReadinessTimeline} onChange={e => setDataReadinessTimeline(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
-          </div>
-        </div>
-      </div>
-
-      {/* Final Score */}
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <h4 className="font-semibold text-gray-800 mb-2">Overall Data Readiness Score</h4>
-        <div className="flex items-center justify-between">
-          <span className="text-sm">
-            Data Readiness: <span className="font-semibold text-green-600">Good (7.5/10)</span>
-          </span>
-          <span className="text-sm">
-            Estimated Prep Time: <span className="font-semibold text-blue-600">8-12 weeks</span>
-          </span>
-        </div>
-        <div className="mt-2">
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div className="bg-green-500 h-2 rounded-full" style={{ width: '75%' }} />
-          </div>
-        </div>
+      {/* Data Lifecycle */}
+      <div>
+        <label className="block font-semibold mb-1">Data Retention Period</label>
+        <Select value={value.dataRetention} onValueChange={v => onChange({ ...value, dataRetention: v })}>
+          <SelectTrigger><SelectValue placeholder="Select retention" /></SelectTrigger>
+          <SelectContent>
+            {RETENTION_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
