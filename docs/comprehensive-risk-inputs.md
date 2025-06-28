@@ -2,7 +2,7 @@
 
 ## 📊 1. Data & Information Layer
 
-### Data Characteristics
+### Data Characteristics /Data Readiness
 - **Data Types** *(Multi-select)*
   - [ ] Personal Identifiable Information (PII)
   - [ ] Sensitive Personal Data (race, religion, politics)
@@ -24,7 +24,7 @@
   - [ ] Trade Secrets
   - [ ] Third-party Data
 
-### Data Volume & Scale
+### Data Volume & Scale /Data Readiness
 - **Current Data Volume** *(Select one)*
   - [ ] < 1 GB
   - [ ] 1 GB - 100 GB
@@ -48,7 +48,7 @@
   - [ ] 10 million - 100 million
   - [ ] > 100 million
 
-### Data Sources
+### Data Sources /Data Readiness
 - **Primary Data Sources** *(Multi-select)*
   - [ ] Internal Databases
   - [ ] Customer Input Forms
@@ -67,7 +67,7 @@
   - [ ] Cloud Storage
   - [ ] Edge Devices
 
-### Data Quality & Governance
+### Data Quality & Governance /Data Readiness
 - **Data Quality Score** *(1-10 slider)*
 - **Data Completeness** *(Percentage)*
 - **Data Accuracy Confidence** *(Percentage)*
@@ -79,14 +79,14 @@
   - [ ] Daily
   - [ ] Weekly or less frequent
 
-### Geographic & Jurisdictional
+### Geographic & Jurisdictional /Data Readiness
 - **Data Subject Locations** *(Multi-select countries/regions)*
 - **Data Storage Locations** *(Multi-select)*
 - **Data Processing Locations** *(Multi-select)*
 - **Cross-border Transfer Required** *(Yes/No)*
 - **Data Localization Requirements** *(List countries)*
 
-### Data Lifecycle
+### Data Lifecycle /Data Readiness
 - **Data Retention Period**
   - [ ] < 30 days
   - [ ] 30 days - 1 year
@@ -103,8 +103,7 @@
   - [ ] Hard delete available
   - [ ] Immutable/Cannot delete
 
-## 🔧 2. Technical Architecture Layer
-
+## 🔧 2. Technical Architecture Layer /Slider (Technical Complexity)
 ### AI/ML Model Specifications
 - **Model Type** *(Multi-select)*
   - [ ] Large Language Model (LLM)
@@ -203,7 +202,10 @@
   - [ ] At-rest Encryption
   - [ ] In-transit Encryption
   - [ ] Key Management System
+### end technical
 
+
+### business feasibility (remove last comp)
 ### Performance & Reliability
 - **Availability Requirements**
   - [ ] 99% (3.65 days downtime/year)
@@ -228,7 +230,7 @@
 
 ## 💼 3. Business Context Layer
 
-### Organizational Scope
+### Organizational Scope (main form)
 - **Business Function** *(Primary)*
   - [ ] Finance & Accounting
   - [ ] Human Resources
@@ -241,7 +243,7 @@
   - [ ] Supply Chain
   - [ ] Risk Management
   - [ ] Executive/Strategic
-
+# bfr bussiness function
 - **Industry Sector**
   - [ ] Financial Services
   - [ ] Healthcare
@@ -258,7 +260,7 @@
   - [ ] Agriculture
   - [ ] Pharmaceuticals
 
-### Business Impact
+### Business Impact /Assessment-business feasibility
 - **Revenue Impact Type**
   - [ ] Direct Revenue Generation
   - [ ] Cost Reduction
@@ -286,7 +288,7 @@
   - [ ] Analysts
   - [ ] Minors/Children
 
-### Decision Making
+### Decision Making /ethical impact
 - **Decision Automation Level**
   - [ ] Information Only (No decisions)
   - [ ] Decision Support (Human decides)
@@ -309,7 +311,7 @@
   - [ ] Resource Allocation
   - [ ] Predictive Maintenance
 
-### Business Criticality
+### Business Criticality /business feasibility
 - **System Criticality**
   - [ ] Non-critical (Experimental)
   - [ ] Low (Convenience)
@@ -326,7 +328,7 @@
 
 ## ⚖️ 4. Regulatory & Compliance Layer
 
-### Jurisdictional Requirements
+### Jurisdictional Requirements /risk assessment
 - **Operating Jurisdictions** *(Multi-select)*
   - Americas
     - [ ] United States (Federal)
@@ -415,7 +417,7 @@
 
 ## 🤖 5. AI-Specific Layer
 
-### Model Development
+### Model Development /data readiness
 - **Training Data Source**
   - [ ] Internal Historical Data
   - [ ] Public Datasets
@@ -431,7 +433,7 @@
   - [ ] 100GB - 1TB
   - [ ] 1TB - 10TB
   - [ ] > 10TB
-
+# technical feasibility
 - **Model Development Approach**
   - [ ] Built from Scratch
   - [ ] Fine-tuned Pre-trained
@@ -441,21 +443,22 @@
   - [ ] Federated Learning
   - [ ] Continuous Learning
 
-### Model Characteristics
+### Model Characteristics 
+# ethical
 - **Explainability Level**
   - [ ] Black Box (No explanation)
   - [ ] Basic Feature Importance
   - [ ] Partial Explanations
   - [ ] Full Explainability
   - [ ] Human-interpretable Rules
-
+# ethical
 - **Bias Testing**
   - [ ] No Testing Planned
   - [ ] Basic Statistical Testing
   - [ ] Comprehensive Bias Audit
   - [ ] Continuous Monitoring
   - [ ] Third-party Audit
-
+# technical
 - **Model Update Frequency**
   - [ ] Static (No updates)
   - [ ] Annual
@@ -465,7 +468,7 @@
   - [ ] Daily
   - [ ] Real-time/Continuous
 
-### AI Governance
+### AI Governance /ethical
 - **Human Oversight Level**
   - [ ] Fully Autonomous
   - [ ] Periodic Review
@@ -473,7 +476,7 @@
   - [ ] Active Supervision
   - [ ] Human-in-the-loop
   - [ ] Human Approval Required
-
+# ethical
 - **Performance Monitoring**
   - [ ] Accuracy/Precision
   - [ ] Fairness Metrics
@@ -483,7 +486,7 @@
   - [ ] Error Analysis
   - [ ] A/B Testing
 
-### Ethical Considerations
+### Ethical Considerations /ethical
 - **Potential Harm Areas** *(Multi-select)*
   - [ ] Discrimination/Bias
   - [ ] Privacy Violation
@@ -504,7 +507,7 @@
   - [ ] Non-native Speakers
   - [ ] Specific Medical Conditions
 
-### AI Output Characteristics
+### AI Output Characteristics /technical
 - **Output Type**
   - [ ] Predictions/Scores
   - [ ] Classifications
@@ -512,7 +515,7 @@
   - [ ] Generated Content
   - [ ] Automated Actions
   - [ ] Insights/Analytics
-
+# technical
 - **Confidence Scores**
   - [ ] Not Provided
   - [ ] Binary (Yes/No)
@@ -522,21 +525,21 @@
 
 ## 📋 Additional Contextual Inputs
 
-### Project Metadata
+### Project Metadata /roadmap
 - **Project Stage**
   - [ ] Ideation/Planning
   - [ ] Proof of Concept
   - [ ] Pilot/Testing
   - [ ] Production Rollout
   - [ ] Operational/Mature
-
+# roadmap
 - **Timeline Constraints**
   - [ ] No Specific Timeline
   - [ ] 3-6 months
   - [ ] 6-12 months
   - [ ] 12-24 months
   - [ ] > 24 months
-
+# budget
 - **Budget Range**
   - [ ] < $100K
   - [ ] $100K - $500K
@@ -544,13 +547,13 @@
   - [ ] $1M - $5M
   - [ ] > $5M
 
-### Stakeholder Information
+### Stakeholder Information /business
 - **Executive Sponsor Level**
   - [ ] C-Suite
   - [ ] VP/Director
   - [ ] Manager
   - [ ] Team Lead
-
+# business
 - **Stakeholder Groups** *(Multi-select)*
   - [ ] Board of Directors
   - [ ] Executive Team
@@ -562,14 +565,14 @@
   - [ ] Partners
   - [ ] Public/Media
 
-### Risk Appetite
+### Risk Appetite /risk assessment
 - **Organization Risk Tolerance**
   - [ ] Risk Averse
   - [ ] Conservative
   - [ ] Moderate
   - [ ] Aggressive
   - [ ] Risk Seeking
-
+# risk assessment
 - **Previous AI Experience**
   - [ ] First AI Project
   - [ ] Limited Experience
