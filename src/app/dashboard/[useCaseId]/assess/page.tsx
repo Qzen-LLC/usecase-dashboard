@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import TechnicalFeasibility from '@/components/TechnicalFeasibility';
 import EthicalImpact from '@/components/EthicalImpact';
@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import RoadmapPosition from "@/components/RoadmapPosition";
 import DataReadiness from "@/components/DataReadiness";
+import FinancialDashboard from './financial-dashboard/page';
+import ApprovalsPage from '@/components/ApprovalsPage';
 
 const assessmentSteps = [
   { id: 1, title: "Technical Feasibility" },
@@ -27,6 +29,8 @@ const assessmentSteps = [
   { id: 5, title: "Data Readiness" },
   { id: 6, title: "Roadmap Position" },
   { id: 7, title: "Budget Planning" },
+  { id: 8, title: "Financial Dashboard" },
+  { id: 9, title: "Approvals" },
 ];
 
 interface UseCase {
@@ -93,6 +97,9 @@ export default function AssessmentPage() {
     roadmapPosition: null,
     budgetPlanning: null,
   });
+  const budgetPlanningRef = useRef<{ saveFinops: () => Promise<void> }>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const approvalsPageRef = useRef<{ handleComplete: () => Promise<void> }>(null);
 
   const handleAssessmentChange = (section: string, data: any) => {
     setAssessmentData((prevData: any) => ({
@@ -126,13 +133,18 @@ export default function AssessmentPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ useCaseId, assessData: assessmentData }),
     });
+    if (res.ok) {
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+    }
   };
 
-  const handleNext = () => {
-    if (!isLastStep) {
+  const handleNext = async () => {
+    if (currentStep === 7 && budgetPlanningRef.current) {
+      await budgetPlanningRef.current.saveFinops();
+    }
+    if (currentStep < assessmentSteps.length) {
       setCurrentStep((prev) => prev + 1);
-    } else {
-      router.push(`/dashboard/${useCaseId}/assess/financial-dashboard`);
     }
   };
 
@@ -213,7 +225,11 @@ export default function AssessmentPage() {
         ) : currentStep === 6 ? (
           <RoadmapPosition onChange={(data) => handleAssessmentChange('roadmapPosition', data)} />
         ) : currentStep === 7 ? (
-          <BudgetPlanning onChange={(data) => handleAssessmentChange('budgetPlanning', data)} />
+          <BudgetPlanning useCaseId={useCaseId} ref={budgetPlanningRef} />
+        ) : currentStep === 8 ? (
+          <FinancialDashboard />
+        ) : currentStep === 9 ? (
+          <ApprovalsPage ref={approvalsPageRef} />
         ) :
          (
           <div className="text-gray-600 text-lg font-medium">
@@ -232,20 +248,45 @@ export default function AssessmentPage() {
           <ChevronLeft className="w-4 h-4 mr-2" />
           Previous
         </button>
-
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold"
-                onClick={handleSave}
-        >
-          Save Progress
-        </button>
-
-        <button
-          className={`flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700`}
-          onClick={handleNext}
-        >
-          Next
-          <ChevronRight className="w-4 h-4 ml-2" />
-        </button>
+        {currentStep < 8 && (
+          <>
+            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold"
+                    onClick={handleSave}
+            >
+              Save Progress
+            </button>
+            {saveSuccess && (
+              <div className="ml-4 text-green-600 font-semibold">Progress saved!</div>
+            )}
+          </>
+        )}
+        {currentStep < 9 ? (
+          <button
+            className={`flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700`}
+            onClick={handleNext}
+          >
+            Next
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </button>
+        ) : (
+          <button
+            className="px-4 py-2 w-64 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white rounded-xl shadow-lg font-semibold text-lg transition"
+            onClick={async () => {
+              if (approvalsPageRef.current && approvalsPageRef.current.handleComplete) {
+                await approvalsPageRef.current.handleComplete();
+              }
+              // Move use case to backlog
+              await fetch('/api/update-stage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ useCaseId, newStage: 'backlog' }),
+              });
+              router.push('/dashboard');
+            }}
+          >
+            Complete Assessment
+          </button>
+        )}
       </div>
     </div>
   );

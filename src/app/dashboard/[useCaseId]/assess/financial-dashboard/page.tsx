@@ -651,12 +651,6 @@ const FinancialDashboard = () => {
               })()}
             </Card>
           </div>
-          <Button
-            className="mt-10 w-full bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white px-6 py-3 rounded-xl shadow-lg font-semibold text-lg transition"
-            onClick={() => window.location.href = `/dashboard/${useCaseId}/assess/approvals`}
-          >
-            Proceed to Approvals
-          </Button>
         </div>
       </div>
     </div>
