@@ -344,8 +344,7 @@ const Dashboard = () => {
                       return false;
                     });
                     if (missing.length > 0) {
-                      // Redirect to edit page with prompt
-                      router.push(`/edit-usecase/${useCase.id}?completeForBusinessCase=1`);
+                      alert('Please complete all required fields in the use case form before moving to Business Case.');
                       return;
                     }
                   }
