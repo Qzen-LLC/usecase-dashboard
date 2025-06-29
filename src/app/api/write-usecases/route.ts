@@ -26,6 +26,7 @@ export async function POST(req: Request) {
             estimatedTimeline,
             requiredResources,
             businessFunction,
+            stage,
         } = body;
         if(id) {
             const useCase = await prismaClient.useCase.upsert({
@@ -53,6 +54,7 @@ export async function POST(req: Request) {
                     estimatedTimeline,
                     requiredResources,
                     businessFunction,
+                    stage,
                 },
                 create: {
                     title,
@@ -75,6 +77,7 @@ export async function POST(req: Request) {
                     estimatedTimeline,
                     requiredResources,
                     businessFunction,
+                    stage,
                 },
             });
         }
@@ -101,6 +104,7 @@ export async function POST(req: Request) {
                     estimatedTimeline,
                     requiredResources,
                     businessFunction,
+                    stage,
                 },
             });
         }    

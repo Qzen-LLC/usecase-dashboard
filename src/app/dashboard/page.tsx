@@ -344,9 +344,15 @@ const Dashboard = () => {
                       return false;
                     });
                     if (missing.length > 0) {
-                      alert('Please fill all fields before moving to Business Case. Missing: ' + missing.join(', '));
+                      // Redirect to edit page with prompt
+                      router.push(`/edit-usecase/${useCase.id}?completeForBusinessCase=1`);
                       return;
                     }
+                  }
+                  // If moving from proof-of-value to backlog, show alert
+                  if (useCase.stage === 'proof-of-value' && nextStage === 'backlog') {
+                    alert('Please complete the assessment before moving to Backlog.');
+                    return;
                   }
                   await handleMoveToStage(useCase.id, nextStage);
                 }}

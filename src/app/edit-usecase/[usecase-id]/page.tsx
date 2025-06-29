@@ -1,6 +1,6 @@
 'use client'
 import { prismaClient } from "@/utils/db";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, ChevronLeft, Target, TrendingUp, Zap, DollarSign, Save, Download, Plus, Minus } from 'lucide-react';
@@ -32,6 +32,7 @@ type FormData = {
   estimatedTimeline: string;
   requiredResources: string;
   priority: string;
+  businessFunction: string;
 };
 
 const initialFormData: FormData = {
@@ -54,7 +55,8 @@ const initialFormData: FormData = {
   complexity: 5,
   estimatedTimeline: "",
   requiredResources: "",
-  priority: "mdeium"
+  priority: "mdeium",
+  businessFunction: "",
 };
 
 type ArrayField = 'primaryStakeholders' | 'secondaryStakeholders' | 'successCriteria' | 'keyAssumptions';
@@ -135,6 +137,8 @@ const AIUseCaseTool = () => {
   const router = useRouter();
 
   const params = useParams();
+  const searchParams = useSearchParams();
+  const completeForBusinessCase = searchParams.get('completeForBusinessCase') === '1';
 
   useEffect(() => {
     const fetchAndFill = async () => {
@@ -238,6 +242,33 @@ const AIUseCaseTool = () => {
             onChange={(e) => handleChange("desiredState", e.target.value)}
             className={invalidFields.includes('desiredState') ? 'border-red-500' : ''}
           />
+          <Label htmlFor="businessFunction">Business Function</Label>
+          <select
+            id="businessFunction"
+            value={formData.businessFunction}
+            onChange={e => handleChange("businessFunction", e.target.value)}
+            className={"mb-4 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 " + (invalidFields.includes('businessFunction') ? 'border-red-500' : '')}
+          >
+            <option value="" disabled>Select a business function</option>
+            <option value="Sales">Sales</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Product Development">Product Development</option>
+            <option value="Operations">Operations</option>
+            <option value="Customer Support">Customer Support</option>
+            <option value="HR">HR</option>
+            <option value="Finance">Finance</option>
+            <option value="IT">IT</option>
+            <option value="Legal">Legal</option>
+            <option value="Procurement">Procurement</option>
+            <option value="Facilities">Facilities</option>
+            <option value="Strategy">Strategy</option>
+            <option value="Communications">Communications</option>
+            <option value="Risk & Audit">Risk & Audit</option>
+            <option value="Innovation Office">Innovation Office</option>
+            <option value="ESG">ESG</option>
+            <option value="Data Office">Data Office</option>
+            <option value="PMO">PMO</option>
+          </select>
           {/* <Label htmlFor="primaryStakeholders">Primary Stakeholder</Label>
           <Input
             id="primaryStakeholders"
@@ -491,12 +522,16 @@ const AIUseCaseTool = () => {
   const handleGoToPipeline = async () => {
     if (validateForm()) {
       try {
+        const body = {
+          ...formData,
+          stage: completeForBusinessCase ? 'business-case' : undefined,
+        };
         const res = await fetch("/api/write-usecases", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(body),
         });   
       } catch(error) {
         console.error("Unable to Submit");
@@ -539,6 +574,11 @@ const AIUseCaseTool = () => {
               </div>
             )}
             <main>
+              {completeForBusinessCase && (
+                <div className="mb-4 text-blue-700 font-semibold bg-blue-50 border border-blue-200 rounded p-3">
+                  Please complete all required fields to move this use case to Business Case.
+                </div>
+              )}
               {currentStep === 1 && renderStep1()}
               {currentStep === 2 && renderStep2()}
               {currentStep === 3 && renderStep3()}
