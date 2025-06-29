@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Target, TrendingUp, Zap, DollarSign, Clock, User, CheckCircle, AlertTriangle, Brain, Shield, Calendar, FileText } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import ReadOnlyAssessmentDisplay from '@/components/ReadOnlyAssessmentDisplay';
 
 interface UseCaseDetails {
   id: string;
@@ -43,35 +44,6 @@ interface UseCaseDetails {
     };
   };
 }
-
-// Recursive object renderer
-const renderObject = (obj: any, parentKey = ""): React.ReactNode => {
-  if (obj === null || obj === undefined) return <span className="text-gray-400">Not specified</span>;
-  if (typeof obj === "string" || typeof obj === "number") return <span>{obj}</span>;
-  if (typeof obj === "boolean") return <span>{obj ? "Yes" : "No"}</span>;
-  if (Array.isArray(obj)) {
-    return (
-      <ul className="list-disc ml-6">
-        {obj.map((item, idx) => (
-          <li key={idx}>{renderObject(item, parentKey)}</li>
-        ))}
-      </ul>
-    );
-  }
-  if (typeof obj === "object") {
-    return (
-      <div className="space-y-2">
-        {Object.entries(obj).map(([key, value]) => (
-          <div key={key} className="flex flex-col">
-            <span className="font-medium text-gray-700">{parentKey ? `${parentKey} > ${key}` : key}:</span>
-            <div className="ml-4">{renderObject(value, key)}</div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-  return <span>{String(obj)}</span>;
-};
 
 const ViewUseCasePage = () => {
   const params = useParams();
@@ -142,6 +114,42 @@ const ViewUseCasePage = () => {
     </div>
   );
 
+  // Helper for array rendering
+  const renderArray = (items: string[] | undefined, label: string) => {
+    if (!items || items.length === 0) return <span className="text-gray-400 italic">No {label.toLowerCase()} recorded.</span>;
+    return (
+      <div className="flex flex-wrap gap-2">
+        {items.map((item, index) => (
+          <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
+            {item}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
+  // Helper for risk rendering
+  const renderRiskList = (risks: any[] | string | undefined, label: string) => {
+    if (Array.isArray(risks)) {
+      if (risks.length === 0) return <p className="text-gray-500 italic">No {label.toLowerCase()} recorded.</p>;
+      return (
+        <div className="space-y-2">
+          {risks.map((riskObj, idx) => (
+            <div key={idx} className="bg-red-50 p-3 rounded-md">
+              {riskObj.risk && <div><strong>Risk:</strong> {riskObj.risk}</div>}
+              {riskObj.impact !== undefined && <div><strong>Impact:</strong> {riskObj.impact}</div>}
+              {riskObj.probability !== undefined && <div><strong>Probability:</strong> {riskObj.probability}</div>}
+            </div>
+          ))}
+        </div>
+      );
+    } else if (typeof risks === 'string') {
+      return <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{risks}</p>;
+    } else {
+      return <p className="text-gray-500 italic">No {label.toLowerCase()} recorded.</p>;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -169,28 +177,6 @@ const ViewUseCasePage = () => {
       </div>
     );
   }
-
-  // Helper for risk rendering
-  const renderRiskList = (risks: any[] | string | undefined, label: string) => {
-    if (Array.isArray(risks)) {
-      if (risks.length === 0) return <p className="text-gray-500 italic">No {label.toLowerCase()} recorded.</p>;
-      return (
-        <div className="space-y-2">
-          {risks.map((riskObj, idx) => (
-            <div key={idx} className="bg-red-50 p-3 rounded-md">
-              {riskObj.risk && <div><strong>Risk:</strong> {riskObj.risk}</div>}
-              {riskObj.impact !== undefined && <div><strong>Impact:</strong> {riskObj.impact}</div>}
-              {riskObj.probability !== undefined && <div><strong>Probability:</strong> {riskObj.probability}</div>}
-            </div>
-          ))}
-        </div>
-      );
-    } else if (typeof risks === 'string') {
-      return <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{risks}</p>;
-    } else {
-      return <p className="text-gray-500 italic">No {label.toLowerCase()} recorded.</p>;
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -240,9 +226,9 @@ const ViewUseCasePage = () => {
                 <div><span className="font-medium text-gray-700">Proposed AI Solution:</span> <span>{useCase.proposedAISolution}</span></div>
                 <div><span className="font-medium text-gray-700">Current State:</span> <span>{useCase.currentState}</span></div>
                 <div><span className="font-medium text-gray-700">Desired State:</span> <span>{useCase.desiredState}</span></div>
-                <div><span className="font-medium text-gray-700">Primary Stakeholders:</span> {renderObject(useCase.primaryStakeholders)}</div>
-                <div><span className="font-medium text-gray-700">Secondary Stakeholders:</span> {renderObject(useCase.secondaryStakeholders)}</div>
-                <div><span className="font-medium text-gray-700">Success Criteria:</span> {renderObject(useCase.successCriteria)}</div>
+                <div><span className="font-medium text-gray-700">Primary Stakeholders:</span> {renderArray(useCase.primaryStakeholders, 'stakeholder')}</div>
+                <div><span className="font-medium text-gray-700">Secondary Stakeholders:</span> {renderArray(useCase.secondaryStakeholders, 'stakeholder')}</div>
+                <div><span className="font-medium text-gray-700">Success Criteria:</span> {renderArray(useCase.successCriteria, 'success criterion')}</div>
               </div>
             )}
 
@@ -253,7 +239,7 @@ const ViewUseCasePage = () => {
               <div className="space-y-4">
                 <div><span className="font-medium text-gray-700">Problem Validation:</span> <span>{useCase.problemValidation}</span></div>
                 <div><span className="font-medium text-gray-700">Solution Hypothesis:</span> <span>{useCase.solutionHypothesis}</span></div>
-                <div><span className="font-medium text-gray-700">Key Assumptions:</span> {renderObject(useCase.keyAssumptions)}</div>
+                <div><span className="font-medium text-gray-700">Key Assumptions:</span> {renderArray(useCase.keyAssumptions, 'assumption')}</div>
                 <div><span className="font-medium text-gray-700">Initial ROI:</span> <span>{useCase.initialROI}</span></div>
                 <div><span className="font-medium text-gray-700">Confidence Level:</span> <span>{useCase.confidenceLevel}</span></div>
               </div>
@@ -287,52 +273,9 @@ const ViewUseCasePage = () => {
               </div>
             )}
 
-            {/* Assessment Data - Render all fields for each step */}
-            {useCase.assessData?.stepsData && (
-              <>
-                {useCase.assessData.stepsData.technicalFeasibility &&
-                  renderSection(
-                    'Technical Feasibility',
-                    <Brain className="h-6 w-6 text-blue-600" />,
-                    <div>{renderObject(useCase.assessData.stepsData.technicalFeasibility)}</div>
-                  )}
-                {useCase.assessData.stepsData.businessFeasibility &&
-                  renderSection(
-                    'Business Feasibility',
-                    <DollarSign className="h-6 w-6 text-green-600" />,
-                    <div>{renderObject(useCase.assessData.stepsData.businessFeasibility)}</div>
-                  )}
-                {useCase.assessData.stepsData.ethicalImpact &&
-                  renderSection(
-                    'Ethical Impact',
-                    <Shield className="h-6 w-6 text-purple-600" />,
-                    <div>{renderObject(useCase.assessData.stepsData.ethicalImpact)}</div>
-                  )}
-                {useCase.assessData.stepsData.riskAssessment &&
-                  renderSection(
-                    'Risk Assessment',
-                    <AlertTriangle className="h-6 w-6 text-red-600" />,
-                    <div>{renderObject(useCase.assessData.stepsData.riskAssessment)}</div>
-                  )}
-                {useCase.assessData.stepsData.dataReadiness &&
-                  renderSection(
-                    'Data Readiness',
-                    <FileText className="h-6 w-6 text-cyan-600" />,
-                    <div>{renderObject(useCase.assessData.stepsData.dataReadiness)}</div>
-                  )}
-                {useCase.assessData.stepsData.roadmapPosition &&
-                  renderSection(
-                    'Roadmap Position',
-                    <Calendar className="h-6 w-6 text-indigo-600" />,
-                    <div>{renderObject(useCase.assessData.stepsData.roadmapPosition)}</div>
-                  )}
-                {useCase.assessData.stepsData.budgetPlanning &&
-                  renderSection(
-                    'Budget Planning',
-                    <DollarSign className="h-6 w-6 text-yellow-600" />,
-                    <div>{renderObject(useCase.assessData.stepsData.budgetPlanning)}</div>
-                  )}
-              </>
+            {/* Assessment Data - Use the new ReadOnlyAssessmentDisplay component */}
+            {useCase.assessData && (
+              <ReadOnlyAssessmentDisplay assessData={useCase.assessData} />
             )}
           </div>
 

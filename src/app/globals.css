@@ -85,3 +85,66 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Read-only mode styles */
+.read-only-mode input,
+.read-only-mode select,
+.read-only-mode textarea,
+.read-only-mode button,
+.read-only-mode [role="button"],
+.read-only-mode [type="button"],
+.read-only-mode [type="submit"],
+.read-only-mode [type="reset"] {
+  pointer-events: none !important;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.read-only-mode .slider,
+.read-only-mode [data-radix-slider-track],
+.read-only-mode [data-radix-slider-thumb] {
+  pointer-events: none !important;
+  cursor: not-allowed;
+}
+
+.read-only-mode [data-state="checked"],
+.read-only-mode [data-state="unchecked"] {
+  pointer-events: none !important;
+  cursor: not-allowed;
+}
+
+.read-only-mode [data-radix-collection-item] {
+  pointer-events: none !important;
+  cursor: not-allowed;
+}
+
+/* Make checkboxes and radio buttons appear disabled */
+.read-only-mode input[type="checkbox"],
+.read-only-mode input[type="radio"] {
+  pointer-events: none !important;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Disable any clickable elements */
+.read-only-mode *[onClick],
+.read-only-mode *[onChange],
+.read-only-mode *[onInput] {
+  pointer-events: none !important;
+  cursor: not-allowed;
+}
+
+/* Style for read-only badges/tags */
+.read-only-badge {
+  @apply bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm;
+}
+
+/* Style for read-only scores */
+.read-only-score {
+  @apply text-2xl font-bold text-blue-600;
+}
+
+/* Style for read-only text */
+.read-only-text {
+  @apply text-gray-900 bg-gray-50 p-3 rounded-lg;
+}
