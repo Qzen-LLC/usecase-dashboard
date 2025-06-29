@@ -20,6 +20,7 @@ import RoadmapPosition from "@/components/RoadmapPosition";
 import DataReadiness from "@/components/DataReadiness";
 import FinancialDashboard from './financial-dashboard/page';
 import ApprovalsPage from '@/components/ApprovalsPage';
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 
 const assessmentSteps = [
   { id: 1, title: "Technical Feasibility" },
@@ -271,54 +272,98 @@ export default function AssessmentPage() {
       </div>
 
       {/* Main Content Area */}
-         <div className="flex-1 px-8 py-10 bg-white">
+      <Card className="flex-1 px-8 py-10 bg-white">
         {currentStep === 1 ? (
-          <TechnicalFeasibility
-            value={assessmentData.technicalFeasibility}
-            onChange={data => handleAssessmentChange('technicalFeasibility', data)}
-          />
+          <CardHeader>
+            <CardTitle>Technical Feasibility</CardTitle>
+          </CardHeader>
         ) : currentStep === 2 ? (
-          <BusinessFeasibility
-            value={assessmentData.businessFeasibility}
-            onChange={data => handleAssessmentChange('businessFeasibility', data)}
-          />
+          <CardHeader>
+            <CardTitle>Business Feasibility</CardTitle>
+          </CardHeader>
         ) : currentStep === 3 ? (
-          <EthicalImpact
-            value={assessmentData.ethicalImpact}
-            onChange={data => handleAssessmentChange('ethicalImpact', data)}
-          />
+          <CardHeader>
+            <CardTitle>Ethical Impact</CardTitle>
+          </CardHeader>
         ) : currentStep === 4 ? (
-          <RiskAssessment
-            value={assessmentData.riskAssessment}
-            onChange={data => handleAssessmentChange('riskAssessment', data)}
-          />
+          <CardHeader>
+            <CardTitle>Risk Assessment</CardTitle>
+          </CardHeader>
         ) : currentStep === 5 ? (
-          <DataReadiness
-            value={assessmentData.dataReadiness}
-            onChange={data => handleAssessmentChange('dataReadiness', data)}
-          />
+          <CardHeader>
+            <CardTitle>Data Readiness</CardTitle>
+          </CardHeader>
         ) : currentStep === 6 ? (
-          <RoadmapPosition
-            value={assessmentData.roadmapPosition}
-            onChange={data => handleAssessmentChange('roadmapPosition', data)}
-          />
+          <CardHeader>
+            <CardTitle>Roadmap Position</CardTitle>
+          </CardHeader>
         ) : currentStep === 7 ? (
-          <BudgetPlanning
-            ref={budgetPlanningRef}
-            value={assessmentData.budgetPlanning}
-            onChange={data => handleAssessmentChange('budgetPlanning', data)}
-          />
+          <CardHeader>
+            <CardTitle>Budget Planning</CardTitle>
+          </CardHeader>
         ) : currentStep === 8 ? (
-          <FinancialDashboard />
+          <CardHeader>
+            <CardTitle>Financial Dashboard</CardTitle>
+          </CardHeader>
         ) : currentStep === 9 ? (
-          <ApprovalsPage ref={approvalsPageRef} />
+          <CardHeader>
+            <CardTitle>Approvals</CardTitle>
+          </CardHeader>
         ) :
          (
           <div className="text-gray-600 text-lg font-medium">
             You are on <strong>{assessmentSteps[currentStep - 1].title}</strong> step.
           </div>
         )}
-      </div>
+        <CardContent>
+          {currentStep === 1 ? (
+            <TechnicalFeasibility
+              value={assessmentData.technicalFeasibility}
+              onChange={data => handleAssessmentChange('technicalFeasibility', data)}
+            />
+          ) : currentStep === 2 ? (
+            <BusinessFeasibility
+              value={assessmentData.businessFeasibility}
+              onChange={data => handleAssessmentChange('businessFeasibility', data)}
+            />
+          ) : currentStep === 3 ? (
+            <EthicalImpact
+              value={assessmentData.ethicalImpact}
+              onChange={data => handleAssessmentChange('ethicalImpact', data)}
+            />
+          ) : currentStep === 4 ? (
+            <RiskAssessment
+              value={assessmentData.riskAssessment}
+              onChange={data => handleAssessmentChange('riskAssessment', data)}
+            />
+          ) : currentStep === 5 ? (
+            <DataReadiness
+              value={assessmentData.dataReadiness}
+              onChange={data => handleAssessmentChange('dataReadiness', data)}
+            />
+          ) : currentStep === 6 ? (
+            <RoadmapPosition
+              value={assessmentData.roadmapPosition}
+              onChange={data => handleAssessmentChange('roadmapPosition', data)}
+            />
+          ) : currentStep === 7 ? (
+            <BudgetPlanning
+              ref={budgetPlanningRef}
+              value={assessmentData.budgetPlanning}
+              onChange={data => handleAssessmentChange('budgetPlanning', data)}
+            />
+          ) : currentStep === 8 ? (
+            <FinancialDashboard />
+          ) : currentStep === 9 ? (
+            <ApprovalsPage ref={approvalsPageRef} />
+          ) :
+           (
+            <div className="text-gray-600 text-lg font-medium">
+              You are on <strong>{assessmentSteps[currentStep - 1].title}</strong> step.
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Bottom Navigation Buttons */}
       <div className="px-8 py-6 border-t bg-white flex justify-between items-center">

@@ -311,18 +311,7 @@ const Dashboard = () => {
               </Button>
             )}
             <div className="flex gap-2">
-              <Button
-                className="bg-gray-100 text-[#23235b] px-3 py-1.5 rounded-lg font-semibold shadow hover:bg-gray-200 transition border border-gray-200 text-xs"
-                disabled={stages.findIndex(s => s.id === useCase.stage) === 0}
-                onClick={async () => {
-                  const currentStageIdx = stages.findIndex(s => s.id === useCase.stage);
-                  if (currentStageIdx <= 0) return;
-                  const prevStage = stages[currentStageIdx - 1].id;
-                  await handleMoveToStage(useCase.id, prevStage);
-                }}
-              >
-                Move to Previous Stage
-              </Button>
+
               <Button
                 className="bg-gray-100 text-[#23235b] px-3 py-1.5 rounded-lg font-semibold shadow hover:bg-gray-200 transition border border-gray-200 text-xs"
                 onClick={async () => {
