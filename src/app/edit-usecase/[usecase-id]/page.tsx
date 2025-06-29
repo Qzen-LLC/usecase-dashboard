@@ -122,7 +122,7 @@ const ArrayInput = ({
 
 const getUseCase = async(params: string) => {
 
-    const res = await fetch(`http://localhost:3000/api/get-usecase?id=${params}`);
+    const res = await fetch(`/api/get-usecase?id=${params}`);
     const useCaseData = await res.json();
     const formData: FormData = useCaseData as FormData;
     console.log(formData);

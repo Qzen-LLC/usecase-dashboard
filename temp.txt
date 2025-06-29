@@ -1,0 +1,3969 @@
+diff --git a/docs/Smart Form Rules.md b/docs/Smart Form Rules.md
+new file mode 100644
+index 0000000..f939ec3
+--- /dev/null
++++ b/docs/Smart Form Rules.md	
+@@ -0,0 +1,591 @@
++# Comprehensive Risk Assessment Input Catalog
++
++## 📊 1. Data & Information Layer
++
++### Data Characteristics
++- **Data Types** *(Multi-select)*
++  - [ ] Personal Identifiable Information (PII)
++  - [ ] Sensitive Personal Data (race, religion, politics)
++  - [ ] Financial Records
++  - [ ] Health/Medical Records
++  - [ ] Biometric Data
++  - [ ] Location/GPS Data
++  - [ ] Behavioral Data
++  - [ ] Communications (emails, messages)
++  - [ ] Images/Video of People
++  - [ ] Voice Recordings
++  - [ ] Genetic Data
++  - [ ] Children's Data (under 16)
++  - [ ] Criminal Records
++  - [ ] Employment Records
++  - [ ] Educational Records
++  - [ ] Publicly Available Data
++  - [ ] Proprietary Business Data
++  - [ ] Trade Secrets
++  - [ ] Third-party Data
++
++### Data Volume & Scale
++- **Current Data Volume** *(Select one)*
++  - [ ] < 1 GB
++  - [ ] 1 GB - 100 GB
++  - [ ] 100 GB - 1 TB
++  - [ ] 1 TB - 10 TB
++  - [ ] 10 TB - 100 TB
++  - [ ] > 100 TB
++
++- **Expected Growth Rate** *(Annual)*
++  - [ ] < 10%
++  - [ ] 10-50%
++  - [ ] 50-100%
++  - [ ] 100-500%
++  - [ ] > 500%
++
++- **Number of Records**
++  - [ ] < 10,000
++  - [ ] 10,000 - 100,000
++  - [ ] 100,000 - 1 million
++  - [ ] 1 million - 10 million
++  - [ ] 10 million - 100 million
++  - [ ] > 100 million
++
++### Data Sources
++- **Primary Data Sources** *(Multi-select)*
++  - [ ] Internal Databases
++  - [ ] Customer Input Forms
++  - [ ] IoT Devices/Sensors
++  - [ ] Mobile Applications
++  - [ ] Web Applications
++  - [ ] Third-party APIs
++  - [ ] Public Datasets
++  - [ ] Social Media
++  - [ ] Partner Organizations
++  - [ ] Government Databases
++  - [ ] Purchased Data
++  - [ ] Web Scraping
++  - [ ] Manual Entry
++  - [ ] Legacy Systems
++  - [ ] Cloud Storage
++  - [ ] Edge Devices
++
++### Data Quality & Governance
++- **Data Quality Score** *(1-10 slider)*
++- **Data Completeness** *(Percentage)*
++- **Data Accuracy Confidence** *(Percentage)*
++- **Data Freshness Requirements**
++  - [ ] Real-time (< 1 second)
++  - [ ] Near real-time (1-60 seconds)
++  - [ ] Micro-batch (1-5 minutes)
++  - [ ] Batch (hourly)
++  - [ ] Daily
++  - [ ] Weekly or less frequent
++
++### Geographic & Jurisdictional
++- **Data Subject Locations** *(Multi-select countries/regions)*
++- **Data Storage Locations** *(Multi-select)*
++- **Data Processing Locations** *(Multi-select)*
++- **Cross-border Transfer Required** *(Yes/No)*
++- **Data Localization Requirements** *(List countries)*
++
++### Data Lifecycle
++- **Data Retention Period**
++  - [ ] < 30 days
++  - [ ] 30 days - 1 year
++  - [ ] 1-3 years
++  - [ ] 3-7 years
++  - [ ] 7+ years
++  - [ ] Indefinite
++  - [ ] Varies by data type
++
++- **Data Deletion Capabilities**
++  - [ ] Automated deletion
++  - [ ] Manual deletion process
++  - [ ] Soft delete only
++  - [ ] Hard delete available
++  - [ ] Immutable/Cannot delete
++
++## 🔧 2. Technical Architecture Layer
++
++### AI/ML Model Specifications
++- **Model Type** *(Multi-select)*
++  - [ ] Large Language Model (LLM)
++  - [ ] Computer Vision
++  - [ ] Natural Language Processing
++  - [ ] Time Series Forecasting
++  - [ ] Recommendation System
++  - [ ] Classification
++  - [ ] Regression
++  - [ ] Clustering
++  - [ ] Anomaly Detection
++  - [ ] Reinforcement Learning
++  - [ ] Generative AI
++  - [ ] Multi-modal Models
++  - [ ] Custom/Proprietary
++
++- **Model Size/Complexity**
++  - [ ] < 1M parameters
++  - [ ] 1M - 100M parameters
++  - [ ] 100M - 1B parameters
++  - [ ] 1B - 10B parameters
++  - [ ] 10B - 100B parameters
++  - [ ] > 100B parameters
++
++### Infrastructure & Deployment
++- **Deployment Model**
++  - [ ] Public Cloud
++  - [ ] Private Cloud
++  - [ ] Hybrid Cloud
++  - [ ] On-premise
++  - [ ] Edge Computing
++  - [ ] Distributed/Federated
++  - [ ] Multi-cloud
++
++- **Cloud Providers** *(If applicable)*
++  - [ ] AWS
++  - [ ] Azure
++  - [ ] Google Cloud
++  - [ ] IBM Cloud
++  - [ ] Oracle Cloud
++  - [ ] Alibaba Cloud
++  - [ ] Other Regional Providers
++
++- **Compute Requirements**
++  - [ ] CPU only
++  - [ ] GPU required
++  - [ ] TPU required
++  - [ ] Specialized hardware
++  - [ ] Quantum computing
++
++### System Integration
++- **Integration Points** *(Multi-select)*
++  - [ ] ERP Systems (SAP, Oracle, etc.)
++  - [ ] CRM Systems (Salesforce, etc.)
++  - [ ] Payment Systems
++  - [ ] Banking/Financial Systems
++  - [ ] Healthcare Systems (EHR/EMR)
++  - [ ] Supply Chain Systems
++  - [ ] HR Systems
++  - [ ] Marketing Platforms
++  - [ ] Communication Systems
++  - [ ] IoT Platforms
++  - [ ] Data Warehouses
++  - [ ] Business Intelligence Tools
++  - [ ] Custom Applications
++  - [ ] Legacy Systems
++
++- **API Specifications**
++  - [ ] No API
++  - [ ] Internal API only
++  - [ ] Partner API
++  - [ ] Public API
++  - [ ] GraphQL
++  - [ ] REST
++  - [ ] gRPC
++  - [ ] WebSocket
++  - [ ] Message Queue
++
++### Security Architecture
++- **Authentication Methods** *(Multi-select)*
++  - [ ] Username/Password
++  - [ ] Multi-factor Authentication
++  - [ ] SSO/SAML
++  - [ ] OAuth
++  - [ ] API Keys
++  - [ ] Certificate-based
++  - [ ] Biometric
++  - [ ] Token-based
++  - [ ] Zero Trust
++
++- **Encryption Standards**
++  - [ ] TLS 1.3
++  - [ ] AES-256
++  - [ ] End-to-end Encryption
++  - [ ] Homomorphic Encryption
++  - [ ] At-rest Encryption
++  - [ ] In-transit Encryption
++  - [ ] Key Management System
++
++### Performance & Reliability
++- **Availability Requirements**
++  - [ ] 99% (3.65 days downtime/year)
++  - [ ] 99.9% (8.76 hours downtime/year)
++  - [ ] 99.99% (52.56 minutes downtime/year)
++  - [ ] 99.999% (5.26 minutes downtime/year)
++
++- **Response Time Requirements**
++  - [ ] < 100ms
++  - [ ] 100ms - 1s
++  - [ ] 1s - 5s
++  - [ ] 5s - 30s
++  - [ ] > 30s
++
++- **Concurrent Users**
++  - [ ] < 100
++  - [ ] 100 - 1,000
++  - [ ] 1,000 - 10,000
++  - [ ] 10,000 - 100,000
++  - [ ] 100,000 - 1 million
++  - [ ] > 1 million
++
++## 💼 3. Business Context Layer
++
++### Organizational Scope
++- **Business Function** *(Primary)*
++  - [ ] Finance & Accounting
++  - [ ] Human Resources
++  - [ ] Sales & Marketing
++  - [ ] Operations
++  - [ ] Customer Service
++  - [ ] IT/Technology
++  - [ ] Legal & Compliance
++  - [ ] R&D/Innovation
++  - [ ] Supply Chain
++  - [ ] Risk Management
++  - [ ] Executive/Strategic
++
++- **Industry Sector**
++  - [ ] Financial Services
++  - [ ] Healthcare
++  - [ ] Retail/E-commerce
++  - [ ] Manufacturing
++  - [ ] Technology
++  - [ ] Telecommunications
++  - [ ] Energy/Utilities
++  - [ ] Government/Public Sector
++  - [ ] Education
++  - [ ] Transportation/Logistics
++  - [ ] Media/Entertainment
++  - [ ] Real Estate
++  - [ ] Agriculture
++  - [ ] Pharmaceuticals
++
++### Business Impact
++- **Revenue Impact Type**
++  - [ ] Direct Revenue Generation
++  - [ ] Cost Reduction
++  - [ ] Risk Mitigation
++  - [ ] Compliance/Regulatory
++  - [ ] Customer Experience
++  - [ ] Operational Efficiency
++  - [ ] No Direct Impact
++
++- **Estimated Financial Impact**
++  - [ ] < $100K annually
++  - [ ] $100K - $1M
++  - [ ] $1M - $10M
++  - [ ] $10M - $100M
++  - [ ] > $100M
++
++- **User Categories** *(Multi-select)*
++  - [ ] Internal Employees
++  - [ ] Customers
++  - [ ] Partners/Vendors
++  - [ ] General Public
++  - [ ] Regulators
++  - [ ] Executives
++  - [ ] Developers/IT
++  - [ ] Analysts
++  - [ ] Minors/Children
++
++### Decision Making
++- **Decision Automation Level**
++  - [ ] Information Only (No decisions)
++  - [ ] Decision Support (Human decides)
++  - [ ] Assisted Decision (AI recommends)
++  - [ ] Automated with Override
++  - [ ] Fully Automated
++  - [ ] Autonomous
++
++- **Decision Types** *(Multi-select)*
++  - [ ] Credit/Lending Decisions
++  - [ ] Employment Decisions
++  - [ ] Insurance Underwriting
++  - [ ] Medical Diagnosis/Treatment
++  - [ ] Legal Judgments
++  - [ ] Pricing Decisions
++  - [ ] Access Control
++  - [ ] Content Moderation
++  - [ ] Fraud Detection
++  - [ ] Risk Scoring
++  - [ ] Resource Allocation
++  - [ ] Predictive Maintenance
++
++### Business Criticality
++- **System Criticality**
++  - [ ] Non-critical (Experimental)
++  - [ ] Low (Convenience)
++  - [ ] Medium (Important)
++  - [ ] High (Business Critical)
++  - [ ] Mission Critical
++
++- **Failure Impact**
++  - [ ] Minimal/No Impact
++  - [ ] Minor Inconvenience
++  - [ ] Moderate Business Impact
++  - [ ] Severe Business Impact
++  - [ ] Catastrophic/Life Safety
++
++## ⚖️ 4. Regulatory & Compliance Layer
++
++### Jurisdictional Requirements
++- **Operating Jurisdictions** *(Multi-select)*
++  - Americas
++    - [ ] United States (Federal)
++    - [ ] US State-specific (list states)
++    - [ ] Canada
++    - [ ] Mexico
++    - [ ] Brazil
++    - [ ] Argentina
++  - Europe
++    - [ ] European Union
++    - [ ] United Kingdom
++    - [ ] Switzerland
++    - [ ] Norway
++    - [ ] Russia
++  - Asia-Pacific
++    - [ ] China
++    - [ ] Japan
++    - [ ] Singapore
++    - [ ] Australia
++    - [ ] India
++    - [ ] South Korea
++  - Middle East & Africa
++    - [ ] UAE
++    - [ ] Saudi Arabia
++    - [ ] Israel
++    - [ ] South Africa
++
++### Regulatory Frameworks
++- **Data Protection** *(Multi-select)*
++  - [ ] GDPR (EU)
++  - [ ] CCPA/CPRA (California)
++  - [ ] LGPD (Brazil)
++  - [ ] PIPEDA (Canada)
++  - [ ] POPI (South Africa)
++  - [ ] APPI (Japan)
++  - [ ] Privacy Act (Australia)
++  - [ ] PDPA (Singapore)
++  - [ ] Other State Privacy Laws
++
++- **Sector-Specific** *(Multi-select)*
++  - [ ] HIPAA (Healthcare)
++  - [ ] PCI-DSS (Payment Cards)
++  - [ ] SOX (Financial Reporting)
++  - [ ] GLBA (Financial Privacy)
++  - [ ] FCRA (Credit Reporting)
++  - [ ] FERPA (Education)
++  - [ ] COPPA (Children's Privacy)
++  - [ ] CAN-SPAM (Email)
++  - [ ] TCPA (Communications)
++
++- **AI-Specific Regulations**
++  - [ ] EU AI Act
++  - [ ] US AI Bill of Rights
++  - [ ] China AI Regulations
++  - [ ] UK AI Framework
++  - [ ] Canada AIDA
++  - [ ] Singapore Model AI Governance
++
++### Industry Standards
++- **Certifications/Standards** *(Multi-select)*
++  - [ ] ISO 27001 (Information Security)
++  - [ ] ISO 27701 (Privacy)
++  - [ ] ISO/IEC 23053 (AI)
++  - [ ] ISO/IEC 23894 (AI Risk)
++  - [ ] SOC 2
++  - [ ] FedRAMP
++  - [ ] NIST Frameworks
++  - [ ] AICPA AI Auditing
++  - [ ] IEEE AI Standards
++
++### Audit & Compliance
++- **Audit Requirements**
++  - [ ] No Audit Required
++  - [ ] Annual Audit
++  - [ ] Quarterly Audit
++  - [ ] Continuous Monitoring
++  - [ ] Regulatory Examination
++
++- **Compliance Reporting**
++  - [ ] None Required
++  - [ ] Annual Reports
++  - [ ] Quarterly Reports
++  - [ ] Monthly Reports
++  - [ ] Real-time Dashboards
++  - [ ] Incident-based
++
++## 🤖 5. AI-Specific Layer
++
++### Model Development
++- **Training Data Source**
++  - [ ] Internal Historical Data
++  - [ ] Public Datasets
++  - [ ] Synthetic Data
++  - [ ] Third-party Data
++  - [ ] Real-time Data
++  - [ ] Crowdsourced Data
++  - [ ] Combined Sources
++
++- **Training Data Volume**
++  - [ ] < 1GB
++  - [ ] 1GB - 100GB
++  - [ ] 100GB - 1TB
++  - [ ] 1TB - 10TB
++  - [ ] > 10TB
++
++- **Model Development Approach**
++  - [ ] Built from Scratch
++  - [ ] Fine-tuned Pre-trained
++  - [ ] Transfer Learning
++  - [ ] Few-shot Learning
++  - [ ] Zero-shot Learning
++  - [ ] Federated Learning
++  - [ ] Continuous Learning
++
++### Model Characteristics
++- **Explainability Level**
++  - [ ] Black Box (No explanation)
++  - [ ] Basic Feature Importance
++  - [ ] Partial Explanations
++  - [ ] Full Explainability
++  - [ ] Human-interpretable Rules
++
++- **Bias Testing**
++  - [ ] No Testing Planned
++  - [ ] Basic Statistical Testing
++  - [ ] Comprehensive Bias Audit
++  - [ ] Continuous Monitoring
++  - [ ] Third-party Audit
++
++- **Model Update Frequency**
++  - [ ] Static (No updates)
++  - [ ] Annual
++  - [ ] Quarterly
++  - [ ] Monthly
++  - [ ] Weekly
++  - [ ] Daily
++  - [ ] Real-time/Continuous
++
++### AI Governance
++- **Human Oversight Level**
++  - [ ] Fully Autonomous
++  - [ ] Periodic Review
++  - [ ] Regular Monitoring
++  - [ ] Active Supervision
++  - [ ] Human-in-the-loop
++  - [ ] Human Approval Required
++
++- **Performance Monitoring**
++  - [ ] Accuracy/Precision
++  - [ ] Fairness Metrics
++  - [ ] Drift Detection
++  - [ ] Resource Usage
++  - [ ] Latency Tracking
++  - [ ] Error Analysis
++  - [ ] A/B Testing
++
++### Ethical Considerations
++- **Potential Harm Areas** *(Multi-select)*
++  - [ ] Discrimination/Bias
++  - [ ] Privacy Violation
++  - [ ] Manipulation/Deception
++  - [ ] Physical Harm
++  - [ ] Economic Harm
++  - [ ] Psychological Harm
++  - [ ] Environmental Impact
++  - [ ] Misinformation
++  - [ ] Addiction/Overuse
++
++- **Vulnerable Populations** *(Multi-select)*
++  - [ ] Children/Minors
++  - [ ] Elderly
++  - [ ] Disabled Individuals
++  - [ ] Minorities
++  - [ ] Low-income Groups
++  - [ ] Non-native Speakers
++  - [ ] Specific Medical Conditions
++
++### AI Output Characteristics
++- **Output Type**
++  - [ ] Predictions/Scores
++  - [ ] Classifications
++  - [ ] Recommendations
++  - [ ] Generated Content
++  - [ ] Automated Actions
++  - [ ] Insights/Analytics
++
++- **Confidence Scores**
++  - [ ] Not Provided
++  - [ ] Binary (Yes/No)
++  - [ ] Percentage/Probability
++  - [ ] Multi-level Categories
++  - [ ] Detailed Explanations
++
++## 📋 Additional Contextual Inputs
++
++### Project Metadata
++- **Project Stage**
++  - [ ] Ideation/Planning
++  - [ ] Proof of Concept
++  - [ ] Pilot/Testing
++  - [ ] Production Rollout
++  - [ ] Operational/Mature
++
++- **Timeline Constraints**
++  - [ ] No Specific Timeline
++  - [ ] 3-6 months
++  - [ ] 6-12 months
++  - [ ] 12-24 months
++  - [ ] > 24 months
++
++- **Budget Range**
++  - [ ] < $100K
++  - [ ] $100K - $500K
++  - [ ] $500K - $1M
++  - [ ] $1M - $5M
++  - [ ] > $5M
++
++### Stakeholder Information
++- **Executive Sponsor Level**
++  - [ ] C-Suite
++  - [ ] VP/Director
++  - [ ] Manager
++  - [ ] Team Lead
++
++- **Stakeholder Groups** *(Multi-select)*
++  - [ ] Board of Directors
++  - [ ] Executive Team
++  - [ ] Legal/Compliance
++  - [ ] IT/Security
++  - [ ] Business Users
++  - [ ] Customers
++  - [ ] Regulators
++  - [ ] Partners
++  - [ ] Public/Media
++
++### Risk Appetite
++- **Organization Risk Tolerance**
++  - [ ] Risk Averse
++  - [ ] Conservative
++  - [ ] Moderate
++  - [ ] Aggressive
++  - [ ] Risk Seeking
++
++- **Previous AI Experience**
++  - [ ] First AI Project
++  - [ ] Limited Experience
++  - [ ] Moderate Experience
++  - [ ] Extensive Experience
++  - [ ] AI-First Organization
++
++## 🎯 Input Collection Best Practices
++
++1. **Progressive Disclosure**: Start with essential fields, reveal advanced options as needed
++2. **Smart Defaults**: Pre-populate based on industry and use case type
++3. **Contextual Help**: Provide tooltips and examples for each input
++4. **Validation Rules**: Ensure data quality with real-time validation
++5. **Conditional Logic**: Show/hide fields based on previous selections
++6. **Save Progress**: Allow users to save and return to incomplete assessments
++7. **Templates**: Provide pre-filled templates for common use cases
++8. **Bulk Import**: Allow CSV/JSON import for multiple assessments
++9. **API Integration**: Pull data from existing systems where possible
++10. **Version Control**: Track changes to inputs over time
+\ No newline at end of file
+diff --git a/docs/comprehensive-risk-inputs.md b/docs/comprehensive-risk-inputs.md
+new file mode 100644
+index 0000000..f939ec3
+--- /dev/null
++++ b/docs/comprehensive-risk-inputs.md
+@@ -0,0 +1,591 @@
++# Comprehensive Risk Assessment Input Catalog
++
++## 📊 1. Data & Information Layer
++
++### Data Characteristics
++- **Data Types** *(Multi-select)*
++  - [ ] Personal Identifiable Information (PII)
++  - [ ] Sensitive Personal Data (race, religion, politics)
++  - [ ] Financial Records
++  - [ ] Health/Medical Records
++  - [ ] Biometric Data
++  - [ ] Location/GPS Data
++  - [ ] Behavioral Data
++  - [ ] Communications (emails, messages)
++  - [ ] Images/Video of People
++  - [ ] Voice Recordings
++  - [ ] Genetic Data
++  - [ ] Children's Data (under 16)
++  - [ ] Criminal Records
++  - [ ] Employment Records
++  - [ ] Educational Records
++  - [ ] Publicly Available Data
++  - [ ] Proprietary Business Data
++  - [ ] Trade Secrets
++  - [ ] Third-party Data
++
++### Data Volume & Scale
++- **Current Data Volume** *(Select one)*
++  - [ ] < 1 GB
++  - [ ] 1 GB - 100 GB
++  - [ ] 100 GB - 1 TB
++  - [ ] 1 TB - 10 TB
++  - [ ] 10 TB - 100 TB
++  - [ ] > 100 TB
++
++- **Expected Growth Rate** *(Annual)*
++  - [ ] < 10%
++  - [ ] 10-50%
++  - [ ] 50-100%
++  - [ ] 100-500%
++  - [ ] > 500%
++
++- **Number of Records**
++  - [ ] < 10,000
++  - [ ] 10,000 - 100,000
++  - [ ] 100,000 - 1 million
++  - [ ] 1 million - 10 million
++  - [ ] 10 million - 100 million
++  - [ ] > 100 million
++
++### Data Sources
++- **Primary Data Sources** *(Multi-select)*
++  - [ ] Internal Databases
++  - [ ] Customer Input Forms
++  - [ ] IoT Devices/Sensors
++  - [ ] Mobile Applications
++  - [ ] Web Applications
++  - [ ] Third-party APIs
++  - [ ] Public Datasets
++  - [ ] Social Media
++  - [ ] Partner Organizations
++  - [ ] Government Databases
++  - [ ] Purchased Data
++  - [ ] Web Scraping
++  - [ ] Manual Entry
++  - [ ] Legacy Systems
++  - [ ] Cloud Storage
++  - [ ] Edge Devices
++
++### Data Quality & Governance
++- **Data Quality Score** *(1-10 slider)*
++- **Data Completeness** *(Percentage)*
++- **Data Accuracy Confidence** *(Percentage)*
++- **Data Freshness Requirements**
++  - [ ] Real-time (< 1 second)
++  - [ ] Near real-time (1-60 seconds)
++  - [ ] Micro-batch (1-5 minutes)
++  - [ ] Batch (hourly)
++  - [ ] Daily
++  - [ ] Weekly or less frequent
++
++### Geographic & Jurisdictional
++- **Data Subject Locations** *(Multi-select countries/regions)*
++- **Data Storage Locations** *(Multi-select)*
++- **Data Processing Locations** *(Multi-select)*
++- **Cross-border Transfer Required** *(Yes/No)*
++- **Data Localization Requirements** *(List countries)*
++
++### Data Lifecycle
++- **Data Retention Period**
++  - [ ] < 30 days
++  - [ ] 30 days - 1 year
++  - [ ] 1-3 years
++  - [ ] 3-7 years
++  - [ ] 7+ years
++  - [ ] Indefinite
++  - [ ] Varies by data type
++
++- **Data Deletion Capabilities**
++  - [ ] Automated deletion
++  - [ ] Manual deletion process
++  - [ ] Soft delete only
++  - [ ] Hard delete available
++  - [ ] Immutable/Cannot delete
++
++## 🔧 2. Technical Architecture Layer
++
++### AI/ML Model Specifications
++- **Model Type** *(Multi-select)*
++  - [ ] Large Language Model (LLM)
++  - [ ] Computer Vision
++  - [ ] Natural Language Processing
++  - [ ] Time Series Forecasting
++  - [ ] Recommendation System
++  - [ ] Classification
++  - [ ] Regression
++  - [ ] Clustering
++  - [ ] Anomaly Detection
++  - [ ] Reinforcement Learning
++  - [ ] Generative AI
++  - [ ] Multi-modal Models
++  - [ ] Custom/Proprietary
++
++- **Model Size/Complexity**
++  - [ ] < 1M parameters
++  - [ ] 1M - 100M parameters
++  - [ ] 100M - 1B parameters
++  - [ ] 1B - 10B parameters
++  - [ ] 10B - 100B parameters
++  - [ ] > 100B parameters
++
++### Infrastructure & Deployment
++- **Deployment Model**
++  - [ ] Public Cloud
++  - [ ] Private Cloud
++  - [ ] Hybrid Cloud
++  - [ ] On-premise
++  - [ ] Edge Computing
++  - [ ] Distributed/Federated
++  - [ ] Multi-cloud
++
++- **Cloud Providers** *(If applicable)*
++  - [ ] AWS
++  - [ ] Azure
++  - [ ] Google Cloud
++  - [ ] IBM Cloud
++  - [ ] Oracle Cloud
++  - [ ] Alibaba Cloud
++  - [ ] Other Regional Providers
++
++- **Compute Requirements**
++  - [ ] CPU only
++  - [ ] GPU required
++  - [ ] TPU required
++  - [ ] Specialized hardware
++  - [ ] Quantum computing
++
++### System Integration
++- **Integration Points** *(Multi-select)*
++  - [ ] ERP Systems (SAP, Oracle, etc.)
++  - [ ] CRM Systems (Salesforce, etc.)
++  - [ ] Payment Systems
++  - [ ] Banking/Financial Systems
++  - [ ] Healthcare Systems (EHR/EMR)
++  - [ ] Supply Chain Systems
++  - [ ] HR Systems
++  - [ ] Marketing Platforms
++  - [ ] Communication Systems
++  - [ ] IoT Platforms
++  - [ ] Data Warehouses
++  - [ ] Business Intelligence Tools
++  - [ ] Custom Applications
++  - [ ] Legacy Systems
++
++- **API Specifications**
++  - [ ] No API
++  - [ ] Internal API only
++  - [ ] Partner API
++  - [ ] Public API
++  - [ ] GraphQL
++  - [ ] REST
++  - [ ] gRPC
++  - [ ] WebSocket
++  - [ ] Message Queue
++
++### Security Architecture
++- **Authentication Methods** *(Multi-select)*
++  - [ ] Username/Password
++  - [ ] Multi-factor Authentication
++  - [ ] SSO/SAML
++  - [ ] OAuth
++  - [ ] API Keys
++  - [ ] Certificate-based
++  - [ ] Biometric
++  - [ ] Token-based
++  - [ ] Zero Trust
++
++- **Encryption Standards**
++  - [ ] TLS 1.3
++  - [ ] AES-256
++  - [ ] End-to-end Encryption
++  - [ ] Homomorphic Encryption
++  - [ ] At-rest Encryption
++  - [ ] In-transit Encryption
++  - [ ] Key Management System
++
++### Performance & Reliability
++- **Availability Requirements**
++  - [ ] 99% (3.65 days downtime/year)
++  - [ ] 99.9% (8.76 hours downtime/year)
++  - [ ] 99.99% (52.56 minutes downtime/year)
++  - [ ] 99.999% (5.26 minutes downtime/year)
++
++- **Response Time Requirements**
++  - [ ] < 100ms
++  - [ ] 100ms - 1s
++  - [ ] 1s - 5s
++  - [ ] 5s - 30s
++  - [ ] > 30s
++
++- **Concurrent Users**
++  - [ ] < 100
++  - [ ] 100 - 1,000
++  - [ ] 1,000 - 10,000
++  - [ ] 10,000 - 100,000
++  - [ ] 100,000 - 1 million
++  - [ ] > 1 million
++
++## 💼 3. Business Context Layer
++
++### Organizational Scope
++- **Business Function** *(Primary)*
++  - [ ] Finance & Accounting
++  - [ ] Human Resources
++  - [ ] Sales & Marketing
++  - [ ] Operations
++  - [ ] Customer Service
++  - [ ] IT/Technology
++  - [ ] Legal & Compliance
++  - [ ] R&D/Innovation
++  - [ ] Supply Chain
++  - [ ] Risk Management
++  - [ ] Executive/Strategic
++
++- **Industry Sector**
++  - [ ] Financial Services
++  - [ ] Healthcare
++  - [ ] Retail/E-commerce
++  - [ ] Manufacturing
++  - [ ] Technology
++  - [ ] Telecommunications
++  - [ ] Energy/Utilities
++  - [ ] Government/Public Sector
++  - [ ] Education
++  - [ ] Transportation/Logistics
++  - [ ] Media/Entertainment
++  - [ ] Real Estate
++  - [ ] Agriculture
++  - [ ] Pharmaceuticals
++
++### Business Impact
++- **Revenue Impact Type**
++  - [ ] Direct Revenue Generation
++  - [ ] Cost Reduction
++  - [ ] Risk Mitigation
++  - [ ] Compliance/Regulatory
++  - [ ] Customer Experience
++  - [ ] Operational Efficiency
++  - [ ] No Direct Impact
++
++- **Estimated Financial Impact**
++  - [ ] < $100K annually
++  - [ ] $100K - $1M
++  - [ ] $1M - $10M
++  - [ ] $10M - $100M
++  - [ ] > $100M
++
++- **User Categories** *(Multi-select)*
++  - [ ] Internal Employees
++  - [ ] Customers
++  - [ ] Partners/Vendors
++  - [ ] General Public
++  - [ ] Regulators
++  - [ ] Executives
++  - [ ] Developers/IT
++  - [ ] Analysts
++  - [ ] Minors/Children
++
++### Decision Making
++- **Decision Automation Level**
++  - [ ] Information Only (No decisions)
++  - [ ] Decision Support (Human decides)
++  - [ ] Assisted Decision (AI recommends)
++  - [ ] Automated with Override
++  - [ ] Fully Automated
++  - [ ] Autonomous
++
++- **Decision Types** *(Multi-select)*
++  - [ ] Credit/Lending Decisions
++  - [ ] Employment Decisions
++  - [ ] Insurance Underwriting
++  - [ ] Medical Diagnosis/Treatment
++  - [ ] Legal Judgments
++  - [ ] Pricing Decisions
++  - [ ] Access Control
++  - [ ] Content Moderation
++  - [ ] Fraud Detection
++  - [ ] Risk Scoring
++  - [ ] Resource Allocation
++  - [ ] Predictive Maintenance
++
++### Business Criticality
++- **System Criticality**
++  - [ ] Non-critical (Experimental)
++  - [ ] Low (Convenience)
++  - [ ] Medium (Important)
++  - [ ] High (Business Critical)
++  - [ ] Mission Critical
++
++- **Failure Impact**
++  - [ ] Minimal/No Impact
++  - [ ] Minor Inconvenience
++  - [ ] Moderate Business Impact
++  - [ ] Severe Business Impact
++  - [ ] Catastrophic/Life Safety
++
++## ⚖️ 4. Regulatory & Compliance Layer
++
++### Jurisdictional Requirements
++- **Operating Jurisdictions** *(Multi-select)*
++  - Americas
++    - [ ] United States (Federal)
++    - [ ] US State-specific (list states)
++    - [ ] Canada
++    - [ ] Mexico
++    - [ ] Brazil
++    - [ ] Argentina
++  - Europe
++    - [ ] European Union
++    - [ ] United Kingdom
++    - [ ] Switzerland
++    - [ ] Norway
++    - [ ] Russia
++  - Asia-Pacific
++    - [ ] China
++    - [ ] Japan
++    - [ ] Singapore
++    - [ ] Australia
++    - [ ] India
++    - [ ] South Korea
++  - Middle East & Africa
++    - [ ] UAE
++    - [ ] Saudi Arabia
++    - [ ] Israel
++    - [ ] South Africa
++
++### Regulatory Frameworks
++- **Data Protection** *(Multi-select)*
++  - [ ] GDPR (EU)
++  - [ ] CCPA/CPRA (California)
++  - [ ] LGPD (Brazil)
++  - [ ] PIPEDA (Canada)
++  - [ ] POPI (South Africa)
++  - [ ] APPI (Japan)
++  - [ ] Privacy Act (Australia)
++  - [ ] PDPA (Singapore)
++  - [ ] Other State Privacy Laws
++
++- **Sector-Specific** *(Multi-select)*
++  - [ ] HIPAA (Healthcare)
++  - [ ] PCI-DSS (Payment Cards)
++  - [ ] SOX (Financial Reporting)
++  - [ ] GLBA (Financial Privacy)
++  - [ ] FCRA (Credit Reporting)
++  - [ ] FERPA (Education)
++  - [ ] COPPA (Children's Privacy)
++  - [ ] CAN-SPAM (Email)
++  - [ ] TCPA (Communications)
++
++- **AI-Specific Regulations**
++  - [ ] EU AI Act
++  - [ ] US AI Bill of Rights
++  - [ ] China AI Regulations
++  - [ ] UK AI Framework
++  - [ ] Canada AIDA
++  - [ ] Singapore Model AI Governance
++
++### Industry Standards
++- **Certifications/Standards** *(Multi-select)*
++  - [ ] ISO 27001 (Information Security)
++  - [ ] ISO 27701 (Privacy)
++  - [ ] ISO/IEC 23053 (AI)
++  - [ ] ISO/IEC 23894 (AI Risk)
++  - [ ] SOC 2
++  - [ ] FedRAMP
++  - [ ] NIST Frameworks
++  - [ ] AICPA AI Auditing
++  - [ ] IEEE AI Standards
++
++### Audit & Compliance
++- **Audit Requirements**
++  - [ ] No Audit Required
++  - [ ] Annual Audit
++  - [ ] Quarterly Audit
++  - [ ] Continuous Monitoring
++  - [ ] Regulatory Examination
++
++- **Compliance Reporting**
++  - [ ] None Required
++  - [ ] Annual Reports
++  - [ ] Quarterly Reports
++  - [ ] Monthly Reports
++  - [ ] Real-time Dashboards
++  - [ ] Incident-based
++
++## 🤖 5. AI-Specific Layer
++
++### Model Development
++- **Training Data Source**
++  - [ ] Internal Historical Data
++  - [ ] Public Datasets
++  - [ ] Synthetic Data
++  - [ ] Third-party Data
++  - [ ] Real-time Data
++  - [ ] Crowdsourced Data
++  - [ ] Combined Sources
++
++- **Training Data Volume**
++  - [ ] < 1GB
++  - [ ] 1GB - 100GB
++  - [ ] 100GB - 1TB
++  - [ ] 1TB - 10TB
++  - [ ] > 10TB
++
++- **Model Development Approach**
++  - [ ] Built from Scratch
++  - [ ] Fine-tuned Pre-trained
++  - [ ] Transfer Learning
++  - [ ] Few-shot Learning
++  - [ ] Zero-shot Learning
++  - [ ] Federated Learning
++  - [ ] Continuous Learning
++
++### Model Characteristics
++- **Explainability Level**
++  - [ ] Black Box (No explanation)
++  - [ ] Basic Feature Importance
++  - [ ] Partial Explanations
++  - [ ] Full Explainability
++  - [ ] Human-interpretable Rules
++
++- **Bias Testing**
++  - [ ] No Testing Planned
++  - [ ] Basic Statistical Testing
++  - [ ] Comprehensive Bias Audit
++  - [ ] Continuous Monitoring
++  - [ ] Third-party Audit
++
++- **Model Update Frequency**
++  - [ ] Static (No updates)
++  - [ ] Annual
++  - [ ] Quarterly
++  - [ ] Monthly
++  - [ ] Weekly
++  - [ ] Daily
++  - [ ] Real-time/Continuous
++
++### AI Governance
++- **Human Oversight Level**
++  - [ ] Fully Autonomous
++  - [ ] Periodic Review
++  - [ ] Regular Monitoring
++  - [ ] Active Supervision
++  - [ ] Human-in-the-loop
++  - [ ] Human Approval Required
++
++- **Performance Monitoring**
++  - [ ] Accuracy/Precision
++  - [ ] Fairness Metrics
++  - [ ] Drift Detection
++  - [ ] Resource Usage
++  - [ ] Latency Tracking
++  - [ ] Error Analysis
++  - [ ] A/B Testing
++
++### Ethical Considerations
++- **Potential Harm Areas** *(Multi-select)*
++  - [ ] Discrimination/Bias
++  - [ ] Privacy Violation
++  - [ ] Manipulation/Deception
++  - [ ] Physical Harm
++  - [ ] Economic Harm
++  - [ ] Psychological Harm
++  - [ ] Environmental Impact
++  - [ ] Misinformation
++  - [ ] Addiction/Overuse
++
++- **Vulnerable Populations** *(Multi-select)*
++  - [ ] Children/Minors
++  - [ ] Elderly
++  - [ ] Disabled Individuals
++  - [ ] Minorities
++  - [ ] Low-income Groups
++  - [ ] Non-native Speakers
++  - [ ] Specific Medical Conditions
++
++### AI Output Characteristics
++- **Output Type**
++  - [ ] Predictions/Scores
++  - [ ] Classifications
++  - [ ] Recommendations
++  - [ ] Generated Content
++  - [ ] Automated Actions
++  - [ ] Insights/Analytics
++
++- **Confidence Scores**
++  - [ ] Not Provided
++  - [ ] Binary (Yes/No)
++  - [ ] Percentage/Probability
++  - [ ] Multi-level Categories
++  - [ ] Detailed Explanations
++
++## 📋 Additional Contextual Inputs
++
++### Project Metadata
++- **Project Stage**
++  - [ ] Ideation/Planning
++  - [ ] Proof of Concept
++  - [ ] Pilot/Testing
++  - [ ] Production Rollout
++  - [ ] Operational/Mature
++
++- **Timeline Constraints**
++  - [ ] No Specific Timeline
++  - [ ] 3-6 months
++  - [ ] 6-12 months
++  - [ ] 12-24 months
++  - [ ] > 24 months
++
++- **Budget Range**
++  - [ ] < $100K
++  - [ ] $100K - $500K
++  - [ ] $500K - $1M
++  - [ ] $1M - $5M
++  - [ ] > $5M
++
++### Stakeholder Information
++- **Executive Sponsor Level**
++  - [ ] C-Suite
++  - [ ] VP/Director
++  - [ ] Manager
++  - [ ] Team Lead
++
++- **Stakeholder Groups** *(Multi-select)*
++  - [ ] Board of Directors
++  - [ ] Executive Team
++  - [ ] Legal/Compliance
++  - [ ] IT/Security
++  - [ ] Business Users
++  - [ ] Customers
++  - [ ] Regulators
++  - [ ] Partners
++  - [ ] Public/Media
++
++### Risk Appetite
++- **Organization Risk Tolerance**
++  - [ ] Risk Averse
++  - [ ] Conservative
++  - [ ] Moderate
++  - [ ] Aggressive
++  - [ ] Risk Seeking
++
++- **Previous AI Experience**
++  - [ ] First AI Project
++  - [ ] Limited Experience
++  - [ ] Moderate Experience
++  - [ ] Extensive Experience
++  - [ ] AI-First Organization
++
++## 🎯 Input Collection Best Practices
++
++1. **Progressive Disclosure**: Start with essential fields, reveal advanced options as needed
++2. **Smart Defaults**: Pre-populate based on industry and use case type
++3. **Contextual Help**: Provide tooltips and examples for each input
++4. **Validation Rules**: Ensure data quality with real-time validation
++5. **Conditional Logic**: Show/hide fields based on previous selections
++6. **Save Progress**: Allow users to save and return to incomplete assessments
++7. **Templates**: Provide pre-filled templates for common use cases
++8. **Bulk Import**: Allow CSV/JSON import for multiple assessments
++9. **API Integration**: Pull data from existing systems where possible
++10. **Version Control**: Track changes to inputs over time
+\ No newline at end of file
+diff --git a/next.config.ts b/next.config.ts
+index cf4ad41..e9ffa30 100644
+--- a/next.config.ts
++++ b/next.config.ts
+@@ -1,12 +1,7 @@
+ import type { NextConfig } from "next";
+ 
+ const nextConfig: NextConfig = {
+-  typescript: {
+-    ignoreBuildErrors: true, // Ignores TypeScript errors during build
+-  },
+-  eslint: {
+-    ignoreDuringBuilds: true, // Ignores ESLint errors during build
+-  },
++  /* config options here */
+ };
+ 
+ export default nextConfig;
+diff --git a/package-lock.json b/package-lock.json
+index 2fa5eec..90b1762 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -25,6 +25,8 @@
+         "@supabase/supabase-js": "^2.50.0",
+         "@types/chart.js": "^2.9.41",
+         "chart.js": "^4.5.0",
++        "@types/chart.js": "^2.9.41",
++        "chart.js": "^4.5.0",
+         "class-variance-authority": "^0.7.1",
+         "clsx": "^2.1.1",
+         "date-fns": "^4.1.0",
+diff --git a/package.json b/package.json
+index 0744d2e..f7b7d46 100644
+--- a/package.json
++++ b/package.json
+@@ -4,7 +4,7 @@
+   "private": true,
+   "scripts": {
+     "dev": "next dev --turbopack",
+-    "build": "prisma generate && next build",
++    "build": "next build",
+     "start": "next start",
+     "lint": "next lint"
+   },
+@@ -26,6 +26,8 @@
+     "@supabase/supabase-js": "^2.50.0",
+     "@types/chart.js": "^2.9.41",
+     "chart.js": "^4.5.0",
++    "@types/chart.js": "^2.9.41",
++    "chart.js": "^4.5.0",
+     "class-variance-authority": "^0.7.1",
+     "clsx": "^2.1.1",
+     "date-fns": "^4.1.0",
+diff --git a/prisma/migrations/20250627151151_approval_table/migration.sql b/prisma/migrations/20250627151151_approval_table/migration.sql
+new file mode 100644
+index 0000000..c1463f5
+--- /dev/null
++++ b/prisma/migrations/20250627151151_approval_table/migration.sql
+@@ -0,0 +1,26 @@
++-- CreateTable
++CREATE TABLE "Approval" (
++    "id" TEXT NOT NULL,
++    "useCaseId" TEXT NOT NULL,
++    "governanceName" TEXT,
++    "governanceStatus" TEXT,
++    "governanceComment" TEXT,
++    "riskName" TEXT,
++    "riskStatus" TEXT,
++    "riskComment" TEXT,
++    "legalName" TEXT,
++    "legalStatus" TEXT,
++    "legalComment" TEXT,
++    "businessFunction" TEXT,
++    "businessName" TEXT,
++    "businessStatus" TEXT,
++    "businessComment" TEXT,
++    "finalQualification" TEXT,
++    "updatedAt" TIMESTAMP(3) NOT NULL,
++    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
++
++    CONSTRAINT "Approval_pkey" PRIMARY KEY ("id")
++);
++
++-- AddForeignKey
++ALTER TABLE "Approval" ADD CONSTRAINT "Approval_useCaseId_fkey" FOREIGN KEY ("useCaseId") REFERENCES "UseCase"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+diff --git a/prisma/migrations/20250627154744_approval_usecaseid_unique/migration.sql b/prisma/migrations/20250627154744_approval_usecaseid_unique/migration.sql
+new file mode 100644
+index 0000000..a808848
+--- /dev/null
++++ b/prisma/migrations/20250627154744_approval_usecaseid_unique/migration.sql
+@@ -0,0 +1,8 @@
++/*
++  Warnings:
++
++  - A unique constraint covering the columns `[useCaseId]` on the table `Approval` will be added. If there are existing duplicate values, this will fail.
++
++*/
++-- CreateIndex
++CREATE UNIQUE INDEX "Approval_useCaseId_key" ON "Approval"("useCaseId");
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index b288b1d..48afbbf 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -9,7 +9,7 @@ datasource db {
+ }
+ 
+ model UseCase {
+-  id                       String   @id @default(uuid())
++  id                       String    @id @default(uuid())
+   title                    String
+   problemStatement         String
+   proposedAISolution       String
+@@ -29,13 +29,14 @@ model UseCase {
+   implementationComplexity Int
+   estimatedTimeline        String
+   requiredResources        String
+-  createdAt                DateTime @default(now())
+-  updatedAt                DateTime @updatedAt
++  createdAt                DateTime  @default(now())
++  updatedAt                DateTime  @updatedAt
+   priority                 String?
+   stage                    String?
+   businessFunction         String
+-  finopsData               FinOps[]
+-  assessData               Assess[]
++  Approval                 Approval?
++  assessData               Assess?
++  finopsData               FinOps?
+ }
+ 
+ model FinOps {
+@@ -61,3 +62,25 @@ model Assess {
+   updatedAt DateTime
+   UseCase   UseCase  @relation(fields: [useCaseId], references: [id])
+ }
++
++model Approval {
++  id                 String   @id @default(uuid())
++  useCaseId          String   @unique
++  governanceName     String?
++  governanceStatus   String?
++  governanceComment  String?
++  riskName           String?
++  riskStatus         String?
++  riskComment        String?
++  legalName          String?
++  legalStatus        String?
++  legalComment       String?
++  businessFunction   String?
++  businessName       String?
++  businessStatus     String?
++  businessComment    String?
++  finalQualification String?
++  updatedAt          DateTime @updatedAt
++  createdAt          DateTime @default(now())
++  useCase            UseCase  @relation(fields: [useCaseId], references: [id])
++}
+diff --git a/src/app/api/get-usecase-details/route.ts b/src/app/api/get-usecase-details/route.ts
+new file mode 100644
+index 0000000..c8de4fb
+--- /dev/null
++++ b/src/app/api/get-usecase-details/route.ts
+@@ -0,0 +1,33 @@
++import { prismaClient } from '@/utils/db';
++import { NextResponse } from 'next/server';
++
++export async function GET(req: Request) {
++  const { searchParams } = new URL(req.url);
++  const useCaseId = searchParams.get('useCaseId');
++  
++  if (!useCaseId) {
++    return NextResponse.json({ error: 'Missing useCaseId' }, { status: 400 });
++  }
++
++  try {
++    // Fetch use case with assessment data only
++    const useCase = await prismaClient.useCase.findUnique({
++      where: { id: useCaseId },
++      include: {
++        assessData: true,
++      },
++    });
++
++    if (!useCase) {
++      return NextResponse.json({ error: 'Use case not found' }, { status: 404 });
++    }
++
++    return NextResponse.json(useCase);
++  } catch (error) {
++    console.error('Error fetching use case details:', error);
++    return NextResponse.json(
++      { error: 'Failed to fetch use case details' },
++      { status: 500 }
++    );
++  }
++} 
+\ No newline at end of file
+diff --git a/src/app/api/post-stepdata/route.ts b/src/app/api/post-stepdata/route.ts
+index bff1a34..c926586 100644
+--- a/src/app/api/post-stepdata/route.ts
++++ b/src/app/api/post-stepdata/route.ts
+@@ -16,6 +16,7 @@ export async function POST(req: Request) {
+         create: {
+             useCaseId,
+             stepsData: assessData,
++            updatedAt: new Date(),
+         },
+     });
+     return NextResponse.json({"success": "true"});
+diff --git a/src/app/api/read-approvals/route.ts b/src/app/api/read-approvals/route.ts
+new file mode 100644
+index 0000000..9ac3e0a
+--- /dev/null
++++ b/src/app/api/read-approvals/route.ts
+@@ -0,0 +1,12 @@
++import { prismaClient } from '@/utils/db';
++import { NextResponse } from 'next/server';
++
++export async function GET(req: Request) {
++  const { searchParams } = new URL(req.url);
++  const useCaseId = searchParams.get('useCaseId');
++  if (!useCaseId) {
++    return NextResponse.json({ error: 'Missing useCaseId' }, { status: 400 });
++  }
++  const res = await prismaClient.approval.findFirst({ where: { useCaseId } });
++  return NextResponse.json(res);
++} 
+\ No newline at end of file
+diff --git a/src/app/api/update-stage/route.ts b/src/app/api/update-stage/route.ts
+index 8029091..686a31f 100644
+--- a/src/app/api/update-stage/route.ts
++++ b/src/app/api/update-stage/route.ts
+@@ -1,17 +1,20 @@
+-    import { prismaClient } from "@/utils/db";
++import { prismaClient } from "@/utils/db";
++import { NextResponse } from "next/server";
+ 
+-    export async function POST(req: Request) {
+-        try {
+-            const { useCaseId, newStage } = await req.json();
+-            const res = await prismaClient.useCase.update({
+-                where: {
+-                    id: useCaseId,
+-                },
+-                data: {
+-                    stage: newStage,
+-                }
+-            });
+-        } catch(error) {
+-            console.error("Unable to update stage");
+-        }
+-    }
+\ No newline at end of file
++export async function POST(req: Request) {
++    try {
++        const { useCaseId, newStage } = await req.json();
++        const res = await prismaClient.useCase.update({
++            where: {
++                id: useCaseId,
++            },
++            data: {
++                stage: newStage,
++            }
++        });
++        return NextResponse.json({ success: true });
++    } catch(error) {
++        console.error("Unable to update stage");
++        return NextResponse.json({ success: false, error: 'Unable to update stage' }, { status: 500 });
++    }
++}
+\ No newline at end of file
+diff --git a/src/app/api/write-approvals/route.ts b/src/app/api/write-approvals/route.ts
+new file mode 100644
+index 0000000..0992019
+--- /dev/null
++++ b/src/app/api/write-approvals/route.ts
+@@ -0,0 +1,16 @@
++import { prismaClient } from '@/utils/db';
++import { NextResponse } from 'next/server';
++
++export async function POST(req: Request) {
++  const body = await req.json();
++  const { useCaseId, ...rest } = body;
++  if (!useCaseId) {
++    return NextResponse.json({ error: 'Missing useCaseId' }, { status: 400 });
++  }
++  const res = await prismaClient.approval.upsert({
++    where: { useCaseId },
++    update: rest,
++    create: { useCaseId, ...rest },
++  });
++  return NextResponse.json(res);
++} 
+\ No newline at end of file
+diff --git a/src/app/dashboard/[useCaseId]/assess/approvals/page.tsx b/src/app/dashboard/[useCaseId]/assess/approvals/page.tsx
+new file mode 100644
+index 0000000..6e2ddf1
+--- /dev/null
++++ b/src/app/dashboard/[useCaseId]/assess/approvals/page.tsx
+@@ -0,0 +1,6 @@
++"use client";
++import React, { forwardRef } from "react";
++import ApprovalsPage from "@/components/ApprovalsPage";
++
++const ApprovalsPageWrapper = forwardRef((props, ref) => <ApprovalsPage ref={ref} {...props} />);
++export default ApprovalsPageWrapper; 
+\ No newline at end of file
+diff --git a/src/app/dashboard/[useCaseId]/assess/page.tsx b/src/app/dashboard/[useCaseId]/assess/page.tsx
+index e57c63f..ce6677e 100644
+--- a/src/app/dashboard/[useCaseId]/assess/page.tsx
++++ b/src/app/dashboard/[useCaseId]/assess/page.tsx
+@@ -1,5 +1,5 @@
+ "use client";
+-import React, { useState, useEffect } from "react";
++import React, { useState, useEffect, useRef } from "react";
+ import { useParams, useRouter } from "next/navigation";
+ import TechnicalFeasibility from '@/components/TechnicalFeasibility';
+ import EthicalImpact from '@/components/EthicalImpact';
+@@ -18,6 +18,8 @@ import {
+ } from "lucide-react";
+ import RoadmapPosition from "@/components/RoadmapPosition";
+ import DataReadiness from "@/components/DataReadiness";
++import FinancialDashboard from './financial-dashboard/page';
++import ApprovalsPage from '@/components/ApprovalsPage';
+ 
+ const assessmentSteps = [
+   { id: 1, title: "Technical Feasibility" },
+@@ -27,6 +29,8 @@ const assessmentSteps = [
+   { id: 5, title: "Data Readiness" },
+   { id: 6, title: "Roadmap Position" },
+   { id: 7, title: "Budget Planning" },
++  { id: 8, title: "Financial Dashboard" },
++  { id: 9, title: "Approvals" },
+ ];
+ 
+ interface UseCase {
+@@ -84,16 +88,24 @@ export default function AssessmentPage() {
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState("");
+   const [currentStep, setCurrentStep] = useState(1);
+-  const [technicalFeasibility, setTechnicalFeasibility] = useState(null);
+-  const [assessData, setAssessData] = useState({});
+-  const [ethicalImpact, setEthicalImpact] = useState(null);
+-  const handleEthicalChange = (updatedData: any) => {
+-    setEthicalImpact(updatedData);
+-    console.log("Received from child:", ethicalImpact);
+-  };
+-  const handleFeasibilityChange = (updatedData: any) => {
+-    setTechnicalFeasibility(updatedData);
+-    console.log("Received from child:", technicalFeasibility);
++  const [assessmentData, setAssessmentData] = useState<any>({
++    technicalFeasibility: null,
++    businessFeasibility: null,
++    ethicalImpact: null,
++    riskAssessment: null,
++    dataReadiness: null,
++    roadmapPosition: null,
++    budgetPlanning: null,
++  });
++  const budgetPlanningRef = useRef<{ saveFinops: () => Promise<void> }>(null);
++  const [saveSuccess, setSaveSuccess] = useState(false);
++  const approvalsPageRef = useRef<{ handleComplete: () => Promise<void> }>(null);
++
++  const handleAssessmentChange = (section: string, data: any) => {
++    setAssessmentData((prevData: any) => ({
++      ...prevData,
++      [section]: data,
++    }));
+   };
+ 
+   useEffect(() => {
+@@ -115,25 +127,24 @@ export default function AssessmentPage() {
+   const isLastStep = currentStep === assessmentSteps.length;
+   
+   const handleSave = async () => {
+-    console.log("technicalFeasibility:", technicalFeasibility);
+-    console.log("ethicalImpact:", ethicalImpact);
+-   const newData =   { technicalFeasibility, ethicalImpact };
+-   console.log(newData);
+-   setAssessData(newData);   
+-   const res = await fetch("/api/post-stepdata", {
+-    method: "POST",
+-    headers: {
+-      "Content-Type": "application/json",
+-    },
+-    body: JSON.stringify({useCaseId, assessData}),
+-   });
+-}
++    console.log("Saving data:", assessmentData);
++    const res = await fetch("/api/post-stepdata", {
++      method: "POST",
++      headers: { "Content-Type": "application/json" },
++      body: JSON.stringify({ useCaseId, assessData: assessmentData }),
++    });
++    if (res.ok) {
++      setSaveSuccess(true);
++      setTimeout(() => setSaveSuccess(false), 2000);
++    }
++  };
+ 
+-  const handleNext = () => {
+-    if (!isLastStep) {
++  const handleNext = async () => {
++    if (currentStep === 7 && budgetPlanningRef.current) {
++      await budgetPlanningRef.current.saveFinops();
++    }
++    if (currentStep < assessmentSteps.length) {
+       setCurrentStep((prev) => prev + 1);
+-    } else {
+-      router.push(`/dashboard/${useCaseId}/assess/financial-dashboard`);
+     }
+   };
+ 
+@@ -200,21 +211,25 @@ export default function AssessmentPage() {
+       </div>
+ 
+       {/* Main Content Area */}
+-      <div className="flex-1 px-8 py-10 bg-white">
++         <div className="flex-1 px-8 py-10 bg-white">
+         {currentStep === 1 ? (
+-          <TechnicalFeasibility onChange={handleFeasibilityChange} />
++          <TechnicalFeasibility onChange={(data) => handleAssessmentChange('technicalFeasibility', data)} />
+         ) : currentStep === 2 ? (
+-          <BusinessFeasibility />
++          <BusinessFeasibility onChange={(data) => handleAssessmentChange('businessFeasibility', data)} />
+         ) : currentStep === 3 ? (
+-          <EthicalImpact onChange={handleEthicalChange} />
++          <EthicalImpact onChange={(data) => handleAssessmentChange('ethicalImpact', data)} />
+         ) : currentStep === 4 ? (
+-          <RiskAssessment /> 
+-        ): currentStep === 5 ? (
+-          <DataReadiness />  
+-        ): currentStep === 6 ? (
+-          <RoadmapPosition />
++          <RiskAssessment onChange={(data) => handleAssessmentChange('riskAssessment', data)} />
++        ) : currentStep === 5 ? (
++          <DataReadiness onChange={(data) => handleAssessmentChange('dataReadiness', data)} />
++        ) : currentStep === 6 ? (
++          <RoadmapPosition onChange={(data) => handleAssessmentChange('roadmapPosition', data)} />
+         ) : currentStep === 7 ? (
+-          <BudgetPlanning />
++          <BudgetPlanning useCaseId={useCaseId} ref={budgetPlanningRef} />
++        ) : currentStep === 8 ? (
++          <FinancialDashboard />
++        ) : currentStep === 9 ? (
++          <ApprovalsPage ref={approvalsPageRef} />
+         ) :
+          (
+           <div className="text-gray-600 text-lg font-medium">
+@@ -233,20 +248,45 @@ export default function AssessmentPage() {
+           <ChevronLeft className="w-4 h-4 mr-2" />
+           Previous
+         </button>
+-
+-        <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold"
+-                onClick={handleSave}
+-        >
+-          Save Progress
+-        </button>
+-
+-        <button
+-          className={`flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700`}
+-          onClick={handleNext}
+-        >
+-          Next
+-          <ChevronRight className="w-4 h-4 ml-2" />
+-        </button>
++        {currentStep < 8 && (
++          <>
++            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold"
++                    onClick={handleSave}
++            >
++              Save Progress
++            </button>
++            {saveSuccess && (
++              <div className="ml-4 text-green-600 font-semibold">Progress saved!</div>
++            )}
++          </>
++        )}
++        {currentStep < 9 ? (
++          <button
++            className={`flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700`}
++            onClick={handleNext}
++          >
++            Next
++            <ChevronRight className="w-4 h-4 ml-2" />
++          </button>
++        ) : (
++          <button
++            className="px-4 py-2 w-64 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white rounded-xl shadow-lg font-semibold text-lg transition"
++            onClick={async () => {
++              if (approvalsPageRef.current && approvalsPageRef.current.handleComplete) {
++                await approvalsPageRef.current.handleComplete();
++              }
++              // Move use case to backlog
++              await fetch('/api/update-stage', {
++                method: 'POST',
++                headers: { 'Content-Type': 'application/json' },
++                body: JSON.stringify({ useCaseId, newStage: 'backlog' }),
++              });
++              router.push('/dashboard');
++            }}
++          >
++            Complete Assessment
++          </button>
++        )}
+       </div>
+     </div>
+   );
+diff --git a/src/app/dashboard/[useCaseId]/risks/page.tsx b/src/app/dashboard/[useCaseId]/risks/page.tsx
+new file mode 100644
+index 0000000..e69212b
+--- /dev/null
++++ b/src/app/dashboard/[useCaseId]/risks/page.tsx
+@@ -0,0 +1,1028 @@
++"use client"
++import React, { useState, useEffect, useMemo } from 'react';
++import { 
++  Shield, AlertTriangle, AlertCircle, CheckCircle, 
++  TrendingUp, TrendingDown, Activity, BarChart3,
++  Calendar, Clock, Users, FileText, ChevronRight,
++  Download, Filter, RefreshCw, Info, Sparkles,
++  Calculator, Eye, Grid, LineChart
++} from 'lucide-react';
++
++// --- Types ---
++interface RiskDimension {
++  score: number;
++  trend: 'improving' | 'worsening' | 'stable';
++  impact: 'critical' | 'high' | 'medium' | 'low';
++}
++
++interface RiskData {
++  projectName: string;
++  overallScore: number;
++  riskTier: string;
++  trend: string;
++  dimensions: Record<string, RiskDimension>;
++  impactIndex: number;
++  feasibility: number;
++  portfolioValue: string;
++  activeProjects: number;
++  criticalRisks: number;
++  highRisks: number;
++  mediumRisks: number;
++  complianceScore: number;
++}
++
++interface KPICardProps {
++  title: string;
++  value: string | number;
++  trend?: string;
++  subtitle?: string;
++  icon: React.ReactNode;
++  color: 'blue' | 'orange' | 'green' | 'red';
++}
++
++interface ExecutiveViewProps {
++  riskData: RiskData;
++}
++
++interface DetailedViewProps {
++  riskData: RiskData;
++}
++
++interface RiskTrendChartProps {
++  dimensions: Record<string, RiskDimension>;
++}
++
++interface EnhancedRiskRadarProps {
++  dimensions: Record<string, RiskDimension>;
++}
++
++interface RiskBreakdownTableProps {
++  dimensions: Record<string, RiskDimension>;
++}
++
++interface RiskFactorsAnalysisProps {
++  dimensions: Record<string, RiskDimension>;
++}
++
++interface RiskCalculatorModalProps {
++  onClose: () => void;
++}
++
++// Main Hybrid Dashboard Component
++const HybridRiskDashboard: React.FC = () => {
++  const [view, setView] = useState<'executive' | 'detailed'>('executive');
++  const [riskData, setRiskData] = useState<RiskData | null>(null);
++  const [loading, setLoading] = useState(true);
++  const [showCalculator, setShowCalculator] = useState(false);
++
++  useEffect(() => {
++    // Simulate data fetch
++    setTimeout(() => {
++      setRiskData({
++        projectName: 'Credit Card Fraud Detection System',
++        overallScore: 6.4,
++        riskTier: 'high',
++        trend: 'improving',
++        dimensions: {
++          dataPrivacy: { score: 7.5, trend: 'stable', impact: 'high' },
++          security: { score: 5.2, trend: 'improving', impact: 'medium' },
++          regulatory: { score: 8.3, trend: 'worsening', impact: 'critical' },
++          ethical: { score: 4.8, trend: 'stable', impact: 'medium' },
++          operational: { score: 6.9, trend: 'improving', impact: 'high' },
++          reputational: { score: 5.5, trend: 'stable', impact: 'medium' }
++        },
++        impactIndex: 3.2,
++        feasibility: 7.1,
++        portfolioValue: '$24.5M',
++        activeProjects: 12,
++        criticalRisks: 2,
++        highRisks: 5,
++        mediumRisks: 8,
++        complianceScore: 68
++      });
++      setLoading(false);
++    }, 1000);
++  }, []);
++
++  if (loading || !riskData) {
++    return (
++      <div className="flex items-center justify-center h-screen bg-gray-50">
++        <div className="text-center">
++          <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
++          <p className="text-gray-600">Analyzing risk data...</p>
++        </div>
++      </div>
++    );
++  }
++
++  return (
++    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
++      {/* Header */}
++      <div className="bg-white shadow-sm border-b">
++        <div className="max-w-7xl mx-auto px-6 py-4">
++          <div className="flex justify-between items-center">
++            <div>
++              <h1 className="text-2xl font-bold text-gray-900">AI Risk Intelligence Platform</h1>
++              <p className="text-sm text-gray-600 mt-1">{riskData.projectName}</p>
++            </div>
++            <div className="flex items-center gap-3">
++              <div className="flex bg-gray-100 rounded-lg p-1">
++                <button
++                  onClick={() => setView('executive')}
++                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
++                    view === 'executive' 
++                      ? 'bg-white text-blue-600 shadow-sm' 
++                      : 'text-gray-600 hover:text-gray-900'
++                  }`}
++                >
++                  <Eye className="w-4 h-4 inline mr-2" />
++                  Executive View
++                </button>
++                <button
++                  onClick={() => setView('detailed')}
++                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
++                    view === 'detailed' 
++                      ? 'bg-white text-blue-600 shadow-sm' 
++                      : 'text-gray-600 hover:text-gray-900'
++                  }`}
++                >
++                  <Grid className="w-4 h-4 inline mr-2" />
++                  Detailed Analysis
++                </button>
++              </div>
++              <button
++                onClick={() => setShowCalculator(!showCalculator)}
++                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
++              >
++                <Calculator className="w-4 h-4" />
++                Risk Calculator
++              </button>
++              <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
++                <Download className="w-4 h-4" />
++                Export
++              </button>
++            </div>
++          </div>
++        </div>
++      </div>
++
++      {/* Main Content */}
++      <div className="max-w-7xl mx-auto px-6 py-6">
++        {view === 'executive' ? (
++          <ExecutiveView riskData={riskData} />
++        ) : (
++          <DetailedView riskData={riskData} />
++        )}
++      </div>
++
++      {/* Risk Calculator Modal */}
++      {showCalculator && (
++        <RiskCalculatorModal onClose={() => setShowCalculator(false)} />
++      )}
++    </div>
++  );
++};
++
++// Executive View Component
++const ExecutiveView: React.FC<ExecutiveViewProps> = ({ riskData }) => {
++  return (
++    <div className="space-y-6">
++      {/* KPI Cards */}
++      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
++        <KPICard
++          title="Portfolio Value"
++          value={riskData.portfolioValue}
++          trend="+12%"
++          icon={<TrendingUp className="w-5 h-5" />}
++          color="blue"
++        />
++        <KPICard
++          title="Risk Score"
++          value={`${riskData.overallScore}/10`}
++          trend={riskData.trend}
++          icon={<Shield className="w-5 h-5" />}
++          color="orange"
++        />
++        <KPICard
++          title="Compliance"
++          value={`${riskData.complianceScore}%`}
++          trend="+5%"
++          icon={<CheckCircle className="w-5 h-5" />}
++          color="green"
++        />
++        <KPICard
++          title="Critical Risks"
++          value={riskData.criticalRisks}
++          subtitle={`${riskData.highRisks} high, ${riskData.mediumRisks} medium`}
++          icon={<AlertCircle className="w-5 h-5" />}
++          color="red"
++        />
++      </div>
++
++      {/* Main Visualization Grid */}
++      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
++        <PortfolioBubbleChart />
++        <RiskTrendChart dimensions={riskData.dimensions} />
++      </div>
++
++      {/* Risk Summary Cards */}
++      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
++        <ExecutiveSummaryCard riskData={riskData} />
++        <TopRisksCard />
++        <ActionItemsCard />
++      </div>
++    </div>
++  );
++};
++
++// Detailed View Component
++const DetailedView: React.FC<DetailedViewProps> = ({ riskData }) => {
++  return (
++    <div className="space-y-6">
++      {/* Detailed Risk Analysis */}
++      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
++        <EnhancedRiskRadar dimensions={riskData.dimensions} />
++        <RiskBreakdownTable dimensions={riskData.dimensions} />
++      </div>
++
++      {/* Compliance and Mitigation */}
++      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
++        <DetailedComplianceMatrix />
++        <MitigationRoadmap />
++      </div>
++
++      {/* Risk Factors Analysis */}
++      <RiskFactorsAnalysis dimensions={riskData.dimensions} />
++    </div>
++  );
++};
++
++// KPI Card Component
++const KPICard: React.FC<KPICardProps> = ({ title, value, trend, subtitle, icon, color }) => {
++  const colorClasses: Record<string, string> = {
++    blue: 'bg-blue-100 text-blue-600',
++    orange: 'bg-orange-100 text-orange-600',
++    green: 'bg-green-100 text-green-600',
++    red: 'bg-red-100 text-red-600'
++  };
++
++  return (
++    <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
++      <div className="flex items-start justify-between">
++        <div>
++          <p className="text-sm text-gray-600">{title}</p>
++          <p className="text-2xl font-bold text-gray-900 mt-2">{value}</p>
++          {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
++          {trend && (
++            <p className={`text-sm mt-2 ${
++              trend === 'improving' || String(trend).includes('+') ? 'text-green-600' : 
++              trend === 'worsening' || String(trend).includes('-') ? 'text-red-600' : 
++              'text-gray-600'
++            }`}>
++              {trend}
++            </p>
++          )}
++        </div>
++        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
++          {icon}
++        </div>
++      </div>
++    </div>
++  );
++};
++
++// Portfolio Bubble Chart Component
++const PortfolioBubbleChart: React.FC = () => {
++  const projects = [
++    { name: 'Fraud Detection', x: 70, y: 80, size: 60, risk: 'high', value: '$3.2M' },
++    { name: 'Customer Churn', x: 80, y: 60, size: 40, risk: 'medium', value: '$2.1M' },
++    { name: 'Price Optimization', x: 50, y: 90, size: 80, risk: 'high', value: '$4.5M' },
++    { name: 'Chatbot Support', x: 90, y: 40, size: 30, risk: 'low', value: '$1.8M' },
++    { name: 'Inventory AI', x: 60, y: 70, size: 50, risk: 'medium', value: '$2.8M' },
++    { name: 'Risk Scoring', x: 40, y: 85, size: 70, risk: 'critical', value: '$3.9M' }
++  ];
++
++  const getRiskColor = (risk: string) => {
++    switch (risk) {
++      case 'critical': return 'rgba(239, 68, 68, 0.7)';
++      case 'high': return 'rgba(251, 146, 60, 0.7)';
++      case 'medium': return 'rgba(250, 204, 21, 0.7)';
++      case 'low': return 'rgba(34, 197, 94, 0.7)';
++      default: return 'rgba(107, 114, 128, 0.7)';
++    }
++  };
++
++  return (
++    <div className="bg-white rounded-xl shadow-sm p-6">
++      <h3 className="text-lg font-semibold mb-4">Portfolio Risk vs Value Analysis</h3>
++      <div className="relative h-96 bg-gray-50 rounded-lg">
++        <div className="absolute inset-0 p-4">
++          {/* Axis labels */}
++          <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-sm text-gray-600">
++            Feasibility →
++          </span>
++          <span className="absolute left-2 top-1/2 transform -rotate-90 text-sm text-gray-600">
++            Business Value →
++          </span>
++          
++          {/* Grid lines */}
++          <svg className="absolute inset-0 w-full h-full">
++            <defs>
++              <pattern id="grid" width="10%" height="10%" patternUnits="userSpaceOnUse">
++                <path d="M 0 0 L 0 100 L 100 100" fill="none" stroke="#e5e7eb" strokeWidth="0.5"/>
++              </pattern>
++            </defs>
++            <rect width="100%" height="100%" fill="url(#grid)" />
++          </svg>
++          
++          {/* Bubbles */}
++          {projects.map((project, index) => (
++            <div
++              key={index}
++              className="absolute transform -translate-x-1/2 -translate-y-1/2 group cursor-pointer"
++              style={{
++                left: `${project.x}%`,
++                top: `${100 - project.y}%`,
++                width: `${project.size}px`,
++                height: `${project.size}px`
++              }}
++            >
++              <div
++                className="w-full h-full rounded-full flex items-center justify-center text-white font-semibold text-xs transition-all group-hover:scale-110"
++                style={{ backgroundColor: getRiskColor(project.risk) }}
++              >
++                {project.name.split(' ')[0]}
++              </div>
++              <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
++                {project.name}: {project.value}
++              </div>
++            </div>
++          ))}
++          
++          {/* Legend */}
++          <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-sm p-3 text-xs">
++            <div className="space-y-1">
++              <div className="flex items-center gap-2">
++                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getRiskColor('critical') }}></div>
++                <span>Critical</span>
++              </div>
++              <div className="flex items-center gap-2">
++                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getRiskColor('high') }}></div>
++                <span>High</span>
++              </div>
++              <div className="flex items-center gap-2">
++                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getRiskColor('medium') }}></div>
++                <span>Medium</span>
++              </div>
++              <div className="flex items-center gap-2">
++                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getRiskColor('low') }}></div>
++                <span>Low</span>
++              </div>
++            </div>
++          </div>
++        </div>
++      </div>
++    </div>
++  );
++};
++
++// Risk Trend Chart
++const RiskTrendChart: React.FC<RiskTrendChartProps> = ({ dimensions }) => {
++  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
++  
++  return (
++    <div className="bg-white rounded-xl shadow-sm p-6">
++      <h3 className="text-lg font-semibold mb-4">Risk Trend Analysis</h3>
++      <div className="h-96">
++        <div className="relative h-full">
++          {/* Simple line chart representation */}
++          <div className="absolute inset-0 flex items-end justify-between px-4">
++            {months.map((month, index) => (
++              <div key={month} className="flex flex-col items-center flex-1">
++                <div 
++                  className="w-full bg-gradient-to-t from-blue-500 to-blue-300 rounded-t"
++                  style={{ height: `${50 + Math.random() * 40}%` }}
++                ></div>
++                <span className="text-xs text-gray-600 mt-2">{month}</span>
++              </div>
++            ))}
++          </div>
++          
++          {/* Overlay metrics */}
++          <div className="absolute top-4 right-4 bg-white/90 rounded-lg shadow-sm p-3">
++            <div className="space-y-2 text-sm">
++              <div className="flex items-center gap-2">
++                <TrendingDown className="w-4 h-4 text-green-600" />
++                <span className="text-gray-700">Risk decreasing</span>
++              </div>
++              <div className="font-semibold">-15% over 6 months</div>
++            </div>
++          </div>
++        </div>
++      </div>
++    </div>
++  );
++};
++
++// Executive Summary Card
++const ExecutiveSummaryCard: React.FC<{ riskData: RiskData }> = ({ riskData }) => {
++  return (
++    <div className="bg-white rounded-xl shadow-sm p-6">
++      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
++        <Sparkles className="w-5 h-5 text-blue-600" />
++        Executive Summary
++      </h3>
++      <div className="space-y-3 text-sm">
++        <p className="text-gray-700">
++          The <strong>{riskData.projectName}</strong> shows a{' '}
++          <span className="text-orange-600 font-semibold">HIGH</span> overall risk score of{' '}
++          <strong>{riskData.overallScore}/10</strong>.
++        </p>
++        <p className="text-gray-700">
++          Primary concerns center on <strong>regulatory compliance</strong> (8.3/10) and{' '}
++          <strong>data privacy</strong> (7.5/10). The project demonstrates strong feasibility
++          but requires immediate attention to compliance gaps.
++        </p>
++        <div className="pt-3 border-t">
++          <p className="font-semibold text-gray-900">Recommendation:</p>
++          <p className="text-gray-700">Proceed with enhanced compliance measures and expedited privacy assessment.</p>
++        </div>
++      </div>
++    </div>
++  );
++};
++
++// Top Risks Card
++const TopRisksCard: React.FC = () => {
++  const risks = [
++    { title: 'GDPR Non-compliance', severity: 'critical', impact: 'Up to 4% global revenue' },
++    { title: 'API Security Gaps', severity: 'high', impact: 'Data breach risk' },
++    { title: 'Model Explainability', severity: 'high', impact: 'Regulatory scrutiny' }
++  ];
++
++  return (
++    <div className="bg-white rounded-xl shadow-sm p-6">
++      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
++        <AlertTriangle className="w-5 h-5 text-red-600" />
++        Top Risks
++      </h3>
++      <div className="space-y-3">
++        {risks.map((risk, index) => (
++          <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
++            <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
++              risk.severity === 'critical' ? 'bg-red-500' : 'bg-orange-500'
++            }`}></div>
++            <div className="flex-1">
++              <p className="font-medium text-sm text-gray-900">{risk.title}</p>
++              <p className="text-xs text-gray-600 mt-1">{risk.impact}</p>
++            </div>
++          </div>
++        ))}
++      </div>
++    </div>
++  );
++};
++
++// Action Items Card
++const ActionItemsCard: React.FC = () => {
++  const actions = [
++    { task: 'Complete Privacy Impact Assessment', due: '2 weeks', owner: 'Legal Team' },
++    { task: 'Implement API Authentication', due: '1 week', owner: 'Security Team' },
++    { task: 'Deploy Encryption Layer', due: '3 days', owner: 'DevOps' }
++  ];
++
++  return (
++    <div className="bg-white rounded-xl shadow-sm p-6">
++      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
++        <CheckCircle className="w-5 h-5 text-green-600" />
++        Immediate Actions
++      </h3>
++      <div className="space-y-3">
++        {actions.map((action, index) => (
++          <div key={index} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
++            <div className="flex-1">
++              <p className="font-medium text-sm text-gray-900">{action.task}</p>
++              <p className="text-xs text-gray-600 mt-1">{action.owner}</p>
++            </div>
++            <span className="text-xs text-blue-600 font-medium">{action.due}</span>
++          </div>
++        ))}
++      </div>
++    </div>
++  );
++};
++
++// Enhanced Risk Radar for Detailed View
++const EnhancedRiskRadar: React.FC<EnhancedRiskRadarProps> = ({ dimensions }) => {
++  const center = 150;
++  const radius = 100;
++  const angleStep = (2 * Math.PI) / 6;
++  
++  const dimensionNames = Object.keys(dimensions);
++  const points = dimensionNames.map((_, index) => {
++    const angle = index * angleStep - Math.PI / 2;
++    return {
++      x: center + radius * Math.cos(angle),
++      y: center + radius * Math.sin(angle)
++    };
++  });
++
++  const dataPoints = dimensionNames.map((dim, index) => {
++    const angle = index * angleStep - Math.PI / 2;
++    const value = dimensions[dim].score / 10;
++    return {
++      x: center + (radius * value) * Math.cos(angle),
++      y: center + (radius * value) * Math.sin(angle),
++      score: dimensions[dim].score,
++      trend: dimensions[dim].trend
++    };
++  });
++
++  return (
++    <div className="bg-white rounded-xl shadow-sm p-6">
++      <h3 className="text-lg font-semibold mb-4">Risk Dimension Radar</h3>
++      <svg viewBox="0 0 300 300" className="w-full h-full">
++        {/* Grid circles */}
++        {[0.2, 0.4, 0.6, 0.8, 1].map((scale, i) => (
++          <circle
++            key={i}
++            cx={center}
++            cy={center}
++            r={radius * scale}
++            fill="none"
++            stroke="#e5e7eb"
++            strokeWidth="1"
++          />
++        ))}
++        
++        {/* Axes */}
++        {points.map((point, i) => (
++          <line
++            key={i}
++            x1={center}
++            y1={center}
++            x2={point.x}
++            y2={point.y}
++            stroke="#e5e7eb"
++            strokeWidth="1"
++          />
++        ))}
++        
++        {/* Data area */}
++        <polygon
++          points={dataPoints.map(p => `${p.x},${p.y}`).join(' ')}
++          fill="rgba(59, 130, 246, 0.2)"
++          stroke="rgb(59, 130, 246)"
++          strokeWidth="2"
++        />
++        
++        {/* Data points with scores */}
++        {dataPoints.map((point, i) => (
++          <g key={i}>
++            <circle
++              cx={point.x}
++              cy={point.y}
++              r="8"
++              fill="rgb(59, 130, 246)"
++              stroke="white"
++              strokeWidth="2"
++            />
++            <text
++              x={point.x}
++              y={point.y - 15}
++              textAnchor="middle"
++              className="text-xs font-bold fill-gray-900"
++            >
++              {point.score}
++            </text>
++          </g>
++        ))}
++        
++        {/* Labels */}
++        {dimensionNames.map((name, i) => {
++          const angle = i * angleStep - Math.PI / 2;
++          const labelRadius = radius + 40;
++          const x = center + labelRadius * Math.cos(angle);
++          const y = center + labelRadius * Math.sin(angle);
++          
++          return (
++            <text
++              key={i}
++              x={x}
++              y={y}
++              textAnchor="middle"
++              dominantBaseline="middle"
++              className="text-sm font-medium fill-gray-700"
++            >
++              {name.charAt(0).toUpperCase() + name.slice(1).replace(/([A-Z])/g, ' $1')}
++            </text>
++          );
++        })}
++      </svg>
++    </div>
++  );
++};
++
++// Risk Calculator Modal
++const RiskCalculatorModal: React.FC<RiskCalculatorModalProps> = ({ onClose }) => {
++  const [values, setValues] = useState({
++    ops: 5,
++    prod: 6,
++    rev: 8,
++    ss: 8,
++    confidence: 7
++  });
++
++  const calculations = useMemo(() => {
++    const povRaw = 0.35 * values.ops + 0.30 * values.prod + 0.35 * values.rev;
++    const confBoost = 0.2 * (values.ss - 5);
++    const learningPrem = Math.exp(-0.15 * values.ss);
++    const povFinal = povRaw * ((values.confidence + confBoost) / 10) * learningPrem;
++    
++    return { povRaw, confBoost, learningPrem, povFinal };
++  }, [values]);
++
++  return (
++    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
++      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
++        <div className="flex items-center justify-between mb-6">
++          <h2 className="text-2xl font-bold">Risk Score Calculator</h2>
++          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
++            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
++            </svg>
++          </button>
++        </div>
++        
++        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
++          <div>
++            <h3 className="font-semibold mb-4">Input Values</h3>
++            {Object.entries(values).map(([key, value]) => (
++              <div key={key} className="mb-4">
++                <label className="block text-sm font-medium mb-2">
++                  {key.toUpperCase()} Score: {value}
++                </label>
++                <input
++                  type="range"
++                  min="1"
++                  max="10"
++                  value={value}
++                  onChange={(e) => setValues(prev => ({ ...prev, [key]: Number(e.target.value) }))}
++                  className="w-full"
++                />
++              </div>
++            ))}
++          </div>
++          
++          <div>
++            <h3 className="font-semibold mb-4">Calculated Results</h3>
++            <div className="space-y-3">
++              <div className="p-3 bg-gray-50 rounded-lg">
++                <p className="text-sm text-gray-600">PoV Raw</p>
++                <p className="text-xl font-bold">{calculations.povRaw.toFixed(2)}</p>
++              </div>
++              <div className="p-3 bg-gray-50 rounded-lg">
++                <p className="text-sm text-gray-600">Confidence Boost</p>
++                <p className="text-xl font-bold">{calculations.confBoost.toFixed(2)}</p>
++              </div>
++              <div className="p-3 bg-gray-50 rounded-lg">
++                <p className="text-sm text-gray-600">Learning Premium</p>
++                <p className="text-xl font-bold">{calculations.learningPrem.toFixed(2)}</p>
++              </div>
++              <div className="p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
++                <p className="text-sm text-blue-600 font-medium">Final PoV Score</p>
++                <p className="text-2xl font-bold text-blue-700">{calculations.povFinal.toFixed(2)}</p>
++              </div>
++            </div>
++          </div>
++        </div>
++        
++        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
++          <p className="text-sm text-blue-800">
++            <strong>Formula:</strong> PoV_final = PoV_raw × (Confidence + Boost) / 10 × Learning Premium
++          </p>
++        </div>
++      </div>
++    </div>
++  );
++};
++
++// Risk Breakdown Table Component
++const RiskBreakdownTable: React.FC<RiskBreakdownTableProps> = ({ dimensions }) => {
++  return (
++    <div className="bg-white rounded-xl shadow-sm p-6">
++      <h3 className="text-lg font-semibold mb-4">Risk Dimension Breakdown</h3>
++      <div className="overflow-x-auto">
++        <table className="w-full">
++          <thead>
++            <tr className="border-b">
++              <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Dimension</th>
++              <th className="text-center py-3 px-4 text-sm font-medium text-gray-700">Score</th>
++              <th className="text-center py-3 px-4 text-sm font-medium text-gray-700">Impact</th>
++              <th className="text-center py-3 px-4 text-sm font-medium text-gray-700">Trend</th>
++              <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Key Factors</th>
++            </tr>
++          </thead>
++          <tbody>
++            {Object.entries(dimensions).map(([name, data]: [string, RiskDimension]) => (
++              <tr key={name} className="border-b hover:bg-gray-50">
++                <td className="py-3 px-4 font-medium capitalize">
++                  {name.replace(/([A-Z])/g, ' $1').trim()}
++                </td>
++                <td className="py-3 px-4 text-center">
++                  <span className={`inline-flex items-center justify-center w-12 h-12 rounded-full text-white font-bold ${
++                    data.score >= 8 ? 'bg-red-500' :
++                    data.score >= 6 ? 'bg-orange-500' :
++                    data.score >= 4 ? 'bg-yellow-500' : 'bg-green-500'
++                  }`}>
++                    {data.score}
++                  </span>
++                </td>
++                <td className="py-3 px-4 text-center">
++                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
++                    data.impact === 'critical' ? 'bg-red-100 text-red-700' :
++                    data.impact === 'high' ? 'bg-orange-100 text-orange-700' :
++                    'bg-yellow-100 text-yellow-700'
++                  }`}>
++                    {data.impact}
++                  </span>
++                </td>
++                <td className="py-3 px-4 text-center">
++                  {data.trend === 'improving' && <TrendingDown className="w-5 h-5 text-green-600 mx-auto" />}
++                  {data.trend === 'worsening' && <TrendingUp className="w-5 h-5 text-red-600 mx-auto" />}
++                  {data.trend === 'stable' && <Activity className="w-5 h-5 text-gray-400 mx-auto" />}
++                </td>
++                <td className="py-3 px-4 text-sm text-gray-600">
++                  {name === 'dataPrivacy' && 'PII processing, cross-border transfers'}
++                  {name === 'security' && 'Public API, cloud deployment'}
++                  {name === 'regulatory' && 'GDPR, HIPAA compliance gaps'}
++                  {name === 'ethical' && 'Automated decisions, bias risks'}
++                  {name === 'operational' && 'System criticality, complexity'}
++                  {name === 'reputational' && 'Public-facing, trust impact'}
++                </td>
++              </tr>
++            ))}
++          </tbody>
++        </table>
++      </div>
++    </div>
++  );
++};
++
++// Detailed Compliance Matrix
++const DetailedComplianceMatrix: React.FC = () => {
++  const regulations = [
++    { 
++      name: 'GDPR', 
++      status: 'required', 
++      completion: 65, 
++      modules: [
++        { name: 'Data Protection by Design', status: 'in-progress', deadline: '2024-05-15' },
++        { name: 'DPIA Assessment', status: 'pending', deadline: '2024-06-01' },
++        { name: 'Right to Erasure', status: 'completed', deadline: '2024-04-01' },
++        { name: 'Cross-border Transfers', status: 'blocked', deadline: '2024-05-30' }
++      ]
++    },
++    { 
++      name: 'HIPAA', 
++      status: 'required', 
++      completion: 40,
++      modules: [
++        { name: 'Security Rule', status: 'in-progress', deadline: '2024-07-01' },
++        { name: 'Privacy Rule', status: 'pending', deadline: '2024-08-15' },
++        { name: 'Breach Notification', status: 'pending', deadline: '2024-08-01' }
++      ]
++    }
++  ];
++
++  return (
++    <div className="bg-white rounded-xl shadow-sm p-6">
++      <h3 className="text-lg font-semibold mb-4">Compliance Status Matrix</h3>
++      <div className="space-y-4">
++        {regulations.map(reg => (
++          <div key={reg.name} className="border rounded-lg">
++            <div className="bg-gray-50 px-4 py-3 border-b">
++              <div className="flex items-center justify-between">
++                <div className="flex items-center gap-3">
++                  <h4 className="font-semibold">{reg.name}</h4>
++                  <span className={`text-xs px-2 py-1 rounded-full ${
++                    reg.status === 'required' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
++                  }`}>
++                    {reg.status}
++                  </span>
++                </div>
++                <span className="text-sm font-medium">{reg.completion}%</span>
++              </div>
++              <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
++                <div 
++                  className="bg-blue-600 h-2 rounded-full transition-all duration-500"
++                  style={{ width: `${reg.completion}%` }}
++                />
++              </div>
++            </div>
++            <div className="p-4">
++              <div className="space-y-2">
++                {reg.modules.map((module, idx) => (
++                  <div key={idx} className="flex items-center justify-between text-sm">
++                    <div className="flex items-center gap-2">
++                      {module.status === 'completed' && <CheckCircle className="w-4 h-4 text-green-600" />}
++                      {module.status === 'in-progress' && <Clock className="w-4 h-4 text-blue-600" />}
++                      {module.status === 'pending' && <AlertCircle className="w-4 h-4 text-gray-400" />}
++                      {module.status === 'blocked' && <AlertTriangle className="w-4 h-4 text-red-600" />}
++                      <span className={module.status === 'completed' ? 'line-through text-gray-400' : ''}>
++                        {module.name}
++                      </span>
++                    </div>
++                    <span className="text-xs text-gray-500">
++                      {new Date(module.deadline).toLocaleDateString()}
++                    </span>
++                  </div>
++                ))}
++              </div>
++            </div>
++          </div>
++        ))}
++      </div>
++    </div>
++  );
++};
++
++// Mitigation Roadmap Component
++const MitigationRoadmap: React.FC = () => {
++  const phases = [
++    {
++      name: 'Immediate (0-2 weeks)',
++      color: 'red',
++      tasks: [
++        { title: 'API Authentication Implementation', effort: '40 hours', impact: 'Critical' },
++        { title: 'Data Encryption Deployment', effort: '20 hours', impact: 'High' }
++      ]
++    },
++    {
++      name: 'Short-term (2-8 weeks)',
++      color: 'orange',
++      tasks: [
++        { title: 'Privacy Impact Assessment', effort: '80 hours', impact: 'High' },
++        { title: 'GDPR Compliance Audit', effort: '120 hours', impact: 'Critical' }
++      ]
++    },
++    {
++      name: 'Long-term (2-6 months)',
++      color: 'blue',
++      tasks: [
++        { title: 'ML Model Explainability Framework', effort: '200 hours', impact: 'Medium' },
++        { title: 'Continuous Compliance Monitoring', effort: 'Ongoing', impact: 'High' }
++      ]
++    }
++  ];
++
++  const getPhaseColor = (color: string) => {
++    switch (color) {
++      case 'red': return 'border-red-500 bg-red-50';
++      case 'orange': return 'border-orange-500 bg-orange-50';
++      case 'blue': return 'border-blue-500 bg-blue-50';
++      default: return 'border-gray-500 bg-gray-50';
++    }
++  };
++
++  return (
++    <div className="bg-white rounded-xl shadow-sm p-6">
++      <h3 className="text-lg font-semibold mb-4">Mitigation Roadmap</h3>
++      <div className="space-y-4">
++        {phases.map((phase, idx) => (
++          <div key={idx} className={`border-l-4 rounded-lg p-4 ${getPhaseColor(phase.color)}`}>
++            <h4 className="font-semibold mb-3">{phase.name}</h4>
++            <div className="space-y-2">
++              {phase.tasks.map((task, taskIdx) => (
++                <div key={taskIdx} className="flex items-center justify-between">
++                  <div>
++                    <p className="text-sm font-medium">{task.title}</p>
++                    <p className="text-xs text-gray-600">Effort: {task.effort}</p>
++                  </div>
++                  <span className={`text-xs px-2 py-1 rounded-full ${
++                    task.impact === 'Critical' ? 'bg-red-100 text-red-700' :
++                    task.impact === 'High' ? 'bg-orange-100 text-orange-700' :
++                    'bg-yellow-100 text-yellow-700'
++                  }`}>
++                    {task.impact}
++                  </span>
++                </div>
++              ))}
++            </div>
++          </div>
++        ))}
++      </div>
++      
++      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
++        <div className="flex items-center justify-between">
++          <div>
++            <p className="text-sm font-medium">Total Estimated Effort</p>
++            <p className="text-2xl font-bold">460+ hours</p>
++          </div>
++          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
++            Export to Project Plan
++          </button>
++        </div>
++      </div>
++    </div>
++  );
++};
++
++// Risk Factors Analysis
++const RiskFactorsAnalysis: React.FC<RiskFactorsAnalysisProps> = ({ dimensions }) => {
++  return (
++    <div className="bg-white rounded-xl shadow-sm p-6">
++      <h3 className="text-lg font-semibold mb-4">Detailed Risk Factor Analysis</h3>
++      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
++        {Object.entries(dimensions).map(([name, data]) => (
++          <div key={name} className="border rounded-lg p-4">
++            <div className="flex items-center justify-between mb-3">
++              <h4 className="font-medium capitalize">{name.replace(/([A-Z])/g, ' $1').trim()}</h4>
++              <span className={`text-lg font-bold ${
++                data.score >= 8 ? 'text-red-600' :
++                data.score >= 6 ? 'text-orange-600' :
++                data.score >= 4 ? 'text-yellow-600' : 'text-green-600'
++              }`}>
++                {data.score}/10
++              </span>
++            </div>
++            
++            <div className="space-y-2">
++              <div className="text-sm">
++                <p className="font-medium text-gray-700 mb-1">Contributing Factors:</p>
++                <ul className="text-xs text-gray-600 space-y-1">
++                  {name === 'dataPrivacy' && (
++                    <>
++                      <li>• Processing sensitive PII</li>
++                      <li>• Cross-border transfers</li>
++                      <li>• Large data volume</li>
++                    </>
++                  )}
++                  {name === 'security' && (
++                    <>
++                      <li>• Public API exposure</li>
++                      <li>• Cloud deployment</li>
++                      <li>• Multiple integrations</li>
++                    </>
++                  )}
++                  {name === 'regulatory' && (
++                    <>
++                      <li>• GDPR compliance gaps</li>
++                      <li>• Multi-jurisdiction</li>
++                      <li>• AI Act requirements</li>
++                    </>
++                  )}
++                  {name === 'ethical' && (
++                    <>
++                      <li>• Automated decisions</li>
++                      <li>• Potential bias</li>
++                      <li>• Limited explainability</li>
++                    </>
++                  )}
++                  {name === 'operational' && (
++                    <>
++                      <li>• Mission critical system</li>
++                      <li>• High complexity</li>
++                      <li>• Limited redundancy</li>
++                    </>
++                  )}
++                  {name === 'reputational' && (
++                    <>
++                      <li>• Public-facing system</li>
++                      <li>• Trust-critical decisions</li>
++                      <li>• Brand impact potential</li>
++                    </>
++                  )}
++                </ul>
++              </div>
++              
++              <div className="pt-2 border-t">
++                <p className="text-xs font-medium text-gray-700">Mitigation Priority:</p>
++                <div className="mt-1 flex items-center gap-2">
++                  <div className={`h-2 flex-1 rounded-full ${
++                    data.score >= 8 ? 'bg-red-200' :
++                    data.score >= 6 ? 'bg-orange-200' :
++                    data.score >= 4 ? 'bg-yellow-200' : 'bg-green-200'
++                  }`}>
++                    <div className={`h-2 rounded-full transition-all duration-500 ${
++                      data.score >= 8 ? 'bg-red-600' :
++                      data.score >= 6 ? 'bg-orange-600' :
++                      data.score >= 4 ? 'bg-yellow-600' : 'bg-green-600'
++                    }`} style={{ width: `${data.score * 10}%` }}></div>
++                  </div>
++                  <span className="text-xs font-medium">
++                    {data.score >= 8 ? 'Immediate' :
++                     data.score >= 6 ? 'High' :
++                     data.score >= 4 ? 'Medium' : 'Low'}
++                  </span>
++                </div>
++              </div>
++            </div>
++          </div>
++        ))}
++      </div>
++    </div>
++  );
++};
++
++export default HybridRiskDashboard;
+\ No newline at end of file
+diff --git a/src/app/dashboard/page.tsx b/src/app/dashboard/page.tsx
+index 1c40a57..931f027 100644
+--- a/src/app/dashboard/page.tsx
++++ b/src/app/dashboard/page.tsx
+@@ -1,7 +1,7 @@
+ 'use client';
+ import React, { useEffect, useState } from 'react';
+ import { useRouter } from 'next/navigation';
+-import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X } from 'lucide-react';
++import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X, Eye } from 'lucide-react';
+ import { Card } from '@/components/ui/card';
+ import { Button } from '@/components/ui/button';
+ import { Input } from '@/components/ui/input';
+@@ -81,6 +81,14 @@ const Dashboard = () => {
+     router.push(`/edit-usecase/${id}`);
+   }
+ 
++  const handleView = (id: string) => {
++    router.push(`/view-usecase/${id}`);
++  }
++
++  const handleAssess = (id: string) => {
++    router.push(`/dashboard/${id}/assess`);
++  }
++
+   // Fetch use case s from API
+   useEffect(() => {
+     const fetchUseCases = async () => {
+@@ -251,8 +259,28 @@ const Dashboard = () => {
+             </div>
+           )}
+           {/* Actions */}
+-          <div className="flex justify-end gap-2 mt-4">
+-            <Button className="bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] hover:from-[#ff4fa3] hover:to-[#8f4fff] text-white px-3 py-1.5 rounded-lg shadow font-semibold text-xs transition" onClick={() => {handleEdit(useCase.id as string)}}>Edit Use Case</Button>
++          <div className="flex flex-wrap gap-2 mt-4">
++            <Button 
++              className="bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] hover:from-[#ff4fa3] hover:to-[#8f4fff] text-white px-3 py-1.5 rounded-lg shadow font-semibold text-xs transition" 
++              onClick={() => {handleEdit(useCase.id as string)}}
++            >
++              Edit Use Case
++            </Button>
++            <Button 
++              className="bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] hover:from-[#ff4fa3] hover:to-[#8f4fff] text-white px-3 py-1.5 rounded-lg shadow font-semibold text-xs transition flex items-center gap-1" 
++              onClick={() => {handleView(useCase.id as string)}}
++            >
++              <Eye className="w-3 h-3" />
++              View Use Case
++            </Button>
++            {useCase.stage === 'proof-of-value' && (
++              <Button 
++                className="bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] hover:from-[#ff4fa3] hover:to-[#8f4fff] text-white px-3 py-1.5 rounded-lg shadow font-semibold text-xs transition" 
++                onClick={() => {handleAssess(useCase.id as string)}}
++              >
++                Assess
++              </Button>
++            )}
+             <DropdownMenu>
+               <DropdownMenuTrigger asChild>
+                 <button className="bg-gray-100 text-[#23235b] px-3 py-1.5 rounded-lg font-semibold shadow hover:bg-gray-200 transition border border-gray-200 text-xs">
+@@ -417,17 +445,6 @@ const Dashboard = () => {
+                           <div className="flex items-center"><Clock className="w-3 h-3 mr-1" />{useCase.timeline}</div>
+                         </div>
+                         <div className="mt-2 text-xs text-gray-400">Updated {useCase.lastUpdated}</div>
+-                        {useCase.stage === 'proof-of-value' && (
+-                          <button
+-                            className="mt-2 px-3 py-1 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white text-xs font-semibold rounded-full shadow hover:opacity-90 transition"
+-                            type="button"
+-                            onClick={() => {
+-                              router.push(`/dashboard/${useCase.id}/assess`)
+-                            }}
+-                          >
+-                            Assess
+-                          </button>
+-                        )}
+                       </Card>
+                     ))}
+                     {getUseCasesByStage(stage.id).length === 0 && (
+diff --git a/src/app/view-usecase/[useCaseId]/page.tsx b/src/app/view-usecase/[useCaseId]/page.tsx
+new file mode 100644
+index 0000000..3cc995e
+--- /dev/null
++++ b/src/app/view-usecase/[useCaseId]/page.tsx
+@@ -0,0 +1,366 @@
++'use client';
++import React, { useEffect, useState } from 'react';
++import { useParams, useRouter } from 'next/navigation';
++import { ArrowLeft, Target, TrendingUp, Zap, DollarSign, Clock, User, CheckCircle, AlertTriangle, Brain, Shield, Calendar, FileText } from 'lucide-react';
++import { Card } from '@/components/ui/card';
++import { Button } from '@/components/ui/button';
++
++interface UseCaseDetails {
++  id: string;
++  title: string;
++  problemStatement: string;
++  proposedAISolution: string;
++  currentState: string;
++  desiredState: string;
++  primaryStakeholders: string[];
++  secondaryStakeholders: string[];
++  successCriteria: string[];
++  problemValidation: string;
++  solutionHypothesis: string;
++  keyAssumptions: string[];
++  initialROI: string;
++  confidenceLevel: number;
++  operationalImpactScore: number;
++  productivityImpactScore: number;
++  revenueImpactScore: number;
++  implementationComplexity: number;
++  estimatedTimeline: string;
++  requiredResources: string;
++  businessFunction: string;
++  stage?: string;
++  priority?: string;
++  createdAt: string;
++  updatedAt: string;
++  assessData?: {
++    stepsData: {
++      technicalFeasibility?: any;
++      businessFeasibility?: any;
++      ethicalImpact?: any;
++      riskAssessment?: any;
++      dataReadiness?: any;
++      roadmapPosition?: any;
++      budgetPlanning?: any;
++    };
++  };
++}
++
++// Recursive object renderer
++const renderObject = (obj: any, parentKey = ""): React.ReactNode => {
++  if (obj === null || obj === undefined) return <span className="text-gray-400">Not specified</span>;
++  if (typeof obj === "string" || typeof obj === "number") return <span>{obj}</span>;
++  if (typeof obj === "boolean") return <span>{obj ? "Yes" : "No"}</span>;
++  if (Array.isArray(obj)) {
++    return (
++      <ul className="list-disc ml-6">
++        {obj.map((item, idx) => (
++          <li key={idx}>{renderObject(item, parentKey)}</li>
++        ))}
++      </ul>
++    );
++  }
++  if (typeof obj === "object") {
++    return (
++      <div className="space-y-2">
++        {Object.entries(obj).map(([key, value]) => (
++          <div key={key} className="flex flex-col">
++            <span className="font-medium text-gray-700">{parentKey ? `${parentKey} > ${key}` : key}:</span>
++            <div className="ml-4">{renderObject(value, key)}</div>
++          </div>
++        ))}
++      </div>
++    );
++  }
++  return <span>{String(obj)}</span>;
++};
++
++const ViewUseCasePage = () => {
++  const params = useParams();
++  const router = useRouter();
++  const useCaseId = params.useCaseId as string;
++  const [useCase, setUseCase] = useState<UseCaseDetails | null>(null);
++  const [loading, setLoading] = useState(true);
++  const [error, setError] = useState('');
++
++  useEffect(() => {
++    const fetchUseCaseDetails = async () => {
++      try {
++        const response = await fetch(`/api/get-usecase-details?useCaseId=${useCaseId}`);
++        if (!response.ok) {
++          throw new Error('Failed to fetch use case details');
++        }
++        const data = await response.json();
++        setUseCase(data);
++      } catch (err) {
++        setError('Failed to load use case details');
++        console.error('Error fetching use case details:', err);
++      } finally {
++        setLoading(false);
++      }
++    };
++
++    if (useCaseId) {
++      fetchUseCaseDetails();
++    }
++  }, [useCaseId]);
++
++  const getOverallScore = () => {
++    if (!useCase) return 0;
++    return ((useCase.operationalImpactScore + useCase.productivityImpactScore + useCase.revenueImpactScore) / 3).toFixed(1);
++  };
++
++  const renderSection = (title: string, icon: React.ReactNode, children: React.ReactNode) => (
++    <Card className="p-6 mb-6">
++      <div className="flex items-center mb-4">
++        {icon}
++        <h2 className="text-xl font-semibold text-gray-800 ml-2">{title}</h2>
++      </div>
++      {children}
++    </Card>
++  );
++
++  const renderField = (label: string, value: string | number | string[] | undefined, type: 'text' | 'array' | 'score' = 'text') => (
++    <div className="mb-4">
++      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
++      {type === 'array' && Array.isArray(value) ? (
++        <div className="flex flex-wrap gap-2">
++          {value.map((item, index) => (
++            <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
++              {item}
++            </span>
++          ))}
++        </div>
++      ) : type === 'score' ? (
++        <div className="flex items-center">
++          <span className="text-2xl font-bold text-blue-600">{value}</span>
++          <span className="text-gray-500 ml-2">/ 10</span>
++        </div>
++      ) : (
++        <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">
++          {value !== undefined && value !== null && value !== "" ? value : "Not specified"}
++        </p>
++      )}
++    </div>
++  );
++
++  if (loading) {
++    return (
++      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
++        <div className="text-center">
++          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
++          <p className="mt-4 text-gray-600">Loading use case details...</p>
++        </div>
++      </div>
++    );
++  }
++
++  if (error || !useCase) {
++    return (
++      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
++        <div className="text-center">
++          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
++          <p className="text-red-600">{error || 'Use case not found'}</p>
++          <Button 
++            onClick={() => router.back()} 
++            className="mt-4"
++          >
++            Go Back
++          </Button>
++        </div>
++      </div>
++    );
++  }
++
++  // Helper for risk rendering
++  const renderRiskList = (risks: any[] | string | undefined, label: string) => {
++    if (Array.isArray(risks)) {
++      if (risks.length === 0) return <p className="text-gray-500 italic">No {label.toLowerCase()} recorded.</p>;
++      return (
++        <div className="space-y-2">
++          {risks.map((riskObj, idx) => (
++            <div key={idx} className="bg-red-50 p-3 rounded-md">
++              {riskObj.risk && <div><strong>Risk:</strong> {riskObj.risk}</div>}
++              {riskObj.impact !== undefined && <div><strong>Impact:</strong> {riskObj.impact}</div>}
++              {riskObj.probability !== undefined && <div><strong>Probability:</strong> {riskObj.probability}</div>}
++            </div>
++          ))}
++        </div>
++      );
++    } else if (typeof risks === 'string') {
++      return <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{risks}</p>;
++    } else {
++      return <p className="text-gray-500 italic">No {label.toLowerCase()} recorded.</p>;
++    }
++  };
++
++  return (
++    <div className="min-h-screen bg-gray-50">
++      {/* Header */}
++      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
++        <div className="max-w-7xl mx-auto px-4 py-4">
++          <div className="flex items-center justify-between">
++            <div className="flex items-center">
++              <Button
++                variant="ghost"
++                onClick={() => router.back()}
++                className="mr-4"
++              >
++                <ArrowLeft className="h-5 w-5" />
++              </Button>
++              <div>
++                <h1 className="text-2xl font-bold text-gray-900">{useCase.title}</h1>
++                <p className="text-gray-600">Use Case Details</p>
++              </div>
++            </div>
++            <div className="flex items-center space-x-4">
++              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
++                useCase.priority === 'high' ? 'bg-red-100 text-red-800' :
++                useCase.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
++                'bg-green-100 text-green-800'
++              }`}>
++                {useCase.priority || 'Medium'} Priority
++              </span>
++              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
++                {useCase.stage || 'Discovery'}
++              </span>
++            </div>
++          </div>
++        </div>
++      </div>
++
++      <div className="max-w-7xl mx-auto px-4 py-8">
++        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
++          {/* Main Content */}
++          <div className="lg:col-span-2 space-y-6">
++            {/* Use Case Documentation */}
++            {renderSection(
++              'Use Case Documentation',
++              <Target className="h-6 w-6 text-blue-600" />,
++              <div className="space-y-4">
++                <div><span className="font-medium text-gray-700">Problem Statement:</span> <span>{useCase.problemStatement}</span></div>
++                <div><span className="font-medium text-gray-700">Proposed AI Solution:</span> <span>{useCase.proposedAISolution}</span></div>
++                <div><span className="font-medium text-gray-700">Current State:</span> <span>{useCase.currentState}</span></div>
++                <div><span className="font-medium text-gray-700">Desired State:</span> <span>{useCase.desiredState}</span></div>
++                <div><span className="font-medium text-gray-700">Primary Stakeholders:</span> {renderObject(useCase.primaryStakeholders)}</div>
++                <div><span className="font-medium text-gray-700">Secondary Stakeholders:</span> {renderObject(useCase.secondaryStakeholders)}</div>
++                <div><span className="font-medium text-gray-700">Success Criteria:</span> {renderObject(useCase.successCriteria)}</div>
++              </div>
++            )}
++
++            {/* Lean Business Case */}
++            {renderSection(
++              'Lean Business Case',
++              <TrendingUp className="h-6 w-6 text-green-600" />,
++              <div className="space-y-4">
++                <div><span className="font-medium text-gray-700">Problem Validation:</span> <span>{useCase.problemValidation}</span></div>
++                <div><span className="font-medium text-gray-700">Solution Hypothesis:</span> <span>{useCase.solutionHypothesis}</span></div>
++                <div><span className="font-medium text-gray-700">Key Assumptions:</span> {renderObject(useCase.keyAssumptions)}</div>
++                <div><span className="font-medium text-gray-700">Initial ROI:</span> <span>{useCase.initialROI}</span></div>
++                <div><span className="font-medium text-gray-700">Confidence Level:</span> <span>{useCase.confidenceLevel}</span></div>
++              </div>
++            )}
++
++            {/* Multi-Dimensional Scoring */}
++            {renderSection(
++              'Multi-Dimensional Scoring',
++              <Zap className="h-6 w-6 text-purple-600" />,
++              <div className="space-y-6">
++                <div className="grid grid-cols-3 gap-4">
++                  <div className="text-center p-4 bg-orange-50 rounded-lg">
++                    <div className="text-2xl font-bold text-orange-600">{useCase.operationalImpactScore}</div>
++                    <div className="text-sm text-orange-800">Operational Impact</div>
++                  </div>
++                  <div className="text-center p-4 bg-pink-50 rounded-lg">
++                    <div className="text-2xl font-bold text-pink-600">{useCase.productivityImpactScore}</div>
++                    <div className="text-sm text-pink-800">Productivity Impact</div>
++                  </div>
++                  <div className="text-center p-4 bg-blue-50 rounded-lg">
++                    <div className="text-2xl font-bold text-blue-600">{useCase.revenueImpactScore}</div>
++                    <div className="text-sm text-blue-800">Revenue Impact</div>
++                  </div>
++                </div>
++                <div className="text-center p-4 bg-gray-50 rounded-lg">
++                  <div className="text-xl font-bold text-gray-800">Overall Score: {getOverallScore()}</div>
++                  <div className="text-sm text-gray-600">Implementation Complexity: {useCase.implementationComplexity}/10</div>
++                </div>
++                <div><span className="font-medium text-gray-700">Estimated Timeline:</span> <span>{useCase.estimatedTimeline}</span></div>
++                <div><span className="font-medium text-gray-700">Required Resources:</span> <span>{useCase.requiredResources}</span></div>
++              </div>
++            )}
++
++            {/* Assessment Data - Render all fields for each step */}
++            {useCase.assessData?.stepsData && (
++              <>
++                {useCase.assessData.stepsData.technicalFeasibility &&
++                  renderSection(
++                    'Technical Feasibility',
++                    <Brain className="h-6 w-6 text-blue-600" />,
++                    <div>{renderObject(useCase.assessData.stepsData.technicalFeasibility)}</div>
++                  )}
++                {useCase.assessData.stepsData.businessFeasibility &&
++                  renderSection(
++                    'Business Feasibility',
++                    <DollarSign className="h-6 w-6 text-green-600" />,
++                    <div>{renderObject(useCase.assessData.stepsData.businessFeasibility)}</div>
++                  )}
++                {useCase.assessData.stepsData.ethicalImpact &&
++                  renderSection(
++                    'Ethical Impact',
++                    <Shield className="h-6 w-6 text-purple-600" />,
++                    <div>{renderObject(useCase.assessData.stepsData.ethicalImpact)}</div>
++                  )}
++                {useCase.assessData.stepsData.riskAssessment &&
++                  renderSection(
++                    'Risk Assessment',
++                    <AlertTriangle className="h-6 w-6 text-red-600" />,
++                    <div>{renderObject(useCase.assessData.stepsData.riskAssessment)}</div>
++                  )}
++                {useCase.assessData.stepsData.dataReadiness &&
++                  renderSection(
++                    'Data Readiness',
++                    <FileText className="h-6 w-6 text-cyan-600" />,
++                    <div>{renderObject(useCase.assessData.stepsData.dataReadiness)}</div>
++                  )}
++                {useCase.assessData.stepsData.roadmapPosition &&
++                  renderSection(
++                    'Roadmap Position',
++                    <Calendar className="h-6 w-6 text-indigo-600" />,
++                    <div>{renderObject(useCase.assessData.stepsData.roadmapPosition)}</div>
++                  )}
++                {useCase.assessData.stepsData.budgetPlanning &&
++                  renderSection(
++                    'Budget Planning',
++                    <DollarSign className="h-6 w-6 text-yellow-600" />,
++                    <div>{renderObject(useCase.assessData.stepsData.budgetPlanning)}</div>
++                  )}
++              </>
++            )}
++          </div>
++
++          {/* Sidebar */}
++          <div className="space-y-6">
++            {/* Quick Info */}
++            <Card className="p-6">
++              <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Info</h3>
++              <div className="space-y-3">
++                <div>
++                  <label className="text-sm font-medium text-gray-600">Business Function</label>
++                  <p className="text-gray-900">{useCase.businessFunction}</p>
++                </div>
++                <div>
++                  <label className="text-sm font-medium text-gray-600">Created</label>
++                  <p className="text-gray-900">{new Date(useCase.createdAt).toLocaleDateString()}</p>
++                </div>
++                <div>
++                  <label className="text-sm font-medium text-gray-600">Last Updated</label>
++                  <p className="text-gray-900">{new Date(useCase.updatedAt).toLocaleDateString()}</p>
++                </div>
++              </div>
++            </Card>
++          </div>
++        </div>
++      </div>
++    </div>
++  );
++};
++
++export default ViewUseCasePage; 
+\ No newline at end of file
+diff --git a/src/components/ApprovalsPage.tsx b/src/components/ApprovalsPage.tsx
+new file mode 100644
+index 0000000..fd54c75
+--- /dev/null
++++ b/src/components/ApprovalsPage.tsx
+@@ -0,0 +1,144 @@
++"use client";
++import React, { useEffect, useState, forwardRef, useImperativeHandle } from "react";
++import { Input } from "@/components/ui/input";
++import { Button } from "@/components/ui/button";
++import { Card } from "@/components/ui/card";
++import { useParams, useRouter } from "next/navigation";
++
++const statusOptions = ["Approved", "Rejected", "Pending"];
++const businessFunctions = ["Function A", "Function B", "Function C"];
++const finalQualifications = [
++  "Operational Enhancer",
++  "Productivity Driver",
++  "Revenue Acceleration",
++];
++
++const ApprovalsPage = forwardRef((props, ref) => {
++  const params = useParams();
++  const useCaseId = params.useCaseId as string;
++  const router = useRouter();
++  const [form, setForm] = useState({
++    governanceName: "",
++    governanceStatus: "",
++    governanceComment: "",
++    riskName: "",
++    riskStatus: "",
++    riskComment: "",
++    legalName: "",
++    legalStatus: "",
++    legalComment: "",
++    businessFunction: "",
++    businessName: "",
++    businessStatus: "",
++    businessComment: "",
++    finalQualification: "",
++  });
++  const [loading, setLoading] = useState(true);
++  const [saving, setSaving] = useState(false);
++  const [error, setError] = useState("");
++  const [success, setSuccess] = useState(false);
++
++  useEffect(() => {
++    if (!useCaseId) return;
++    setLoading(true);
++    fetch(`/api/read-approvals?useCaseId=${useCaseId}`)
++      .then((res) => res.json())
++      .then((data) => {
++        if (data) setForm(data);
++        setLoading(false);
++      })
++      .catch(() => setLoading(false));
++  }, [useCaseId]);
++
++  const handleSave = async () => {
++    setSaving(true);
++    setError("");
++    setSuccess(false);
++    try {
++      await fetch("/api/write-approvals", {
++        method: "POST",
++        headers: { "Content-Type": "application/json" },
++        body: JSON.stringify({ useCaseId, ...form }),
++      });
++      setSuccess(true);
++      setTimeout(() => setSuccess(false), 3000);
++    } catch {
++      setError("Failed to save");
++      setTimeout(() => setError("") , 3000);
++    }
++    setSaving(false);
++  };
++
++  const handleComplete = async () => {
++    await handleSave();
++    router.push(`/dashboard/${useCaseId}`);
++  };
++
++  useImperativeHandle(ref, () => ({ handleComplete }));
++
++  return (
++    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-8">
++      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-gray-200 p-8">
++        <h2 className="text-2xl font-bold mb-8 text-[#9461fd]">Approvals</h2>
++        {error && <div className="text-red-500 mb-2">{error}</div>}
++        {success && <div className="text-green-600 mb-2">Data saved/updated successfully!</div>}
++        {/* Final Usecase Qualification */}
++        <Card className="mb-6 p-6">
++          <h3 className="font-semibold text-lg mb-4">Final Usecase Qualification</h3>
++          <select value={form.finalQualification} onChange={e => setForm(f => ({ ...f, finalQualification: e.target.value }))} className="mb-2 border rounded px-3 py-2">
++            <option value="">Select Qualification</option>
++            {finalQualifications.map(opt => <option key={opt}>{opt}</option>)}
++          </select>
++        </Card>
++        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
++          {/* Governance */}
++          <Card className="mb-6 p-6">
++            <h3 className="font-semibold text-lg mb-4">Governance</h3>
++            <Input placeholder="Approver Name" value={form.governanceName} onChange={e => setForm(f => ({ ...f, governanceName: e.target.value }))} className="mb-2" />
++            <select value={form.governanceStatus} onChange={e => setForm(f => ({ ...f, governanceStatus: e.target.value }))} className="mb-2 border rounded px-3 py-2">
++              <option value="">Select Status</option>
++              {statusOptions.map(opt => <option key={opt}>{opt}</option>)}
++            </select>
++            <Input placeholder="Comments" value={form.governanceComment} onChange={e => setForm(f => ({ ...f, governanceComment: e.target.value }))} />
++          </Card>
++          {/* Risk Management */}
++          <Card className="mb-6 p-6">
++            <h3 className="font-semibold text-lg mb-4">Risk Management</h3>
++            <Input placeholder="Approver Name" value={form.riskName} onChange={e => setForm(f => ({ ...f, riskName: e.target.value }))} className="mb-2" />
++            <select value={form.riskStatus} onChange={e => setForm(f => ({ ...f, riskStatus: e.target.value }))} className="mb-2 border rounded px-3 py-2">
++              <option value="">Select Status</option>
++              {statusOptions.map(opt => <option key={opt}>{opt}</option>)}
++            </select>
++            <Input placeholder="Comments" value={form.riskComment} onChange={e => setForm(f => ({ ...f, riskComment: e.target.value }))} />
++          </Card>
++          {/* Legal */}
++          <Card className="mb-6 p-6">
++            <h3 className="font-semibold text-lg mb-4">Legal</h3>
++            <Input placeholder="Approver Name" value={form.legalName} onChange={e => setForm(f => ({ ...f, legalName: e.target.value }))} className="mb-2" />
++            <select value={form.legalStatus} onChange={e => setForm(f => ({ ...f, legalStatus: e.target.value }))} className="mb-2 border rounded px-3 py-2">
++              <option value="">Select Status</option>
++              {statusOptions.map(opt => <option key={opt}>{opt}</option>)}
++            </select>
++            <Input placeholder="Comments" value={form.legalComment} onChange={e => setForm(f => ({ ...f, legalComment: e.target.value }))} />
++          </Card>
++          {/* Business Function */}
++          <Card className="mb-6 p-6">
++            <h3 className="font-semibold text-lg mb-4">Business Function</h3>
++            <select value={form.businessFunction} onChange={e => setForm(f => ({ ...f, businessFunction: e.target.value }))} className="mb-2 border rounded px-3 py-2">
++              <option value="">Select Function</option>
++              {businessFunctions.map(opt => <option key={opt}>{opt}</option>)}
++            </select>
++            <Input placeholder="Approver Name" value={form.businessName} onChange={e => setForm(f => ({ ...f, businessName: e.target.value }))} className="mb-2" />
++            <select value={form.businessStatus} onChange={e => setForm(f => ({ ...f, businessStatus: e.target.value }))} className="mb-2 border rounded px-3 py-2">
++              <option value="">Select Status</option>
++              {statusOptions.map(opt => <option key={opt}>{opt}</option>)}
++            </select>
++            <Input placeholder="Comments" value={form.businessComment} onChange={e => setForm(f => ({ ...f, businessComment: e.target.value }))} />
++          </Card>
++        </div>
++      </div>
++    </div>
++  );
++});
++
++export default ApprovalsPage; 
+\ No newline at end of file
+diff --git a/src/components/BudgetPlanning.tsx b/src/components/BudgetPlanning.tsx
+index f1ea8b8..92a70ac 100644
+--- a/src/components/BudgetPlanning.tsx
++++ b/src/components/BudgetPlanning.tsx
+@@ -1,65 +1,161 @@
+-import React from "react";
+-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+-import { Separator } from "@/components/ui/separator";
+-import { Label } from "@/components/ui/label";
++'use client';
++import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
++import { Input } from '@/components/ui/input';
++import { Card } from '@/components/ui/card';
+ 
+-export default function BudgetPlanning() {
+-  return (
+-    <div className="space-y-8">
+-      {/* Assessment Banner */}
+-      <Card className="bg-yellow-50 border-yellow-400 border-l-4 shadow-none">
+-        <CardHeader>
+-          <div className="font-semibold text-yellow-800 text-lg mb-1">Budget Planning</div>
+-          <div className="text-yellow-700">Define resource requirements and financial projections for the project.</div>
+-        </CardHeader>
+-      </Card>
++interface BudgetPlanningProps {
++  useCaseId: string;
++}
++
++const BudgetPlanning = forwardRef<{ saveFinops: () => Promise<void> }, BudgetPlanningProps>(({ useCaseId }, ref) => {
++  // 6 Inputs
++  const [initialDevCost, setInitialDevCost] = useState<number>(150000);
++  const [baseApiCost, setBaseApiCost] = useState<number>(8000);
++  const [baseInfraCost, setBaseInfraCost] = useState<number>(2000);
++  const [baseOpCost, setBaseOpCost] = useState<number>(5000);
++  const [baseMonthlyValue, setBaseMonthlyValue] = useState<number>(25000);
++  const [valueGrowthRate, setValueGrowthRate] = useState<number>(0.15);
++  const [loading, setLoading] = useState<boolean>(true);
++  const [error, setError] = useState('');
++
++  useEffect(() => {
++    if (!useCaseId) return;
++    setLoading(true);
++    fetch(`/api/get-finops?id=${useCaseId}`)
++      .then(res => res.json())
++      .then(data => {
++        if (Array.isArray(data) && data.length > 0) {
++          const d = data[0];
++          if (d) {
++            setInitialDevCost(d.devCostBase ?? 150000);
++            setBaseApiCost(d.apiCostBase ?? 8000);
++            setBaseInfraCost(d.infraCostBase ?? 2000);
++            setBaseOpCost(d.opCostBase ?? 5000);
++            setBaseMonthlyValue(d.valueBase ?? 25000);
++            setValueGrowthRate(d.valueGrowthRate ?? 0.15);
++          }
++        }
++        setLoading(false);
++      })
++      .catch(() => {
++        setLoading(false);
++      });
++  }, [useCaseId]);
++
++  // Update handler: send values to backend on change
++  const updateFinops = async (updatedFields: Partial<any>) => {
++    try {
++      const payload = {
++        useCaseId,
++        devCostBase: updatedFields.devCostBase ?? initialDevCost,
++        apiCostBase: updatedFields.apiCostBase ?? baseApiCost,
++        infraCostBase: updatedFields.infraCostBase ?? baseInfraCost,
++        opCostBase: updatedFields.opCostBase ?? baseOpCost,
++        valueBase: updatedFields.valueBase ?? baseMonthlyValue,
++        valueGrowthRate: updatedFields.valueGrowthRate ?? valueGrowthRate,
++        ROI: 0,
++        netValue: 0,
++        cumOpCost: 0,
++        cumValue: 0,
++        totalInvestment: 0,
++      };
++      await fetch('/api/update-finops', {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify(payload),
++      });
++    } catch (e) {
++      setError('Failed to update');
++    }
++  };
+ 
+-      {/* Cost Breakdown */}
+-      <Card>
+-        <CardHeader>
+-          <Label className="font-medium">Cost Breakdown</Label>
+-        </CardHeader>
+-        <CardContent className="p-0">
+-          <div className="divide-y divide-gray-200">
+-            <div className="flex justify-between items-center px-6 py-3">
+-              <span>Personnel (12 months)</span>
+-              <span className="font-semibold">$120,000</span>
+-            </div>
+-            <div className="flex justify-between items-center px-6 py-3">
+-              <span>Infrastructure & Tools</span>
+-              <span className="font-semibold">$20,000</span>
+-            </div>
+-            <div className="flex justify-between items-center px-6 py-3">
+-              <span>External Services</span>
+-              <span className="font-semibold">$10,000</span>
+-            </div>
+-          </div>
+-        </CardContent>
+-      </Card>
++  // Handlers for each input
++  const handleDevCostChange = (v: number) => {
++    setInitialDevCost(v);
++    updateFinops({ devCostBase: v });
++  };
++  const handleApiCostChange = (v: number) => {
++    setBaseApiCost(v);
++    updateFinops({ apiCostBase: v });
++  };
++  const handleInfraCostChange = (v: number) => {
++    setBaseInfraCost(v);
++    updateFinops({ infraCostBase: v });
++  };
++  const handleOpCostChange = (v: number) => {
++    setBaseOpCost(v);
++    updateFinops({ opCostBase: v });
++  };
++  const handleValueChange = (v: number) => {
++    setBaseMonthlyValue(v);
++    updateFinops({ valueBase: v });
++  };
++  const handleGrowthChange = (v: number) => {
++    setValueGrowthRate(v / 100);
++    updateFinops({ valueGrowthRate: v / 100 });
++  };
+ 
+-      {/* Total Budget */}
+-      <Card>
+-        <CardContent className="flex justify-between items-center px-6 py-3 font-semibold text-lg">
+-          <span>Total Budget</span>
+-          <span>$150,000</span>
+-        </CardContent>
+-      </Card>
++  // Save all current values
++  const saveFinops = async () => {
++    try {
++      const payload = {
++        useCaseId,
++        devCostBase: initialDevCost,
++        apiCostBase: baseApiCost,
++        infraCostBase: baseInfraCost,
++        opCostBase: baseOpCost,
++        valueBase: baseMonthlyValue,
++        valueGrowthRate: valueGrowthRate,
++        ROI: 0,
++        netValue: 0,
++        cumOpCost: 0,
++        cumValue: 0,
++        totalInvestment: 0,
++      };
++      await fetch('/api/update-finops', {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify(payload),
++      });
++    } catch (e) {
++      setError('Failed to update');
++    }
++  };
+ 
+-      {/* ROI Projection */}
+-      <div className="space-y-4">
+-        <Card className="bg-green-50 shadow-none">
+-          <CardContent className="py-6 text-center">
+-            <div className="text-green-600 text-2xl font-bold">200%</div>
+-            <div className="text-xs text-gray-500 mt-1">Expected ROI</div>
+-          </CardContent>
+-        </Card>
+-        <Card className="bg-blue-50 shadow-none">
+-          <CardContent className="py-6 text-center">
+-            <div className="text-blue-600 text-2xl font-bold">8 months</div>
+-            <div className="text-xs text-gray-500 mt-1">Payback Period</div>
+-          </CardContent>
+-        </Card>
++  useImperativeHandle(ref, () => ({ saveFinops }));
++
++  return (
++    <Card className="mb-8 p-6 bg-gradient-to-br from-[#f5eaff] via-[#fbeaff] to-[#ffeafd] border border-gray-200 shadow-md rounded-xl">
++      {error && <div className="text-red-500 mb-2">{error}</div>}
++      {loading && <div className="text-gray-500 mb-4">Loading saved data...</div>}
++      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
++        <div>
++          <label className="font-semibold text-[#23235b]">Initial Dev Cost</label>
++          <Input type="number" value={initialDevCost} min={0} onChange={e => handleDevCostChange(Number(e.target.value))} className="w-full" />
++        </div>
++        <div>
++          <label className="font-semibold text-[#23235b]">Monthly API Cost</label>
++          <Input type="number" value={baseApiCost} min={0} onChange={e => handleApiCostChange(Number(e.target.value))} className="w-full" />
++        </div>
++        <div>
++          <label className="font-semibold text-[#23235b]">Monthly Infrastructure</label>
++          <Input type="number" value={baseInfraCost} min={0} onChange={e => handleInfraCostChange(Number(e.target.value))} className="w-full" />
++        </div>
++        <div>
++          <label className="font-semibold text-[#23235b]">Monthly Operations</label>
++          <Input type="number" value={baseOpCost} min={0} onChange={e => handleOpCostChange(Number(e.target.value))} className="w-full" />
++        </div>
++        <div>
++          <label className="font-semibold text-[#23235b]">Monthly Value Generated</label>
++          <Input type="number" value={baseMonthlyValue} min={0} onChange={e => handleValueChange(Number(e.target.value))} className="w-full" />
++        </div>
++        <div>
++          <label className="font-semibold text-[#23235b]">Value Growth Rate (%)</label>
++          <Input type="number" value={valueGrowthRate * 100} min={0} max={100} onChange={e => handleGrowthChange(Number(e.target.value))} className="w-full" />
++        </div>
+       </div>
+-    </div>
++    </Card>
+   );
+-}
+\ No newline at end of file
++});
++
++export default BudgetPlanning;
+diff --git a/src/components/BusinessFeasibility.tsx b/src/components/BusinessFeasibility.tsx
+index 27a981c..d200411 100644
+--- a/src/components/BusinessFeasibility.tsx
++++ b/src/components/BusinessFeasibility.tsx
+@@ -1,4 +1,6 @@
+-import React, { useState } from 'react';
++'use client';
++import React, { useState, useEffect, useRef } from 'react';
++import isEqual from 'lodash.isequal';
+ import {
+   Select,
+   SelectTrigger,
+@@ -8,8 +10,25 @@ import {
+ } from "@/components/ui/select";
+ import { Slider } from "@/components/ui/slider";
+ import { Checkbox } from "@/components/ui/checkbox";
++import { Input } from "@/components/ui/input";
+ 
+-export default function BusinessFeasibility() {
++type Props = {
++  onChange?: (data: {
++    strategicAlignment: number;
++    marketOpportunity: string;
++    stakeholder: {
++      exec: boolean;
++      endUser: boolean;
++      it: boolean;
++    };
++    annualSavings: string;
++    efficiencyGain: number;
++    paybackPeriod: number;
++  }) => void;
++};
++
++export default function BusinessFeasibility({ onChange }: Props) {
++  const lastSent = useRef<any>(null);
+   const [strategicAlignment, setStrategicAlignment] = useState(8);
+   const [marketOpportunity, setMarketOpportunity] = useState('large');
+   const [stakeholder, setStakeholder] = useState({
+@@ -17,6 +36,24 @@ export default function BusinessFeasibility() {
+     endUser: false,
+     it: true,
+   });
++  const [annualSavings, setAnnualSavings] = useState('2.4M');
++  const [efficiencyGain, setEfficiencyGain] = useState(35);
++  const [paybackPeriod, setPaybackPeriod] = useState(8);
++
++  useEffect(() => {
++    const currentData = {
++      strategicAlignment,
++      marketOpportunity,
++      stakeholder,
++      annualSavings,
++      efficiencyGain,
++      paybackPeriod,
++    };
++    if (onChange && !isEqual(currentData, lastSent.current)) {
++      onChange(currentData);
++      lastSent.current = currentData;
++    }
++  }, [strategicAlignment, marketOpportunity, stakeholder, annualSavings, efficiencyGain, paybackPeriod, onChange]);
+ 
+   return (
+     <div className="space-y-8">
+@@ -80,18 +117,27 @@ export default function BusinessFeasibility() {
+       {/* Business Impact Projection */}
+       <div className="bg-white border border-gray-200 rounded-lg p-6 mt-8 flex flex-col md:flex-row justify-between items-center gap-6">
+         <div className="flex-1 text-center">
+-          <div className="text-green-600 text-2xl font-bold">$2.4M</div>
++          <div className="flex items-center justify-center">
++            <span className="text-green-600 text-2xl font-bold">$</span>
++            <Input type="text" value={annualSavings} onChange={(e) => setAnnualSavings(e.target.value)} className="w-24 text-2xl font-bold text-green-600 bg-transparent border-none text-center" />
++          </div>
+           <div className="text-xs text-gray-500 mt-1">Annual Savings</div>
+         </div>
+         <div className="flex-1 text-center">
+-          <div className="text-blue-600 text-2xl font-bold">35%</div>
++          <div className="flex items-center justify-center">
++            <Input type="number" value={efficiencyGain} onChange={(e) => setEfficiencyGain(Number(e.target.value))} className="w-20 text-2xl font-bold text-blue-600 bg-transparent border-none text-center" />
++            <span className="text-blue-600 text-2xl font-bold">%</span>
++          </div>
+           <div className="text-xs text-gray-500 mt-1">Efficiency Gain</div>
+         </div>
+         <div className="flex-1 text-center">
+-          <div className="text-purple-600 text-2xl font-bold">8 months</div>
++          <div className="flex items-center justify-center">
++            <Input type="number" value={paybackPeriod} onChange={(e) => setPaybackPeriod(Number(e.target.value))} className="w-20 text-2xl font-bold text-purple-600 bg-transparent border-none text-center" />
++            <span className="text-purple-600 text-2xl font-bold">months</span>
++          </div>
+           <div className="text-xs text-gray-500 mt-1">Payback Period</div>
+         </div>
+       </div>
+     </div>
+   );
+-} 
+\ No newline at end of file
++}
+diff --git a/src/components/DataReadiness.tsx b/src/components/DataReadiness.tsx
+index e3c81dc..34b2855 100644
+--- a/src/components/DataReadiness.tsx
++++ b/src/components/DataReadiness.tsx
+@@ -1,9 +1,32 @@
+ 'use client';
+-import React, { useState } from 'react';
++import React, { useState, useEffect, useRef } from 'react';
++import isEqual from 'lodash.isequal';
+ import { Checkbox } from '@/components/ui/checkbox';
+ import { Slider } from '@/components/ui/slider';
++import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
++import { Textarea } from '@/components/ui/textarea';
++
++type Props = {
++  onChange?: (data: {
++    trainingDataVolume: string;
++    historicalDataDepth: string;
++    qualityScores: Record<string, number>;
++    sources: Record<string, boolean>;
++    pipeline: Record<string, boolean>;
++    governance: Record<string, boolean>;
++    featureEngineeringReqs: string;
++    criticalDataGaps: string;
++    dataCollectionStrategy: string;
++    dataReadinessTimeline: string;
++  }) => void;
++};
++
++export default function DataReadinessAssessment({ onChange }: Props) {
++  const lastSent = useRef<any>(null);
++
++  const [trainingDataVolume, setTrainingDataVolume] = useState('Sufficient (100K+ records)');
++  const [historicalDataDepth, setHistoricalDataDepth] = useState('3+ years');
+ 
+-export default function DataReadinessAssessment() {
+   const [qualityScores, setQualityScores] = useState<Record<string, number>>({
+     completeness: 85,
+     accuracy: 92,
+@@ -32,6 +55,42 @@ export default function DataReadinessAssessment() {
+     'Privacy Controls': true,
+   });
+ 
++  const [featureEngineeringReqs, setFeatureEngineeringReqs] = useState('');
++  const [criticalDataGaps, setCriticalDataGaps] = useState('');
++  const [dataCollectionStrategy, setDataCollectionStrategy] = useState('');
++  const [dataReadinessTimeline, setDataReadinessTimeline] = useState('');
++
++  useEffect(() => {
++    const currentData = {
++      trainingDataVolume,
++      historicalDataDepth,
++      qualityScores,
++      sources,
++      pipeline,
++      governance,
++      featureEngineeringReqs,
++      criticalDataGaps,
++      dataCollectionStrategy,
++      dataReadinessTimeline,
++    };
++    if (onChange && !isEqual(currentData, lastSent.current)) {
++      onChange(currentData);
++      lastSent.current = currentData;
++    }
++  }, [
++    trainingDataVolume,
++    historicalDataDepth,
++    qualityScores,
++    sources,
++    pipeline,
++    governance,
++    featureEngineeringReqs,
++    criticalDataGaps,
++    dataCollectionStrategy,
++    dataReadinessTimeline,
++    onChange,
++  ]);
++
+   const getSliderColor = (value: number) => {
+     if (value >= 90) return 'bg-green-500';
+     if (value >= 70) return 'bg-yellow-500';
+@@ -54,21 +113,31 @@ export default function DataReadinessAssessment() {
+           <div className="space-y-3">
+             <div className="flex items-center justify-between">
+               <span className="text-sm text-gray-700">Training Data Volume</span>
+-              <select className="text-sm border rounded px-2 py-1 w-64">
+-                <option>Sufficient (100K+ records)</option>
+-                <option>Moderate (10K-100K records)</option>
+-                <option>Limited (1K-10K records)</option>
+-                <option>Insufficient (&lt;1K records)</option>
+-              </select>
++              <Select value={trainingDataVolume} onValueChange={setTrainingDataVolume}>
++                <SelectTrigger className="w-64">
++                  <SelectValue />
++                </SelectTrigger>
++                <SelectContent>
++                  <SelectItem value="Sufficient (100K+ records)">Sufficient (100K+ records)</SelectItem>
++                  <SelectItem value="Moderate (10K-100K records)">Moderate (10K-100K records)</SelectItem>
++                  <SelectItem value="Limited (1K-10K records)">Limited (1K-10K records)</SelectItem>
++                  <SelectItem value="Insufficient (<1K records)">Insufficient (&lt;1K records)</SelectItem>
++                </SelectContent>
++              </Select>
+             </div>
+             <div className="flex items-center justify-between">
+               <span className="text-sm text-gray-700">Historical Data Depth</span>
+-              <select className="text-sm border rounded px-2 py-1 w-64">
+-                <option>3+ years</option>
+-                <option>1-3 years</option>
+-                <option>6-12 months</option>
+-                <option>&lt;6 months</option>
+-              </select>
++              <Select value={historicalDataDepth} onValueChange={setHistoricalDataDepth}>
++                <SelectTrigger className="w-64">
++                  <SelectValue />
++                </SelectTrigger>
++                <SelectContent>
++                  <SelectItem value="3+ years">3+ years</SelectItem>
++                  <SelectItem value="1-3 years">1-3 years</SelectItem>
++                  <SelectItem value="6-12 months">6-12 months</SelectItem>
++                  <SelectItem value="<6 months">&lt;6 months</SelectItem>
++                </SelectContent>
++              </Select>
+             </div>
+           </div>
+         </div>
+@@ -164,8 +233,10 @@ export default function DataReadinessAssessment() {
+           <label className="block text-sm font-medium text-gray-700 mb-1">
+             Feature Engineering Requirements
+           </label>
+-          <textarea
++          <Textarea
+             rows={3}
++            value={featureEngineeringReqs}
++            onChange={(e) => setFeatureEngineeringReqs(e.target.value)}
+             className="w-full px-3 py-2 border border-gray-300 rounded-md"
+             placeholder="Describe required data transformations and feature engineering needs..."
+           />
+@@ -176,12 +247,18 @@ export default function DataReadinessAssessment() {
+       <div className="space-y-4">
+         <h4 className="font-semibold text-gray-800">Data Gaps & Action Plan</h4>
+         <div className="space-y-4">
+-          {['Critical Data Gaps', 'Data Collection Strategy', 'Data Readiness Timeline'].map((label) => (
+-            <div key={label}>
+-              <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+-              <textarea rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+-            </div>
+-          ))}
++          <div>
++            <label className="block text-sm font-medium text-gray-700 mb-1">Critical Data Gaps</label>
++            <Textarea rows={3} value={criticalDataGaps} onChange={e => setCriticalDataGaps(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
++          </div>
++          <div>
++            <label className="block text-sm font-medium text-gray-700 mb-1">Data Collection Strategy</label>
++            <Textarea rows={3} value={dataCollectionStrategy} onChange={e => setDataCollectionStrategy(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
++          </div>
++          <div>
++            <label className="block text-sm font-medium text-gray-700 mb-1">Data Readiness Timeline</label>
++            <Textarea rows={3} value={dataReadinessTimeline} onChange={e => setDataReadinessTimeline(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
++          </div>
+         </div>
+       </div>
+ 
+diff --git a/src/components/RiskAssessment.tsx b/src/components/RiskAssessment.tsx
+index 6789252..693eb56 100644
+--- a/src/components/RiskAssessment.tsx
++++ b/src/components/RiskAssessment.tsx
+@@ -1,5 +1,6 @@
+ 'use client';
+-import React, { useState } from 'react';
++import React, { useState, useEffect, useRef } from 'react';
++import isEqual from 'lodash.isequal';
+ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+ 
+ const riskLevels = ['None', 'Low', 'Medium', 'High'];
+@@ -12,19 +13,44 @@ const riskLevelColors: Record<string, string> = {
+   High: 'bg-red-100 text-red-700',
+ };
+ 
+-export default function RiskAssessment() {
+-  const [technicalRisks, setTechnicalRisks] = useState([
++type Risk = {
++  risk: string;
++  probability: string;
++  impact: string;
++};
++
++type Props = {
++  onChange?: (data: {
++    technicalRisks: Risk[];
++    businessRisks: Risk[];
++  }) => void;
++};
++
++export default function RiskAssessment({ onChange }: Props) {
++  const lastSent = useRef<any>(null);
++  const [technicalRisks, setTechnicalRisks] = useState<Risk[]>([
+     { risk: 'Model accuracy degradation', probability: 'None', impact: 'None' },
+     { risk: 'Data quality issues', probability: 'None', impact: 'None' },
+     { risk: 'Integration failures', probability: 'None', impact: 'None' },
+   ]);
+ 
+-  const [businessRisks, setBusinessRisks] = useState([
++  const [businessRisks, setBusinessRisks] = useState<Risk[]>([
+     { risk: 'User adoption resistance', probability: 'None', impact: 'None' },
+     { risk: 'Regulatory changes', probability: 'None', impact: 'None' },
+     { risk: 'Competitive response', probability: 'None', impact: 'None'},
+   ]);
+ 
++  useEffect(() => {
++    const currentData = {
++      technicalRisks,
++      businessRisks,
++    };
++    if (onChange && !isEqual(currentData, lastSent.current)) {
++      onChange(currentData);
++      lastSent.current = currentData;
++    }
++  }, [technicalRisks, businessRisks, onChange]);
++
+   const handleSelectChange = (
+     type: 'technical' | 'business',
+     index: number,
+@@ -32,12 +58,14 @@ export default function RiskAssessment() {
+     value: string
+   ) => {
+     const updater = type === 'technical' ? setTechnicalRisks : setBusinessRisks;
+-    const risks = type === 'technical' ? [...technicalRisks] : [...businessRisks];
+-    risks[index][field] = value;
+-    updater(risks);
++    updater((prevRisks) => {
++      const newRisks = [...prevRisks];
++      newRisks[index] = { ...newRisks[index], [field]: value };
++      return newRisks;
++    });
+   };
+ 
+-  const renderRiskRow = (item: any, index: number, type: 'technical' | 'business') => (
++  const renderRiskRow = (item: Risk, index: number, type: 'technical' | 'business') => (
+     <div
+       key={index}
+       className="flex items-center justify-between border rounded-lg p-4"
+diff --git a/src/components/RoadmapPosition.tsx b/src/components/RoadmapPosition.tsx
+index d249922..782a6b3 100644
+--- a/src/components/RoadmapPosition.tsx
++++ b/src/components/RoadmapPosition.tsx
+@@ -1,4 +1,6 @@
+-import React, { useState } from "react";
++'use client';
++import React, { useState, useEffect, useRef } from "react";
++import isEqual from 'lodash.isequal';
+ import { Card, CardContent } from "@/components/ui/card";
+ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+ import { Label } from "@/components/ui/label";
+@@ -6,7 +8,21 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+ import { Checkbox } from "@/components/ui/checkbox";
+ import { Textarea } from "@/components/ui/textarea";
+ 
+-export default function RoadmapPosition() {
++type Props = {
++  onChange?: (data: {
++    priority: string;
++    timeline: string;
++    dependencies: {
++      dataPlatform: boolean;
++      security: boolean;
++      hiring: boolean;
++    };
++    metrics: string;
++  }) => void;
++};
++
++export default function RoadmapPosition({ onChange }: Props) {
++  const lastSent = useRef<any>(null);
+   const [priority, setPriority] = useState("high");
+   const [timeline, setTimeline] = useState("q2");
+   const [dependencies, setDependencies] = useState({
+@@ -16,6 +32,19 @@ export default function RoadmapPosition() {
+   });
+   const [metrics, setMetrics] = useState("");
+ 
++  useEffect(() => {
++    const currentData = {
++      priority,
++      timeline,
++      dependencies,
++      metrics,
++    };
++    if (onChange && !isEqual(currentData, lastSent.current)) {
++      onChange(currentData);
++      lastSent.current = currentData;
++    }
++  }, [priority, timeline, dependencies, metrics, onChange]);
++
+   return (
+     <div className="space-y-6">
+       <Card className="bg-indigo-50">
+@@ -99,4 +128,4 @@ export default function RoadmapPosition() {
+       </Card>
+     </div>
+   );
+-} 
+\ No newline at end of file
++}
+\ No newline at end of file
