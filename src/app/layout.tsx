@@ -76,6 +76,7 @@ export default function RootLayout({
                 <Link href="/dashboard" className="py-2 text-base font-medium" prefetch={false}>Portfolio Dashboard</Link>
                 <Link href="/dashboard" className="py-2 text-base font-medium" prefetch={false}>Use Cases</Link>
                 <Link href="/dashboard/risks" className="py-2 text-base font-medium" prefetch={false}>Risk Management</Link>
+                <Link href="/dashboard/finops-dashboard" className="py-2 text-base font-medium" prefetch={false}>FinOps Dashboard</Link>
                 <Link href="#" className="py-2 text-base font-medium" prefetch={false}>Policy Center</Link>
               </nav>
             </SheetContent>
@@ -87,6 +88,7 @@ export default function RootLayout({
             <Link href="/dashboard" className="inline-flex h-9 items-center rounded-md bg-white px-4 py-2 text-sm font-medium hover:bg-gray-100 transition" prefetch={false}>Portfolio Dashboard</Link>
             <Link href="/dashboard" className="inline-flex h-9 items-center rounded-md bg-white px-4 py-2 text-sm font-medium hover:bg-gray-100 transition" prefetch={false}>Use Cases</Link>
             <Link href="/dashboard/risks" className="inline-flex h-9 items-center rounded-md bg-white px-4 py-2 text-sm font-medium hover:bg-gray-100 transition" prefetch={false}>Risk Management</Link>
+            <Link href="/dashboard/finops-dashboard" className="inline-flex h-9 items-center rounded-md bg-white px-4 py-2 text-sm font-medium hover:bg-gray-100 transition" prefetch={false}>FinOps Dashboard</Link>
             <Link href="#" className="inline-flex h-9 items-center rounded-md bg-white px-4 py-2 text-sm font-medium hover:bg-gray-100 transition" prefetch={false}>Policy Center</Link>
           </nav>
         </header>
