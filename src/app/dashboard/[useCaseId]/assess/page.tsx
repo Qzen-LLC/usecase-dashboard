@@ -87,6 +87,22 @@ const defaultAssessmentData = {
       consentManagement: false,
       dataAnonymization: false,
     },
+    decisionMaking: {
+      automationLevel: '',
+      decisionTypes: [],
+    },
+    modelCharacteristics: {
+      explainabilityLevel: '',
+      biasTesting: '',
+    },
+    aiGovernance: {
+      humanOversightLevel: '',
+      performanceMonitoring: [],
+    },
+    ethicalConsiderations: {
+      potentialHarmAreas: [],
+      vulnerablePopulations: [],
+    },
   },
   riskAssessment: {
     technicalRisks: [
