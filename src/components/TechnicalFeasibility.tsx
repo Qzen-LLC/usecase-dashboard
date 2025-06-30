@@ -121,6 +121,15 @@ const CONFIDENCE_SCORES = [
   "Detailed Explanations",
 ];
 
+const MODEL_UPDATE_FREQUENCY = [
+  "Annual",
+  "Quarterly",
+  "Monthly",
+  "Weekly",
+  "Daily",
+  "Real-time/Continuous",
+];
+
 type Props = {
   value: {
     modelTypes: string[];
@@ -135,6 +144,7 @@ type Props = {
     technicalComplexity: number;
     outputTypes: string[];
     confidenceScore: string;
+    modelUpdateFrequency: string;
   };
   onChange: (data: Props['value']) => void;
 };
@@ -320,11 +330,22 @@ export default function TechnicalFeasibility({ value, onChange }: Props) {
             ))}
           </div>
           <Label className="block font-medium mb-1">Confidence Scores</Label>
+          <div className="mb-4">
           <RadioGroup value={value.confidenceScore} onValueChange={(newValue) => onChange({ ...value, confidenceScore: newValue })} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             {CONFIDENCE_SCORES.map((score) => (
-              <Label key={score} className="flex items-center gap-2 cursor-pointer">
+              <Label key={score} className="flex items-center gap-2 cursor-pointer ">
                 <RadioGroupItem value={score} />
                 <span className="text-sm">{score}</span>
+              </Label>
+            ))}
+          </RadioGroup>
+          </div>
+          <Label className="block font-medium mb-1">Model Update Frequency</Label>
+          <RadioGroup value={value.modelUpdateFrequency} onValueChange={(newValue) => onChange({ ...value, modelUpdateFrequency: newValue })} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            {MODEL_UPDATE_FREQUENCY.map((freq) => (
+              <Label key={freq} className="flex items-center gap-2 cursor-pointer">
+                <RadioGroupItem value={freq} />
+                <span className="text-sm">{freq}</span>
               </Label>
             ))}
           </RadioGroup>

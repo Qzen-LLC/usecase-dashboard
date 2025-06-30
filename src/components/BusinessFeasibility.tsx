@@ -177,18 +177,18 @@ export default function BusinessFeasibility({ value, onChange }: Props) {
         </CardHeader>
         <CardContent>
           <Label className="block font-medium mb-1">Strategic Alignment</Label>
-          <div className="flex items-center w-full">
-            <span className="text-gray-500 text-sm mr-2">Low</span>
-            <Slider
-              min={1}
-              max={10}
-              step={1}
+        <div className="flex items-center w-full">
+          <span className="text-gray-500 text-sm mr-2">Low</span>
+          <Slider
+            min={1}
+            max={10}
+            step={1}
               value={[value.strategicAlignment]}
               onValueChange={([val]) => onChange({ ...value, strategicAlignment: val })}
-              className="w-full"
-            />
-            <span className="text-gray-500 text-sm ml-2">High</span>
-          </div>
+            className="w-full"
+          />
+          <span className="text-gray-500 text-sm ml-2">High</span>
+        </div>
         </CardContent>
       </Card>
 
@@ -201,15 +201,15 @@ export default function BusinessFeasibility({ value, onChange }: Props) {
         <CardContent>
           <Label className="block font-medium mb-1">Market Opportunity</Label>
           <Select value={value.marketOpportunity} onValueChange={(v) => onChange({ ...value, marketOpportunity: v })}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select market opportunity" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="large">Large and growing market</SelectItem>
-              <SelectItem value="niche">Niche market</SelectItem>
-              <SelectItem value="limited">Limited opportunity</SelectItem>
-            </SelectContent>
-          </Select>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select market opportunity" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="large">Large and growing market</SelectItem>
+            <SelectItem value="niche">Niche market</SelectItem>
+            <SelectItem value="limited">Limited opportunity</SelectItem>
+          </SelectContent>
+        </Select>
         </CardContent>
       </Card>
 
@@ -221,19 +221,19 @@ export default function BusinessFeasibility({ value, onChange }: Props) {
         </CardHeader>
         <CardContent>
           <Label className="block font-medium mb-1">Stakeholder Readiness</Label>
-          <div className="flex flex-col gap-2 mt-2">
-            <label className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 mt-2">
+          <label className="flex items-center gap-2">
               <Checkbox checked={value.stakeholder.exec} onCheckedChange={(val) => onChange({ ...value, stakeholder: { ...value.stakeholder, exec: !!val } })} />
-              <span>Executive Sponsorship</span>
-            </label>
-            <label className="flex items-center gap-2">
+            <span>Executive Sponsorship</span>
+          </label>
+          <label className="flex items-center gap-2">
               <Checkbox checked={value.stakeholder.endUser} onCheckedChange={(val) => onChange({ ...value, stakeholder: { ...value.stakeholder, endUser: !!val } })} />
-              <span>End User Buy-in</span>
-            </label>
-            <label className="flex items-center gap-2">
+            <span>End User Buy-in</span>
+          </label>
+          <label className="flex items-center gap-2">
               <Checkbox checked={value.stakeholder.it} onCheckedChange={(val) => onChange({ ...value, stakeholder: { ...value.stakeholder, it: !!val } })} />
-              <span>IT Support</span>
-            </label>
+            <span>IT Support</span>
+          </label>
           </div>
         </CardContent>
       </Card>
