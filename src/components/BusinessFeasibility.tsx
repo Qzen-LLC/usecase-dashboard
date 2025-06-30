@@ -164,7 +164,7 @@ export default function BusinessFeasibility({ value, onChange }: Props) {
   return (
     <div className="space-y-8">
       {/* Assessment Banner */}
-      <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-6">
+      <div className="bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] border-l-4 border-green-400 p-4 mb-6 rounded-2xl flex items-center gap-3 shadow-md">
         <div className="font-semibold text-green-800 text-lg mb-1">Business Feasibility Assessment</div>
         <div className="text-green-700">Evaluate the business case, ROI potential, and organizational readiness.</div>
       </div>

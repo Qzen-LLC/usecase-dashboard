@@ -11,10 +11,10 @@ const riskLevels = ['None', 'Low', 'Medium', 'High'];
 
 // Optional: Color classes for each risk level
 const riskLevelColors: Record<string, string> = {
-  None: 'bg-gray-100 text-gray-700',
-  Low: 'bg-green-100 text-green-700',
-  Medium: 'bg-yellow-100 text-yellow-700',
-  High: 'bg-red-100 text-red-700',
+  None: 'bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] text-gray-700 rounded-full px-3 py-1 font-semibold',
+  Low: 'bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] text-green-700 rounded-full px-3 py-1 font-semibold',
+  Medium: 'bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] text-yellow-700 rounded-full px-3 py-1 font-semibold',
+  High: 'bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] text-red-700 rounded-full px-3 py-1 font-semibold',
 };
 
 
@@ -237,7 +237,7 @@ export default function RiskAssessment({ onChange }: Props) {
           value={item.probability}
           onValueChange={(val) => handleSelectChange(type, index, 'probability', val)}
         >
-          <SelectTrigger className={`w-24 ${riskLevelColors[item.probability]}`}>
+          <SelectTrigger className={riskLevelColors[val]}>
             <SelectValue placeholder="Probability" />
           </SelectTrigger>
           <SelectContent>
@@ -252,7 +252,7 @@ export default function RiskAssessment({ onChange }: Props) {
           value={item.impact}
           onValueChange={(val) => handleSelectChange(type, index, 'impact', val)}
         >
-          <SelectTrigger className={`w-24 ${riskLevelColors[item.impact]}`}>
+          <SelectTrigger className={riskLevelColors[val]}>
             <SelectValue placeholder="Impact" />
           </SelectTrigger>
           <SelectContent>
@@ -270,7 +270,7 @@ export default function RiskAssessment({ onChange }: Props) {
 
   return (
     <div className="space-y-8">
-      <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+      <div className="bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] border-l-4 border-red-400 p-4 mb-6 rounded-2xl flex items-center gap-3 shadow-md">
         <div className="font-semibold text-red-800 text-lg mb-1">Risk Assessment</div>
         <div className="text-red-700">Identify, evaluate, and plan mitigation strategies for potential risks.</div>
       </div>

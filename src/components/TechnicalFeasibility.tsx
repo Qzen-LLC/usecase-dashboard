@@ -163,7 +163,7 @@ export default function TechnicalFeasibility({ value, onChange }: Props) {
   return (
     <div className="space-y-8">
       {/* Assessment Banner */}
-      <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded-lg">
+      <div className="bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] border-l-4 border-blue-400 p-4 mb-6 rounded-2xl flex items-center gap-3 shadow-md">
         <div className="font-semibold text-blue-800 text-lg mb-1">Technical Feasibility Assessment</div>
         <div className="text-blue-700">Evaluate the technical requirements and constraints for implementing this AI solution.</div>
       </div>

@@ -203,10 +203,10 @@ const Dashboard = () => {
     const availableStages = stages.filter(s => s.id !== useCase.stage);
 
     return (
-      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
-        <div className="bg-white rounded-2xl max-w-md w-full p-5 relative shadow-2xl border border-gray-100">
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 animate-fade-in">
+        <div className="bg-white/90 backdrop-blur-lg rounded-3xl max-w-md w-full p-8 relative shadow-2xl border border-[#e0d7f7]">
           <button
-            className="absolute top-3 right-3 text-gray-400 hover:text-[#5b5be6] transition"
+            className="absolute top-4 right-4 text-gray-400 hover:text-[#5b5be6] transition"
             onClick={onClose}
             aria-label="Close"
           >
@@ -267,7 +267,7 @@ const Dashboard = () => {
               <h3 className="font-semibold text-[#23235b] mb-0.5 text-sm">Key Stakeholders</h3>
               <div className="flex flex-wrap gap-1">
                 {useCase.stakeholders.map((stakeholder, idx) => (
-                  <span key={idx} className="bg-[#e9eafc] text-[#5b5be6] px-2 py-0.5 rounded-full text-xs font-medium">
+                  <span key={idx} className="bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] text-[#5b5be6] px-3 py-1 rounded-full text-xs font-semibold">
                     {stakeholder}
                   </span>
                 ))}
@@ -280,7 +280,7 @@ const Dashboard = () => {
               <h3 className="font-semibold text-[#23235b] mb-0.5 text-sm">Key Risks</h3>
               <div className="flex flex-wrap gap-1">
                 {useCase.risks.map((risk, idx) => (
-                  <span key={idx} className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                  <span key={idx} className="bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] text-red-700 px-3 py-1 rounded-full text-xs font-semibold">
                     {risk}
                   </span>
                 ))}
@@ -290,13 +290,13 @@ const Dashboard = () => {
           {/* Actions */}
           <div className="flex flex-wrap gap-2 mt-4">
             <Button 
-              className="bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] hover:from-[#ff4fa3] hover:to-[#8f4fff] text-white px-3 py-1.5 rounded-lg shadow font-semibold text-xs transition" 
+              className="bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 text-white px-5 py-2 rounded-full font-semibold shadow-lg hover:brightness-110 transition text-xs border-0"
               onClick={() => {handleEdit(useCase.id as string)}}
             >
               Edit Use Case
             </Button>
             <Button 
-              className="bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] hover:from-[#ff4fa3] hover:to-[#8f4fff] text-white px-3 py-1.5 rounded-lg shadow font-semibold text-xs transition flex items-center gap-1" 
+              className="bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 text-white px-5 py-2 rounded-full font-semibold shadow-lg hover:brightness-110 transition text-xs border-0 flex items-center gap-1"
               onClick={() => {handleView(useCase.id as string)}}
             >
               <Eye className="w-3 h-3" />
@@ -304,16 +304,15 @@ const Dashboard = () => {
             </Button>
             {useCase.stage === 'proof-of-value' && (
               <Button 
-                className="bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] hover:from-[#ff4fa3] hover:to-[#8f4fff] text-white px-3 py-1.5 rounded-lg shadow font-semibold text-xs transition" 
+                className="bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 text-white px-5 py-2 rounded-full font-semibold shadow-lg hover:brightness-110 transition text-xs border-0"
                 onClick={() => {handleAssess(useCase.id as string)}}
               >
                 Assess
               </Button>
             )}
             <div className="flex gap-2">
-
               <Button
-                className="bg-gray-100 text-[#23235b] px-3 py-1.5 rounded-lg font-semibold shadow hover:bg-gray-200 transition border border-gray-200 text-xs"
+                className="bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 text-white px-5 py-2 rounded-full font-semibold shadow-lg hover:brightness-110 transition text-xs border-0"
                 onClick={async () => {
                   // Only allow moving one step forward
                   const currentStageIdx = stages.findIndex(s => s.id === useCase.stage);
@@ -395,7 +394,7 @@ const Dashboard = () => {
               </Button>
             </div>
             {/* Stage Stats */}
-            <div className="bg-gradient-to-r from-[#f5eaff] via-[#fbeaff] to-[#ffeafd] border border-gray-200 p-4 rounded-xl mb-8 shadow-sm">
+            <div className="bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] border border-[#e0d7f7] p-6 rounded-2xl mb-10 shadow-lg">
               <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 text-center">
                 {stages.map(stage => {
                   const count = getUseCasesByStage(stage.id).length;
@@ -408,10 +407,10 @@ const Dashboard = () => {
                     stage.id === 'pilot' ? <User className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
                     <Clock className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" />;
                   return (
-                    <div key={stage.id} className="p-2 rounded-xl bg-gradient-to-br from-[#f5eaff] via-[#fbeaff] to-[#ffeafd] border border-gray-100 shadow flex flex-col items-center transition hover:shadow-md min-w-24">
-                      {React.cloneElement(icon, { className: 'w-5 h-5 mx-auto mb-0.5 text-[#5b5be6]' })}
-                      <div className="text-lg font-bold text-[#23235b]">{count}</div>
-                      <div className="text-xs text-gray-600 font-medium mt-0.5">{stage.title}</div>
+                    <div key={stage.id} className="p-3 rounded-2xl bg-white shadow-md flex flex-col items-center transition hover:shadow-lg min-w-24 border border-[#e0d7f7]">
+                      {React.cloneElement(icon, { className: 'w-6 h-6 mx-auto mb-1 text-[#5b5be6]' })}
+                      <div className="text-2xl font-extrabold text-[#23235b]">{count}</div>
+                      <div className="text-sm text-gray-700 font-semibold mt-1">{stage.title}</div>
                     </div>
                   );
                 })}
@@ -423,7 +422,7 @@ const Dashboard = () => {
                 {stages.map(stage => (
                   <div
                     key={stage.id}
-                    className="w-96 min-h-[350px] bg-gradient-to-b from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] bg-opacity-10 rounded-2xl p-5 flex flex-col shadow-lg flex-grow max-w-full sm:w-96 border border-gray-100 transition hover:shadow-xl"
+                    className="w-96 min-h-[350px] bg-gradient-to-b from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] rounded-2xl p-5 flex flex-col shadow-lg flex-grow max-w-full sm:w-96 border border-gray-100 transition hover:shadow-xl"
                   >
                     <div className="flex items-center justify-between mb-5">
                       <h3 className="font-semibold text-base text-white tracking-tight">{stage.title}</h3>
@@ -443,7 +442,7 @@ const Dashboard = () => {
                               <h4 className="font-semibold text-[#23235b] text-base group-hover:text-[#5b5be6] transition-colors">{useCase.title}</h4>
                               <p className="text-xs text-gray-500">{useCase.owner}</p>
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium border ${priorities[useCase.priority ?? 'medium'].color} shadow-sm`}>
+                            <span className={`px-4 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] text-[#5b5be6] shadow border border-[#e0d7f7]`}>
                               {priorities[useCase.priority ?? 'medium'].label}
                             </span>
                           </div>
@@ -456,6 +455,15 @@ const Dashboard = () => {
                           <div className="flex justify-between items-center text-xs text-gray-500">
                             <div className="flex items-center"><User className="w-3 h-3 mr-1" />{useCase.owner}</div>
                             <div className="flex items-center"><Clock className="w-3 h-3 mr-1" />{useCase.timeline}</div>
+                            <Button
+                              className="ml-2 px-2 py-1 text-xs bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 text-white rounded-full shadow hover:brightness-110 border-0"
+                              onClick={e => {
+                                e.stopPropagation();
+                                router.push(`/dashboard/finops-dashboard/${useCase.id}`);
+                              }}
+                            >
+                              FinOps
+                            </Button>
                           </div>
                           <div className="mt-2 text-xs text-gray-400">Updated {useCase.lastUpdated}</div>
                         </Card>

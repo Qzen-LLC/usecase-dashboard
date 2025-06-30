@@ -1,3 +1,4 @@
+// This file will be replaced by a dynamic [useCaseId] route for individual financial assessment pages.
 'use client';
 import React, { useEffect, useState } from "react";
 import { Card } from '@/components/ui/card';
@@ -119,7 +120,11 @@ const FinOpsDashboardPage = () => {
             </thead>
             <tbody>
               {filteredFinops.map((f, idx) => (
-                <tr key={f.useCaseId} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <tr
+                  key={f.useCaseId}
+                  className={(idx % 2 === 0 ? 'bg-white' : 'bg-gray-50') + ' cursor-pointer hover:bg-blue-50 transition'}
+                  onClick={() => window.location.href = `/dashboard/finops-dashboard/${f.useCaseId}`}
+                >
                   <td className="py-2 px-4 font-semibold text-[#23235b]">{f.useCase?.title}</td>
                   <td className="py-2 px-4">{f.useCase?.owner}</td>
                   <td className="py-2 px-4">{f.useCase?.stage}</td>

@@ -61,60 +61,41 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${lora.variable} ${nunito.variable} ${merriweather.variable} antialiased`}
         suppressHydrationWarning
       >
-        <header className="sticky top-0 flex h-16 w-full shrink-0 items-center px-4 md:px-8 bg-white/95 backdrop-blur-md border-b border-gray-200/60 shadow-sm z-50">
+        <header className="sticky top-0 flex h-20 w-full shrink-0 items-center px-4 md:px-12 bg-white/80 backdrop-blur-lg border-b border-gray-200/60 shadow-lg z-50">
           {/* Mobile menu */}
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="lg:hidden mr-4 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200">
-                <MenuIcon className="h-5 w-5 text-gray-600" />
+              <Button variant="outline" size="icon" className="lg:hidden mr-4 border-gray-300 hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 shadow-md rounded-full">
+                <MenuIcon className="h-6 w-6 text-gray-600" />
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 bg-white/95 backdrop-blur-md border-r border-gray-200/60">
-              <div className="font-bold text-xl mb-8 text-gray-900 tracking-tight">LOGO - QUBE</div>
-              <nav className="grid gap-1">
-                <Link href="/dashboard" className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 border-l-4 border-transparent hover:border-blue-500" prefetch={false}>
-                  Portfolio Dashboard
-                </Link>
-                <Link href="/dashboard" className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 border-l-4 border-transparent hover:border-green-500" prefetch={false}>
-                  Use Cases
-                </Link>
-                <Link href="/dashboard/risks" className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 border-l-4 border-transparent hover:border-red-500" prefetch={false}>
-                  Risk Management
-                </Link>
-                <Link href="/dashboard/finops-dashboard" className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200 border-l-4 border-transparent hover:border-purple-500" prefetch={false}>
-                  FinOps Dashboard
-                </Link>
-                <Link href="#" className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all duration-200 border-l-4 border-transparent hover:border-orange-500" prefetch={false}>
-                  Policy Center
-                </Link>
+            <SheetContent side="left" className="w-72 bg-white/95 backdrop-blur-md border-r border-gray-200/60 shadow-2xl rounded-r-2xl">
+              <div className="flex items-center gap-2 mb-8">
+                <img src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MTI5NzE1NCwiZXhwIjoyMDY2NjU3MTU0fQ.wWxWelTaht2N75Nv9yr6vidPmBNhL41oDyPthQBKXiY" alt="QZen AI Logo" className="h-8 w-8 md:h-10 md:w-10" style={{minWidth:'2rem'}} />
+                <span className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent tracking-tight" style={{letterSpacing: '-0.01em'}}>QZen AI</span>
+              </div>
+              <nav className="grid gap-2">
+                <Link href="/dashboard" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Portfolio Dashboard</Link>
+                <Link href="/dashboard" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-green-400 hover:to-blue-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Use Cases</Link>
+                <Link href="/dashboard/risks" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-pink-400 hover:to-purple-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Risk Management</Link>
+                <Link href="/dashboard/finops-dashboard" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-purple-500 hover:to-fuchsia-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>FinOps Dashboard</Link>
+                <Link href="#" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-yellow-400 hover:to-pink-400 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Policy Center</Link>
               </nav>
             </SheetContent>
           </Sheet>
-          
           {/* Brand */}
-          <div className="flex items-center gap-2 mr-8 select-none">
-            <img src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MTI5NzE1NCwiZXhwIjoyMDY2NjU3MTU0fQ.wWxWelTaht2N75Nv9yr6vidPmBNhL41oDyPthQBKXiY" alt="QZen AI Logo" className="h-8 w-8 md:h-10 md:w-10" style={{minWidth:'2rem'}} />
-            <span className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent tracking-tight" style={{letterSpacing: '-0.01em'}}>QZen AI</span>
+          <div className="flex items-center gap-2 mr-12 select-none">
+            <img src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MTI5NzE1NCwiZXhwIjoyMDY2NjU3MTU0fQ.wWxWelTaht2N75Nv9yr6vidPmBNhL41oDyPthQBKXiY" alt="QZen AI Logo" className="h-10 w-10" style={{minWidth:'2.5rem'}} />
+            <span className="text-2xl font-extrabold bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent tracking-tight" style={{letterSpacing: '-0.01em'}}>QZen AI</span>
           </div>
-          
           {/* Desktop nav */}
-          <nav className="ml-auto hidden lg:flex items-center gap-1">
-            <Link href="/dashboard" className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 border-b-2 border-transparent hover:border-blue-500" prefetch={false}>
-              Portfolio Dashboard
-            </Link>
-            <Link href="/dashboard" className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 border-b-2 border-transparent hover:border-green-500" prefetch={false}>
-              Use Cases
-            </Link>
-            <Link href="/dashboard/risks" className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 border-b-2 border-transparent hover:border-red-500" prefetch={false}>
-              Risk Management
-            </Link>
-            <Link href="/dashboard/finops-dashboard" className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200 border-b-2 border-transparent hover:border-purple-500" prefetch={false}>
-              FinOps Dashboard
-            </Link>
-            <Link href="#" className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all duration-200 border-b-2 border-transparent hover:border-orange-500" prefetch={false}>
-              Policy Center
-            </Link>
+          <nav className="ml-auto hidden lg:flex items-center gap-2">
+            <Link href="/dashboard" className="inline-flex items-center px-6 py-2 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Portfolio Dashboard</Link>
+            <Link href="/dashboard" className="inline-flex items-center px-6 py-2 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-green-400 hover:to-blue-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Use Cases</Link>
+            <Link href="/dashboard/risks" className="inline-flex items-center px-6 py-2 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-pink-400 hover:to-purple-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Risk Management</Link>
+            <Link href="/dashboard/finops-dashboard" className="inline-flex items-center px-6 py-2 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-purple-500 hover:to-fuchsia-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>FinOps Dashboard</Link>
+            <Link href="#" className="inline-flex items-center px-6 py-2 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-yellow-400 hover:to-pink-400 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Policy Center</Link>
           </nav>
         </header>
         {children}

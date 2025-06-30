@@ -129,7 +129,7 @@ export default function DataReadiness({ value, onChange }: Props) {
 
   return (
     <div className="space-y-8">
-      <div className="bg-cyan-50 p-4 rounded-lg">
+      <div className="bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] p-4 rounded-2xl flex items-center gap-3 shadow-md">
         <h3 className="text-lg font-semibold text-cyan-800 mb-2">Data Readiness Assessment</h3>
         <p className="text-cyan-700">Comprehensive data characteristics, quality, and governance inputs.</p>
       </div>

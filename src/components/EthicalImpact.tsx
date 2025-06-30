@@ -128,7 +128,7 @@ export default function EthicalImpact({ value, onChange }: Props) {
 
   return (
     <div className="space-y-8">
-      <div className="bg-purple-50 border-l-4 border-purple-400 p-4 mb-6">
+      <div className="bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] border-l-4 border-purple-400 p-4 mb-6 rounded-2xl flex items-center gap-3 shadow-md">
         <div className="font-semibold text-purple-800 text-lg mb-1">Ethical Impact Assessment</div>
         <div className="text-purple-700">
           Evaluate potential ethical implications and ensure responsible AI implementation.

@@ -59,7 +59,7 @@ export default function RoadmapPosition({ value, onChange }: Props) {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-indigo-50">
+      <Card className="bg-gradient-to-b from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3]">
         <CardContent className="p-4">
           <h3 className="text-lg font-semibold text-indigo-800 mb-2">Roadmap Position</h3>
           <p className="text-indigo-700">Define timeline, dependencies, and strategic positioning in the AI roadmap.</p>
