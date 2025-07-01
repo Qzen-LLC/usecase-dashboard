@@ -568,16 +568,25 @@ const AIUseCaseTool = () => {
         <div className="bg-gray-100 px-2 py-3 sm:px-6 sm:py-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0">
             {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center mb-2 sm:mb-0">
-                <div className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full ${
-                  currentStep >= step.id ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
-                }`}>
+              <div
+                key={step.id}
+                className="flex items-center mb-2 sm:mb-0 cursor-pointer group"
+                onClick={() => setCurrentStep(step.id)}
+                tabIndex={0}
+                role="button"
+                aria-label={`Go to ${step.title}`}
+              >
+                <div className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-all duration-150 ${
+                  currentStep === step.id ? 'bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white scale-110 shadow-lg' : currentStep > step.id ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
+                } group-hover:scale-110`}
+                >
                   <step.icon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
                 <div className="ml-2 sm:ml-3">
                   <div className={`text-xs sm:text-sm font-medium ${
-                    currentStep >= step.id ? 'text-blue-600' : 'text-gray-500'
-                  }`}>
+                    currentStep === step.id ? 'text-[#8f4fff]' : currentStep > step.id ? 'text-blue-600' : 'text-gray-500'
+                  } group-hover:text-[#b84fff]`}
+                  >
                     {step.title}
                   </div>
                 </div>
@@ -589,70 +598,65 @@ const AIUseCaseTool = () => {
           </div>
         </div>
         <div className="bg-white border-t border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {formData.aiucId ? `AIUC - ${formData.aiucId} - ${formData.title}` : formData.title}
-                </h1>
-                <p className="text-gray-600">Edit Use Case</p>
-              </div>
-            </div>
-          </div>
           <div className="p-6">
             {showError && (
               <div className="mb-4 text-red-600 font-semibold">
-                {invalidFields.length > 0 ? 'Please fill all required fields before proceeding.' : 'An error occurred. Please try again.'}
+                Please fill all required fields before proceeding.
               </div>
             )}
             <main>
-              {completeForBusinessCase && (
-                <div className="mb-4 text-blue-700 font-semibold bg-blue-50 border border-blue-200 rounded p-3">
-                  Please complete all required fields to move this use case to Business Case.
-                </div>
-              )}
               {currentStep === 1 && renderStep1()}
               {currentStep === 2 && renderStep2()}
               {currentStep === 3 && renderStep3()}
             </main>
           </div>
-          <div className="px-6 py-4 bg-gray-50 flex justify-between items-center">
-            <button
-              className={`px-4 py-2 rounded-md ${
-                currentStep === 1
-                  ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
-              onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1))}
-              disabled={currentStep === 1}
-            >
-              Previous
-            </button>
-            <div className="flex gap-4">
-              {currentStep < steps.length && (
-                <button
-                  className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
-                  onClick={() => setCurrentStep((prev) => Math.min(steps.length, prev + 1))}
+          <div className="flex justify-between items-center p-6 border-t">
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setCurrentStep(prev => prev > 1 ? prev - 1 : prev)}
+                disabled={currentStep === 1}
+                className={`flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white ${currentStep === 1 ? 'invisible' : ''}`}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </Button>
+              <Button
+                onClick={() => router.push('/dashboard')}
+                variant="outline"
+                className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={exportData}
+                variant="outline"
+                className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
+              >
+                <Download className="w-4 h-4" />
+                Export
+              </Button>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-sm font-medium text-gray-500">
+                Step {currentStep} of {steps.length}
+              </div>
+              {currentStep === steps.length ? (
+                <Button
+                  onClick={handleGoToPipeline}
+                  className="flex items-center gap-2 bg-[#10b981] hover:bg-[#059669] text-white"
+                >
+                  Go to Pipeline
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => setCurrentStep(prev => prev < steps.length ? prev + 1 : prev)}
+                  className="flex items-center gap-2 bg-[#10b981] hover:bg-[#059669] text-white"
                 >
                   Next
-                </button>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
               )}
-              <button
-                className={`px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2 ${
-                  saving ? 'opacity-75 cursor-not-allowed' : ''
-                }`}
-                onClick={handleGoToPipeline}
-                disabled={saving}
-              >
-                {saving ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Saving...
-                  </>
-                ) : (
-                  'Save & Go to Pipeline'
-                )}
-              </button>
             </div>
           </div>
         </div>

@@ -579,6 +579,13 @@ const AIUseCaseTool = () => {
                 Previous
               </Button>
               <Button
+                onClick={() => router.push('/dashboard')}
+                variant="outline"
+                className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
+              >
+                Cancel
+              </Button>
+              <Button
                 onClick={exportData}
                 variant="outline"
                 className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
