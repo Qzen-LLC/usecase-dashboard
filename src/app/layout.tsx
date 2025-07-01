@@ -76,7 +76,7 @@ export default function RootLayout({
                 <span className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent tracking-tight" style={{letterSpacing: '-0.01em'}}>QZen AI</span>
               </div>
               <nav className="grid gap-2">
-                <Link href="/dashboard" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Portfolio Dashboard</Link>
+                <Link href="/dashboard/executive" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-purple-600 hover:to-blue-600 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Executive Dashboard</Link>
                 <Link href="/dashboard" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-green-400 hover:to-blue-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Use Cases</Link>
                 <Link href="/dashboard/risks" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-pink-400 hover:to-purple-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Risk Management</Link>
                 <Link href="/dashboard/finops-dashboard" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-purple-500 hover:to-fuchsia-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>FinOps Dashboard</Link>
@@ -91,7 +91,7 @@ export default function RootLayout({
           </div>
           {/* Desktop nav */}
           <nav className="ml-auto hidden lg:flex items-center gap-2">
-            <Link href="/dashboard" className="inline-flex items-center px-6 py-2 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Portfolio Dashboard</Link>
+            <Link href="/dashboard/executive" className="inline-flex items-center px-6 py-2 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-purple-600 hover:to-blue-600 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Executive Dashboard</Link>
             <Link href="/dashboard" className="inline-flex items-center px-6 py-2 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-green-400 hover:to-blue-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Use Cases</Link>
             <Link href="/dashboard/risks" className="inline-flex items-center px-6 py-2 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-pink-400 hover:to-purple-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Risk Management</Link>
             <Link href="/dashboard/finops-dashboard" className="inline-flex items-center px-6 py-2 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-purple-500 hover:to-fuchsia-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>FinOps Dashboard</Link>

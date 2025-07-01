@@ -174,8 +174,8 @@ export default function RiskAssessment({ onChange }: Props) {
   const [dataProtection, setDataProtection] = useState<{ [key: string]: boolean }>(() => Object.fromEntries(DATA_PROTECTION_OPTIONS.map(opt => [opt, false])));
   // Sector-Specific
   const [sectorSpecific, setSectorSpecific] = useState<{ [key: string]: boolean }>(() => Object.fromEntries(SECTOR_SPECIFIC_OPTIONS.map(opt => [opt, false])));
-  // AI-Specific Regulations (now as radio group)
-  const [aiSpecific, setAiSpecific] = useState('EU AI Act');
+  // AI-Specific Regulations (now as checkboxes for multiple selection)
+  const [aiSpecific, setAiSpecific] = useState<{ [key: string]: boolean }>(() => Object.fromEntries(AI_SPECIFIC_OPTIONS.map(opt => [opt, false])));
   // Certifications/Standards
   const [certifications, setCertifications] = useState<{ [key: string]: boolean }>(() => Object.fromEntries(CERTIFICATIONS_OPTIONS.map(opt => [opt, false])));
   // Audit Requirements
@@ -237,7 +237,7 @@ export default function RiskAssessment({ onChange }: Props) {
           value={item.probability}
           onValueChange={(val) => handleSelectChange(type, index, 'probability', val)}
         >
-          <SelectTrigger className={riskLevelColors[val]}>
+          <SelectTrigger className={riskLevelColors[item.probability]}>
             <SelectValue placeholder="Probability" />
           </SelectTrigger>
           <SelectContent>
@@ -252,7 +252,7 @@ export default function RiskAssessment({ onChange }: Props) {
           value={item.impact}
           onValueChange={(val) => handleSelectChange(type, index, 'impact', val)}
         >
-          <SelectTrigger className={riskLevelColors[val]}>
+          <SelectTrigger className={riskLevelColors[item.impact]}>
             <SelectValue placeholder="Impact" />
           </SelectTrigger>
           <SelectContent>
@@ -373,14 +373,17 @@ export default function RiskAssessment({ onChange }: Props) {
         {/* AI-Specific Regulations */}
         <div className="mt-4">
           <h4 className="font-semibold text-gray-800 mb-2">AI-Specific Regulations</h4>
-          <RadioGroup value={aiSpecific} onValueChange={setAiSpecific} className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
             {AI_SPECIFIC_OPTIONS.map(option => (
-              <label key={option} className="flex items-center gap-2 cursor-pointer">
-                <RadioGroupItem value={option} id={option} className="mr-2" />
+              <label key={option} className="flex items-center gap-2">
+                <Checkbox
+                  checked={aiSpecific[option]}
+                  onCheckedChange={checked => setAiSpecific(prev => ({ ...prev, [option]: !!checked }))}
+                />
                 <span className="text-sm">{option}</span>
               </label>
             ))}
-          </RadioGroup>
+          </div>
         </div>
       </div>
 

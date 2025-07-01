@@ -23,6 +23,23 @@ const stages = [
   { id: 'deployment', title: 'Deployment', color: 'bg-white', textColor: 'text-foreground' }
 ] as const;
 
+const STAGE_ORDER = [
+  'discovery',
+  'business-case',
+  'proof-of-value',
+  'backlog',
+  'in-progress',
+  'solution-validation',
+  'pilot',
+  'deployment',
+];
+
+function isAfterOrAtBacklog(stage?: string) {
+  if (!stage) return false;
+  const idx = STAGE_ORDER.indexOf(stage);
+  return idx >= STAGE_ORDER.indexOf('backlog');
+}
+
 const priorities = {
   high: { color: 'bg-white text-foreground border border-red-200', label: 'High' },
   medium: { color: 'bg-white text-foreground border border-yellow-200', label: 'Medium' },
@@ -455,15 +472,17 @@ const Dashboard = () => {
                           <div className="flex justify-between items-center text-xs text-gray-500">
                             <div className="flex items-center"><User className="w-3 h-3 mr-1" />{useCase.owner}</div>
                             <div className="flex items-center"><Clock className="w-3 h-3 mr-1" />{useCase.timeline}</div>
-                            <Button
-                              className="ml-2 px-2 py-1 text-xs bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 text-white rounded-full shadow hover:brightness-110 border-0"
-                              onClick={e => {
-                                e.stopPropagation();
-                                router.push(`/dashboard/finops-dashboard/${useCase.id}`);
-                              }}
-                            >
-                              FinOps
-                            </Button>
+                            {isAfterOrAtBacklog(useCase.stage) && (
+                              <Button
+                                className="ml-2 px-2 py-1 text-xs bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 text-white rounded-full shadow hover:brightness-110 border-0"
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  router.push(`/dashboard/finops-dashboard/${useCase.id}`);
+                                }}
+                              >
+                                FinOps
+                              </Button>
+                            )}
                           </div>
                           <div className="mt-2 text-xs text-gray-400">Updated {useCase.lastUpdated}</div>
                         </Card>
