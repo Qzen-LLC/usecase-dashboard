@@ -259,7 +259,7 @@ const Dashboard = () => {
           {/* Header Section */}
           <div className="mb-6">
             <h2 className="text-2xl font-extrabold mb-1 text-gray-800 tracking-tight">
-              <span className="font-mono text-gray-500">AIUC {useCase.aiucId}</span>
+              <span className="font-mono text-gray-500">AIUC - {useCase.aiucId}</span>
               <br />
               {useCase.title}
             </h2>
@@ -503,7 +503,7 @@ const Dashboard = () => {
                           <div className="flex justify-between items-start mb-3">
                             <div>
                               <h4 className="font-semibold text-gray-800 text-base group-hover:text-blue-600 transition-colors">
-                                <span className="font-mono text-gray-500">AIUC {useCase.aiucId}</span>
+                                <span className="font-mono text-gray-500">AIUC - {useCase.aiucId}</span>
                                 <br />
                                 {useCase.title}
                               </h4>

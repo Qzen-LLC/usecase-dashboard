@@ -593,7 +593,7 @@ const AIUseCaseTool = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  {formData.aiucId ? `AIUC ${formData.aiucId} - ${formData.title}` : formData.title}
+                  {formData.aiucId ? `AIUC - ${formData.aiucId} - ${formData.title}` : formData.title}
                 </h1>
                 <p className="text-gray-600">Edit Use Case</p>
               </div>

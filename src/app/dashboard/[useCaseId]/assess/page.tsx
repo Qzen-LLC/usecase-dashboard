@@ -288,9 +288,9 @@ export default function AssessmentPage() {
       {/* Use Case Title Section */}
       <div className="px-8 py-6 border-b bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="font-mono text-gray-500 mb-1">AIUC {useCase.aiucId}</div>
+          <div className="font-mono text-gray-500 mb-1">AIUC - {useCase.aiucId}</div>
           <div className="text-2xl font-semibold text-gray-900">{useCase.title}</div>
-          <div className="text-gray-600">{useCase.department} • {useCase.owner}</div>
+          <div className="text-gray-600">{useCase.department} {useCase.owner}</div>
         </div>
         <button className="text-blue-700 hover:underline mt-4 sm:mt-0">&larr; Back to Pipeline</button>
       </div>
