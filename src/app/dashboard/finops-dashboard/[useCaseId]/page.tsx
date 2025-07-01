@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -19,6 +19,7 @@ import {
   Scale,
   CoreScaleOptions
 } from 'chart.js';
+import { ArrowLeft } from 'lucide-react';
 
 ChartJS.register(
   CategoryScale,
@@ -55,6 +56,7 @@ function formatK(num: number) {
 
 export default function FinancialDashboard() {
   const params = useParams();
+  const router = useRouter();
   const useCaseId = params.useCaseId as string;
   
   const [initialDevCost, setInitialDevCost] = useState<number>(150000);
@@ -67,10 +69,23 @@ export default function FinancialDashboard() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState<boolean>(true);
   const [showFormulae, setShowFormulae] = useState(false);
+  const [useCaseDetails, setUseCaseDetails] = useState<{ title: string; aiucId: number } | null>(null);
 
   useEffect(() => {
     if (!useCaseId) return;
     setLoading(true);
+    
+    // Fetch use case details
+    fetch(`/api/get-usecase?id=${useCaseId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          setUseCaseDetails({ title: data.title, aiucId: data.aiucId });
+        }
+      })
+      .catch(console.error);
+
+    // Fetch finops data
     fetch(`/api/get-finops?id=${useCaseId}`)
       .then(res => res.json())
       .then(data => {
@@ -420,9 +435,18 @@ export default function FinancialDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center py-8">
       <div className="w-full max-w-7xl bg-white rounded-2xl shadow-2xl border border-gray-200 mt-6 mb-6 p-0 relative">
+        {/* Back Button */}
+        <button
+          onClick={() => router.push('/dashboard/finops-dashboard')}
+          className="absolute top-4 left-4 px-4 py-2 text-sm bg-white text-blue-700 border border-blue-200 rounded-lg shadow hover:bg-blue-50 transition-all duration-200 flex items-center gap-2 font-medium z-10"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Dashboard
+        </button>
+
         {/* Show Formulae Button */}
         <button
-          className="absolute top-4 left-4 px-3 py-1 text-xs bg-white text-[#9461fd] border border-[#9461fd] rounded shadow hover:bg-[#f3e8ff] transition z-10 font-semibold"
+          className="absolute top-4 right-4 px-3 py-1 text-xs bg-white text-blue-700 border border-blue-200 rounded-lg shadow hover:bg-blue-50 transition-all duration-200 z-10 font-medium"
           onClick={() => setShowFormulae(true)}
         >
           Formula
@@ -432,7 +456,7 @@ export default function FinancialDashboard() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
             <div className="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full relative">
               <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl" onClick={() => setShowFormulae(false)}>&times;</button>
-              <h2 className="text-xl font-bold mb-4 text-[#9461fd]">Financial Formula Used</h2>
+              <h2 className="text-xl font-bold mb-4 text-gray-700">Financial Formula Used</h2>
               <ul className="text-sm text-gray-700 space-y-2">
                 <li><b>API Cost Growth:</b> <code>monthlyApiCost(month) = baseApiCost × 1.12<sup>month/12</sup></code></li>
                 <li><b>Infrastructure Cost Growth:</b> <code>monthlyInfraCost(month) = baseInfraCost × 1.05<sup>month/12</sup></code></li>
@@ -451,48 +475,63 @@ export default function FinancialDashboard() {
           </div>
         )}
         {/* Header */}
-        <div className="flex flex-col items-center bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] rounded-t-2xl border-b border-gray-200 shadow-lg">
+        <div className="flex flex-col items-center bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 rounded-t-2xl border-b border-blue-100 shadow-lg">
           <div className="flex items-center gap-3 justify-center py-6">
             <div className="bg-white rounded-2xl shadow-lg flex items-center gap-3 px-6 py-3">
-              <span className="text-3xl font-extrabold bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] bg-clip-text text-transparent font-sans tracking-tight">FinOps Dashboard</span>
+              <span className="text-3xl font-extrabold text-blue-900 font-sans tracking-tight">
+                {useCaseDetails ? (
+                  <>
+                    <span className="font-mono text-gray-600 mr-3">AIUC {useCaseDetails.aiucId}</span>
+                    {useCaseDetails.title}
+                  </>
+                ) : (
+                  'FinOps Dashboard'
+                )}
+              </span>
             </div>
           </div>
           <div className="w-full flex justify-center pb-6">
-            <p className="text-white text-lg text-center font-medium tracking-wide whitespace-nowrap overflow-x-auto">Enter your base values and growth rate to forecast financials</p>
+            <p className="text-blue-900 text-lg text-center font-medium tracking-wide whitespace-nowrap overflow-x-auto">Enter your base values and growth rate to forecast financials</p>
           </div>
         </div>
         {/* Main Content */}
         <div className="p-8">
           {error && <div className="text-red-500 mb-2">{error}</div>}
-          {loading && <div className="text-gray-500 mb-4">Loading saved data...</div>}
-          <Card className="mb-8 p-6 bg-gradient-to-br from-[#f5eaff] via-[#fbeaff] to-[#ffeafd] border border-gray-200 shadow-md rounded-xl">
+          {loading && <div className="text-blue-500 mb-4">Loading saved data...</div>}
+          <Card className="mb-8 p-6 bg-gradient-to-br from-[#f5eaff] via-[#fbeaff] to-[#ffeafd] border border-blue-100 shadow-md rounded-xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="font-semibold text-[#23235b]">Initial Dev Cost</label>
+                <label className="font-semibold text-blue-900">Initial Dev Cost</label>
                 <Input type="number" value={initialDevCost} min={0} onChange={e => setInitialDevCost(Number(e.target.value))} className="w-full" />
               </div>
               <div>
-                <label className="font-semibold text-[#23235b]">Monthly API Cost</label>
+                <label className="font-semibold text-blue-900">Monthly API Cost</label>
                 <Input type="number" value={baseApiCost} min={0} onChange={e => setBaseApiCost(Number(e.target.value))} className="w-full" />
               </div>
               <div>
-                <label className="font-semibold text-[#23235b]">Monthly Infrastructure</label>
+                <label className="font-semibold text-blue-900">Monthly Infrastructure</label>
                 <Input type="number" value={baseInfraCost} min={0} onChange={e => setBaseInfraCost(Number(e.target.value))} className="w-full" />
               </div>
               <div>
-                <label className="font-semibold text-[#23235b]">Monthly Operations</label>
+                <label className="font-semibold text-blue-900">Monthly Operations</label>
                 <Input type="number" value={baseOpCost} min={0} onChange={e => setBaseOpCost(Number(e.target.value))} className="w-full" />
               </div>
               <div>
-                <label className="font-semibold text-[#23235b]">Monthly Value Generated</label>
+                <label className="font-semibold text-blue-900">Monthly Value Generated</label>
                 <Input type="number" value={baseMonthlyValue} min={0} onChange={e => setBaseMonthlyValue(Number(e.target.value))} className="w-full" />
               </div>
               <div>
-                <label className="font-semibold text-[#23235b]">Value Growth Rate (%)</label>
+                <label className="font-semibold text-blue-900">Value Growth Rate (%)</label>
                 <Input type="number" value={valueGrowthRate * 100} min={0} max={100} onChange={e => setValueGrowthRate(Number(e.target.value) / 100)} className="w-full" />
               </div>
             </div>
-            <Button className="mt-6 w-full bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] hover:from-[#ff4fa3] hover:to-[#8f4fff] text-white px-6 py-3 rounded-xl shadow-lg font-semibold text-lg transition" onClick={handleSave} disabled={saving}>Save Forecast</Button>
+            <Button 
+              className="mt-6 w-full bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 hover:from-blue-200 hover:via-blue-300 hover:to-blue-200 text-blue-900 hover:text-blue-950 px-6 py-3 rounded-xl shadow-lg font-semibold text-lg transition-all duration-200 border border-blue-200 hover:border-blue-300" 
+              onClick={handleSave} 
+              disabled={saving}
+            >
+              Save Forecast
+            </Button>
           </Card>
           {/* Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 justify-center">
@@ -513,8 +552,8 @@ export default function FinancialDashboard() {
               label: 'Net Value (Forecast)'
             }].map((item, idx) => (
               <div key={idx} className="bg-white rounded-xl shadow border border-gray-100 p-6 flex flex-col items-center">
-                <div className="text-3xl font-extrabold mb-1" style={{ color: '#9461fd' }}>{item.value}</div>
-                <div className="font-medium text-base" style={{ color: '#9461fd' }}>{item.label}</div>
+                <div className="text-3xl font-extrabold mb-1 text-gray-700">{item.value}</div>
+                <div className="font-medium text-base text-gray-600">{item.label}</div>
               </div>
             ))}
           </div>

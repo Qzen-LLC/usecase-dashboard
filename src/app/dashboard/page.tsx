@@ -41,9 +41,10 @@ function isAfterOrAtBacklog(stage?: string) {
 }
 
 const priorities = {
-  high: { color: 'bg-white text-foreground border border-red-200', label: 'High' },
-  medium: { color: 'bg-white text-foreground border border-yellow-200', label: 'Medium' },
-  low: { color: 'bg-white text-foreground border border-green-200', label: 'Low' }
+  CRITICAL: { color: 'bg-red-50 text-red-700 border-red-200', label: 'Critical' },
+  HIGH: { color: 'bg-orange-50 text-orange-700 border-orange-200', label: 'High' },
+  MEDIUM: { color: 'bg-yellow-50 text-yellow-700 border-yellow-200', label: 'Medium' },
+  LOW: { color: 'bg-green-50 text-green-700 border-green-200', label: 'Low' }
 } as const;
 
 type UseCase = {
@@ -71,7 +72,7 @@ type UseCase = {
   updatedAt: string;
   // Add these for frontend mapping
   stage?: string;
-  priority?: keyof typeof priorities;
+  priority?: string;
   owner?: string;
   lastUpdated?: string;
   scores?: {
@@ -85,6 +86,7 @@ type UseCase = {
   timeline?: string;
   stakeholders?: string[];
   risks?: string[];
+  aiucId: number;
 };
 
 const Dashboard = () => {
@@ -136,6 +138,7 @@ const Dashboard = () => {
           timeline: uc.estimatedTimeline,
           stakeholders: uc.primaryStakeholders,
           risks: uc.keyAssumptions,
+
         }));
         setUseCases(mapped);
       } catch (error) {
@@ -220,150 +223,162 @@ const Dashboard = () => {
     const availableStages = stages.filter(s => s.id !== useCase.stage);
 
     return (
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 animate-fade-in">
-        <div className="bg-white/90 backdrop-blur-lg rounded-3xl max-w-md w-full p-8 relative shadow-2xl border border-[#e0d7f7]">
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-start justify-center z-50 animate-fade-in p-4 pt-24 overflow-y-auto">
+        <div className="bg-white/90 backdrop-blur-lg rounded-3xl w-full max-w-3xl mx-auto p-8 relative shadow-2xl border border-blue-100 mb-8">
           <button
-            className="absolute top-4 right-4 text-gray-400 hover:text-[#5b5be6] transition"
+            className="absolute top-4 right-4 text-gray-400 hover:text-blue-600 transition"
             onClick={onClose}
             aria-label="Close"
           >
             <X className="w-6 h-6" />
           </button>
-          <h2 className="text-xl font-extrabold mb-1 text-[#23235b] tracking-tight">{useCase.title}</h2>
-          <p className="text-gray-500 mb-3 text-base font-medium">{useCase.owner}</p>
-          {/* Scores */}
-          <div className="grid grid-cols-4 gap-3 mb-4">
-            <div className="bg-gradient-to-br from-[#e9eafc] to-[#f5f6fa] p-2 rounded-xl text-center border border-gray-100 shadow">
-              <TrendingUp className="w-5 h-5 text-[#5b5be6] mx-auto mb-0.5" />
-              <div className="text-base font-bold text-[#23235b]">{useCase.scores?.operational}</div>
-              <div className="text-[10px] text-gray-500">Operational</div>
+          
+          {/* Header Section */}
+          <div className="mb-6">
+            <h2 className="text-2xl font-extrabold mb-1 text-gray-800 tracking-tight">
+              <span className="font-mono text-gray-500">AIUC {useCase.aiucId}</span>
+              <br />
+              {useCase.title}
+            </h2>
+            <p className="text-gray-500 text-base font-medium">{useCase.owner}</p>
+          </div>
+
+          {/* Scores Grid */}
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="bg-blue-50 p-3 rounded-xl text-center border border-blue-100 shadow-sm">
+              <TrendingUp className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+              <div className="text-lg font-bold text-gray-800">{useCase.scores?.operational}</div>
+              <div className="text-xs text-gray-500">Operational</div>
             </div>
-            <div className="bg-gradient-to-br from-[#e9eafc] to-[#f5f6fa] p-2 rounded-xl text-center border border-gray-100 shadow">
-              <Zap className="w-5 h-5 text-[#5b5be6] mx-auto mb-0.5" />
-              <div className="text-base font-bold text-[#23235b]">{useCase.scores?.productivity}</div>
-              <div className="text-[10px] text-gray-500">Productivity</div>
+            <div className="bg-blue-50 p-3 rounded-xl text-center border border-blue-100 shadow-sm">
+              <Zap className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+              <div className="text-lg font-bold text-gray-800">{useCase.scores?.productivity}</div>
+              <div className="text-xs text-gray-500">Productivity</div>
             </div>
-            <div className="bg-gradient-to-br from-[#e9eafc] to-[#f5f6fa] p-2 rounded-xl text-center border border-gray-100 shadow">
-              <DollarSign className="w-5 h-5 text-[#5b5be6] mx-auto mb-0.5" />
-              <div className="text-base font-bold text-[#23235b]">{useCase.scores?.revenue}</div>
-              <div className="text-[10px] text-gray-500">Revenue</div>
+            <div className="bg-blue-50 p-3 rounded-xl text-center border border-blue-100 shadow-sm">
+              <DollarSign className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+              <div className="text-lg font-bold text-gray-800">{useCase.scores?.revenue}</div>
+              <div className="text-xs text-gray-500">Revenue</div>
             </div>
-            <div className="bg-gradient-to-br from-[#e9eafc] to-[#f5f6fa] p-2 rounded-xl text-center border border-gray-100 shadow">
-              <span className="inline-block w-5 h-5 text-[#5b5be6] mx-auto mb-0.5">🎯</span>
-              <div className="text-base font-bold text-[#23235b]">{getOverallScore(useCase.scores || { operational: 0, productivity: 0, revenue: 0 })}</div>
-              <div className="text-[10px] text-gray-500">Overall</div>
+            <div className="bg-blue-50 p-3 rounded-xl text-center border border-blue-100 shadow-sm">
+              <span className="inline-block w-5 h-5 text-blue-600 mx-auto mb-1">🎯</span>
+              <div className="text-lg font-bold text-gray-800">{getOverallScore(useCase.scores || { operational: 0, productivity: 0, revenue: 0 })}</div>
+              <div className="text-xs text-gray-500">Overall</div>
             </div>
           </div>
+
           {/* Description */}
-          <div className="mb-3">
-            <h3 className="font-semibold text-[#23235b] mb-1 text-base">Description</h3>
-            <p className="text-gray-700 text-sm leading-relaxed">{useCase.description}</p>
+          <div className="mb-6">
+            <h3 className="font-semibold text-gray-800 mb-2 text-base">Description</h3>
+            <p className="text-gray-700 text-sm leading-relaxed bg-gray-50 p-4 rounded-lg border border-gray-100">{useCase.description}</p>
           </div>
-          {/* Owner, Timeline, ROI, Complexity */}
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <div>
-              <h3 className="font-semibold text-[#23235b] mb-0.5 text-sm">Owner</h3>
-              <p className="text-gray-700 text-xs">{useCase.owner}</p>
+
+          {/* Details Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+              <h3 className="font-semibold text-gray-800 mb-1 text-sm">Owner</h3>
+              <p className="text-gray-700 text-sm">{useCase.owner}</p>
             </div>
-            <div>
-              <h3 className="font-semibold text-[#23235b] mb-0.5 text-sm">Timeline</h3>
-              <p className="text-gray-700 text-xs">{useCase.timeline}</p>
+            <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+              <h3 className="font-semibold text-gray-800 mb-1 text-sm">Timeline</h3>
+              <p className="text-gray-700 text-sm">{useCase.timeline}</p>
             </div>
-            <div>
-              <h3 className="font-semibold text-[#23235b] mb-0.5 text-sm">Expected ROI</h3>
-              <p className="text-gray-700 text-xs">{useCase.roi}</p>
+            <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+              <h3 className="font-semibold text-gray-800 mb-1 text-sm">Expected ROI</h3>
+              <p className="text-gray-700 text-sm">{useCase.roi}</p>
             </div>
-            <div>
-              <h3 className="font-semibold text-[#23235b] mb-0.5 text-sm">Complexity</h3>
-              <p className="text-gray-700 text-xs">{useCase.complexity}/10</p>
+            <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+              <h3 className="font-semibold text-gray-800 mb-1 text-sm">Complexity</h3>
+              <p className="text-gray-700 text-sm">{useCase.complexity}/10</p>
             </div>
           </div>
+
           {/* Stakeholders */}
-          {useCase.stakeholders && (
-            <div className="mb-2">
-              <h3 className="font-semibold text-[#23235b] mb-0.5 text-sm">Key Stakeholders</h3>
-              <div className="flex flex-wrap gap-1">
+          {useCase.stakeholders && useCase.stakeholders.length > 0 && (
+            <div className="mb-6">
+              <h3 className="font-semibold text-gray-800 mb-2 text-sm">Key Stakeholders</h3>
+              <div className="flex flex-wrap gap-2">
                 {useCase.stakeholders.map((stakeholder, idx) => (
-                  <span key={idx} className="bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] text-[#5b5be6] px-3 py-1 rounded-full text-xs font-semibold">
+                  <span key={idx} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium border border-blue-100">
                     {stakeholder}
                   </span>
                 ))}
               </div>
             </div>
           )}
+
           {/* Risks */}
-          {useCase.risks && (
-            <div className="mb-2">
-              <h3 className="font-semibold text-[#23235b] mb-0.5 text-sm">Key Risks</h3>
-              <div className="flex flex-wrap gap-1">
+          {useCase.risks && useCase.risks.length > 0 && (
+            <div className="mb-6">
+              <h3 className="font-semibold text-gray-800 mb-2 text-sm">Key Risks</h3>
+              <div className="flex flex-wrap gap-2">
                 {useCase.risks.map((risk, idx) => (
-                  <span key={idx} className="bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] text-red-700 px-3 py-1 rounded-full text-xs font-semibold">
+                  <span key={idx} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium border border-blue-100">
                     {risk}
                   </span>
                 ))}
               </div>
             </div>
           )}
+
           {/* Actions */}
-          <div className="flex flex-wrap gap-2 mt-4">
+          <div className="flex flex-wrap gap-3 pt-2 border-t border-gray-100">
             <Button 
-              className="bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 text-white px-5 py-2 rounded-full font-semibold shadow-lg hover:brightness-110 transition text-xs border-0"
+              className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg shadow-sm font-medium text-sm transition" 
               onClick={() => {handleEdit(useCase.id as string)}}
             >
               Edit Use Case
             </Button>
             <Button 
-              className="bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 text-white px-5 py-2 rounded-full font-semibold shadow-lg hover:brightness-110 transition text-xs border-0 flex items-center gap-1"
+              className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg shadow-sm font-medium text-sm transition flex items-center gap-2" 
               onClick={() => {handleView(useCase.id as string)}}
             >
-              <Eye className="w-3 h-3" />
+              <Eye className="w-4 h-4" />
               View Use Case
             </Button>
             {useCase.stage === 'proof-of-value' && (
               <Button 
-                className="bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 text-white px-5 py-2 rounded-full font-semibold shadow-lg hover:brightness-110 transition text-xs border-0"
+                className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg shadow-sm font-medium text-sm transition" 
                 onClick={() => {handleAssess(useCase.id as string)}}
               >
                 Assess
               </Button>
             )}
-            <div className="flex gap-2">
-              <Button
-                className="bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 text-white px-5 py-2 rounded-full font-semibold shadow-lg hover:brightness-110 transition text-xs border-0"
-                onClick={async () => {
-                  // Only allow moving one step forward
-                  const currentStageIdx = stages.findIndex(s => s.id === useCase.stage);
-                  if (currentStageIdx === -1 || currentStageIdx === stages.length - 1) return;
-                  const nextStage = stages[currentStageIdx + 1].id;
-                  // If moving from discovery to business-case, validate all fields
-                  if (useCase.stage === 'discovery' && nextStage === 'business-case') {
-                    // Validate all fields except id, createdAt, updatedAt, and frontend-only fields
-                    const requiredFields = Object.keys(useCase).filter(
-                      k => !['id','createdAt','updatedAt','stage','priority','owner','lastUpdated','scores','description','complexity','roi','timeline','stakeholders','risks'].includes(k)
-                    );
-                    const missing = requiredFields.filter(k => {
-                      const v = (useCase as any)[k];
-                      if (Array.isArray(v)) return v.length === 0;
-                      if (typeof v === 'string') return !v.trim();
-                      if (typeof v === 'number') return v === null || v === undefined;
-                      return false;
-                    });
-                    if (missing.length > 0) {
-                      alert('Please complete all required fields in the use case form before moving to Business Case.');
-                      return;
-                    }
-                  }
-                  // If moving from proof-of-value to backlog, show alert
-                  if (useCase.stage === 'proof-of-value' && nextStage === 'backlog') {
-                    alert('Please complete the assessment before moving to Backlog.');
+            <Button
+              className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg shadow-sm font-medium text-sm transition"
+              onClick={async () => {
+                // Only allow moving one step forward
+                const currentStageIdx = stages.findIndex(s => s.id === useCase.stage);
+                if (currentStageIdx === -1 || currentStageIdx === stages.length - 1) return;
+                const nextStage = stages[currentStageIdx + 1].id;
+                // If moving from discovery to business-case, validate all fields
+                if (useCase.stage === 'discovery' && nextStage === 'business-case') {
+                  // Validate all fields except id, createdAt, updatedAt, and frontend-only fields
+                  const requiredFields = Object.keys(useCase).filter(
+                    k => !['id','createdAt','updatedAt','stage','priority','owner','lastUpdated','scores','description','complexity','roi','timeline','stakeholders','risks'].includes(k)
+                  );
+                  const missing = requiredFields.filter(k => {
+                    const v = (useCase as any)[k];
+                    if (Array.isArray(v)) return v.length === 0;
+                    if (typeof v === 'string') return !v.trim();
+                    if (typeof v === 'number') return v === null || v === undefined;
+                    return false;
+                  });
+                  if (missing.length > 0) {
+                    alert('Please complete all required fields in the use case form before moving to Business Case.');
                     return;
                   }
-                  await handleMoveToStage(useCase.id, nextStage);
-                }}
-              >
-                Move to Next Stage
-              </Button>
-            </div>
+                }
+                // If moving from proof-of-value to backlog, show alert
+                if (useCase.stage === 'proof-of-value' && nextStage === 'backlog') {
+                  alert('Please complete the assessment before moving to Backlog.');
+                  return;
+                }
+                await handleMoveToStage(useCase.id, nextStage);
+              }}
+            >
+              Move to Next Stage
+            </Button>
           </div>
         </div>
       </div>
@@ -379,55 +394,56 @@ const Dashboard = () => {
             {/* Filters and Add Button */}
             <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-3 mb-5">
               <div className="relative flex-1 max-w-md w-full">
-                <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[#5b5be6]" />
+                <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-blue-600" />
                 <Input
                   type="text"
                   placeholder="Search use cases..."
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:border-[#5b5be6] focus:ring-[#5b5be6] shadow-sm transition text-sm"
+                  className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:border-blue-200 focus:ring-1 focus:ring-blue-200 shadow-sm transition text-sm w-full"
                 />
               </div>
               <select
                 value={filterBy}
                 onChange={e => setFilterBy(e.target.value)}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg bg-white text-gray-900 focus:border-[#5b5be6] focus:ring-[#5b5be6] shadow-sm transition text-sm"
+                className="px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-900 focus:border-blue-200 focus:ring-1 focus:ring-blue-200 shadow-sm transition text-sm"
               >
                 <option value="all">All Departments</option>
-                <option value="high">High Priority</option>
-                <option value="medium">Medium Priority</option>
-                <option value="low">Low Priority</option>
+                <option value="CRITICAL">Critical</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
                 <option value="customer service">Customer Service</option>
                 <option value="sales">Sales</option>
                 <option value="finance">Finance</option>
                 <option value="manufacturing">Manufacturing</option>
               </select>
               <Button
-                className="bg-[#10b981] hover:bg-[#059669] text-white px-6 py-2 rounded-lg shadow-lg font-semibold text-base transition"
                 onClick={() => router.push('/new-usecase')}
+                className="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-200 text-emerald-700 hover:text-emerald-800 px-4 py-2 rounded-lg shadow-sm transition-all duration-200 font-medium text-sm border border-emerald-100 hover:border-emerald-300"
               >
-                <Plus className="w-5 h-5 mr-2" />
+                <Plus className="w-4 h-4" />
                 New Use Case
               </Button>
             </div>
             {/* Stage Stats */}
-            <div className="bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] border border-[#e0d7f7] p-6 rounded-2xl mb-10 shadow-lg">
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 text-center">
+            <div className="bg-blue-50 border border-blue-100 p-6 rounded-2xl mb-10 shadow-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 text-center">
                 {stages.map(stage => {
                   const count = getUseCasesByStage(stage.id).length;
-                  const icon = stage.id === 'discovery' ? <Search className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
-                    stage.id === 'business-case' ? <DollarSign className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
-                    stage.id === 'proof-of-value' ? <TrendingUp className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
-                    stage.id === 'backlog' ? <Clock className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
-                    stage.id === 'in-progress' ? <Zap className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
-                    stage.id === 'solution-validation' ? <User className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
-                    stage.id === 'pilot' ? <User className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" /> :
-                    <Clock className="w-6 h-6 mx-auto mb-1 text-[#5b5be6]" />;
+                  const icon = stage.id === 'discovery' ? <Search className="w-6 h-6 mx-auto mb-2 text-blue-600" /> :
+                    stage.id === 'business-case' ? <DollarSign className="w-6 h-6 mx-auto mb-2 text-blue-600" /> :
+                    stage.id === 'proof-of-value' ? <TrendingUp className="w-6 h-6 mx-auto mb-2 text-blue-600" /> :
+                    stage.id === 'backlog' ? <Clock className="w-6 h-6 mx-auto mb-2 text-blue-600" /> :
+                    stage.id === 'in-progress' ? <Zap className="w-6 h-6 mx-auto mb-2 text-blue-600" /> :
+                    stage.id === 'solution-validation' ? <User className="w-6 h-6 mx-auto mb-2 text-blue-600" /> :
+                    stage.id === 'pilot' ? <User className="w-6 h-6 mx-auto mb-2 text-blue-600" /> :
+                    <Clock className="w-6 h-6 mx-auto mb-2 text-blue-600" />;
                   return (
-                    <div key={stage.id} className="p-3 rounded-2xl bg-white shadow-md flex flex-col items-center transition hover:shadow-lg min-w-24 border border-[#e0d7f7]">
-                      {React.cloneElement(icon, { className: 'w-6 h-6 mx-auto mb-1 text-[#5b5be6]' })}
-                      <div className="text-2xl font-extrabold text-[#23235b]">{count}</div>
-                      <div className="text-sm text-gray-700 font-semibold mt-1">{stage.title}</div>
+                    <div key={stage.id} className="p-4 rounded-xl bg-white shadow-sm hover:shadow-md transition flex flex-col items-center border border-gray-200 hover:border-blue-200">
+                      {React.cloneElement(icon, { className: 'w-6 h-6 mx-auto mb-2 text-blue-600' })}
+                      <div className="text-2xl font-bold text-gray-800">{count}</div>
+                      <div className="text-sm text-gray-600 font-medium mt-1">{stage.title}</div>
                     </div>
                   );
                 })}
@@ -439,11 +455,11 @@ const Dashboard = () => {
                 {stages.map(stage => (
                   <div
                     key={stage.id}
-                    className="w-96 min-h-[350px] bg-gradient-to-b from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] rounded-2xl p-5 flex flex-col shadow-lg flex-grow max-w-full sm:w-96 border border-gray-100 transition hover:shadow-xl"
+                    className="w-96 min-h-[350px] bg-blue-50 rounded-2xl p-5 flex flex-col shadow-lg flex-grow max-w-full sm:w-96 border border-blue-100 transition hover:shadow-xl"
                   >
                     <div className="flex items-center justify-between mb-5">
-                      <h3 className="font-semibold text-base text-white tracking-tight">{stage.title}</h3>
-                      <span className="bg-white text-[#5b5be6] px-3 py-1 rounded-full text-sm border border-[#e9eafc] font-medium shadow-sm">
+                      <h3 className="font-semibold text-base text-gray-700 tracking-tight">{stage.title}</h3>
+                      <span className="bg-white text-blue-700 px-3 py-1 rounded-full text-sm border border-blue-100 font-medium shadow-sm">
                         {getUseCasesByStage(stage.id).length}
                       </span>
                     </div>
@@ -451,46 +467,72 @@ const Dashboard = () => {
                       {getUseCasesByStage(stage.id).map(useCase => (
                         <Card
                           key={useCase.id}
-                          className="bg-white rounded-xl shadow-md hover:shadow-2xl transition-shadow cursor-pointer p-4 border border-gray-100 w-full group"
+                          className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer p-5 border border-gray-200 hover:border-blue-200 w-full group"
                           onClick={() => setSelectedUseCase(useCase)}
                         >
-                          <div className="flex justify-between items-start mb-2">
+                          <div className="flex justify-between items-start mb-3">
                             <div>
-                              <h4 className="font-semibold text-[#23235b] text-base group-hover:text-[#5b5be6] transition-colors">{useCase.title}</h4>
-                              <p className="text-xs text-gray-500">{useCase.owner}</p>
+                              <h4 className="font-semibold text-gray-800 text-base group-hover:text-blue-600 transition-colors">
+                                <span className="font-mono text-gray-500">AIUC {useCase.aiucId}</span>
+                                <br />
+                                {useCase.title}
+                              </h4>
+                              <p className="text-xs text-gray-500 mt-0.5">{useCase.owner}</p>
                             </div>
-                            <span className={`px-4 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] text-[#5b5be6] shadow border border-[#e0d7f7]`}>
-                              {priorities[useCase.priority ?? 'medium'].label}
-                            </span>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button 
+                                  onClick={(e) => e.stopPropagation()}
+                                  className={`px-4 py-1.5 rounded-full text-xs font-medium ${priorities[useCase.priority as keyof typeof priorities]?.color || priorities.MEDIUM.color} border shadow-sm hover:bg-opacity-80 transition-colors`}
+                                >
+                                  {priorities[useCase.priority as keyof typeof priorities]?.label || 'Medium'}
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-32">
+                                {Object.entries(priorities).map(([key, value]) => (
+                                  <DropdownMenuItem
+                                    key={key}
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      try {
+                                        const res = await fetch('/api/update-priority', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ useCaseId: useCase.id, priority: key }),
+                                        });
+                                        if (!res.ok) throw new Error('Failed to update priority');
+                                        // Update local state
+                                        setUseCases(prev => prev.map(uc => 
+                                          uc.id === useCase.id ? { ...uc, priority: key } : uc
+                                        ));
+                                      } catch (error) {
+                                        console.error('Error updating priority:', error);
+                                      }
+                                    }}
+                                    className={`text-xs font-medium ${key === useCase.priority ? 'bg-gray-100' : ''}`}
+                                  >
+                                    {value.label}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
-                          <div className="flex justify-between mb-2 text-xs">
-                            <div className="flex items-center"><TrendingUp className="w-3 h-3 text-[#5b5be6] mr-1" />{useCase.scores?.operational}</div>
-                            <div className="flex items-center"><Zap className="w-3 h-3 text-[#5b5be6] mr-1" />{useCase.scores?.productivity}</div>
-                            <div className="flex items-center"><DollarSign className="w-3 h-3 text-[#5b5be6] mr-1" />{useCase.scores?.revenue}</div>
-                            <div className="font-semibold text-[#5b5be6]">{getOverallScore(useCase.scores || { operational: 0, productivity: 0, revenue: 0 })}</div>
+                          <div className="flex justify-between mb-3 text-xs bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <div className="flex items-center"><TrendingUp className="w-3 h-3 text-blue-600 mr-1.5" />{useCase.scores?.operational}</div>
+                            <div className="flex items-center"><Zap className="w-3 h-3 text-blue-600 mr-1.5" />{useCase.scores?.productivity}</div>
+                            <div className="flex items-center"><DollarSign className="w-3 h-3 text-blue-600 mr-1.5" />{useCase.scores?.revenue}</div>
+                            <div className="font-semibold text-blue-600">{getOverallScore(useCase.scores || { operational: 0, productivity: 0, revenue: 0 })}</div>
                           </div>
-                          <div className="flex justify-between items-center text-xs text-gray-500">
-                            <div className="flex items-center"><User className="w-3 h-3 mr-1" />{useCase.owner}</div>
-                            <div className="flex items-center"><Clock className="w-3 h-3 mr-1" />{useCase.timeline}</div>
-                            {isAfterOrAtBacklog(useCase.stage) && (
-                              <Button
-                                className="ml-2 px-2 py-1 text-xs bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 text-white rounded-full shadow hover:brightness-110 border-0"
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  router.push(`/dashboard/finops-dashboard/${useCase.id}`);
-                                }}
-                              >
-                                FinOps
-                              </Button>
-                            )}
+                          <div className="flex items-center justify-between text-xs text-gray-500">
+                            <div className="flex items-center"><User className="w-3 h-3 mr-1.5" />{useCase.owner}</div>
+                            <div className="flex items-center"><Clock className="w-3 h-3 mr-1.5" />{useCase.timeline}</div>
                           </div>
                           <div className="mt-2 text-xs text-gray-400">Updated {useCase.lastUpdated}</div>
                         </Card>
                       ))}
                       {getUseCasesByStage(stage.id).length === 0 && (
-                        <div className="text-center text-gray-400 py-10">
-                          <div className="text-4xl mb-2">📋</div>
-                          <p className="text-xs text-white">No use cases in this stage</p>
+                        <div className="text-center py-8 px-4 bg-gray-50 rounded-xl border border-gray-200">
+                          <p className="text-sm text-gray-900 font-medium">No use cases in this stage</p>
                         </div>
                       )}
                     </div>

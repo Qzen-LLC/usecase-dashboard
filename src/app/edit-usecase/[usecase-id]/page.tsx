@@ -12,6 +12,8 @@ import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
 
 type FormData = {
+  id?: string;
+  aiucId?: number;
   title: string;
   problemStatement: string;
   proposedAISolution: string;
@@ -567,6 +569,16 @@ const AIUseCaseTool = () => {
           </div>
         </div>
         <div className="bg-white border-t border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {formData.aiucId ? `AIUC ${formData.aiucId} - ${formData.title}` : formData.title}
+                </h1>
+                <p className="text-gray-600">Edit Use Case</p>
+              </div>
+            </div>
+          </div>
           <div className="p-6">
             {showError && (
               <div className="mb-4 text-red-600 font-semibold">

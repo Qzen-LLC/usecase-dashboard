@@ -3,6 +3,24 @@
 import React, { useEffect, useState } from "react";
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+function formatCurrency(num: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(num);
+}
+
+interface UseCase {
+  title: string;
+  owner: string;
+  stage: string;
+  aiucId: number;
+}
 
 interface FinOpsData {
   useCaseId: string;
@@ -18,11 +36,7 @@ interface FinOpsData {
   valueBase: number;
   valueGrowthRate: number;
   budgetRange?: string;
-  useCase?: {
-    title: string;
-    owner?: string;
-    stage?: string;
-  };
+  useCase?: UseCase;
 }
 
 const STAGE_ORDER = [
@@ -43,6 +57,7 @@ function isAfterOrAtBacklog(stage?: string) {
 }
 
 const FinOpsDashboardPage = () => {
+  const router = useRouter();
   const [finops, setFinops] = useState<FinOpsData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -61,7 +76,7 @@ const FinOpsDashboardPage = () => {
           const res = await fetch(`/api/get-finops?id=${uc.id}`);
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
-            finopsArr.push({ ...data[0], useCase: { title: uc.title, owner: uc.primaryStakeholders?.[0] || '', stage: uc.stage } });
+            finopsArr.push({ ...data[0], useCase: { title: uc.title, owner: uc.primaryStakeholders?.[0] || '', stage: uc.stage, aiucId: uc.aiucId } });
           }
         }
         setFinops(finopsArr);
@@ -77,6 +92,10 @@ const FinOpsDashboardPage = () => {
     f.useCase?.title.toLowerCase().includes(search.toLowerCase()) ||
     (f.useCase?.owner || '').toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleRowClick = (useCaseId: string) => {
+    router.push(`/dashboard/finops-dashboard/${useCaseId}`);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -97,53 +116,66 @@ const FinOpsDashboardPage = () => {
       ) : filteredFinops.length === 0 ? (
         <div className="text-gray-500 text-lg">No FinOps data found.</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white rounded-xl shadow-md border border-gray-200">
-            <thead>
-              <tr className="bg-gradient-to-r from-[#e9eafc] via-[#fbeaff] to-[#ffeafd] text-[#23235b]">
-                <th className="py-3 px-4 text-left">Use Case</th>
-                <th className="py-3 px-4 text-left">Owner</th>
-                <th className="py-3 px-4 text-left">Stage</th>
-                <th className="py-3 px-4 text-left">Budget Range</th>
-                <th className="py-3 px-4 text-left">Dev Cost</th>
-                <th className="py-3 px-4 text-left">API Cost</th>
-                <th className="py-3 px-4 text-left">Infra Cost</th>
-                <th className="py-3 px-4 text-left">Op Cost</th>
-                <th className="py-3 px-4 text-left">Total Investment</th>
-                <th className="py-3 px-4 text-left">Value Base</th>
-                <th className="py-3 px-4 text-left">Value Growth Rate</th>
-                <th className="py-3 px-4 text-left">Cumulative Value</th>
-                <th className="py-3 px-4 text-left">Cumulative Op Cost</th>
-                <th className="py-3 px-4 text-left">Net Value</th>
-                <th className="py-3 px-4 text-left">ROI (%)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredFinops.map((f, idx) => (
-                <tr
-                  key={f.useCaseId}
-                  className={(idx % 2 === 0 ? 'bg-white' : 'bg-gray-50') + ' cursor-pointer hover:bg-blue-50 transition'}
-                  onClick={() => window.location.href = `/dashboard/finops-dashboard/${f.useCaseId}`}
-                >
-                  <td className="py-2 px-4 font-semibold text-[#23235b]">{f.useCase?.title}</td>
-                  <td className="py-2 px-4">{f.useCase?.owner}</td>
-                  <td className="py-2 px-4">{f.useCase?.stage}</td>
-                  <td className="py-2 px-4">{f.budgetRange || '-'}</td>
-                  <td className="py-2 px-4">${f.devCostBase.toLocaleString()}</td>
-                  <td className="py-2 px-4">${f.apiCostBase.toLocaleString()}</td>
-                  <td className="py-2 px-4">${f.infraCostBase.toLocaleString()}</td>
-                  <td className="py-2 px-4">${f.opCostBase.toLocaleString()}</td>
-                  <td className="py-2 px-4">${f.totalInvestment.toLocaleString()}</td>
-                  <td className="py-2 px-4">${f.valueBase.toLocaleString()}</td>
-                  <td className="py-2 px-4">{(f.valueGrowthRate * 100).toFixed(1)}%</td>
-                  <td className="py-2 px-4">${f.cumValue.toLocaleString()}</td>
-                  <td className="py-2 px-4">${f.cumOpCost.toLocaleString()}</td>
-                  <td className="py-2 px-4">${f.netValue.toLocaleString()}</td>
-                  <td className="py-2 px-4">{f.ROI.toFixed(1)}</td>
+        <div className="w-full max-w-[95%] xl:max-w-[90%] mx-auto bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              {/* Header */}
+              <thead>
+                <tr className="bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 border-b border-blue-200">
+                  <th className="px-8 py-4 text-sm font-semibold text-blue-900 text-left">Use Case</th>
+                  <th className="px-8 py-4 text-sm font-semibold text-blue-900 text-left">Owner</th>
+                  <th className="px-8 py-4 text-sm font-semibold text-blue-900 text-left">Stage</th>
+                  <th className="px-8 py-4 text-sm font-semibold text-blue-900 text-left">Budget Range</th>
+                  <th className="px-8 py-4 text-sm font-semibold text-blue-900 text-right">Dev Cost</th>
+                  <th className="px-8 py-4 text-sm font-semibold text-blue-900 text-right">API Cost</th>
+                  <th className="px-8 py-4 text-sm font-semibold text-blue-900 text-right">Infra Cost</th>
+                  <th className="px-8 py-4 text-sm font-semibold text-blue-900 text-right">Op Cost</th>
+                  <th className="px-8 py-4 text-sm font-semibold text-blue-900 text-right">Total Investment</th>
+                  <th className="px-8 py-4 text-sm font-semibold text-blue-900 text-right">Value Base</th>
+                  <th className="px-8 py-4 text-sm font-semibold text-blue-900 text-right">Value Growth Rate</th>
+                  <th className="px-8 py-4 text-sm font-semibold text-blue-900 text-right">Cumulative Value</th>
+                  <th className="px-8 py-4 text-sm font-semibold text-blue-900 text-right">Cumulative Op Cost</th>
+                  <th className="px-8 py-4 text-sm font-semibold text-blue-900 text-right">Net Value</th>
+                  <th className="px-8 py-4 text-sm font-semibold text-blue-900 text-right">ROI (%)</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-blue-100">
+                {filteredFinops.map((item, index) => (
+                  <tr 
+                    key={index} 
+                    className="bg-white hover:bg-blue-50 transition-colors duration-150 cursor-pointer"
+                    onClick={() => handleRowClick(item.useCaseId)}
+                  >
+                    <td className="px-8 py-4 text-sm">
+                      <div className="flex flex-col">
+                        <div className="font-mono text-gray-500 mb-1">AIUC {item.useCase?.aiucId}</div>
+                        <div className="font-medium text-gray-900">{item.useCase?.title}</div>
+                        <div className="text-sm text-gray-500">{item.useCase?.owner}</div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-4 text-sm text-gray-600">{item.useCase?.owner}</td>
+                    <td className="px-8 py-4 text-sm">
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 whitespace-nowrap">
+                        {item.useCase?.stage}
+                      </span>
+                    </td>
+                    <td className="px-8 py-4 text-sm text-gray-600">{item.budgetRange || '-'}</td>
+                    <td className="px-8 py-4 text-sm text-right font-medium text-gray-900">{formatCurrency(item.devCostBase)}</td>
+                    <td className="px-8 py-4 text-sm text-right font-medium text-gray-900">{formatCurrency(item.apiCostBase)}</td>
+                    <td className="px-8 py-4 text-sm text-right font-medium text-gray-900">{formatCurrency(item.infraCostBase)}</td>
+                    <td className="px-8 py-4 text-sm text-right font-medium text-gray-900">{formatCurrency(item.opCostBase)}</td>
+                    <td className="px-8 py-4 text-sm text-right font-medium text-blue-900">{formatCurrency(item.totalInvestment)}</td>
+                    <td className="px-8 py-4 text-sm text-right font-medium text-gray-900">{formatCurrency(item.valueBase)}</td>
+                    <td className="px-8 py-4 text-sm text-right text-gray-900">{(item.valueGrowthRate * 100).toFixed(1)}%</td>
+                    <td className="px-8 py-4 text-sm text-right font-medium text-green-600">{formatCurrency(item.cumValue)}</td>
+                    <td className="px-8 py-4 text-sm text-right font-medium text-red-600">{formatCurrency(item.cumOpCost)}</td>
+                    <td className="px-8 py-4 text-sm text-right font-medium text-green-600">{formatCurrency(item.netValue)}</td>
+                    <td className="px-8 py-4 text-sm text-right font-medium text-green-600">{item.ROI.toFixed(1)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

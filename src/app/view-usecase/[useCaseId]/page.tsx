@@ -9,6 +9,7 @@ import ReadOnlyAssessmentDisplay from '@/components/ReadOnlyAssessmentDisplay';
 interface UseCaseDetails {
   id: string;
   title: string;
+  aiucId: number;
   problemStatement: string;
   proposedAISolution: string;
   currentState: string;
@@ -193,7 +194,11 @@ const ViewUseCasePage = () => {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{useCase.title}</h1>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  <span className="font-mono text-gray-500">AIUC {useCase.aiucId}</span>
+                  <br />
+                  {useCase.title}
+                </h1>
                 <p className="text-gray-600">Use Case Details</p>
               </div>
             </div>

@@ -56,6 +56,7 @@ interface RiskMetrics {
     portfolioValue: number;
     hasApproval: boolean;
     approvalStatuses: any;
+    aiucId: number;
   }>;
 }
 
@@ -74,6 +75,18 @@ interface ExecutiveViewProps {
 
 interface DetailedViewProps {
   riskData: RiskMetrics;
+}
+
+interface UseCase {
+  id: string;
+  title: string;
+  businessFunction: string;
+  stage: string;
+  overallRiskScore: number;
+  overallRiskLevel: string;
+  hasApproval: boolean;
+  approvalStatuses: any;
+  aiucId: number;
 }
 
 // Main Risk Dashboard Component
@@ -366,35 +379,27 @@ const RiskDistributionChart: React.FC<{ riskData: RiskMetrics }> = ({ riskData }
 // Top Risk Use Cases
 const TopRiskUseCases: React.FC<{ useCases: any[] }> = ({ useCases }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-        <AlertTriangle className="w-5 h-5 text-red-600" />
-        Highest Risk Use Cases
-      </h3>
-      <div className="space-y-3">
-        {useCases.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <FileText className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-            <p>No use cases with risk assessments</p>
-          </div>
-        ) : (
-          useCases.map((useCase, index) => (
-            <div key={useCase.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-              <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                useCase.overallRiskLevel === 'Critical' ? 'bg-red-500' :
-                useCase.overallRiskLevel === 'High' ? 'bg-orange-500' :
-                useCase.overallRiskLevel === 'Medium' ? 'bg-yellow-500' : 'bg-green-500'
-              }`}></div>
-              <div className="flex-1">
-                <p className="font-medium text-sm text-gray-900">{useCase.title}</p>
-                <p className="text-xs text-gray-600 mt-1">
-                  {useCase.businessFunction} • {useCase.stage} • Risk Score: {useCase.overallRiskScore.toFixed(1)}
-                </p>
-              </div>
-            </div>
-          ))
-        )}
+    <div className="bg-white rounded-lg shadow p-4">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Critical Risk Use Cases</h3>
+        <Info className="w-4 h-4 text-gray-400" />
       </div>
+      {useCases.map(useCase => (
+        <div key={useCase.id} className="flex items-start gap-3 mb-4 last:mb-0">
+          <div className="flex-1">
+            <div className="font-mono text-gray-500 mb-1">AIUC {useCase.aiucId}</div>
+            <p className="font-medium text-sm">{useCase.title}</p>
+            <p className="text-xs text-gray-500">{useCase.businessFunction}</p>
+          </div>
+          <div className={`px-2 py-1 rounded text-xs font-medium ${
+            useCase.overallRiskLevel === 'Critical' ? 'bg-red-100 text-red-700' :
+            useCase.overallRiskLevel === 'High' ? 'bg-orange-100 text-orange-700' :
+            'bg-yellow-100 text-yellow-700'
+          }`}>
+            {useCase.overallRiskLevel}
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
@@ -570,6 +575,7 @@ const UseCaseRiskTable: React.FC<{ useCases: any[] }> = ({ useCases }) => {
               <tr key={useCase.id} className="border-b hover:bg-gray-50">
                 <td className="py-3 px-4">
                   <div>
+                    <div className="font-mono text-gray-500 mb-1">AIUC {useCase.aiucId}</div>
                     <p className="font-medium text-sm">{useCase.title}</p>
                     <p className="text-xs text-gray-500">{useCase.businessFunction}</p>
                   </div>
@@ -683,7 +689,9 @@ const RiskActionItems: React.FC<{ riskData: RiskMetrics }> = ({ riskData }) => {
             </p>
             <ul className="mt-2 space-y-1">
               {criticalUseCases.slice(0, 3).map(uc => (
-                <li key={uc.id} className="text-xs text-red-600">• {uc.title}</li>
+                <li key={uc.id} className="text-xs text-red-600">
+                  • <span className="font-mono">AIUC {uc.aiucId}</span> {uc.title}
+                </li>
               ))}
             </ul>
           </div>

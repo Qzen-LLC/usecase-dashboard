@@ -6,11 +6,11 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 model UseCase {
   id                       String    @id @default(uuid())
+  aiucId                   Int       @default(autoincrement())
   title                    String
   problemStatement         String
   proposedAISolution       String
@@ -38,6 +38,8 @@ model UseCase {
   Approval                 Approval?
   assessData               Assess?
   finopsData               FinOps?
+
+  @@unique([aiucId])
 }
 
 model FinOps {
@@ -88,47 +90,47 @@ model Approval {
 }
 
 model Vendor {
-  id              String            @id @default(uuid())
-  name            String
-  category        String
-  website         String?
-  contactPerson   String?
-  contactEmail    String?
-  assessmentDate  DateTime?
-  overallScore    Float             @default(0.0)
-  status          VendorStatus      @default(IN_ASSESSMENT)
-  notes           String?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id               String            @id @default(uuid())
+  name             String
+  category         String
+  website          String?
+  contactPerson    String?
+  contactEmail     String?
+  assessmentDate   DateTime?
+  overallScore     Float             @default(0.0)
+  status           VendorStatus      @default(IN_ASSESSMENT)
+  notes            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  approvalAreas    ApprovalArea[]
   assessmentScores AssessmentScore[]
-  approvalAreas   ApprovalArea[]
 }
 
 model AssessmentScore {
-  id           String   @id @default(uuid())
-  vendorId     String
-  category     String
-  subcategory  String
-  score        Int      @db.SmallInt
-  comment      String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  vendor       Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  id          String   @id @default(uuid())
+  vendorId    String
+  category    String
+  subcategory String
+  score       Int      @db.SmallInt
+  comment     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   @@unique([vendorId, category, subcategory])
 }
 
 model ApprovalArea {
-  id           String         @id @default(uuid())
+  id           String           @id @default(uuid())
   vendorId     String
   area         ApprovalAreaType
-  status       ApprovalStatus @default(PENDING)
+  status       ApprovalStatus   @default(PENDING)
   approvedBy   String?
   approvedDate DateTime?
   comments     String?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  vendor       Vendor         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  vendor       Vendor           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   @@unique([vendorId, area])
 }
@@ -151,4 +153,11 @@ enum ApprovalStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum Priority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
 }

@@ -11,10 +11,10 @@ const riskLevels = ['None', 'Low', 'Medium', 'High'];
 
 // Optional: Color classes for each risk level
 const riskLevelColors: Record<string, string> = {
-  None: 'bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] text-gray-700 rounded-full px-3 py-1 font-semibold',
-  Low: 'bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] text-green-700 rounded-full px-3 py-1 font-semibold',
-  Medium: 'bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] text-yellow-700 rounded-full px-3 py-1 font-semibold',
-  High: 'bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] text-red-700 rounded-full px-3 py-1 font-semibold',
+  None: 'bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-full px-3 py-1 font-medium border border-gray-100',
+  Low: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-500 rounded-full px-3 py-1 font-medium border border-emerald-100',
+  Medium: 'bg-amber-50 hover:bg-amber-100 text-amber-500 rounded-full px-3 py-1 font-medium border border-amber-100',
+  High: 'bg-rose-50 hover:bg-rose-100 text-rose-500 rounded-full px-3 py-1 font-medium border border-rose-100',
 };
 
 

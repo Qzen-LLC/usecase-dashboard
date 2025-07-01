@@ -10,12 +10,38 @@ export async function GET(req: Request) {
   }
 
   try {
-    // Fetch use case with assessment data only
+    // Fetch use case with all needed fields
     const useCase = await prismaClient.useCase.findUnique({
       where: { id: useCaseId },
-      include: {
-        assessData: true,
-      },
+      select: {
+        id: true,
+        title: true,
+        aiucId: true,
+        problemStatement: true,
+        proposedAISolution: true,
+        currentState: true,
+        desiredState: true,
+        primaryStakeholders: true,
+        secondaryStakeholders: true,
+        successCriteria: true,
+        problemValidation: true,
+        solutionHypothesis: true,
+        keyAssumptions: true,
+        initialROI: true,
+        confidenceLevel: true,
+        operationalImpactScore: true,
+        productivityImpactScore: true,
+        revenueImpactScore: true,
+        implementationComplexity: true,
+        estimatedTimeline: true,
+        requiredResources: true,
+        businessFunction: true,
+        stage: true,
+        priority: true,
+        createdAt: true,
+        updatedAt: true,
+        assessData: true
+      }
     });
 
     if (!useCase) {
