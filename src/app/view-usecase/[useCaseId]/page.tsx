@@ -195,7 +195,7 @@ const ViewUseCasePage = () => {
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  <span className="font-mono text-gray-500">AIUC - {useCase.aiucId}</span>
+                  <span className="font-mono text-gray-500">AIUC-{useCase.aiucId}</span>
                   <br />
                   {useCase.title}
                 </h1>
