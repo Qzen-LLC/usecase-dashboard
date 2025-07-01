@@ -88,7 +88,7 @@ export default function RootLayout({
           {/* Brand */}
           <div className="flex items-center gap-2 mr-12 select-none">
             <img src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MTI5NzE1NCwiZXhwIjoyMDY2NjU3MTU0fQ.wWxWelTaht2N75Nv9yr6vidPmBNhL41oDyPthQBKXiY" alt="QZen AI Logo" className="h-10 w-10" style={{minWidth:'2.5rem'}} />
-            <span className="text-2xl font-extrabold bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent tracking-tight" style={{letterSpacing: '-0.01em'}}>QZen AI</span>
+            <span className="text-2xl font-extrabold bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent tracking-tight" style={{letterSpacing: '-0.01em'}}>QZen QUBE</span>
           </div>
           {/* Desktop nav */}
           <nav className="ml-auto hidden lg:flex items-center gap-2">
