@@ -21,6 +21,7 @@ import DataReadiness from "@/components/DataReadiness";
 import FinancialDashboard from './financial-dashboard/page';
 import ApprovalsPage from '@/components/ApprovalsPage';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Button } from "@/components/ui/button";
 
 const assessmentSteps = [
   { id: 1, title: "Technical Feasibility" },
@@ -429,6 +430,12 @@ export default function AssessmentPage() {
         >
           <ChevronLeft className="w-4 h-4 mr-2" />
           Previous
+        </button>
+        <button
+          onClick={() => router.push('/dashboard')}
+          className={`flex items-center px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700`}
+        >
+          Cancel
         </button>
         {currentStep < 8 && (
           <>
