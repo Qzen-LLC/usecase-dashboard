@@ -267,6 +267,26 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
     return matchesCategory && matchesSearch;
   });
 
+  const handleDeleteVendor = async (vendorId: string) => {
+    if (!confirm('Are you sure you want to delete this vendor? This action cannot be undone.')) {
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/delete-vendor?id=${vendorId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete vendor');
+      setVendors(prev => prev.filter(v => v.id !== vendorId));
+    } catch (error: any) {
+      setError('Failed to delete vendor. Please try again.');
+      alert('Failed to delete vendor. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderVendorForm = () => {
     if (!currentVendor) return null;
 
@@ -526,6 +546,13 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
                       className="text-green-600 hover:text-green-900"
                     >
                       <Edit2 size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteVendor(vendor.id)}
+                      className="text-red-600 hover:text-red-800"
+                      title="Delete Vendor"
+                    >
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </td>
