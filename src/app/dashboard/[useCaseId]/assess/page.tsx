@@ -159,12 +159,28 @@ const defaultAssessmentData = {
   },
 };
 
+const validateAssessmentData = (data: any) => {
+  if (!data) return false;
+  
+  // Check if at least one section has data
+  const hasData = Object.values(data).some(section => {
+    if (!section) return false;
+    if (typeof section === 'object') {
+      return Object.keys(section).length > 0;
+    }
+    return true;
+  });
+
+  return hasData;
+};
+
 export default function AssessmentPage() {
   const router = useRouter();
   const params = useParams();
   const useCaseId = params.useCaseId as string;
   const [useCase, setUseCase] = useState<UseCase | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [currentStep, setCurrentStep] = useState(1);
   const [assessmentData, setAssessmentData] = useState<{ [key: string]: any }>(defaultAssessmentData);
@@ -211,15 +227,36 @@ export default function AssessmentPage() {
   const isLastStep = currentStep === assessmentSteps.length;
   
   const handleSave = async () => {
-    console.log("Saving data:", assessmentData);
-    const res = await fetch("/api/post-stepdata", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ useCaseId, assessData: assessmentData }),
-    });
-    if (res.ok) {
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000);
+    try {
+      if (!validateAssessmentData(assessmentData)) {
+        setError("No assessment data to save");
+        setTimeout(() => setError(""), 3000);
+        return;
+      }
+
+      setSaving(true);
+      console.log("Saving data:", assessmentData);
+      const res = await fetch("/api/post-stepdata", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ useCaseId, assessData: assessmentData }),
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
+      } else {
+        setError(data.error || "Failed to save assessment data");
+        setTimeout(() => setError(""), 3000);
+      }
+    } catch (err) {
+      console.error("Error saving assessment:", err);
+      setError("Failed to save assessment data");
+      setTimeout(() => setError(""), 3000);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -395,13 +432,25 @@ export default function AssessmentPage() {
         </button>
         {currentStep < 8 && (
           <>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold"
-                    onClick={handleSave}
+            <button 
+              className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold flex items-center gap-2 ${saving ? 'opacity-75 cursor-not-allowed' : ''}`}
+              onClick={handleSave}
+              disabled={saving}
             >
-              Save Progress
+              {saving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Saving...
+                </>
+              ) : (
+                'Save Progress'
+              )}
             </button>
             {saveSuccess && (
               <div className="ml-4 text-green-600 font-semibold">Progress saved!</div>
+            )}
+            {error && (
+              <div className="ml-4 text-red-600 font-semibold">{error}</div>
             )}
           </>
         )}

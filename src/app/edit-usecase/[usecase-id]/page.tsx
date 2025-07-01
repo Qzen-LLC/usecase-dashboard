@@ -30,11 +30,12 @@ type FormData = {
   operationalImpactScore: number;
   productivityImpactScore: number;
   revenueImpactScore: number;
-  complexity: number;
+  implementationComplexity: number;
   estimatedTimeline: string;
   requiredResources: string;
   priority: string;
   businessFunction: string;
+  stage?: string;
 };
 
 const initialFormData: FormData = {
@@ -54,7 +55,7 @@ const initialFormData: FormData = {
   operationalImpactScore: 5,
   productivityImpactScore: 5,
   revenueImpactScore: 5,
-  complexity: 5,
+  implementationComplexity: 5,
   estimatedTimeline: "",
   requiredResources: "",
   priority: "mdeium",
@@ -123,19 +124,25 @@ const ArrayInput = ({
 };
 
 const getUseCase = async(params: string) => {
-
-    const res = await fetch(`/api/get-usecase?id=${params}`);
-    const useCaseData = await res.json();
-    const formData: FormData = useCaseData as FormData;
-    console.log(formData);
-    return formData;
-}
+    try {
+        const res = await fetch(`/api/get-usecase?id=${params}`);
+        if (!res.ok) {
+            throw new Error('Failed to fetch use case');
+        }
+        const useCaseData = await res.json();
+        return useCaseData;
+    } catch (error) {
+        console.error('Error fetching use case:', error);
+        throw error;
+    }
+};
 
 const AIUseCaseTool = () => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [invalidFields, setInvalidFields] = useState<string[]>([]);
   const [showError, setShowError] = useState(false);
+  const [saving, setSaving] = useState(false);
   const router = useRouter();
 
   const params = useParams();
@@ -144,15 +151,19 @@ const AIUseCaseTool = () => {
 
   useEffect(() => {
     const fetchAndFill = async () => {
-      const id = params["usecase-id"] as string;
-      if (!id) return;
-      const data = await getUseCase(id);
-      console.log(data);
-      if (data) {
-        setFormData(prev => ({
-          ...prev,
-          ...data,
-        }));
+      try {
+        const id = params["usecase-id"] as string;
+        if (!id) return;
+        const data = await getUseCase(id);
+        if (data) {
+          setFormData(prev => ({
+            ...prev,
+            ...data,
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching use case:', error);
+        setShowError(true);
       }
     };
     fetchAndFill();
@@ -361,14 +372,14 @@ const AIUseCaseTool = () => {
             </div>
             <Label htmlFor="confidenceLevel" className='text-sm font-normal text-gray-800'>How confident are you in your estimates?</Label>
           </div>
-          <Label htmlFor="estimatedTimeline">Estimated estimatedTimeline</Label>
+          <Label htmlFor="estimatedTimeline">Estimated Timeline</Label>
           <Input
             id="estimatedTimeline"
             value={formData.estimatedTimeline}
             onChange={(e) => handleChange("estimatedTimeline", e.target.value)}
             className={invalidFields.includes('estimatedTimeline') ? 'border-red-500' : ''}
           />
-          <Label htmlFor="requiredResources">Required requiredResources</Label>
+          <Label htmlFor="requiredResources">Required Resources</Label>
           <Input
             id="requiredResources"
             value={formData.requiredResources}
@@ -461,25 +472,25 @@ const AIUseCaseTool = () => {
         </div>
         <div className="bg-gray-75 p-6 rounded-lg">
           <div className="flex items-center mb-4">
-            <Label htmlFor="complexity" className='text-lg font-semibold text-black-800'>Additional Metrics</Label>
+            <Label htmlFor="implementationComplexity" className='text-lg font-semibold text-black-800'>Additional Metrics</Label>
           </div>
           <div className="space-y-4">
-            <Label htmlFor="complexity" className='text-sm font-normal text-gray-800 mb-2'>Implementation Complexity</Label>
+            <Label htmlFor="implementationComplexity" className='text-sm font-normal text-gray-800 mb-2'>Implementation Complexity</Label>
             <div className="flex justify-between items-center mb-1">
               <span></span>
-              <span className="text-blue-600 font-bold">{formData.complexity}</span>
+              <span className="text-blue-600 font-bold">{formData.implementationComplexity}</span>
             </div>
             <Slider
               min={1}
               max={10}
-              value={[formData.complexity]}
-              onValueChange={([val]) => handleChange("complexity", val)}
+              value={[formData.implementationComplexity]}
+              onValueChange={([val]) => handleChange("implementationComplexity", val)}
             />
             <div className="flex justify-between text-xs text-gray-500 mt-1">
               <span>Low (1)</span>
               <span>High (10)</span>
             </div>
-            <Label htmlFor="complexity" className='text-sm font-normal text-gray-800 mb-4'>How complex will this be to implement? (1 = Very Simple, 10 = Very Complex)</Label>
+            <Label htmlFor="implementationComplexity" className='text-sm font-normal text-gray-800 mb-4'>How complex will this be to implement? (1 = Very Simple, 10 = Very Complex)</Label>
           </div>
         </div>
         <div className="bg-white p-6 rounded-lg border-2 border-gray-200">
@@ -503,7 +514,7 @@ const AIUseCaseTool = () => {
               Overall Score: {((formData.operationalImpactScore + formData.productivityImpactScore + formData.revenueImpactScore) / 3).toFixed(1)}
             </div>
             <div className="text-sm text-gray-600">
-              Complexity: {formData.complexity}/10
+              Complexity: {formData.implementationComplexity}/10
             </div>
           </div>
         </div>
@@ -524,9 +535,10 @@ const AIUseCaseTool = () => {
   const handleGoToPipeline = async () => {
     if (validateForm()) {
       try {
+        setSaving(true);
         const body = {
           ...formData,
-          stage: completeForBusinessCase ? 'business-case' : undefined,
+          stage: completeForBusinessCase ? 'business-case' : formData.stage,
         };
         const res = await fetch("/api/write-usecases", {
           method: "POST",
@@ -535,10 +547,18 @@ const AIUseCaseTool = () => {
           },
           body: JSON.stringify(body),
         });   
+        
+        if (!res.ok) {
+          throw new Error('Failed to save use case');
+        }
+
+        router.push('/dashboard');
       } catch(error) {
-        console.error("Unable to Submit");
+        console.error("Error saving use case:", error);
+        setShowError(true);
+      } finally {
+        setSaving(false);
       }
-      router.push('/dashboard');
     }
   };
 
@@ -582,7 +602,7 @@ const AIUseCaseTool = () => {
           <div className="p-6">
             {showError && (
               <div className="mb-4 text-red-600 font-semibold">
-                Please fill all required fields before proceeding.
+                {invalidFields.length > 0 ? 'Please fill all required fields before proceeding.' : 'An error occurred. Please try again.'}
               </div>
             )}
             <main>
@@ -596,54 +616,43 @@ const AIUseCaseTool = () => {
               {currentStep === 3 && renderStep3()}
             </main>
           </div>
-          <div className="flex justify-between items-center p-6 border-t">
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setCurrentStep(prev => prev > 1 ? prev - 1 : prev)}
-                disabled={currentStep === 1}
-                className={`flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white ${currentStep === 1 ? 'invisible' : ''}`}
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Previous
-              </Button>
-              <Button
-                onClick={exportData}
-                variant="outline"
-                className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
-              >
-                <Download className="w-4 h-4" />
-                Export
-              </Button>
-              <Button
-                onClick={() => console.log('Saved:', formData)}
-                variant="outline"
-                className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
-              >
-                <Save className="w-4 h-4" />
-                Save Draft
-              </Button>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-sm font-medium text-gray-500">
-                Step {currentStep} of {steps.length}
-              </div>
-              {currentStep === steps.length ? (
-                <Button
-                  onClick={handleGoToPipeline}
-                  className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white"
-                >
-                  Go to Pipeline
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => setCurrentStep(prev => prev < steps.length ? prev + 1 : prev)}
-                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+          <div className="px-6 py-4 bg-gray-50 flex justify-between items-center">
+            <button
+              className={`px-4 py-2 rounded-md ${
+                currentStep === 1
+                  ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+              onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1))}
+              disabled={currentStep === 1}
+            >
+              Previous
+            </button>
+            <div className="flex gap-4">
+              {currentStep < steps.length && (
+                <button
+                  className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                  onClick={() => setCurrentStep((prev) => Math.min(steps.length, prev + 1))}
                 >
                   Next
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
+                </button>
               )}
+              <button
+                className={`px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2 ${
+                  saving ? 'opacity-75 cursor-not-allowed' : ''
+                }`}
+                onClick={handleGoToPipeline}
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Saving...
+                  </>
+                ) : (
+                  'Save & Go to Pipeline'
+                )}
+              </button>
             </div>
           </div>
         </div>

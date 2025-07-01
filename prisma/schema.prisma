@@ -60,11 +60,13 @@ model FinOps {
 }
 
 model Assess {
-  useCaseId String   @id
-  createdAt DateTime @default(now())
-  stepsData Json
-  updatedAt DateTime
-  UseCase   UseCase  @relation(fields: [useCaseId], references: [id])
+  useCaseId   String   @id
+  createdAt   DateTime @default(now())
+  stepsData   Json
+  updatedAt   DateTime
+  status      String   @default("in_progress")
+  completedAt DateTime?
+  UseCase     UseCase  @relation(fields: [useCaseId], references: [id])
 }
 
 model Approval {

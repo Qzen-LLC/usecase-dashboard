@@ -17,10 +17,31 @@ export async function GET(req: Request) {
             where: { id },
             select: {
                 id: true,
+                aiucId: true,
                 title: true,
-                stage: true,
+                problemStatement: true,
+                proposedAISolution: true,
+                currentState: true,
+                desiredState: true,
                 primaryStakeholders: true,
-                aiucId: true
+                secondaryStakeholders: true,
+                successCriteria: true,
+                problemValidation: true,
+                solutionHypothesis: true,
+                keyAssumptions: true,
+                initialROI: true,
+                confidenceLevel: true,
+                operationalImpactScore: true,
+                productivityImpactScore: true,
+                revenueImpactScore: true,
+                implementationComplexity: true,
+                estimatedTimeline: true,
+                requiredResources: true,
+                priority: true,
+                stage: true,
+                businessFunction: true,
+                createdAt: true,
+                updatedAt: true
             }
         });
 

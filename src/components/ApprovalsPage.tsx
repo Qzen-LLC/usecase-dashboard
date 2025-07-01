@@ -513,8 +513,36 @@ const ApprovalsPage = forwardRef((props, ref) => {
   };
 
   const handleComplete = async () => {
-    await handleSave();
-    router.push(`/dashboard/${useCaseId}`);
+    try {
+      await handleSave();
+      
+      // Update the assessment status
+      const response = await fetch(`/api/post-stepdata`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          useCaseId,
+          assessData: {
+            ...stepsData,
+            metadata: {
+              ...stepsData?.metadata,
+              status: "completed",
+              completedAt: new Date().toISOString(),
+              approvals: form
+            }
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update assessment status");
+      }
+
+      router.push(`/dashboard/${useCaseId}`);
+    } catch (error) {
+      setError("Failed to complete assessment");
+      setTimeout(() => setError(""), 3000);
+    }
   };
 
   useImperativeHandle(ref, () => ({ handleComplete }));

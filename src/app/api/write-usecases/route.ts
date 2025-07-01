@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
     try {
-        const body = await req.json();
         const {
             id,
             title,
@@ -27,88 +26,51 @@ export async function POST(req: Request) {
             requiredResources,
             businessFunction,
             stage,
-        } = body;
-        if(id) {
-            const useCase = await prismaClient.useCase.upsert({
-                where: {
-                    id: id,
-                },
-                update: {
-                    title,
-                    problemStatement,
-                    proposedAISolution,
-                    currentState,
-                    desiredState,
-                    primaryStakeholders,
-                    secondaryStakeholders,
-                    successCriteria,
-                    problemValidation,
-                    solutionHypothesis,
-                    keyAssumptions,
-                    initialROI,
-                    confidenceLevel,
-                    operationalImpactScore,
-                    productivityImpactScore,
-                    revenueImpactScore,
-                    implementationComplexity,
-                    estimatedTimeline,
-                    requiredResources,
-                    businessFunction,
-                    stage,
-                },
-                create: {
-                    title,
-                    problemStatement,
-                    proposedAISolution,
-                    currentState,
-                    desiredState,
-                    primaryStakeholders,
-                    secondaryStakeholders,
-                    successCriteria,
-                    problemValidation,
-                    solutionHypothesis,
-                    keyAssumptions,
-                    initialROI,
-                    confidenceLevel,
-                    operationalImpactScore,
-                    productivityImpactScore,
-                    revenueImpactScore,
-                    implementationComplexity,
-                    estimatedTimeline,
-                    requiredResources,
-                    businessFunction,
-                    stage,
+            priority,
+        } = await req.json();
+
+        const data = {
+            title,
+            problemStatement,
+            proposedAISolution,
+            currentState,
+            desiredState,
+            primaryStakeholders,
+            secondaryStakeholders,
+            successCriteria,
+            problemValidation,
+            solutionHypothesis,
+            keyAssumptions,
+            initialROI,
+            confidenceLevel,
+            operationalImpactScore,
+            productivityImpactScore,
+            revenueImpactScore,
+            implementationComplexity,
+            estimatedTimeline,
+            requiredResources,
+            businessFunction,
+            stage,
+            priority,
+            updatedAt: new Date(),
+        };
+
+        let useCase;
+        if (id) {
+            useCase = await prismaClient.useCase.update({
+                where: { id },
+                data,
+            });
+        } else {
+            useCase = await prismaClient.useCase.create({
+                data: {
+                    ...data,
+                    createdAt: new Date(),
                 },
             });
         }
-        else {
-            const useCase = await prismaClient.useCase.create({
-                data: {
-                    title,
-                    problemStatement,
-                    proposedAISolution,
-                    currentState,
-                    desiredState,
-                    primaryStakeholders,
-                    secondaryStakeholders,
-                    successCriteria,
-                    problemValidation,
-                    solutionHypothesis,
-                    keyAssumptions,
-                    initialROI,
-                    confidenceLevel,
-                    operationalImpactScore,
-                    productivityImpactScore,
-                    revenueImpactScore,
-                    implementationComplexity,
-                    estimatedTimeline,
-                    requiredResources,
-                    businessFunction,
-                    stage,
-                },
-            });
-        }    
-        return NextResponse.json({ success: true});
+
+        return NextResponse.json({ success: true, useCase });
     } catch (error) {
         console.error('Error saving use case:', error);
         return NextResponse.json(
