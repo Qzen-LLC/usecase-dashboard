@@ -599,6 +599,12 @@ const AIUseCaseTool = () => {
         </div>
         <div className="bg-white border-t border-gray-200">
           <div className="p-6">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {formData.aiucId ? `AIUC-${formData.aiucId} ${formData.title}` : formData.title}
+              </h1>
+              <p className="text-gray-600">Edit Use Case</p>
+            </div>
             {showError && (
               <div className="mb-4 text-red-600 font-semibold">
                 Please fill all required fields before proceeding.

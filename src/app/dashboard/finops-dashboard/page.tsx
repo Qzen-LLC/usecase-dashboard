@@ -148,7 +148,7 @@ const FinOpsDashboardPage = () => {
                   >
                     <td className="px-8 py-4 text-sm">
                       <div className="flex flex-col">
-                        <div className="font-mono text-gray-500 mb-1">AIUC - {item.useCase?.aiucId}</div>
+                        <div className="font-mono text-gray-500 mb-1">AIUC-{item.useCase?.aiucId}</div>
                         <div className="font-medium text-gray-900">{item.useCase?.title}</div>
                         <div className="text-sm text-gray-500">{item.useCase?.owner}</div>
                       </div>

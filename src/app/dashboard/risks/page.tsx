@@ -387,7 +387,7 @@ const TopRiskUseCases: React.FC<{ useCases: any[] }> = ({ useCases }) => {
       {useCases.map(useCase => (
         <div key={useCase.id} className="flex items-start gap-3 mb-4 last:mb-0">
           <div className="flex-1">
-            <div className="font-mono text-gray-500 mb-1">AIUC - {useCase.aiucId}</div>
+            <div className="font-mono text-gray-500 mb-1">AIUC-{useCase.aiucId}</div>
             <p className="font-medium text-sm">{useCase.title}</p>
             <p className="text-xs text-gray-500">{useCase.businessFunction}</p>
           </div>
@@ -575,7 +575,7 @@ const UseCaseRiskTable: React.FC<{ useCases: any[] }> = ({ useCases }) => {
               <tr key={useCase.id} className="border-b hover:bg-gray-50">
                 <td className="py-3 px-4">
                   <div>
-                    <div className="font-mono text-gray-500 mb-1">AIUC - {useCase.aiucId}</div>
+                    <div className="font-mono text-gray-500 mb-1">AIUC-{useCase.aiucId}</div>
                     <p className="font-medium text-sm">{useCase.title}</p>
                     <p className="text-xs text-gray-500">{useCase.businessFunction}</p>
                   </div>
@@ -690,7 +690,7 @@ const RiskActionItems: React.FC<{ riskData: RiskMetrics }> = ({ riskData }) => {
             <ul className="mt-2 space-y-1">
               {criticalUseCases.slice(0, 3).map(uc => (
                 <li key={uc.id} className="text-xs text-red-600">
-                  • <span className="font-mono">AIUC {uc.aiucId}</span> {uc.title}
+                  • <span className="font-mono">AIUC-{uc.aiucId}</span> {uc.title}
                 </li>
               ))}
             </ul>

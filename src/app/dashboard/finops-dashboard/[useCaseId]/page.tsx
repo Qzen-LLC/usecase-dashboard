@@ -481,7 +481,7 @@ export default function FinancialDashboard() {
               <span className="text-3xl font-extrabold text-blue-900 font-sans tracking-tight">
                 {useCaseDetails ? (
                   <>
-                    <span className="font-mono text-gray-600 mr-3">AIUC - {useCaseDetails.aiucId}</span>
+                    <span className="font-mono text-gray-600 mr-3">AIUC-{useCaseDetails.aiucId}</span>
                     {useCaseDetails.title}
                   </>
                 ) : (

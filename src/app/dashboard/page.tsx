@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X, Eye } from 'lucide-react';
+import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X, Eye, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -107,6 +107,29 @@ const Dashboard = () => {
   const handleAssess = (id: string) => {
     router.push(`/dashboard/${id}/assess`);
   }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this use case? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/delete-usecase?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete use case');
+      }
+
+      // Remove the use case from the local state
+      setUseCases(prev => prev.filter(uc => uc.id !== id));
+      setSelectedUseCase(null);
+    } catch (error) {
+      console.error('Error deleting use case:', error);
+      alert('Failed to delete use case. Please try again.');
+    }
+  };
 
   // Fetch use case s from API
   useEffect(() => {
@@ -236,7 +259,7 @@ const Dashboard = () => {
           {/* Header Section */}
           <div className="mb-6">
             <h2 className="text-2xl font-extrabold mb-1 text-gray-800 tracking-tight">
-              <span className="font-mono text-gray-500">AIUC {useCase.aiucId}</span>
+              <span className="font-mono text-gray-500">AIUC-{useCase.aiucId}</span>
               <br />
               {useCase.title}
             </h2>
@@ -379,6 +402,13 @@ const Dashboard = () => {
             >
               Move to Next Stage
             </Button>
+            <Button
+              className="bg-red-50 hover:bg-red-100 text-red-700 px-4 py-2 rounded-lg shadow-sm font-medium text-sm transition flex items-center gap-2"
+              onClick={() => {handleDelete(useCase.id as string)}}
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Use Case
+            </Button>
           </div>
         </div>
       </div>
@@ -478,7 +508,7 @@ const Dashboard = () => {
                           <div className="flex justify-between items-start mb-3">
                             <div>
                               <h4 className="font-semibold text-gray-800 text-base group-hover:text-blue-600 transition-colors">
-                                <span className="font-mono text-gray-500">AIUC {useCase.aiucId}</span>
+                                <span className="font-mono text-gray-500">AIUC-{useCase.aiucId}</span>
                                 <br />
                                 {useCase.title}
                               </h4>
