@@ -5,12 +5,13 @@ interface Params {
   id: string;
 }
 
-export async function POST(request: NextRequest, { params }: { params: Params }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<Params> }) {
   try {
     const { category, subcategory, score, comment } = await request.json();
+    const resolvedParams = await params;
     
     const result = await vendorServiceServer.updateAssessmentScore(
-      params.id,
+      resolvedParams.id,
       category,
       subcategory,
       score,
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest, { params }: { params: Params })
     }
     
     // Calculate and update overall score
-    await vendorServiceServer.calculateOverallScore(params.id);
+    await vendorServiceServer.calculateOverallScore(resolvedParams.id);
     
     return NextResponse.json(result.data);
   } catch (error: any) {

@@ -223,8 +223,8 @@ const Dashboard = () => {
     const availableStages = stages.filter(s => s.id !== useCase.stage);
 
     return (
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-start justify-center z-50 animate-fade-in p-4 pt-24 overflow-y-auto">
-        <div className="bg-white/90 backdrop-blur-lg rounded-3xl w-full max-w-3xl mx-auto p-8 relative shadow-2xl border border-blue-100 mb-8">
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-start justify-center z-50 fade-in p-4 pt-24 overflow-y-auto">
+        <div className="glass rounded-3xl w-full max-w-3xl mx-auto p-8 relative shadow-glow-lg border border-white/30 mb-8 slide-in-bottom">
           <button
             className="absolute top-4 right-4 text-gray-400 hover:text-blue-600 transition"
             onClick={onClose}
@@ -245,24 +245,24 @@ const Dashboard = () => {
 
           {/* Scores Grid */}
           <div className="grid grid-cols-4 gap-4 mb-6">
-            <div className="bg-blue-50 p-3 rounded-xl text-center border border-blue-100 shadow-sm">
-              <TrendingUp className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+            <div className="card-modern p-4 text-center interactive-soft">
+              <TrendingUp className="w-5 h-5 text-blue-600 mx-auto mb-2" />
               <div className="text-lg font-bold text-gray-800">{useCase.scores?.operational}</div>
               <div className="text-xs text-gray-500">Operational</div>
             </div>
-            <div className="bg-blue-50 p-3 rounded-xl text-center border border-blue-100 shadow-sm">
-              <Zap className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+            <div className="card-modern p-4 text-center interactive-soft">
+              <Zap className="w-5 h-5 text-emerald-600 mx-auto mb-2" />
               <div className="text-lg font-bold text-gray-800">{useCase.scores?.productivity}</div>
               <div className="text-xs text-gray-500">Productivity</div>
             </div>
-            <div className="bg-blue-50 p-3 rounded-xl text-center border border-blue-100 shadow-sm">
-              <DollarSign className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+            <div className="card-modern p-4 text-center interactive-soft">
+              <DollarSign className="w-5 h-5 text-purple-600 mx-auto mb-2" />
               <div className="text-lg font-bold text-gray-800">{useCase.scores?.revenue}</div>
               <div className="text-xs text-gray-500">Revenue</div>
             </div>
-            <div className="bg-blue-50 p-3 rounded-xl text-center border border-blue-100 shadow-sm">
-              <span className="inline-block w-5 h-5 text-blue-600 mx-auto mb-1">🎯</span>
-              <div className="text-lg font-bold text-gray-800">{getOverallScore(useCase.scores || { operational: 0, productivity: 0, revenue: 0 })}</div>
+            <div className="card-modern p-4 text-center interactive-soft border-2 border-purple-200">
+              <span className="inline-block w-5 h-5 text-purple-600 mx-auto mb-2">🎯</span>
+              <div className="text-lg font-bold bg-gradient-primary bg-clip-text text-transparent">{getOverallScore(useCase.scores || { operational: 0, productivity: 0, revenue: 0 })}</div>
               <div className="text-xs text-gray-500">Overall</div>
             </div>
           </div>
@@ -386,8 +386,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center m-8">
-      <div className="w-full max-w-screen-2xl mx-8 bg-white rounded-2xl shadow-2xl border border-gray-200 mt-6 mb-6 mx-auto relative z-10">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 flex flex-col justify-center items-center m-8">
+      <div className="w-full max-w-screen-2xl mx-8 card-elevated mt-6 mb-6 mx-auto relative z-10">
         <div className="px-8 py-8">
           {/* Main Content */}
           <div className="p-4">
@@ -420,28 +420,33 @@ const Dashboard = () => {
               </select>
               <Button
                 onClick={() => router.push('/new-usecase')}
-                className="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-200 text-emerald-700 hover:text-emerald-800 px-4 py-2 rounded-lg shadow-sm transition-all duration-200 font-medium text-sm border border-emerald-100 hover:border-emerald-300"
+                className="flex items-center gap-2 bg-gradient-success text-white hover:shadow-glow px-6 py-2.5 rounded-full shadow-md interactive font-medium text-sm"
               >
                 <Plus className="w-4 h-4" />
                 New Use Case
               </Button>
             </div>
             {/* Stage Stats */}
-            <div className="bg-blue-50 border border-blue-100 p-6 rounded-2xl mb-10 shadow-sm">
+            <div className="glass p-6 rounded-2xl mb-10 shadow-glow border border-white/30">
               <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 text-center">
-                {stages.map(stage => {
+                {stages.map((stage, index) => {
                   const count = getUseCasesByStage(stage.id).length;
-                  const icon = stage.id === 'discovery' ? <Search className="w-6 h-6 mx-auto mb-2 text-blue-600" /> :
-                    stage.id === 'business-case' ? <DollarSign className="w-6 h-6 mx-auto mb-2 text-blue-600" /> :
-                    stage.id === 'proof-of-value' ? <TrendingUp className="w-6 h-6 mx-auto mb-2 text-blue-600" /> :
-                    stage.id === 'backlog' ? <Clock className="w-6 h-6 mx-auto mb-2 text-blue-600" /> :
-                    stage.id === 'in-progress' ? <Zap className="w-6 h-6 mx-auto mb-2 text-blue-600" /> :
-                    stage.id === 'solution-validation' ? <User className="w-6 h-6 mx-auto mb-2 text-blue-600" /> :
-                    stage.id === 'pilot' ? <User className="w-6 h-6 mx-auto mb-2 text-blue-600" /> :
-                    <Clock className="w-6 h-6 mx-auto mb-2 text-blue-600" />;
+                  const colors = [
+                    'text-blue-600', 'text-emerald-600', 'text-purple-600', 'text-orange-600',
+                    'text-pink-600', 'text-teal-600', 'text-indigo-600', 'text-rose-600'
+                  ];
+                  const iconColor = colors[index % colors.length];
+                  const icon = stage.id === 'discovery' ? <Search className={`w-6 h-6 mx-auto mb-2 ${iconColor}`} /> :
+                    stage.id === 'business-case' ? <DollarSign className={`w-6 h-6 mx-auto mb-2 ${iconColor}`} /> :
+                    stage.id === 'proof-of-value' ? <TrendingUp className={`w-6 h-6 mx-auto mb-2 ${iconColor}`} /> :
+                    stage.id === 'backlog' ? <Clock className={`w-6 h-6 mx-auto mb-2 ${iconColor}`} /> :
+                    stage.id === 'in-progress' ? <Zap className={`w-6 h-6 mx-auto mb-2 ${iconColor}`} /> :
+                    stage.id === 'solution-validation' ? <User className={`w-6 h-6 mx-auto mb-2 ${iconColor}`} /> :
+                    stage.id === 'pilot' ? <User className={`w-6 h-6 mx-auto mb-2 ${iconColor}`} /> :
+                    <Clock className={`w-6 h-6 mx-auto mb-2 ${iconColor}`} />;
                   return (
-                    <div key={stage.id} className="p-4 rounded-xl bg-white shadow-sm hover:shadow-md transition flex flex-col items-center border border-gray-200 hover:border-blue-200">
-                      {React.cloneElement(icon, { className: 'w-6 h-6 mx-auto mb-2 text-blue-600' })}
+                    <div key={stage.id} className="card-modern p-4 interactive hover:shadow-glow border-white/50">
+                      {icon}
                       <div className="text-2xl font-bold text-gray-800">{count}</div>
                       <div className="text-sm text-gray-600 font-medium mt-1">{stage.title}</div>
                     </div>

@@ -1,16 +1,5 @@
 // Server-side vendor service that uses Prisma
-import { PrismaClient } from '@/generated/prisma';
-
-// Create a singleton PrismaClient instance to avoid connection issues
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
-
-const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  log: ['query'],
-});
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+import { prismaClient as prisma } from '@/utils/db';
 
 export interface VendorData {
   id: string;
@@ -70,15 +59,12 @@ export const vendorServiceServer = {
   // Get all vendors
   async getVendors() {
     try {
-      // Use a transaction to avoid connection pooling issues
-      const vendors = await prisma.$transaction(async (tx) => {
-        return await tx.vendor.findMany({
-          include: {
-            assessmentScores: true,
-            approvalAreas: true
-          },
-          orderBy: { createdAt: 'desc' }
-        });
+      const vendors = await prisma.vendor.findMany({
+        include: {
+          assessmentScores: true,
+          approvalAreas: true
+        },
+        orderBy: { createdAt: 'desc' }
       });
 
       // Transform the data to match the frontend format

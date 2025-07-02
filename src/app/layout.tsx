@@ -58,10 +58,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${lora.variable} ${nunito.variable} ${merriweather.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${lora.variable} ${nunito.variable} ${merriweather.variable} antialiased font-sans`}
         suppressHydrationWarning
       >
-        <header className="sticky top-0 flex h-20 w-full shrink-0 items-center px-4 md:px-12 bg-white/80 backdrop-blur-lg border-b border-gray-200/60 shadow-lg z-50">
+        <header className="sticky top-0 flex h-20 w-full shrink-0 items-center px-4 md:px-12 glass border-b border-white/30 shadow-glow z-50">
           {/* Mobile menu */}
           <Sheet>
             <SheetTrigger asChild>
@@ -81,23 +81,23 @@ export default function RootLayout({
                 <Link href="/dashboard/risks" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-pink-400 hover:to-purple-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Risk Management</Link>
                 <Link href="/dashboard/vendor-assessment" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-indigo-400 hover:to-cyan-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Vendor Assessment</Link>
                 <Link href="/dashboard/finops-dashboard" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-purple-500 hover:to-fuchsia-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>FinOps Dashboard</Link>
-                <Link href="#" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-yellow-400 hover:to-pink-400 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Policy Center</Link>
+                <Link href="/dashboard/policy-center" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-yellow-400 hover:to-pink-400 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Policy Center</Link>
               </nav>
             </SheetContent>
           </Sheet>
           {/* Brand */}
           <div className="flex items-center gap-2 mr-12 select-none">
             <img src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MTI5NzE1NCwiZXhwIjoyMDY2NjU3MTU0fQ.wWxWelTaht2N75Nv9yr6vidPmBNhL41oDyPthQBKXiY" alt="QZen AI Logo" className="h-10 w-10" style={{minWidth:'2.5rem'}} />
-            <span className="text-2xl font-extrabold bg-gradient-to-r from-blue-500 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent tracking-tight" style={{letterSpacing: '-0.01em'}}>QZen QUBE</span>
+            <span className="text-2xl font-extrabold text-gradient-primary tracking-tight" style={{letterSpacing: '-0.01em'}}>QZen QUBE</span>
           </div>
           {/* Desktop nav */}
           <nav className="ml-auto hidden lg:flex items-center gap-2">
-            <Link href="/dashboard/executive" className="inline-flex items-center px-6 py-2 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-purple-600 hover:to-blue-600 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Executive Dashboard</Link>
-            <Link href="/dashboard" className="inline-flex items-center px-6 py-2 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-green-400 hover:to-blue-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Use Cases</Link>
-            <Link href="/dashboard/risks" className="inline-flex items-center px-6 py-2 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-pink-400 hover:to-purple-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Risk Management</Link>
-            <Link href="/dashboard/vendor-assessment" className="inline-flex items-center px-6 py-2 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-indigo-400 hover:to-cyan-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Vendor Assessment</Link>
-            <Link href="/dashboard/finops-dashboard" className="inline-flex items-center px-6 py-2 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-purple-500 hover:to-fuchsia-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>FinOps Dashboard</Link>
-            <Link href="#" className="inline-flex items-center px-6 py-2 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-yellow-400 hover:to-pink-400 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Policy Center</Link>
+            <Link href="/dashboard/executive" className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-purple-600 hover:to-blue-600 rounded-full transition-all duration-300 interactive-soft" prefetch={false}>Executive Dashboard</Link>
+            <Link href="/dashboard" className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-green-400 hover:to-blue-500 rounded-full transition-all duration-300 interactive-soft" prefetch={false}>Use Cases</Link>
+            <Link href="/dashboard/risks" className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-pink-400 hover:to-purple-500 rounded-full transition-all duration-300 interactive-soft" prefetch={false}>Risk Management</Link>
+            <Link href="/dashboard/vendor-assessment" className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-indigo-400 hover:to-cyan-500 rounded-full transition-all duration-300 interactive-soft" prefetch={false}>Vendor Assessment</Link>
+            <Link href="/dashboard/finops-dashboard" className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-purple-500 hover:to-fuchsia-500 rounded-full transition-all duration-300 interactive-soft" prefetch={false}>FinOps Dashboard</Link>
+            <Link href="/dashboard/policy-center" className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-yellow-400 hover:to-pink-400 rounded-full transition-all duration-300 interactive-soft" prefetch={false}>Policy Center</Link>
           </nav>
         </header>
         {children}

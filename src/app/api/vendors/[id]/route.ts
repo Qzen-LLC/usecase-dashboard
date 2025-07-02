@@ -5,10 +5,11 @@ interface Params {
   id: string;
 }
 
-export async function PUT(request: NextRequest, { params }: { params: Params }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<Params> }) {
   try {
     const vendorData = await request.json();
-    const result = await vendorServiceServer.updateVendor(params.id, vendorData);
+    const resolvedParams = await params;
+    const result = await vendorServiceServer.updateVendor(resolvedParams.id, vendorData);
     
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 400 });
@@ -21,9 +22,10 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Params }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<Params> }) {
   try {
-    const result = await vendorServiceServer.deleteVendor(params.id);
+    const resolvedParams = await params;
+    const result = await vendorServiceServer.deleteVendor(resolvedParams.id);
     
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 400 });

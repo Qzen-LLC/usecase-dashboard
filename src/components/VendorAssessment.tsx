@@ -25,6 +25,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState(0);
 
   const categories = [
     'LLM/Foundation Models',
@@ -132,7 +133,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
   };
 
   const createEmptyVendor = (): Vendor => ({
-    id: Date.now(),
+    id: Date.now().toString(),
     name: '',
     category: categories[0],
     website: '',
@@ -157,6 +158,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
     setCurrentVendor(newVendor);
     setIsEditing(true);
     setViewMode('form');
+    setActiveTab(0);
   };
 
   const saveVendor = async () => {
@@ -169,7 +171,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
     setError(null);
 
     try {
-      let result;
+      let result: { data?: any; error?: string | null };
       if (currentVendor.id && typeof currentVendor.id === 'string' && currentVendor.id.includes('-')) {
         result = await vendorService.updateVendor(currentVendor.id, currentVendor);
       } else {
@@ -184,6 +186,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
       }
 
       await saveAssessmentScores();
+      await saveApprovalAreas();
       await loadVendors();
       setIsEditing(false);
     } catch (error: any) {
@@ -200,7 +203,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
     const comments = currentVendor.comments || {};
 
     for (const [key, score] of Object.entries(scores)) {
-      if (score > 0) {
+      if (typeof score === 'number' && score > 0) {
         const [category, subcategory] = key.split('-');
         const comment = comments[key] || '';
         await vendorService.updateAssessmentScore(
@@ -216,6 +219,22 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
     await vendorService.calculateOverallScore(currentVendor.id.toString());
   };
 
+  const saveApprovalAreas = async () => {
+    if (!currentVendor?.id) return;
+
+    const approvals = currentVendor.approvals || {};
+
+    for (const [area, approval] of Object.entries(approvals)) {
+      await vendorService.updateApprovalArea(
+        currentVendor.id.toString(),
+        area,
+        approval.status,
+        approval.approvedBy || undefined,
+        approval.comments || undefined
+      );
+    }
+  };
+
   const updateScore = (category: string, subcategory: string, score: string) => {
     const key = `${category}-${subcategory}`;
     setCurrentVendor(prev => {
@@ -227,7 +246,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
       };
       
       const scores = Object.values(updatedVendor.scores || {});
-      const validScores = scores.filter(score => score > 0);
+      const validScores = scores.filter((score): score is number => typeof score === 'number' && score > 0);
       const average = validScores.length > 0 ? 
         validScores.reduce((sum, score) => sum + score, 0) / validScores.length : 0;
       
@@ -241,6 +260,57 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
       ...prev,
       comments: { ...prev.comments, [key]: comment }
     }) : null);
+  };
+
+  const updateApprovalStatus = (area: string, status: string) => {
+    setCurrentVendor(prev => {
+      if (!prev) return null;
+      
+      const updatedApprovals = {
+        ...prev.approvals,
+        [area]: {
+          ...prev.approvals[area as keyof typeof prev.approvals],
+          status: status as 'Pending' | 'Approved' | 'Rejected',
+          approvedBy: status === 'Approved' ? (prev.approvals[area as keyof typeof prev.approvals].approvedBy || '') : null,
+          approvedDate: status === 'Approved' ? (prev.approvals[area as keyof typeof prev.approvals].approvedDate || new Date().toISOString()) : null
+        }
+      };
+      
+      // Calculate new vendor status based on approval areas
+      const approvalValues = Object.values(updatedApprovals);
+      const allApproved = approvalValues.every(approval => approval.status === 'Approved');
+      const anyRejected = approvalValues.some(approval => approval.status === 'Rejected');
+      
+      let newStatus: 'In Assessment' | 'Approved' | 'Rejected' | 'On Hold' = 'In Assessment';
+      if (allApproved) {
+        newStatus = 'Approved';
+      } else if (anyRejected) {
+        newStatus = 'Rejected';
+      }
+      
+      return {
+        ...prev,
+        approvals: updatedApprovals,
+        status: newStatus
+      };
+    });
+  };
+
+  const updateApprovalField = (area: string, field: string, value: string) => {
+    setCurrentVendor(prev => {
+      if (!prev) return null;
+      
+      return {
+        ...prev,
+        approvals: {
+          ...prev.approvals,
+          [area]: {
+            ...prev.approvals[area as keyof typeof prev.approvals],
+            [field]: value
+          }
+        }
+      };
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -374,57 +444,161 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
           </div>
         </div>
 
-        {/* Assessment Criteria */}
-        <div className="space-y-8">
+        {/* Assessment Criteria Tabs */}
+        <div className="space-y-6">
           <h3 className="text-xl font-semibold text-gray-900 border-b pb-2">Assessment Criteria</h3>
           
-          {Object.entries(assessmentCriteria).map(([category, subcriteria]) => (
-            <div key={category} className="bg-gray-50 rounded-lg p-6">
-              <h4 className="text-lg font-semibold text-gray-800 mb-4">{category}</h4>
-              <div className="space-y-4">
-                {Object.entries(subcriteria).map(([subcategory, description]) => {
-                  const key = `${category}-${subcategory}`;
-                  const score = currentVendor.scores[key] || 0;
-                  const comment = currentVendor.comments[key] || '';
-                  
-                  return (
-                    <div key={subcategory} className="bg-white rounded-lg p-4 border">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <h5 className="font-medium text-gray-900">{subcategory}</h5>
-                          <p className="text-sm text-gray-600 mt-1">{description}</p>
+          {/* Tab Navigation */}
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex flex-wrap">
+              {Object.keys(assessmentCriteria).map((category, index) => (
+                <button
+                  key={category}
+                  onClick={() => setActiveTab(index)}
+                  className={`mr-2 mb-2 py-2 px-4 text-sm font-medium rounded-t-lg whitespace-nowrap ${
+                    activeTab === index
+                      ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-500'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          {/* Tab Content */}
+          <div className="bg-gray-50 rounded-lg p-6">
+            {Object.entries(assessmentCriteria).map(([category, subcriteria], index) => (
+              <div key={category} className={activeTab === index ? 'block' : 'hidden'}>
+                <h4 className="text-lg font-semibold text-gray-800 mb-4">{category}</h4>
+                <div className="space-y-4">
+                  {Object.entries(subcriteria).map(([subcategory, description]) => {
+                    const key = `${category}-${subcategory}`;
+                    const score = currentVendor.scores[key] || 0;
+                    const comment = currentVendor.comments[key] || '';
+                    
+                    return (
+                      <div key={subcategory} className="bg-white rounded-lg p-4 border">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h5 className="font-medium text-gray-900">{subcategory}</h5>
+                            <p className="text-sm text-gray-600 mt-1">{description}</p>
+                          </div>
+                          <div className="ml-4 flex items-center gap-2">
+                            <span className="text-sm text-gray-500 whitespace-nowrap">Score:</span>
+                            <select
+                              value={score}
+                              onChange={(e) => updateScore(category, subcategory, e.target.value)}
+                              disabled={!isEditing}
+                              className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                            >
+                              <option value="0">0</option>
+                              <option value="1">1</option>
+                              <option value="2">2</option>
+                              <option value="3">3</option>
+                              <option value="4">4</option>
+                              <option value="5">5</option>
+                            </select>
+                          </div>
                         </div>
-                        <div className="ml-4 flex items-center gap-2">
-                          <span className="text-sm text-gray-500 whitespace-nowrap">Score:</span>
-                          <select
-                            value={score}
-                            onChange={(e) => updateScore(category, subcategory, e.target.value)}
-                            disabled={!isEditing}
-                            className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-                          >
-                            <option value="0">0</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                          </select>
-                        </div>
+                        <textarea
+                          value={comment}
+                          onChange={(e) => updateComment(category, subcategory, e.target.value)}
+                          disabled={!isEditing}
+                          placeholder="Add your assessment notes..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                          rows={2}
+                        />
                       </div>
-                      <textarea
-                        value={comment}
-                        onChange={(e) => updateComment(category, subcategory, e.target.value)}
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Approval Areas */}
+        <div className="mt-8 space-y-6">
+          <h3 className="text-xl font-semibold text-gray-900 border-b pb-2">Approval Workflow</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {Object.entries(currentVendor.approvals).map(([area, approval]) => (
+              <div key={area} className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-gray-900">{area}</h4>
+                  <select
+                    value={approval.status}
+                    onChange={(e) => updateApprovalStatus(area, e.target.value)}
+                    disabled={!isEditing}
+                    className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-blue-500 disabled:opacity-75 ${
+                      approval.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                      approval.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                  </select>
+                </div>
+                
+                {approval.status === 'Approved' && (
+                  <div className="space-y-2">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Approved By</label>
+                      <input
+                        type="text"
+                        value={approval.approvedBy || ''}
+                        onChange={(e) => updateApprovalField(area, 'approvedBy', e.target.value)}
                         disabled={!isEditing}
-                        placeholder="Add your assessment notes..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-                        rows={2}
+                        placeholder="Enter approver name"
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                       />
                     </div>
-                  );
-                })}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Approval Date</label>
+                      <input
+                        type="date"
+                        value={approval.approvedDate ? approval.approvedDate.split('T')[0] : ''}
+                        onChange={(e) => updateApprovalField(area, 'approvedDate', e.target.value)}
+                        disabled={!isEditing}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                <div className="mt-3">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Comments</label>
+                  <textarea
+                    value={approval.comments}
+                    onChange={(e) => updateApprovalField(area, 'comments', e.target.value)}
+                    disabled={!isEditing}
+                    placeholder="Add approval comments..."
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                    rows={2}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Approval Status Summary */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium text-gray-900 mb-1">Overall Approval Status</h4>
+                <p className="text-sm text-gray-600">
+                  {Object.values(currentVendor.approvals).filter(a => a.status === 'Approved').length} of 4 areas approved
+                </p>
+              </div>
+              <div className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(currentVendor.status)}`}>
+                {currentVendor.status}
               </div>
             </div>
-          ))}
+          </div>
         </div>
 
         {/* Overall Score */}
@@ -441,21 +615,21 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
   };
 
   const renderVendorList = () => (
-    <div className="bg-white rounded-lg shadow-lg">
+    <div className="card-elevated">
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-gray-900">Vendor Assessment List</h2>
           <div className="flex gap-2">
             <button
               onClick={addVendor}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+              className="flex items-center gap-2 bg-gradient-primary text-white px-6 py-2.5 rounded-full hover:shadow-glow interactive font-medium"
             >
               <Plus size={16} />
               Add Vendor
             </button>
             <button
               onClick={() => setViewMode('dashboard')}
-              className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+              className="flex items-center gap-2 bg-gradient-secondary text-white px-6 py-2.5 rounded-full hover:shadow-glow interactive font-medium"
             >
               <BarChart3 size={16} />
               Dashboard
@@ -532,6 +706,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
                         setCurrentVendor(vendor);
                         setViewMode('form');
                         setIsEditing(false);
+                        setActiveTab(0);
                       }}
                       className="text-blue-600 hover:text-blue-900"
                     >
@@ -542,6 +717,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
                         setCurrentVendor(vendor);
                         setViewMode('form');
                         setIsEditing(true);
+                        setActiveTab(0);
                       }}
                       className="text-green-600 hover:text-green-900"
                     >
@@ -710,7 +886,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 fade-in">
       {viewMode === 'list' && renderVendorList()}
       {viewMode === 'form' && renderVendorForm()}
       {viewMode === 'dashboard' && renderDashboard()}

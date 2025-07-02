@@ -821,6 +821,25 @@ class ComplianceMonitor {
 // 6. REGULATORY CHANGE MANAGEMENT
 // ====================================================================
 
+interface ChangeDetectionRule {
+  ruleName: string;
+  keywords: string[];
+  confidence: number;
+  action: string;
+}
+
+interface ChangeAnalysisEngine {
+  analyzeChange: (change: DetectedChange) => Promise<any>;
+}
+
+interface ChangeAlertSystem {
+  sendAlert: (change: DetectedChange) => Promise<void>;
+}
+
+interface AdaptationPlanner {
+  planAdaptation: (change: DetectedChange) => Promise<any>;
+}
+
 interface RegulatoryChangeDetection {
   watchedRegulations: RegulationWatch[];
   changeDetectionRules: ChangeDetectionRule[];
@@ -1491,12 +1510,15 @@ async function runEnhancedAssessment() {
 }
 
 // Export the main components
-export {
+export type {
   EnhancedComplianceFramework,
   ComplianceRequirement,
   MitigationPhase,
   ComplianceGap,
   ComplianceKPI,
-  ComplianceMonitor,
+  ComplianceMonitor
+};
+
+export {
   runEnhancedAssessment
 };

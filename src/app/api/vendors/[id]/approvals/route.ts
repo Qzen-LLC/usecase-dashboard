@@ -5,12 +5,13 @@ interface Params {
   id: string;
 }
 
-export async function POST(request: NextRequest, { params }: { params: Params }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<Params> }) {
   try {
     const { area, status, approvedBy, comments } = await request.json();
+    const resolvedParams = await params;
     
     const result = await vendorServiceServer.updateApprovalArea(
-      params.id,
+      resolvedParams.id,
       area,
       status,
       approvedBy,
