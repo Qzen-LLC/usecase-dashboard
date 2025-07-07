@@ -40,6 +40,13 @@ model UseCase {
   finopsData               FinOps?
 
   @@unique([aiucId])
+  @@index([stage])
+  @@index([priority])
+  @@index([businessFunction])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([stage, priority])
+  @@index([businessFunction, stage])
 }
 
 model FinOps {
@@ -87,6 +94,12 @@ model Approval {
   updatedAt          DateTime @updatedAt
   createdAt          DateTime @default(now())
   useCase            UseCase  @relation(fields: [useCaseId], references: [id])
+
+  @@index([governanceStatus])
+  @@index([riskStatus])
+  @@index([legalStatus])
+  @@index([businessStatus])
+  @@index([finalQualification])
 }
 
 model Vendor {
@@ -104,6 +117,12 @@ model Vendor {
   updatedAt        DateTime          @updatedAt
   approvalAreas    ApprovalArea[]
   assessmentScores AssessmentScore[]
+
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
+  @@index([overallScore])
+  @@index([category, status])
 }
 
 model AssessmentScore {

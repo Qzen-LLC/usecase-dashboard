@@ -878,9 +878,12 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
   }
 
   if (error) {
+    console.error('VendorAssessment error:', error);
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <div className="text-red-800">Error: {error}</div>
+        <div className="text-red-800">
+          Error: {error && error !== "null" && error !== "undefined" ? error : "An unexpected error occurred. Please try again."}
+        </div>
       </div>
     );
   }

@@ -60,9 +60,36 @@ export const vendorServiceServer = {
   async getVendors() {
     try {
       const vendors = await prisma.vendor.findMany({
-        include: {
-          assessmentScores: true,
-          approvalAreas: true
+        select: {
+          id: true,
+          name: true,
+          category: true,
+          website: true,
+          contactPerson: true,
+          contactEmail: true,
+          assessmentDate: true,
+          overallScore: true,
+          status: true,
+          notes: true,
+          createdAt: true,
+          updatedAt: true,
+          assessmentScores: {
+            select: {
+              category: true,
+              subcategory: true,
+              score: true,
+              comment: true
+            }
+          },
+          approvalAreas: {
+            select: {
+              area: true,
+              status: true,
+              approvedBy: true,
+              approvedDate: true,
+              comments: true
+            }
+          }
         },
         orderBy: { createdAt: 'desc' }
       });

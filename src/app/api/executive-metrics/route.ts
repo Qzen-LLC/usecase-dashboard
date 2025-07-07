@@ -5,10 +5,42 @@ export async function GET() {
   try {
     // Fetch all use cases with related data
     const useCases = await prismaClient.useCase.findMany({
-      include: {
-        finopsData: true,
-        assessData: true,
-        Approval: true
+      select: {
+        id: true,
+        stage: true,
+        businessFunction: true,
+        priority: true,
+        operationalImpactScore: true,
+        productivityImpactScore: true,
+        revenueImpactScore: true,
+        implementationComplexity: true,
+        confidenceLevel: true,
+        createdAt: true,
+        finopsData: {
+          select: {
+            totalInvestment: true,
+            ROI: true,
+            cumValue: true,
+            netValue: true,
+            devCostBase: true,
+            infraCostBase: true,
+            opCostBase: true,
+            apiCostBase: true
+          }
+        },
+        assessData: {
+          select: {
+            stepsData: true
+          }
+        },
+        Approval: {
+          select: {
+            governanceStatus: true,
+            riskStatus: true,
+            legalStatus: true,
+            businessStatus: true
+          }
+        }
       }
     });
 
@@ -253,7 +285,9 @@ export async function GET() {
       }
     };
 
-    return NextResponse.json(executiveMetrics);
+    const response = NextResponse.json(executiveMetrics);
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    return response;
 
   } catch (error) {
     console.error('Error fetching executive metrics:', error);
