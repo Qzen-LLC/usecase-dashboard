@@ -102,9 +102,11 @@ const CERTIFICATIONS_OPTIONS = [
   'ISO 27701 (Privacy)',
   'ISO/IEC 23053 (AI)',
   'ISO/IEC 23894 (AI Risk)',
+  'ISO/IEC 42001:2023 – AI Management System (AIMS)',
+  'ISO/IEC JTC 1/SC 42 – AI Standardization Committee',
   'SOC 2',
   'FedRAMP',
-  'NIST Frameworks',
+  'NIST AI Standards and Risk Management Framework (RMF)',
   'AICPA AI Auditing',
   'IEEE AI Standards',
 ];
@@ -269,199 +271,241 @@ export default function RiskAssessment({ onChange }: Props) {
 
 
   return (
-    <div className="space-y-8">
-      <div className="bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] border-l-4 border-red-400 p-4 mb-6 rounded-2xl flex items-center gap-3 shadow-md">
+    <div className="space-y-10">
+      <div className="bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] border-l-4 border-red-400 p-4 mb-8 rounded-2xl flex items-center gap-3 shadow-md">
         <div className="font-semibold text-red-800 text-lg mb-1">Risk Assessment</div>
         <div className="text-red-700">Identify, evaluate, and plan mitigation strategies for potential risks.</div>
       </div>
 
-
-      <div className="space-y-4">
-  <h4 className="font-semibold text-gray-800 mb-2">Technical Risks</h4>
-  {/* Header Row */}
-  <div className="flex items-center justify-between px-4">
-    <div className="flex-1"></div>
-    <div className="flex gap-2 w-52 justify-end">
-      <span className="text-xs text-gray-500 w-24 text-center">Probability</span>
-      <span className="text-xs text-gray-500 w-24 text-center">Impact</span>
-    </div>
-  </div>
-  {technicalRisks.map((item, index) => renderRiskRow(item, index, 'technical'))}
-</div>
-
-
-     <div className="space-y-4">
-  <h4 className="font-semibold text-gray-800 mb-2">Business Risks</h4>
-  {/* Header Row */}
-  <div className="flex items-center justify-between px-4">
-    <div className="flex-1"></div>
-    <div className="flex gap-2 w-52 justify-end">
-      <span className="text-xs text-gray-500 w-24 text-center">Probability</span>
-      <span className="text-xs text-gray-500 w-24 text-center">Impact</span>
-    </div>
-  </div>
-  {businessRisks.map((item, index) => renderRiskRow(item, index, 'business'))}
-</div>
-
-
-      {/* Jurisdictional Requirements heading */}
-      <div>
-        <h5 className="text-sm font-semibold text-gray-500 mb-1">Jurisdictional Requirements</h5>
-        <h4 className="font-semibold text-gray-800 mb-2">Operating Jurisdictions</h4>
-        <ul className="ml-4 list-disc">
-          {Object.entries(OPERATING_JURISDICTIONS).map(([region, countries]) => (
-            <li key={region} className="mb-2">
-              <div className="font-semibold text-gray-700 mb-1">{region}</div>
-              <div className="ml-4 flex flex-col gap-1">
-                {countries.map((country) => (
-                  <label key={country} className="flex items-center gap-2">
-                    <Checkbox
-                      checked={operatingJurisdictions[region][country]}
-                      onCheckedChange={(checked) =>
-                        setOperatingJurisdictions((prev) => ({
-                          ...prev,
-                          [region]: {
-                            ...prev[region],
-                            [country]: !!checked,
-                          },
-                        }))
-                      }
-                    />
-                    <span className="text-sm">{country}</span>
-                  </label>
-                ))}
+      {/* Risk Identification Section */}
+      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
+        <div className="border-b border-gray-100 pb-4 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">Risk Identification</h3>
+          <p className="text-sm text-gray-600">Assess technical and business risks with probability and impact ratings</p>
+        </div>
+        
+        <div className="space-y-8">
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-800 mb-2">Technical Risks</h4>
+            {/* Header Row */}
+            <div className="flex items-center justify-between px-4">
+              <div className="flex-1"></div>
+              <div className="flex gap-2 w-52 justify-end">
+                <span className="text-xs text-gray-500 w-24 text-center">Probability</span>
+                <span className="text-xs text-gray-500 w-24 text-center">Impact</span>
               </div>
-            </li>
-          ))}
-        </ul>
+            </div>
+            {technicalRisks.map((item, index) => renderRiskRow(item, index, 'technical'))}
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-800 mb-2">Business Risks</h4>
+            {/* Header Row */}
+            <div className="flex items-center justify-between px-4">
+              <div className="flex-1"></div>
+              <div className="flex gap-2 w-52 justify-end">
+                <span className="text-xs text-gray-500 w-24 text-center">Probability</span>
+                <span className="text-xs text-gray-500 w-24 text-center">Impact</span>
+              </div>
+            </div>
+            {businessRisks.map((item, index) => renderRiskRow(item, index, 'business'))}
+          </div>
+        </div>
       </div>
 
 
-      {/* Regulatory Frameworks */}
-      <div>
-        <h5 className="text-sm font-semibold text-gray-500 mb-1">Regulatory Frameworks</h5>
-        {/* Data Protection */}
+      {/* Jurisdictional Requirements Section */}
+      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
+        <div className="border-b border-gray-100 pb-4 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">Jurisdictional Requirements</h3>
+          <p className="text-sm text-gray-600">Select operating jurisdictions to identify applicable legal requirements</p>
+        </div>
+        
         <div>
-          <h4 className="font-semibold text-gray-800 mb-2">Data Protection </h4>
-          <div className="flex flex-col gap-2">
-            {DATA_PROTECTION_OPTIONS.map(option => (
-              <label key={option} className="flex items-center gap-2">
+          <h4 className="font-semibold text-gray-800 mb-4">Operating Jurisdictions</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {Object.entries(OPERATING_JURISDICTIONS).map(([region, countries]) => (
+              <div key={region} className="border border-gray-200 rounded-lg p-4">
+                <div className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">{region}</div>
+                <div className="flex flex-col gap-2">
+                  {countries.map((country) => (
+                    <label key={country} className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded">
+                      <Checkbox
+                        checked={operatingJurisdictions[region][country]}
+                        onCheckedChange={(checked) =>
+                          setOperatingJurisdictions((prev) => ({
+                            ...prev,
+                            [region]: {
+                              ...prev[region],
+                              [country]: !!checked,
+                            },
+                          }))
+                        }
+                      />
+                      <span className="text-sm">{country}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+
+      {/* Regulatory Frameworks Section */}
+      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
+        <div className="border-b border-gray-100 pb-4 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">Regulatory Frameworks</h3>
+          <p className="text-sm text-gray-600">Identify applicable regulatory requirements for your AI system</p>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Data Protection */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h4 className="font-semibold text-gray-800 mb-3 text-sm uppercase tracking-wide">Data Protection</h4>
+            <div className="flex flex-col gap-2">
+              {DATA_PROTECTION_OPTIONS.map(option => (
+                <label key={option} className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded">
+                  <Checkbox
+                    checked={dataProtection[option]}
+                    onCheckedChange={checked => setDataProtection(prev => ({ ...prev, [option]: !!checked }))}
+                  />
+                  <span className="text-sm">{option}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          
+          {/* Sector-Specific */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h4 className="font-semibold text-gray-800 mb-3 text-sm uppercase tracking-wide">Sector-Specific</h4>
+            <div className="flex flex-col gap-2">
+              {SECTOR_SPECIFIC_OPTIONS.map(option => (
+                <label key={option} className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded">
+                  <Checkbox
+                    checked={sectorSpecific[option]}
+                    onCheckedChange={checked => setSectorSpecific(prev => ({ ...prev, [option]: !!checked }))}
+                  />
+                  <span className="text-sm">{option}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          
+          {/* AI-Specific Regulations */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h4 className="font-semibold text-gray-800 mb-3 text-sm uppercase tracking-wide">AI-Specific Regulations</h4>
+            <div className="flex flex-col gap-2">
+              {AI_SPECIFIC_OPTIONS.map(option => (
+                <label key={option} className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded">
+                  <Checkbox
+                    checked={aiSpecific[option]}
+                    onCheckedChange={checked => setAiSpecific(prev => ({ ...prev, [option]: !!checked }))}
+                  />
+                  <span className="text-sm">{option}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      {/* Industry Standards Section */}
+      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
+        <div className="border-b border-gray-100 pb-4 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">Industry Standards</h3>
+          <p className="text-sm text-gray-600">Select applicable certifications and standards for your AI system</p>
+        </div>
+        
+        <div>
+          <h4 className="font-semibold text-gray-800 mb-4">Certifications/Standards</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {CERTIFICATIONS_OPTIONS.map(option => (
+              <label key={option} className="flex items-center gap-2 hover:bg-gray-50 p-2 rounded border border-gray-100">
                 <Checkbox
-                  checked={dataProtection[option]}
-                  onCheckedChange={checked => setDataProtection(prev => ({ ...prev, [option]: !!checked }))}
+                  checked={certifications[option]}
+                  onCheckedChange={checked => setCertifications(prev => ({ ...prev, [option]: !!checked }))}
                 />
                 <span className="text-sm">{option}</span>
               </label>
             ))}
           </div>
         </div>
-        {/* Sector-Specific */}
-        <div className="mt-4">
-          <h4 className="font-semibold text-gray-800 mb-2">Sector-Specific </h4>
-          <div className="flex flex-col gap-2">
-            {SECTOR_SPECIFIC_OPTIONS.map(option => (
-              <label key={option} className="flex items-center gap-2">
-                <Checkbox
-                  checked={sectorSpecific[option]}
-                  onCheckedChange={checked => setSectorSpecific(prev => ({ ...prev, [option]: !!checked }))}
-                />
-                <span className="text-sm">{option}</span>
-              </label>
-            ))}
+      </div>
+
+
+      {/* Audit & Compliance Section */}
+      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
+        <div className="border-b border-gray-100 pb-4 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">Audit & Compliance</h3>
+          <p className="text-sm text-gray-600">Define audit requirements and compliance reporting needs</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Audit Requirements */}
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-4">Audit Requirements</h4>
+            <RadioGroup value={auditRequirements} onValueChange={setAuditRequirements} className="flex flex-col gap-2">
+              {AUDIT_REQUIREMENTS_OPTIONS.map(option => (
+                <label key={option} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                  <RadioGroupItem value={option} id={option} className="mr-2" />
+                  <span className="text-sm">{option}</span>
+                </label>
+              ))}
+            </RadioGroup>
+          </div>
+          
+          {/* Compliance Reporting */}
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-4">Compliance Reporting</h4>
+            <RadioGroup value={complianceReporting} onValueChange={setComplianceReporting} className="flex flex-col gap-2">
+              {COMPLIANCE_REPORTING_OPTIONS.map(option => (
+                <label key={option} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                  <RadioGroupItem value={option} id={option} className="mr-2" />
+                  <span className="text-sm">{option}</span>
+                </label>
+              ))}
+            </RadioGroup>
           </div>
         </div>
-        {/* AI-Specific Regulations */}
-        <div className="mt-4">
-          <h4 className="font-semibold text-gray-800 mb-2">AI-Specific Regulations</h4>
-          <div className="flex flex-col gap-2">
-            {AI_SPECIFIC_OPTIONS.map(option => (
-              <label key={option} className="flex items-center gap-2">
-                <Checkbox
-                  checked={aiSpecific[option]}
-                  onCheckedChange={checked => setAiSpecific(prev => ({ ...prev, [option]: !!checked }))}
-                />
-                <span className="text-sm">{option}</span>
-              </label>
-            ))}
+      </div>
+
+
+      {/* Risk Appetite Section */}
+      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
+        <div className="border-b border-gray-100 pb-4 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">Risk Appetite</h3>
+          <p className="text-sm text-gray-600">Define your organization's risk tolerance and AI experience level</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Organization Risk Tolerance */}
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-4">Organization Risk Tolerance</h4>
+            <RadioGroup value={riskTolerance} onValueChange={setRiskTolerance} className="flex flex-col gap-2">
+              {RISK_TOLERANCE_OPTIONS.map(option => (
+                <label key={option} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                  <RadioGroupItem value={option} id={option} className="mr-2" />
+                  <span className="text-sm">{option}</span>
+                </label>
+              ))}
+            </RadioGroup>
           </div>
-        </div>
-      </div>
-
-
-      {/* Industry Standards */}
-      <div>
-        <h5 className="text-sm font-semibold text-gray-500 mb-1">Industry Standards</h5>
-        <h4 className="font-semibold text-gray-800 mb-2">Certifications/Standards </h4>
-        <div className="flex flex-col gap-2">
-          {CERTIFICATIONS_OPTIONS.map(option => (
-            <label key={option} className="flex items-center gap-2">
-              <Checkbox
-                checked={certifications[option]}
-                onCheckedChange={checked => setCertifications(prev => ({ ...prev, [option]: !!checked }))}
-              />
-              <span className="text-sm">{option}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-
-      {/* Audit & Compliance */}
-      <div>
-        <h5 className="text-sm font-semibold text-gray-500 mb-1">Audit & Compliance</h5>
-        {/* Audit Requirements */}
-        <div className="mb-4">
-          <h4 className="font-semibold text-gray-800 mb-2">Audit Requirements</h4>
-          <RadioGroup value={auditRequirements} onValueChange={setAuditRequirements} className="flex flex-col gap-2">
-            {AUDIT_REQUIREMENTS_OPTIONS.map(option => (
-              <label key={option} className="flex items-center gap-2 cursor-pointer">
-                <RadioGroupItem value={option} id={option} className="mr-2" />
-                <span className="text-sm">{option}</span>
-              </label>
-            ))}
-          </RadioGroup>
-        </div>
-        {/* Compliance Reporting */}
-        <div>
-          <h4 className="font-semibold text-gray-800 mb-2">Compliance Reporting</h4>
-          <RadioGroup value={complianceReporting} onValueChange={setComplianceReporting} className="flex flex-col gap-2">
-            {COMPLIANCE_REPORTING_OPTIONS.map(option => (
-              <label key={option} className="flex items-center gap-2 cursor-pointer">
-                <RadioGroupItem value={option} id={option} className="mr-2" />
-                <span className="text-sm">{option}</span>
-              </label>
-            ))}
-          </RadioGroup>
-        </div>
-      </div>
-
-
-      {/* Risk Appetite */}
-      <div>
-        <h5 className="text-sm font-semibold text-gray-500 mb-1">Risk Appetite</h5>
-        {/* Organization Risk Tolerance */}
-        <div className="mb-4">
-          <h4 className="font-semibold text-gray-800 mb-2">Organization Risk Tolerance</h4>
-          <RadioGroup value={riskTolerance} onValueChange={setRiskTolerance} className="flex flex-col gap-2">
-            {RISK_TOLERANCE_OPTIONS.map(option => (
-              <label key={option} className="flex items-center gap-2 cursor-pointer">
-                <RadioGroupItem value={option} id={option} className="mr-2" />
-                <span className="text-sm">{option}</span>
-              </label>
-            ))}
-          </RadioGroup>
-        </div>
-        {/* Previous AI Experience */}
-        <div>
-          <h4 className="font-semibold text-gray-800 mb-2">Previous AI Experience</h4>
-          <RadioGroup value={aiExperience} onValueChange={setAiExperience} className="flex flex-col gap-2">
-            {AI_EXPERIENCE_OPTIONS.map(option => (
-              <label key={option} className="flex items-center gap-2 cursor-pointer">
-                <RadioGroupItem value={option} id={option} className="mr-2" />
-                <span className="text-sm">{option}</span>
-              </label>
-            ))}
-          </RadioGroup>
+          
+          {/* Previous AI Experience */}
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-4">Previous AI Experience</h4>
+            <RadioGroup value={aiExperience} onValueChange={setAiExperience} className="flex flex-col gap-2">
+              {AI_EXPERIENCE_OPTIONS.map(option => (
+                <label key={option} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                  <RadioGroupItem value={option} id={option} className="mr-2" />
+                  <span className="text-sm">{option}</span>
+                </label>
+              ))}
+            </RadioGroup>
+          </div>
         </div>
       </div>
     </div>
