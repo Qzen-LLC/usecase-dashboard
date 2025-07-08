@@ -153,61 +153,82 @@ const FinancialDashboard = () => {
       {
         label: 'Development Cost (One-time)',
         data: Array(FORECAST_MONTHS).fill(initialDevCost),
-        borderColor: '#ff4d4f',
-        backgroundColor: 'rgba(255,77,79,0.1)',
-        borderDash: [6, 6],
+        borderColor: '#ef4444',
+        backgroundColor: 'rgba(239,68,68,0.1)',
+        borderDash: [10, 5],
         fill: false,
-        pointRadius: 4,
-        pointBackgroundColor: '#ff4d4f',
-        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 8,
+        pointBackgroundColor: '#ef4444',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 3,
+        borderWidth: 3,
         tension: 0.1,
         showLine: true,
         type: 'line' as const,
       },
       {
-        label: 'Cumulative Running Costs',
+        label: 'Cumulative Operating Costs',
         data: rows.map(r => r.cumulativeOpCosts),
-        borderColor: '#ff9900',
-        backgroundColor: 'rgba(255,153,0,0.15)',
-        fill: '-1',
-        pointRadius: 4,
-        pointBackgroundColor: '#ff9900',
-        borderWidth: 2,
-        tension: 0.1,
+        borderColor: '#f97316',
+        backgroundColor: 'rgba(249,115,22,0.15)',
+        fill: 'origin',
+        pointRadius: 0,
+        pointHoverRadius: 8,
+        pointBackgroundColor: '#f97316',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 3,
+        borderWidth: 4,
+        tension: 0.4,
         type: 'line' as const,
       },
       {
-        label: 'Total Lifetime Value',
+        label: 'Total Value Generated',
         data: rows.map(r => r.cumulativeValue),
         borderColor: '#10b981',
-        backgroundColor: 'rgba(16,185,129,0.1)',
-        fill: false,
-        pointRadius: 4,
+        backgroundColor: 'rgba(16,185,129,0.15)',
+        fill: 'origin',
+        pointRadius: 0,
+        pointHoverRadius: 8,
         pointBackgroundColor: '#10b981',
-        borderWidth: 2,
-        tension: 0.1,
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 3,
+        borderWidth: 4,
+        tension: 0.4,
         type: 'line' as const,
       },
       {
-        label: 'Net Value (Profit/Loss)',
+        label: 'Net Profit/Loss',
         data: rows.map(r => r.netValue),
-        borderColor: '#2563eb',
-        backgroundColor: 'rgba(37,99,235,0.1)',
-        fill: false,
-        pointRadius: 4,
-        pointBackgroundColor: '#2563eb',
-        borderWidth: 2,
-        tension: 0.1,
+        borderColor: '#3b82f6',
+        backgroundColor: (ctx: any) => {
+          const chart = ctx.chart;
+          const {ctx: canvasCtx, chartArea} = chart;
+          if (!chartArea) return 'rgba(59,130,246,0.15)';
+          const gradient = canvasCtx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+          gradient.addColorStop(0, 'rgba(59,130,246,0.05)');
+          gradient.addColorStop(0.5, 'rgba(59,130,246,0.15)');
+          gradient.addColorStop(1, 'rgba(59,130,246,0.3)');
+          return gradient;
+        },
+        fill: 'origin',
+        pointRadius: 0,
+        pointHoverRadius: 8,
+        pointBackgroundColor: '#3b82f6',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 3,
+        borderWidth: 4,
+        tension: 0.4,
         type: 'line' as const,
       },
       {
         label: 'Break-even Line',
         data: Array(FORECAST_MONTHS).fill(0),
-        borderColor: '#888',
-        borderDash: [6, 6],
+        borderColor: '#6b7280',
+        borderDash: [8, 8],
         fill: false,
         pointRadius: 0,
-        borderWidth: 1,
+        borderWidth: 2,
         type: 'line' as const,
         order: 0,
       },
@@ -215,44 +236,98 @@ const FinancialDashboard = () => {
   };
   const cumulativeChartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     interaction: { mode: 'index' as const, intersect: false },
+    animation: {
+      duration: 2000,
+      easing: 'easeInOutQuart' as const,
+    },
     plugins: {
-      legend: { position: 'bottom' as const, labels: { usePointStyle: true } },
+      legend: { 
+        position: 'top' as const,
+        align: 'center' as const,
+        labels: { 
+          usePointStyle: true,
+          pointStyle: 'circle',
+          font: { size: 14, weight: '600' as const },
+          color: '#1f2937',
+          padding: 25,
+          boxWidth: 12,
+          boxHeight: 12,
+        }
+      },
       tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+        titleColor: '#1f2937',
+        bodyColor: '#374151',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        cornerRadius: 16,
+        padding: 20,
+        bodySpacing: 10,
+        titleSpacing: 12,
+        displayColors: true,
+        usePointStyle: true,
         callbacks: {
-          title: (ctx: any) => `Month ${ctx[0].label}`,
+          title: (ctx: any) => `📈 Month ${ctx[0].label} Financial Overview`,
           label: (ctx: any) => {
             const label = ctx.dataset.label || '';
             let value = ctx.parsed.y;
             if (label.includes('Value') || label.includes('Cost') || label.includes('Profit')) {
               value = formatCurrency(value);
             }
-            let color = ctx.dataset.borderColor;
-            if (label.includes('Development')) color = '#ff4d4f';
-            if (label.includes('Cumulative')) color = '#ff9900';
-            if (label.includes('Lifetime')) color = '#10b981';
-            if (label.includes('Net')) color = '#2563eb';
-            return `${label}: ${value}`;
+            return `  ${label}: ${value}`;
           },
-          labelTextColor: (ctx: any) => ctx.dataset.borderColor,
         },
-        displayColors: false,
-        bodyFont: { weight: 'bold' as const },
-        titleFont: { weight: 'bold' as const },
+        bodyFont: { weight: '600' as const, size: 14 },
+        titleFont: { weight: 'bold' as const, size: 15 },
+        boxPadding: 8,
       },
     },
     scales: {
       y: {
+        beginAtZero: false,
         ticks: {
           callback: (tickValue: string | number) => formatK(Number(tickValue)),
-          color: '#222',
-          font: { weight: 'bold' as const },
+          color: '#6b7280',
+          font: { size: 13, weight: '600' as const },
+          padding: 12,
+          maxTicksLimit: 8,
         },
-        title: { display: false },
-        grid: { color: '#e5e7eb' },
+        title: { 
+          display: true,
+          text: 'Financial Value ($)',
+          color: '#374151',
+          font: { size: 14, weight: 'bold' as const },
+          padding: { top: 20, bottom: 10 }
+        },
+        grid: { 
+          color: 'rgba(156, 163, 175, 0.15)',
+          drawBorder: false,
+          lineWidth: 1,
+        },
+        border: { display: false },
       },
       x: {
-        grid: { color: '#e5e7eb' },
+        title: { 
+          display: true,
+          text: 'Timeline (Months)',
+          color: '#374151',
+          font: { size: 14, weight: 'bold' as const },
+          padding: { top: 15, bottom: 5 }
+        },
+        ticks: {
+          color: '#6b7280',
+          font: { size: 13, weight: '600' as const },
+          padding: 10,
+          maxTicksLimit: 12,
+        },
+        grid: { 
+          color: 'rgba(156, 163, 175, 0.08)',
+          drawBorder: false,
+          lineWidth: 1,
+        },
+        border: { display: false },
       },
     },
   };
@@ -264,36 +339,72 @@ const FinancialDashboard = () => {
       {
         label: 'API Costs',
         data: rows.map(r => r.apiCost),
-        borderColor: '#ff4d4f',
-        backgroundColor: 'rgba(255,77,79,0.15)',
-        fill: true,
+        borderColor: '#ef4444',
+        backgroundColor: (ctx: any) => {
+          const chart = ctx.chart;
+          const {ctx: canvasCtx, chartArea} = chart;
+          if (!chartArea) return 'rgba(239, 68, 68, 0.4)';
+          const gradient = canvasCtx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+          gradient.addColorStop(0, 'rgba(239, 68, 68, 0.1)');
+          gradient.addColorStop(1, 'rgba(239, 68, 68, 0.6)');
+          return gradient;
+        },
+        fill: 'origin',
         pointRadius: 0,
-        borderWidth: 2,
-        tension: 0.1,
+        pointHoverRadius: 8,
+        pointBackgroundColor: '#ef4444',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 3,
+        borderWidth: 3,
+        tension: 0.4,
         type: 'line' as const,
         stack: 'Stack 0',
       },
       {
         label: 'Infrastructure',
         data: rows.map(r => r.infraCost),
-        borderColor: '#ff9900',
-        backgroundColor: 'rgba(255,153,0,0.15)',
-        fill: true,
+        borderColor: '#f97316',
+        backgroundColor: (ctx: any) => {
+          const chart = ctx.chart;
+          const {ctx: canvasCtx, chartArea} = chart;
+          if (!chartArea) return 'rgba(249, 115, 22, 0.4)';
+          const gradient = canvasCtx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+          gradient.addColorStop(0, 'rgba(249, 115, 22, 0.1)');
+          gradient.addColorStop(1, 'rgba(249, 115, 22, 0.6)');
+          return gradient;
+        },
+        fill: '-1',
         pointRadius: 0,
-        borderWidth: 2,
-        tension: 0.1,
+        pointHoverRadius: 8,
+        pointBackgroundColor: '#f97316',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 3,
+        borderWidth: 3,
+        tension: 0.4,
         type: 'line' as const,
         stack: 'Stack 0',
       },
       {
         label: 'Operations',
         data: rows.map(r => r.opCost),
-        borderColor: '#fbbf24',
-        backgroundColor: 'rgba(251,191,36,0.15)',
-        fill: true,
+        borderColor: '#eab308',
+        backgroundColor: (ctx: any) => {
+          const chart = ctx.chart;
+          const {ctx: canvasCtx, chartArea} = chart;
+          if (!chartArea) return 'rgba(234, 179, 8, 0.4)';
+          const gradient = canvasCtx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+          gradient.addColorStop(0, 'rgba(234, 179, 8, 0.1)');
+          gradient.addColorStop(1, 'rgba(234, 179, 8, 0.6)');
+          return gradient;
+        },
+        fill: '-1',
         pointRadius: 0,
-        borderWidth: 2,
-        tension: 0.1,
+        pointHoverRadius: 8,
+        pointBackgroundColor: '#eab308',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 3,
+        borderWidth: 3,
+        tension: 0.4,
         type: 'line' as const,
         stack: 'Stack 0',
       },
@@ -301,38 +412,101 @@ const FinancialDashboard = () => {
   };
   const costBreakdownOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     interaction: { mode: 'index' as const, intersect: false },
+    animation: {
+      duration: 1600,
+      easing: 'easeInOutSine' as const,
+    },
     plugins: {
-      legend: { position: 'bottom' as const, labels: { usePointStyle: true } },
+      legend: { 
+        position: 'top' as const,
+        align: 'center' as const,
+        labels: { 
+          usePointStyle: true,
+          pointStyle: 'circle',
+          font: { size: 14, weight: '600' as const },
+          color: '#1f2937',
+          padding: 25,
+          boxWidth: 12,
+          boxHeight: 12,
+        }
+      },
       tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+        titleColor: '#1f2937',
+        bodyColor: '#374151',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        cornerRadius: 16,
+        padding: 20,
+        bodySpacing: 10,
+        titleSpacing: 12,
+        displayColors: true,
+        usePointStyle: true,
         callbacks: {
-          title: (ctx: any) => `Month ${ctx[0].label}`,
+          title: (ctx: any) => `💸 Month ${ctx[0].label} Cost Breakdown`,
           label: (ctx: any) => {
             const label = ctx.dataset.label || '';
             let value = ctx.parsed.y;
             value = formatCurrency(value);
-            let color = ctx.dataset.borderColor;
-            return `${label}: ${value}`;
+            let icon = '💰';
+            if (label.includes('API')) icon = '🔌';
+            if (label.includes('Infrastructure')) icon = '🏗️';
+            if (label.includes('Operations')) icon = '⚙️';
+            return `  ${icon} ${label}: ${value}`;
           },
-          labelTextColor: (ctx: any) => ctx.dataset.borderColor,
         },
-        displayColors: false,
-        bodyFont: { weight: 'bold' as const },
-        titleFont: { weight: 'bold' as const },
+        bodyFont: { weight: '600' as const, size: 14 },
+        titleFont: { weight: 'bold' as const, size: 15 },
+        boxPadding: 8,
       },
     },
     scales: {
       y: {
         stacked: true,
+        beginAtZero: true,
         ticks: {
           callback: (tickValue: string | number) => formatK(Number(tickValue)),
-          color: '#222',
-          font: { weight: 'bold' as const },
+          color: '#6b7280',
+          font: { size: 13, weight: '600' as const },
+          padding: 12,
+          maxTicksLimit: 8,
         },
-        grid: { color: '#e5e7eb' },
+        title: { 
+          display: true,
+          text: 'Monthly Costs ($)',
+          color: '#374151',
+          font: { size: 14, weight: 'bold' as const },
+          padding: { top: 20, bottom: 10 }
+        },
+        grid: { 
+          color: 'rgba(156, 163, 175, 0.15)',
+          drawBorder: false,
+          lineWidth: 1,
+        },
+        border: { display: false },
       },
       x: {
-        grid: { color: '#e5e7eb' },
+        title: { 
+          display: true,
+          text: 'Timeline (Months)',
+          color: '#374151',
+          font: { size: 14, weight: 'bold' as const },
+          padding: { top: 15, bottom: 5 }
+        },
+        ticks: {
+          color: '#6b7280',
+          font: { size: 13, weight: '600' as const },
+          padding: 10,
+          maxTicksLimit: 12,
+        },
+        grid: { 
+          color: 'rgba(156, 163, 175, 0.08)',
+          drawBorder: false,
+          lineWidth: 1,
+        },
+        border: { display: false },
       },
     },
   };
@@ -344,44 +518,141 @@ const FinancialDashboard = () => {
       {
         label: 'Monthly Profit/Loss',
         data: rows.map(r => r.monthlyProfit),
-        backgroundColor: '#111',
-        borderColor: '#111',
-        borderWidth: 1,
-        barPercentage: 0.8,
-        categoryPercentage: 0.8,
+        backgroundColor: rows.map(r => {
+          if (r.monthlyProfit >= 0) {
+            return 'rgba(34, 197, 94, 0.85)';
+          } else {
+            return 'rgba(239, 68, 68, 0.85)';
+          }
+        }),
+        borderColor: rows.map(r => {
+          if (r.monthlyProfit >= 0) {
+            return '#16a34a';
+          } else {
+            return '#dc2626';
+          }
+        }),
+        borderWidth: 2,
+        borderRadius: {
+          topLeft: 8,
+          topRight: 8,
+          bottomLeft: r => r.parsed.y < 0 ? 8 : 0,
+          bottomRight: r => r.parsed.y < 0 ? 8 : 0,
+        },
+        borderSkipped: false,
+        barPercentage: 0.75,
+        categoryPercentage: 0.85,
+        hoverBackgroundColor: rows.map(r => {
+          if (r.monthlyProfit >= 0) {
+            return 'rgba(34, 197, 94, 1)';
+          } else {
+            return 'rgba(239, 68, 68, 1)';
+          }
+        }),
+        hoverBorderColor: rows.map(r => {
+          if (r.monthlyProfit >= 0) {
+            return '#15803d';
+          } else {
+            return '#b91c1c';
+          }
+        }),
+        hoverBorderWidth: 3,
       },
     ],
   };
   const profitLossOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     interaction: { mode: 'index' as const, intersect: false },
+    animation: {
+      duration: 1800,
+      easing: 'easeOutBounce' as const,
+    },
     plugins: {
-      legend: { position: 'bottom' as const, labels: { usePointStyle: true } },
+      legend: { 
+        position: 'top' as const,
+        align: 'center' as const,
+        labels: { 
+          usePointStyle: true,
+          pointStyle: 'rectRounded',
+          font: { size: 14, weight: '600' as const },
+          color: '#1f2937',
+          padding: 25,
+          boxWidth: 15,
+          boxHeight: 12,
+        }
+      },
       tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+        titleColor: '#1f2937',
+        bodyColor: '#374151',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        cornerRadius: 16,
+        padding: 20,
+        bodySpacing: 10,
+        titleSpacing: 12,
+        displayColors: true,
+        usePointStyle: true,
         callbacks: {
-          title: (ctx: any) => `Month ${ctx[0].label}`,
+          title: (ctx: any) => `💰 Month ${ctx[0].label} Performance`,
           label: (ctx: any) => {
             let value = ctx.parsed.y;
+            const isProfit = value >= 0;
             value = formatCurrency(value);
-            return `Monthly Profit/Loss: ${value}`;
+            const icon = isProfit ? '📈' : '📉';
+            return `  ${icon} ${isProfit ? 'Profit' : 'Loss'}: ${value}`;
           },
         },
-        displayColors: false,
-        bodyFont: { weight: 'bold' as const },
-        titleFont: { weight: 'bold' as const },
+        bodyFont: { weight: '600' as const, size: 14 },
+        titleFont: { weight: 'bold' as const, size: 15 },
+        boxPadding: 8,
       },
     },
     scales: {
       y: {
+        beginAtZero: true,
         ticks: {
           callback: (tickValue: string | number) => formatK(Number(tickValue)),
-          color: '#222',
-          font: { weight: 'bold' as const },
+          color: '#6b7280',
+          font: { size: 13, weight: '600' as const },
+          padding: 12,
+          maxTicksLimit: 8,
         },
-        grid: { color: '#e5e7eb' },
+        title: { 
+          display: true,
+          text: 'Monthly Profit/Loss ($)',
+          color: '#374151',
+          font: { size: 14, weight: 'bold' as const },
+          padding: { top: 20, bottom: 10 }
+        },
+        grid: { 
+          color: 'rgba(156, 163, 175, 0.15)',
+          drawBorder: false,
+          lineWidth: 1,
+        },
+        border: { display: false },
       },
       x: {
-        grid: { color: '#e5e7eb' },
+        title: { 
+          display: true,
+          text: 'Timeline (Months)',
+          color: '#374151',
+          font: { size: 14, weight: 'bold' as const },
+          padding: { top: 15, bottom: 5 }
+        },
+        ticks: {
+          color: '#6b7280',
+          font: { size: 13, weight: '600' as const },
+          padding: 10,
+          maxTicksLimit: 12,
+        },
+        grid: { 
+          color: 'rgba(156, 163, 175, 0.08)',
+          drawBorder: false,
+          lineWidth: 1,
+        },
+        border: { display: false },
       },
     },
   };
@@ -393,59 +664,140 @@ const FinancialDashboard = () => {
       {
         label: 'Return on Investment (%)',
         data: rows.map(r => r.ROI),
-        borderColor: '#9461fd',
-        backgroundColor: 'rgba(148,97,253,0.1)',
-        fill: false,
-        pointRadius: 3,
-        pointBackgroundColor: '#9461fd',
-        borderWidth: 2,
-        tension: 0.1,
+        borderColor: '#8b5cf6',
+        backgroundColor: (ctx: any) => {
+          const chart = ctx.chart;
+          const {ctx: canvasCtx, chartArea} = chart;
+          if (!chartArea) return 'rgba(139, 92, 246, 0.2)';
+          const gradient = canvasCtx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+          gradient.addColorStop(0, 'rgba(139, 92, 246, 0.05)');
+          gradient.addColorStop(0.3, 'rgba(139, 92, 246, 0.15)');
+          gradient.addColorStop(1, 'rgba(139, 92, 246, 0.4)');
+          return gradient;
+        },
+        fill: 'origin',
+        pointRadius: 0,
+        pointHoverRadius: 10,
+        pointBackgroundColor: '#8b5cf6',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 3,
+        pointHoverBackgroundColor: '#7c3aed',
+        pointHoverBorderColor: '#ffffff',
+        pointHoverBorderWidth: 4,
+        borderWidth: 4,
+        tension: 0.4,
         type: 'line' as const,
       },
       {
-        label: 'Break-even Line',
+        label: 'Break-even Line (0%)',
         data: Array(FORECAST_MONTHS).fill(0),
-        borderColor: '#888',
-        borderDash: [6, 6],
+        borderColor: '#6b7280',
+        borderDash: [12, 8],
         fill: false,
         pointRadius: 0,
-        borderWidth: 1,
+        borderWidth: 2,
         type: 'line' as const,
+        order: 1,
       },
     ],
   };
   const roiOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     interaction: { mode: 'index' as const, intersect: false },
+    animation: {
+      duration: 2200,
+      easing: 'easeInOutElastic' as const,
+    },
     plugins: {
-      legend: { position: 'bottom' as const, labels: { usePointStyle: true } },
+      legend: { 
+        position: 'top' as const,
+        align: 'center' as const,
+        labels: { 
+          usePointStyle: true,
+          pointStyle: 'circle',
+          font: { size: 14, weight: '600' as const },
+          color: '#1f2937',
+          padding: 25,
+          boxWidth: 12,
+          boxHeight: 12,
+        }
+      },
       tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+        titleColor: '#1f2937',
+        bodyColor: '#374151',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        cornerRadius: 16,
+        padding: 20,
+        bodySpacing: 10,
+        titleSpacing: 12,
+        displayColors: true,
+        usePointStyle: true,
         callbacks: {
-          title: (ctx: any) => `Month ${ctx[0].label}`,
+          title: (ctx: any) => `📊 Month ${ctx[0].label} ROI Analysis`,
           label: (ctx: any) => {
             const label = ctx.dataset.label || '';
             let value = ctx.parsed.y;
-            if (label.includes('Return')) value = `${value.toFixed(1)}%`;
-            if (label.includes('Break-even')) value = '0%';
-            return `${label}: ${value}`;
+            if (label.includes('Return')) {
+              const formatted = `${value.toFixed(1)}%`;
+              const icon = value >= 0 ? '🚀' : '📉';
+              return `  ${icon} ${label}: ${formatted}`;
+            }
+            if (label.includes('Break-even')) return `  ⚖️ ${label}: 0%`;
+            return `  ${label}: ${value}`;
           },
         },
-        displayColors: false,
-        bodyFont: { weight: 'bold' as const },
-        titleFont: { weight: 'bold' as const },
+        bodyFont: { weight: '600' as const, size: 14 },
+        titleFont: { weight: 'bold' as const, size: 15 },
+        boxPadding: 8,
       },
     },
     scales: {
       y: {
+        beginAtZero: false,
         ticks: {
           callback: (tickValue: string | number) => `${Number(tickValue).toFixed(0)}%`,
-          color: '#222',
-          font: { weight: 'bold' as const },
+          color: '#6b7280',
+          font: { size: 13, weight: '600' as const },
+          padding: 12,
+          maxTicksLimit: 8,
         },
-        grid: { color: '#e5e7eb' },
+        title: { 
+          display: true,
+          text: 'Return on Investment (%)',
+          color: '#374151',
+          font: { size: 14, weight: 'bold' as const },
+          padding: { top: 20, bottom: 10 }
+        },
+        grid: { 
+          color: 'rgba(156, 163, 175, 0.15)',
+          drawBorder: false,
+          lineWidth: 1,
+        },
+        border: { display: false },
       },
       x: {
-        grid: { color: '#e5e7eb' },
+        title: { 
+          display: true,
+          text: 'Timeline (Months)',
+          color: '#374151',
+          font: { size: 14, weight: 'bold' as const },
+          padding: { top: 15, bottom: 5 }
+        },
+        ticks: {
+          color: '#6b7280',
+          font: { size: 13, weight: '600' as const },
+          padding: 10,
+          maxTicksLimit: 12,
+        },
+        grid: { 
+          color: 'rgba(156, 163, 175, 0.08)',
+          drawBorder: false,
+          lineWidth: 1,
+        },
+        border: { display: false },
       },
     },
   };
@@ -562,71 +914,142 @@ const FinancialDashboard = () => {
         ))}
       </div>
 
-      {/* Graphs */}
-      <div className="flex flex-col gap-10 w-full justify-center items-center">
-        <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-[#e9eafc] via-[#f5eaff] to-[#ffeafd] border border-gray-200 shadow-md rounded-xl">
-          <h2 className="font-semibold mb-6 text-[#23235b] text-2xl">Cumulative Financial View</h2>
-          <div className="flex justify-center" style={{ height: 420 }}>
+      {/* Financial Analytics Dashboard */}
+      <div className="space-y-12">
+        {/* Primary Chart - Cumulative Financial View */}
+        <Card className="w-full mx-auto p-8 bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 border border-gray-200/60 shadow-xl rounded-2xl backdrop-blur-sm">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900">Cumulative Financial Overview</h2>
+              <p className="text-gray-600 mt-1">Track investment vs value generation over 36 months</p>
+            </div>
+          </div>
+          <div className="bg-white/60 rounded-xl p-6 shadow-inner" style={{ height: 480 }}>
             <Line data={cumulativeChartData} options={cumulativeChartOptions} />
           </div>
         </Card>
-        <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-[#e9eafc] via-[#f5eaff] to-[#ffeafd] border border-gray-200 shadow-md rounded-xl">
-          <h2 className="font-semibold mb-6 text-[#23235b] text-2xl">ROI Trend</h2>
-          <div className="flex justify-center" style={{ height: 420 }}>
-            <Line data={roiChart} options={roiOptions} />
+
+        {/* Secondary Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* ROI Analysis */}
+          <Card className="p-8 bg-gradient-to-br from-white via-purple-50/30 to-pink-50/30 border border-gray-200/60 shadow-xl rounded-2xl backdrop-blur-sm">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center shadow-lg">
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">ROI Performance</h3>
+                <p className="text-gray-600 text-sm">Return on investment trajectory</p>
+              </div>
+            </div>
+            <div className="bg-white/60 rounded-xl p-4 shadow-inner" style={{ height: 360 }}>
+              <Line data={roiChart} options={roiOptions} />
+            </div>
+          </Card>
+
+          {/* Cost Breakdown */}
+          <Card className="p-8 bg-gradient-to-br from-white via-orange-50/30 to-red-50/30 border border-gray-200/60 shadow-xl rounded-2xl backdrop-blur-sm">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg">
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Cost Analysis</h3>
+                <p className="text-gray-600 text-sm">Monthly operational cost breakdown</p>
+              </div>
+            </div>
+            <div className="bg-white/60 rounded-xl p-4 shadow-inner" style={{ height: 360 }}>
+              <Line data={costBreakdownChart} options={costBreakdownOptions} />
+            </div>
+          </Card>
+        </div>
+
+        {/* Profit/Loss Chart */}
+        <Card className="w-full mx-auto p-8 bg-gradient-to-br from-white via-green-50/30 to-emerald-50/30 border border-gray-200/60 shadow-xl rounded-2xl backdrop-blur-sm">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg">
+              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900">Monthly Profit & Loss Analysis</h3>
+              <p className="text-gray-600 mt-1">Track monthly profitability and break-even progression</p>
+            </div>
           </div>
-        </Card>
-        <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-[#e9eafc] via-[#f5eaff] to-[#ffeafd] border border-gray-200 shadow-md rounded-xl">
-          <h2 className="font-semibold mb-6 text-[#23235b] text-2xl">Monthly Cost Breakdown</h2>
-          <div className="flex justify-center" style={{ height: 420 }}>
-            <Line data={costBreakdownChart} options={costBreakdownOptions} />
-          </div>
-        </Card>
-        <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-[#e9eafc] via-[#f5eaff] to-[#ffeafd] border border-gray-200 shadow-md rounded-xl">
-          <h2 className="font-semibold mb-6 text-[#23235b] text-2xl">Monthly Profit/Loss</h2>
-          <div className="flex justify-center" style={{ height: 420 }}>
+          <div className="bg-white/60 rounded-xl p-6 shadow-inner" style={{ height: 420 }}>
             <Bar data={profitLossChart} options={profitLossOptions} />
           </div>
         </Card>
       </div>
 
-      {/* Cost Structure Verification (Month 12) */}
-      <div className="mt-10">
-        <Card className="p-8 bg-white border border-gray-200 shadow-md rounded-xl">
-          <h2 className="font-semibold text-xl text-[#23235b] mb-6">Cost Structure Verification (Month 12)</h2>
-          {(() => {
-            const m12 = rows[11];
-            if (!m12) return null;
-            const total = m12.totalMonthlyCost;
-            const apiPct = total ? (m12.apiCost / total) * 100 : 0;
-            const infraPct = total ? (m12.infraCost / total) * 100 : 0;
-            const opPct = total ? (m12.opCost / total) * 100 : 0;
-            return (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
-                <div>
-                  <div className="text-3xl font-extrabold text-red-500">{formatCurrency(m12.apiCost)}</div>
-                  <div className="font-semibold text-gray-700 mt-1">API Costs</div>
-                  <div className="text-sm text-red-400 mt-1">{apiPct.toFixed(1)}%</div>
+      {/* Cost Structure Analysis */}
+      <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center">
+            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Cost Structure Analysis (Month 12)</h3>
+            <p className="text-sm text-gray-600">Detailed breakdown of operational costs at the 1-year mark</p>
+          </div>
+        </div>
+        
+        {(() => {
+          const m12 = rows[11];
+          if (!m12) return null;
+          const total = m12.totalMonthlyCost;
+          const apiPct = total ? (m12.apiCost / total) * 100 : 0;
+          const infraPct = total ? (m12.infraCost / total) * 100 : 0;
+          const opPct = total ? (m12.opCost / total) * 100 : 0;
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-xl p-6 text-center hover:shadow-md transition-all duration-200">
+                <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-xl text-white">📡</span>
                 </div>
-                <div>
-                  <div className="text-3xl font-extrabold text-orange-500">{formatCurrency(m12.infraCost)}</div>
-                  <div className="font-semibold text-gray-700 mt-1">Infrastructure</div>
-                  <div className="text-sm text-orange-400 mt-1">{infraPct.toFixed(1)}%</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-extrabold text-yellow-700">{formatCurrency(m12.opCost)}</div>
-                  <div className="font-semibold text-gray-700 mt-1">Operations</div>
-                  <div className="text-sm text-yellow-600 mt-1">{opPct.toFixed(1)}%</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-extrabold text-gray-800">{formatCurrency(total)}</div>
-                  <div className="font-semibold text-gray-700 mt-1">Total Monthly</div>
-                  <div className="text-sm text-gray-500 mt-1">100%</div>
-                </div>
+                <div className="text-2xl font-bold text-red-600 mb-1">{formatCurrency(m12.apiCost)}</div>
+                <div className="font-semibold text-gray-700 mb-1">API Costs</div>
+                <div className="text-sm font-medium text-red-500">{apiPct.toFixed(1)}% of total</div>
               </div>
-            );
-          })()}
-        </Card>
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-xl p-6 text-center hover:shadow-md transition-all duration-200">
+                <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-xl text-white">🏗️</span>
+                </div>
+                <div className="text-2xl font-bold text-orange-600 mb-1">{formatCurrency(m12.infraCost)}</div>
+                <div className="font-semibold text-gray-700 mb-1">Infrastructure</div>
+                <div className="text-sm font-medium text-orange-500">{infraPct.toFixed(1)}% of total</div>
+              </div>
+              <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200 rounded-xl p-6 text-center hover:shadow-md transition-all duration-200">
+                <div className="w-12 h-12 bg-yellow-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-xl text-white">⚙️</span>
+                </div>
+                <div className="text-2xl font-bold text-yellow-700 mb-1">{formatCurrency(m12.opCost)}</div>
+                <div className="font-semibold text-gray-700 mb-1">Operations</div>
+                <div className="text-sm font-medium text-yellow-600">{opPct.toFixed(1)}% of total</div>
+              </div>
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-6 text-center hover:shadow-md transition-all duration-200">
+                <div className="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-xl text-white">💯</span>
+                </div>
+                <div className="text-2xl font-bold text-gray-800 mb-1">{formatCurrency(total)}</div>
+                <div className="font-semibold text-gray-700 mb-1">Total Monthly</div>
+                <div className="text-sm font-medium text-gray-600">100% combined</div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

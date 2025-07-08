@@ -158,4 +158,6 @@ const BudgetPlanning = forwardRef<{ saveFinops: () => Promise<void> }, BudgetPla
   );
 });
 
+BudgetPlanning.displayName = 'BudgetPlanning';
+
 export default BudgetPlanning;

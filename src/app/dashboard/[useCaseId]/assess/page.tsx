@@ -368,7 +368,7 @@ export default function AssessmentPage() {
         ) :
          (
           <div className="text-gray-600 text-lg font-medium">
-            You are on <strong>{assessmentSteps[currentStep - 1].title}</strong> step.
+            You are on <strong>{assessmentSteps[currentStep - 1]?.title || 'Unknown'}</strong> step.
           </div>
         )}
         <CardContent>
@@ -473,16 +473,28 @@ export default function AssessmentPage() {
           <button
             className="px-4 py-2 w-64 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white rounded-xl shadow-lg font-semibold text-lg transition"
             onClick={async () => {
-              if (approvalsPageRef.current && approvalsPageRef.current.handleComplete) {
-                await approvalsPageRef.current.handleComplete();
+              try {
+                if (approvalsPageRef.current && approvalsPageRef.current.handleComplete) {
+                  await approvalsPageRef.current.handleComplete();
+                }
+                // Move use case to backlog
+                const response = await fetch('/api/update-stage', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ useCaseId, newStage: 'backlog' }),
+                });
+                
+                if (!response.ok) {
+                  console.error('Failed to update stage:', response.statusText);
+                }
+                
+                // Navigate to dashboard
+                window.location.href = '/dashboard';
+              } catch (error) {
+                console.error('Error completing assessment:', error);
+                // Still navigate to dashboard even if stage update fails
+                window.location.href = '/dashboard';
               }
-              // Move use case to backlog
-              await fetch('/api/update-stage', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ useCaseId, newStage: 'backlog' }),
-              });
-              router.push('/dashboard');
             }}
           >
             Complete Assessment
