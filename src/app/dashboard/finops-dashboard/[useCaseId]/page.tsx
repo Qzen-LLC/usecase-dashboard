@@ -59,12 +59,12 @@ export default function FinancialDashboard() {
   const router = useRouter();
   const useCaseId = params.useCaseId as string;
   
-  const [initialDevCost, setInitialDevCost] = useState<number>(150000);
-  const [baseApiCost, setBaseApiCost] = useState<number>(8000);
-  const [baseInfraCost, setBaseInfraCost] = useState<number>(2000);
-  const [baseOpCost, setBaseOpCost] = useState<number>(5000);
-  const [baseMonthlyValue, setBaseMonthlyValue] = useState<number>(25000);
-  const [valueGrowthRate, setValueGrowthRate] = useState<number>(0.15);
+  const [initialDevCost, setInitialDevCost] = useState<number>(0);
+  const [baseApiCost, setBaseApiCost] = useState<number>(0);
+  const [baseInfraCost, setBaseInfraCost] = useState<number>(0);
+  const [baseOpCost, setBaseOpCost] = useState<number>(0);
+  const [baseMonthlyValue, setBaseMonthlyValue] = useState<number>(0);
+  const [valueGrowthRate, setValueGrowthRate] = useState<number>(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState<boolean>(true);
