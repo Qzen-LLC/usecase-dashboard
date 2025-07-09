@@ -1,26 +1,30 @@
 import { NextResponse } from 'next/server';
-import { prismaClient } from '@/utils/db';
+import { prismaClient, retryDatabaseOperation } from '@/utils/db';
 
 export async function GET() {
   try {
     // First try to get use cases with framework assessments, fallback if tables don't exist
     let useCases;
     try {
-      useCases = await prismaClient.useCase.findMany({
-        include: {
-          assessData: true,
-          euAiActAssessments: true,
-          iso42001Assessments: true,
-        },
-      });
+      useCases = await retryDatabaseOperation(() => 
+        prismaClient.useCase.findMany({
+          include: {
+            assessData: true,
+            euAiActAssessments: true,
+            iso42001Assessments: true,
+          },
+        })
+      );
     } catch (error) {
       // Fallback if framework tables don't exist yet
       console.log('Framework tables not found, falling back to basic data');
-      useCases = await prismaClient.useCase.findMany({
-        include: {
-          assessData: true,
-        },
-      });
+      useCases = await retryDatabaseOperation(() => 
+        prismaClient.useCase.findMany({
+          include: {
+            assessData: true,
+          },
+        })
+      );
       
       // Add empty arrays for framework assessments
       useCases = useCases.map(uc => ({

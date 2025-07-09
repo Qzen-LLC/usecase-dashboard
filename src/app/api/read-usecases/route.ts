@@ -1,4 +1,4 @@
-import { prismaClient } from "@/utils/db";
+import { prismaClient, retryDatabaseOperation } from "@/utils/db";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
@@ -69,7 +69,10 @@ export async function GET(req: Request) {
             queryOptions.take = limitNum;
         }
 
-        const usecases = await prismaClient.useCase.findMany(queryOptions);
+        // Use retry logic for prepared statement conflicts
+        const usecases = await retryDatabaseOperation(() => 
+            prismaClient.useCase.findMany(queryOptions)
+        );
 
         // For backward compatibility, if no pagination params, return just the array
         if (!shouldPaginate || limitNum === undefined) {
