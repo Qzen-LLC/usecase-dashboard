@@ -29,6 +29,15 @@ type Props = {
   value: {
     technicalRisks: { risk: string; probability: string; impact: string }[];
     businessRisks: { risk: string; probability: string; impact: string }[];
+    operatingJurisdictions?: { [region: string]: { [country: string]: boolean } };
+    dataProtection?: { [key: string]: boolean };
+    sectorSpecific?: { [key: string]: boolean };
+    aiSpecific?: { [key: string]: boolean };
+    certifications?: { [key: string]: boolean };
+    auditRequirements?: string;
+    complianceReporting?: string;
+    riskTolerance?: string;
+    aiExperience?: string;
   };
   onChange?: (data: any) => void;
 };
@@ -143,24 +152,31 @@ const AI_EXPERIENCE_OPTIONS = [
 ];
 
 
-export default function RiskAssessment({ onChange }: Props) {
+export default function RiskAssessment({ value, onChange }: Props) {
   const lastSent = useRef<any>(null);
-  const [technicalRisks, setTechnicalRisks] = useState<Risk[]>([
-    { risk: 'Model accuracy degradation', probability: 'None', impact: 'None' },
-    { risk: 'Data quality issues', probability: 'None', impact: 'None' },
-    { risk: 'Integration failures', probability: 'None', impact: 'None' },
-  ]);
+  
+  // Initialize state from value prop
+  const [technicalRisks, setTechnicalRisks] = useState<Risk[]>(
+    value?.technicalRisks || [
+      { risk: 'Model accuracy degradation', probability: 'None', impact: 'None' },
+      { risk: 'Data quality issues', probability: 'None', impact: 'None' },
+      { risk: 'Integration failures', probability: 'None', impact: 'None' },
+    ]
+  );
 
+  const [businessRisks, setBusinessRisks] = useState<Risk[]>(
+    value?.businessRisks || [
+      { risk: 'User adoption resistance', probability: 'None', impact: 'None' },
+      { risk: 'Regulatory changes', probability: 'None', impact: 'None' },
+      { risk: 'Competitive response', probability: 'None', impact: 'None'},
+    ]
+  );
 
-  const [businessRisks, setBusinessRisks] = useState<Risk[]>([
-    { risk: 'User adoption resistance', probability: 'None', impact: 'None' },
-    { risk: 'Regulatory changes', probability: 'None', impact: 'None' },
-    { risk: 'Competitive response', probability: 'None', impact: 'None'},
-  ]);
-
-
-  // New state for Operating Jurisdictions
+  // Initialize other state from value prop
   const [operatingJurisdictions, setOperatingJurisdictions] = useState<{ [region: string]: { [country: string]: boolean } }>(() => {
+    if (value?.operatingJurisdictions) {
+      return value.operatingJurisdictions;
+    }
     const initial: any = {};
     Object.entries(OPERATING_JURISDICTIONS).forEach(([region, countries]) => {
       initial[region] = {};
@@ -171,26 +187,75 @@ export default function RiskAssessment({ onChange }: Props) {
     return initial;
   });
 
+  const [dataProtection, setDataProtection] = useState<{ [key: string]: boolean }>(() => {
+    if (value?.dataProtection) {
+      return value.dataProtection;
+    }
+    return Object.fromEntries(DATA_PROTECTION_OPTIONS.map(opt => [opt, false]));
+  });
 
-  // Data Protection
-  const [dataProtection, setDataProtection] = useState<{ [key: string]: boolean }>(() => Object.fromEntries(DATA_PROTECTION_OPTIONS.map(opt => [opt, false])));
-  // Sector-Specific
-  const [sectorSpecific, setSectorSpecific] = useState<{ [key: string]: boolean }>(() => Object.fromEntries(SECTOR_SPECIFIC_OPTIONS.map(opt => [opt, false])));
-  // AI-Specific Regulations (now as checkboxes for multiple selection)
-  const [aiSpecific, setAiSpecific] = useState<{ [key: string]: boolean }>(() => Object.fromEntries(AI_SPECIFIC_OPTIONS.map(opt => [opt, false])));
-  // Certifications/Standards
-  const [certifications, setCertifications] = useState<{ [key: string]: boolean }>(() => Object.fromEntries(CERTIFICATIONS_OPTIONS.map(opt => [opt, false])));
-  // Audit Requirements
-  const [auditRequirements, setAuditRequirements] = useState('No Audit Required');
-  // Compliance Reporting
-  const [complianceReporting, setComplianceReporting] = useState('None Required');
+  const [sectorSpecific, setSectorSpecific] = useState<{ [key: string]: boolean }>(() => {
+    if (value?.sectorSpecific) {
+      return value.sectorSpecific;
+    }
+    return Object.fromEntries(SECTOR_SPECIFIC_OPTIONS.map(opt => [opt, false]));
+  });
 
+  const [aiSpecific, setAiSpecific] = useState<{ [key: string]: boolean }>(() => {
+    if (value?.aiSpecific) {
+      return value.aiSpecific;
+    }
+    return Object.fromEntries(AI_SPECIFIC_OPTIONS.map(opt => [opt, false]));
+  });
 
-  // Organization Risk Tolerance
-  const [riskTolerance, setRiskTolerance] = useState('Risk Averse');
-  // Previous AI Experience
-  const [aiExperience, setAiExperience] = useState('First AI Project');
+  const [certifications, setCertifications] = useState<{ [key: string]: boolean }>(() => {
+    if (value?.certifications) {
+      return value.certifications;
+    }
+    return Object.fromEntries(CERTIFICATIONS_OPTIONS.map(opt => [opt, false]));
+  });
 
+  const [auditRequirements, setAuditRequirements] = useState(value?.auditRequirements || 'No Audit Required');
+  const [complianceReporting, setComplianceReporting] = useState(value?.complianceReporting || 'None Required');
+  const [riskTolerance, setRiskTolerance] = useState(value?.riskTolerance || 'Risk Averse');
+  const [aiExperience, setAiExperience] = useState(value?.aiExperience || 'First AI Project');
+
+  // Update state when value prop changes (for data persistence)
+  useEffect(() => {
+    if (value?.technicalRisks) {
+      setTechnicalRisks(value.technicalRisks);
+    }
+    if (value?.businessRisks) {
+      setBusinessRisks(value.businessRisks);
+    }
+    if (value?.operatingJurisdictions) {
+      setOperatingJurisdictions(value.operatingJurisdictions);
+    }
+    if (value?.dataProtection) {
+      setDataProtection(value.dataProtection);
+    }
+    if (value?.sectorSpecific) {
+      setSectorSpecific(value.sectorSpecific);
+    }
+    if (value?.aiSpecific) {
+      setAiSpecific(value.aiSpecific);
+    }
+    if (value?.certifications) {
+      setCertifications(value.certifications);
+    }
+    if (value?.auditRequirements) {
+      setAuditRequirements(value.auditRequirements);
+    }
+    if (value?.complianceReporting) {
+      setComplianceReporting(value.complianceReporting);
+    }
+    if (value?.riskTolerance) {
+      setRiskTolerance(value.riskTolerance);
+    }
+    if (value?.aiExperience) {
+      setAiExperience(value.aiExperience);
+    }
+  }, [value]);
 
   useEffect(() => {
     const currentData = {
@@ -206,7 +271,7 @@ export default function RiskAssessment({ onChange }: Props) {
       riskTolerance,
       aiExperience,
     };
-    if (onChange && JSON.stringify(currentData) !== JSON.stringify(lastSent.current)) {
+    if (onChange && !isEqual(currentData, lastSent.current)) {
       onChange(currentData);
       lastSent.current = currentData;
     }

@@ -202,10 +202,28 @@ export default function AssessmentPage() {
   useEffect(() => {
     if (!useCaseId) return;
     setLoading(true);
-    fetch(`/api/get-usecase?id=${useCaseId}`)
+    fetch(`/api/get-usecase-details?useCaseId=${useCaseId}`)
       .then((res) => res.json())
       .then((data) => {
         setUseCase(data);
+        
+        // Load saved assessment data if it exists
+        if (data.assessData?.stepsData) {
+          setAssessmentData((prev: any) => {
+            const savedData = data.assessData.stepsData;
+            const mergedData = { ...defaultAssessmentData, ...prev };
+            
+            // Merge saved data with defaults
+            Object.keys(defaultAssessmentData).forEach(key => {
+              if (savedData[key]) {
+                mergedData[key] = savedData[key];
+              }
+            });
+            
+            return mergedData;
+          });
+        }
+        
         setLoading(false);
       })
       .catch(() => {
