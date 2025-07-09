@@ -846,29 +846,34 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
         </div>
       </div>
 
-      {/* Category Breakdown */}
+      {/* Vendors by Category Section - always visible */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Vendors by Category</h3>
         <div className="space-y-4">
           {categories.map(category => {
-            const categoryVendors = vendors.filter(v => v.category === category);
-            if (categoryVendors.length === 0) return null;
-            
+            const approvedVendors = vendors.filter(v => v.category === category && v.status === 'Approved');
+            if (approvedVendors.length === 0) return null;
             return (
-              <div key={category} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="font-medium text-gray-900">{category}</span>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-600">{categoryVendors.length} vendor(s)</span>
-                  <span className="text-sm font-medium text-blue-600">
-                    Avg: {categoryVendors.length > 0 ? 
-                      (categoryVendors.reduce((sum, v) => sum + v.overallScore, 0) / categoryVendors.length).toFixed(1) : 
-                      '0.0'
-                    }
-                  </span>
+              <div key={category} className="mb-4">
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <span className="font-medium text-gray-900">{category}</span>
+                  <span className="text-sm text-green-600 font-semibold">{approvedVendors.length} approved</span>
                 </div>
+                <ul className="ml-6 mt-2 space-y-1">
+                  {approvedVendors.map(vendor => (
+                    <li key={vendor.id} className="flex justify-between items-center">
+                      <span className="text-gray-800">{vendor.name}</span>
+                      <span className="text-blue-600 font-medium">Score: {vendor.overallScore.toFixed(1)}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             );
           })}
+          {/* If no approved vendors in any category, show a message */}
+          {categories.every(category => vendors.filter(v => v.category === category && v.status === 'Approved').length === 0) && (
+            <div className="text-center text-gray-500 py-8">No approved vendors by category yet.</div>
+          )}
         </div>
       </div>
     </div>
