@@ -140,7 +140,7 @@ export default function EuAiActAssessmentPage() {
       const assessmentData = await assessmentResponse.json();
 
       // Check if framework tables are available
-      if (topicsData.length === 0) {
+      if (topicsData.length === 0 && controlCategoriesData.length === 0) {
         setError('EU AI ACT framework tables need to be set up. Please run the database setup scripts to enable full functionality.');
         setLoading(false);
         return;
@@ -706,6 +706,26 @@ export default function EuAiActAssessmentPage() {
               </Card>
             ))}
 
+            {activeTab === 'controls' && controlCategories.length === 0 && (
+              <Card className="shadow-sm">
+                <CardContent className="p-8">
+                  <div className="text-center space-y-4">
+                    <Shield className="w-12 h-12 text-gray-400 mx-auto" />
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Control Categories Not Available</h3>
+                      <p className="text-gray-600 mt-2">
+                        The EU AI Act control categories have not been set up yet. 
+                        Please run the framework setup script to populate the control data.
+                      </p>
+                      <p className="text-sm text-gray-500 mt-4">
+                        Run: <code className="bg-gray-100 px-2 py-1 rounded">npx tsx scripts/setup-frameworks.ts</code>
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {activeTab === 'controls' && controlCategories.map((category) => (
               <Card key={category.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader 
@@ -733,10 +753,154 @@ export default function EuAiActAssessmentPage() {
                 </CardHeader>
 
                 {expandedCategories.has(category.categoryId) && (
-                  <CardContent className="p-6">
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">Controls functionality will be available once the database tables are set up.</p>
-                    </div>
+                  <CardContent className="p-0">
+                    {category.controls.map((control) => {
+                      const assessmentControl = assessment?.controls?.find(
+                        c => c.controlStruct.controlId === control.controlId
+                      );
+                      
+                      return (
+                        <div key={control.id} className="border-t border-gray-100">
+                          <div className="p-6">
+                            <div className="space-y-4">
+                              <div className="flex items-start gap-4">
+                                <div className="flex-shrink-0 mt-1">
+                                  {getControlStatusIcon(assessmentControl?.status || 'pending')}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <h4 className="font-medium text-gray-900">{control.controlId}: {control.title}</h4>
+                                    <Badge 
+                                      variant="outline" 
+                                      className={getStatusColor(assessmentControl?.status || 'pending')}
+                                    >
+                                      {assessmentControl?.status || 'Pending'}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-gray-600 mb-4">{control.description}</p>
+                                  
+                                  <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Implementation Status
+                                      </label>
+                                      <select
+                                        value={assessmentControl?.status || 'pending'}
+                                        onChange={(e) => handleControlStatusChange(control.controlId, e.target.value, assessmentControl?.notes || '')}
+                                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                      >
+                                        <option value="pending">Pending</option>
+                                        <option value="reviewed">Reviewed</option>
+                                        <option value="implemented">Implemented</option>
+                                      </select>
+                                    </div>
+                                    
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Implementation Notes
+                                      </label>
+                                      <textarea
+                                        value={assessmentControl?.notes || ''}
+                                        onChange={(e) => handleControlStatusChange(control.controlId, assessmentControl?.status || 'pending', e.target.value)}
+                                        placeholder="Document how this control is implemented..."
+                                        className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                        rows={3}
+                                      />
+                                    </div>
+                                    
+                                    <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <Upload className="w-4 h-4" />
+                                        <span>Evidence files: {assessmentControl?.evidenceFiles?.length || 0}</span>
+                                      </div>
+                                      <Button
+                                        onClick={() => handleSaveControl(control.controlId)}
+                                        disabled={saving}
+                                        size="sm"
+                                        className="flex items-center gap-2"
+                                      >
+                                        <Save className="w-4 h-4" />
+                                        {saving ? 'Saving...' : 'Save'}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Subcontrols */}
+                                  {control.subcontrols.length > 0 && (
+                                    <div className="mt-6 space-y-4">
+                                      <h5 className="text-sm font-medium text-gray-700">Subcontrols</h5>
+                                      {control.subcontrols.map((subcontrol) => {
+                                        const assessmentSubcontrol = assessmentControl?.subcontrols?.find(
+                                          sc => sc.subcontrolStruct.subcontrolId === subcontrol.subcontrolId
+                                        );
+                                        
+                                        return (
+                                          <div key={subcontrol.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                                            <div className="flex items-start gap-3">
+                                              <div className="flex-shrink-0 mt-1">
+                                                {getControlStatusIcon(assessmentSubcontrol?.status || 'pending')}
+                                              </div>
+                                              <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                  <h6 className="font-medium text-gray-800">{subcontrol.subcontrolId}: {subcontrol.title}</h6>
+                                                  <Badge 
+                                                    variant="outline" 
+                                                    className={`text-xs ${getStatusColor(assessmentSubcontrol?.status || 'pending')}`}
+                                                  >
+                                                    {assessmentSubcontrol?.status || 'Pending'}
+                                                  </Badge>
+                                                </div>
+                                                <p className="text-sm text-gray-600 mb-3">{subcontrol.description}</p>
+                                                
+                                                <div className="space-y-3">
+                                                  <div>
+                                                    <select
+                                                      value={assessmentSubcontrol?.status || 'pending'}
+                                                      onChange={(e) => handleSubcontrolStatusChange(control.controlId, subcontrol.subcontrolId, e.target.value, assessmentSubcontrol?.notes || '')}
+                                                      className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                                    >
+                                                      <option value="pending">Pending</option>
+                                                      <option value="reviewed">Reviewed</option>
+                                                      <option value="implemented">Implemented</option>
+                                                    </select>
+                                                  </div>
+                                                  
+                                                  <div>
+                                                    <textarea
+                                                      value={assessmentSubcontrol?.notes || ''}
+                                                      onChange={(e) => handleSubcontrolStatusChange(control.controlId, subcontrol.subcontrolId, assessmentSubcontrol?.status || 'pending', e.target.value)}
+                                                      placeholder="Implementation notes..."
+                                                      className="w-full p-2 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                                      rows={2}
+                                                    />
+                                                  </div>
+                                                  
+                                                  <div className="flex justify-end">
+                                                    <Button
+                                                      onClick={() => handleSaveSubcontrol(control.controlId, subcontrol.subcontrolId)}
+                                                      disabled={saving}
+                                                      size="sm"
+                                                      variant="outline"
+                                                    >
+                                                      <Save className="w-3 h-3 mr-1" />
+                                                      Save
+                                                    </Button>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </CardContent>
                 )}
               </Card>
