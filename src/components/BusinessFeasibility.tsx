@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { BarChart3, Users, AlertTriangle, DollarSign } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -124,7 +123,7 @@ type Props = {
 };
 
 export default function BusinessFeasibility({ value, onChange }: Props) {
-  const lastSent = useRef<any>(null);
+  const lastSent = useRef<Props['value'] | null>(null);
 
   useEffect(() => {
     const currentData = {

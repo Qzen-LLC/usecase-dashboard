@@ -19,7 +19,7 @@ export async function POST(req: Request) {
         budgetRange,
     } = body;
 
-    const res = await prismaClient.finOps.upsert({
+    await prismaClient.finOps.upsert({
         where: { useCaseId },
         update: {
             ROI,

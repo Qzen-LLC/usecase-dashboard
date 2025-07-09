@@ -9,7 +9,10 @@ export async function GET() {
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
     
-    return NextResponse.json(result.data);
+    const response = NextResponse.json(result.data);
+    // Add caching headers for vendors (cache for 2 minutes)
+    response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
+    return response;
   } catch (error: any) {
     console.error('Vendors API error:', error);
     return NextResponse.json({ error: 'Failed to fetch vendors' }, { status: 500 });

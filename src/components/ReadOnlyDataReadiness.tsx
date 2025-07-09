@@ -1,8 +1,26 @@
 import React from 'react';
 import DataReadiness from './DataReadiness';
 
+type DataReadinessValue = {
+  dataTypes: string[];
+  dataVolume: string;
+  growthRate: string;
+  numRecords: string;
+  primarySources: string[];
+  dataQualityScore: number;
+  dataCompleteness: number;
+  dataAccuracyConfidence: number;
+  dataFreshness: string;
+  dataSubjectLocations: string;
+  dataStorageLocations: string;
+  dataProcessingLocations: string;
+  crossBorderTransfer: boolean;
+  dataLocalization: string;
+  dataRetention: string;
+};
+
 interface ReadOnlyDataReadinessProps {
-  data: any;
+  data: DataReadinessValue;
 }
 
 const ReadOnlyDataReadiness: React.FC<ReadOnlyDataReadinessProps> = ({ data }) => {

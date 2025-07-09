@@ -48,7 +48,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Use case not found' }, { status: 404 });
     }
 
-    return NextResponse.json(useCase);
+    const response = NextResponse.json(useCase);
+    // Add caching headers for use case details (cache for 30 seconds)
+    response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
+    return response;
   } catch (error) {
     console.error('Error fetching use case details:', error);
     return NextResponse.json(

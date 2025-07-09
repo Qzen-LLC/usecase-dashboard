@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Target, TrendingUp, Zap, DollarSign, Clock, User, CheckCircle, AlertTriangle, Brain, Shield, Calendar, FileText } from 'lucide-react';
+import { ArrowLeft, Target, TrendingUp, Zap, AlertTriangle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import ReadOnlyAssessmentDisplay from '@/components/ReadOnlyAssessmentDisplay';
@@ -35,13 +35,13 @@ interface UseCaseDetails {
   updatedAt: string;
   assessData?: {
     stepsData: {
-      technicalFeasibility?: any;
-      businessFeasibility?: any;
-      ethicalImpact?: any;
-      riskAssessment?: any;
-      dataReadiness?: any;
-      roadmapPosition?: any;
-      budgetPlanning?: any;
+      technicalFeasibility?: Record<string, unknown>;
+      businessFeasibility?: Record<string, unknown>;
+      ethicalImpact?: Record<string, unknown>;
+      riskAssessment?: Record<string, unknown>;
+      dataReadiness?: Record<string, unknown>;
+      roadmapPosition?: Record<string, unknown>;
+      budgetPlanning?: Record<string, unknown>;
     };
   };
 }
@@ -91,7 +91,7 @@ const ViewUseCasePage = () => {
     </Card>
   );
 
-  const renderField = (label: string, value: string | number | string[] | undefined, type: 'text' | 'array' | 'score' = 'text') => (
+  const _renderField = (label: string, value: string | number | string[] | undefined, type: 'text' | 'array' | 'score' = 'text') => (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
       {type === 'array' && Array.isArray(value) ? (
@@ -130,16 +130,22 @@ const ViewUseCasePage = () => {
   };
 
   // Helper for risk rendering
-  const renderRiskList = (risks: any[] | string | undefined, label: string) => {
+  const _renderRiskList = (risks: Record<string, unknown>[] | string | undefined, label: string) => {
     if (Array.isArray(risks)) {
       if (risks.length === 0) return <p className="text-gray-500 italic">No {label.toLowerCase()} recorded.</p>;
       return (
         <div className="space-y-2">
           {risks.map((riskObj, idx) => (
             <div key={idx} className="bg-red-50 p-3 rounded-md">
-              {riskObj.risk && <div><strong>Risk:</strong> {riskObj.risk}</div>}
-              {riskObj.impact !== undefined && <div><strong>Impact:</strong> {riskObj.impact}</div>}
-              {riskObj.probability !== undefined && <div><strong>Probability:</strong> {riskObj.probability}</div>}
+              {typeof riskObj.risk === 'string' || typeof riskObj.risk === 'number' ? (
+                <div><strong>Risk:</strong> {riskObj.risk}</div>
+              ) : null}
+              {typeof riskObj.impact === 'string' || typeof riskObj.impact === 'number' ? (
+                <div><strong>Impact:</strong> {riskObj.impact}</div>
+              ) : null}
+              {typeof riskObj.probability === 'string' || typeof riskObj.probability === 'number' ? (
+                <div><strong>Probability:</strong> {riskObj.probability}</div>
+              ) : null}
             </div>
           ))}
         </div>

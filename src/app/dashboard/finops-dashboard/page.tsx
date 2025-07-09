@@ -1,9 +1,7 @@
 // This file will be replaced by a dynamic [useCaseId] route for individual financial assessment pages.
 'use client';
-import React, { useEffect, useState } from "react";
-import { Card } from '@/components/ui/card';
+import { useEffect, useState } from "react";
 import { Input } from '@/components/ui/input';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 function formatCurrency(num: number): string {
@@ -80,7 +78,7 @@ const FinOpsDashboardPage = () => {
           }
         }
         setFinops(finopsArr);
-      } catch (e) {
+      } catch {
         setError('Failed to load FinOps data');
       }
       setLoading(false);

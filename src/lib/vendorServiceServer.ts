@@ -55,6 +55,16 @@ const reverseApprovalAreaMap = {
   'Compliance': 'COMPLIANCE'
 } as const;
 
+type ApprovalAreaObj = {
+  area: string;
+  status: string;
+  approvedBy: string | null;
+  approvedDate: Date | null;
+  comments: string | null;
+};
+
+
+
 export const vendorServiceServer = {
   // Get all vendors
   async getVendors() {
@@ -95,30 +105,41 @@ export const vendorServiceServer = {
       });
 
       // Transform the data to match the frontend format
-      const transformedData: VendorData[] = vendors.map(vendor => {
-        const scores = vendor.assessmentScores.reduce((acc: any, score: any) => {
+      const transformedData: VendorData[] = vendors.map((vendor: any) => {
+        const scores = vendor.assessmentScores.reduce((acc: Record<string, number>, score: {
+          category: string;
+          subcategory: string;
+          score: number;
+          comment: string | null;
+        }) => {
           const key = `${score.category}-${score.subcategory}`;
           acc[key] = score.score;
           return acc;
         }, {});
 
-        const comments = vendor.assessmentScores.reduce((acc: any, score: any) => {
+        const comments = vendor.assessmentScores.reduce((acc: Record<string, string>, score: {
+          category: string;
+          subcategory: string;
+          score: number;
+          comment: string | null;
+        }) => {
           const key = `${score.category}-${score.subcategory}`;
           acc[key] = score.comment || '';
           return acc;
         }, {});
 
-        const approvals = vendor.approvalAreas.reduce((acc: any, approval: any) => {
+        const approvals: Record<string, any> = {};
+        const approvalAreas = vendor.approvalAreas as ApprovalAreaObj[];
+        for (let i = 0; i < approvalAreas.length; i++) {
+          const approval: ApprovalAreaObj = approvalAreas[i];
           const areaKey = approvalAreaMap[approval.area as keyof typeof approvalAreaMap];
-          acc[areaKey] = {
-            status: approval.status === 'PENDING' ? 'Pending' : 
-                   approval.status === 'APPROVED' ? 'Approved' : 'Rejected',
+          approvals[areaKey] = {
+            status: approval.status === 'PENDING' ? 'Pending' : approval.status === 'APPROVED' ? 'Approved' : approval.status === 'REJECTED' ? 'Rejected' : approval.status,
             approvedBy: approval.approvedBy,
             approvedDate: approval.approvedDate?.toISOString() || null,
             comments: approval.comments || ''
           };
-          return acc;
-        }, {});
+        }
 
         // Ensure all approval areas exist
         const defaultApprovals = {
@@ -137,7 +158,7 @@ export const vendorServiceServer = {
           contactEmail: vendor.contactEmail || '',
           assessmentDate: vendor.assessmentDate?.toISOString().split('T')[0] || '',
           overallScore: vendor.overallScore,
-          status: statusMap[vendor.status] as any,
+          status: statusMap[vendor.status as keyof typeof statusMap],
           notes: vendor.notes || '',
           scores,
           comments,
@@ -258,6 +279,9 @@ export const vendorServiceServer = {
         where: { 
           vendorId,
           score: { gt: 0 }
+        },
+        select: {
+          score: true
         }
       });
 
@@ -266,7 +290,7 @@ export const vendorServiceServer = {
       }
 
       // Calculate average
-      const total = scores.reduce((sum, item) => sum + item.score, 0);
+      const total = scores.reduce((sum: number, item: { score: number }) => sum + item.score, 0);
       const average = Math.round((total / scores.length) * 10) / 10;
 
       // Update vendor with new overall score
@@ -361,8 +385,8 @@ export const vendorServiceServer = {
         where: { vendorId }
       });
 
-      const allApproved = approvals.length === 4 && approvals.every(approval => approval.status === 'APPROVED');
-      const anyRejected = approvals.some(approval => approval.status === 'REJECTED');
+      const allApproved = approvals.length === 4 && approvals.every((approval: any) => approval.status === 'APPROVED');
+      const anyRejected = approvals.some((approval: any) => approval.status === 'REJECTED');
 
       let newStatus: 'IN_ASSESSMENT' | 'APPROVED' | 'REJECTED' = 'IN_ASSESSMENT';
       if (allApproved) {
@@ -415,29 +439,29 @@ export const vendorServiceServer = {
       ];
 
       const categoryData = categories.map(category => {
-        const categoryVendors = vendors.filter(v => v.category === category);
+        const categoryVendors = vendors.filter((v: VendorData) => v.category === category);
         return {
           category,
           total: categoryVendors.length,
-          approved: categoryVendors.filter(v => v.status === 'APPROVED').length,
-          inAssessment: categoryVendors.filter(v => v.status === 'IN_ASSESSMENT').length,
-          rejected: categoryVendors.filter(v => v.status === 'REJECTED').length,
-          onHold: categoryVendors.filter(v => v.status === 'ON_HOLD').length,
+          approved: categoryVendors.filter((v: VendorData) => v.status === 'Approved').length,
+          inAssessment: categoryVendors.filter((v: VendorData) => v.status === 'In Assessment').length,
+          rejected: categoryVendors.filter((v: VendorData) => v.status === 'Rejected').length,
+          onHold: categoryVendors.filter((v: VendorData) => v.status === 'On Hold').length,
           avgScore: categoryVendors.length > 0 ? 
-            Math.round((categoryVendors.reduce((sum, v) => sum + (v.overallScore || 0), 0) / categoryVendors.length) * 10) / 10 : 0
+            Math.round((categoryVendors.reduce((sum: number, v: VendorData) => sum + (v.overallScore || 0), 0) / categoryVendors.length) * 10) / 10 : 0
         };
       });
 
       const overallStats = {
         totalVendors: vendors.length,
-        approved: vendors.filter(v => v.status === 'APPROVED').length,
-        inAssessment: vendors.filter(v => v.status === 'IN_ASSESSMENT').length,
-        rejected: vendors.filter(v => v.status === 'REJECTED').length,
-        onHold: vendors.filter(v => v.status === 'ON_HOLD').length,
+        approved: vendors.filter((v: VendorData) => v.status === 'Approved').length,
+        inAssessment: vendors.filter((v: VendorData) => v.status === 'In Assessment').length,
+        rejected: vendors.filter((v: VendorData) => v.status === 'Rejected').length,
+        onHold: vendors.filter((v: VendorData) => v.status === 'On Hold').length,
         avgScore: vendors.length > 0 ? 
-          Math.round((vendors.reduce((sum, v) => sum + (v.overallScore || 0), 0) / vendors.length) * 10) / 10 : 0,
-        highPerformers: vendors.filter(v => v.overallScore >= 4).length,
-        needsAttention: vendors.filter(v => v.overallScore > 0 && v.overallScore < 3).length
+          Math.round((vendors.reduce((sum: number, v: VendorData) => sum + (v.overallScore || 0), 0) / vendors.length) * 10) / 10 : 0,
+        highPerformers: vendors.filter((v: VendorData) => v.overallScore >= 4).length,
+        needsAttention: vendors.filter((v: VendorData) => v.overallScore > 0 && v.overallScore < 3).length
       };
 
       return { data: { categoryData, overallStats }, error: null };

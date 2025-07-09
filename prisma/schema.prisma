@@ -10,7 +10,6 @@ datasource db {
 
 model UseCase {
   id                       String    @id @default(uuid())
-  aiucId                   Int       @default(autoincrement())
   title                    String
   problemStatement         String
   proposedAISolution       String
@@ -35,6 +34,7 @@ model UseCase {
   priority                 String?
   stage                    String?
   businessFunction         String
+  aiucId                   Int       @unique @default(autoincrement())
   Approval                 Approval?
   assessData               Assess?
   finopsData               FinOps?
@@ -69,11 +69,11 @@ model FinOps {
 }
 
 model Assess {
-  useCaseId   String   @id
-  createdAt   DateTime @default(now())
-  stepsData   Json
-  updatedAt   DateTime
-  UseCase     UseCase  @relation(fields: [useCaseId], references: [id])
+  useCaseId String   @id
+  createdAt DateTime @default(now())
+  stepsData Json
+  updatedAt DateTime
+  UseCase   UseCase  @relation(fields: [useCaseId], references: [id])
 }
 
 model Approval {

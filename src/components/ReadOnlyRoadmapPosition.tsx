@@ -2,7 +2,18 @@ import React from 'react';
 import RoadmapPosition from './RoadmapPosition';
 
 interface ReadOnlyRoadmapPositionProps {
-  data: any;
+  data: {
+    priority: string;
+    projectStage: string;
+    timelineConstraints: string[];
+    timeline: string;
+    dependencies: {
+      dataPlatform: boolean;
+      security: boolean;
+      hiring: boolean;
+    };
+    metrics: string;
+  };
 }
 
 const ReadOnlyRoadmapPosition: React.FC<ReadOnlyRoadmapPositionProps> = ({ data }) => {

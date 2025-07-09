@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import VendorAssessment from '@/components/VendorAssessment';
 
 export default function VendorAssessmentPage() {

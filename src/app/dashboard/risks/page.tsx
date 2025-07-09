@@ -1,11 +1,10 @@
 "use client"
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Shield, AlertTriangle, AlertCircle, CheckCircle, 
-  TrendingUp, TrendingDown, Activity, BarChart3,
-  Calendar, Clock, Users, FileText, ChevronRight,
-  Download, Filter, RefreshCw, Info, Sparkles,
-  Calculator, Eye, Grid, LineChart, Loader2
+  TrendingUp,
+  RefreshCw, Info,
+  Eye, Grid, Loader2
 } from 'lucide-react';
 
 // --- Types ---
@@ -75,18 +74,6 @@ interface ExecutiveViewProps {
 
 interface DetailedViewProps {
   riskData: RiskMetrics;
-}
-
-interface UseCase {
-  id: string;
-  title: string;
-  businessFunction: string;
-  stage: string;
-  overallRiskScore: number;
-  overallRiskLevel: string;
-  hasApproval: boolean;
-  approvalStatuses: any;
-  aiucId: number;
 }
 
 // Main Risk Dashboard Component

@@ -40,7 +40,7 @@ type Props = {
 };
 
 export default function RoadmapPosition({ value, onChange }: Props) {
-  const lastSent = React.useRef<any>(null);
+  const lastSent = React.useRef<Props['value'] | null>(null);
 
   React.useEffect(() => {
     const currentData = {

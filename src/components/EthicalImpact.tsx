@@ -40,7 +40,7 @@ type Props = {
   onChange: (data: Props['value']) => void;
 };
 
-const initialEthicalImpact = {
+const _initialEthicalImpact = {
   biasFairness: { /* ... */ },
   privacySecurity: { /* ... */ },
   decisionMaking: { automationLevel: '', decisionTypes: [] },
@@ -53,7 +53,7 @@ const initialEthicalImpact = {
 };
 
 export default function EthicalImpact({ value, onChange }: Props) {
-  const lastSent = React.useRef<any>(null);
+  const lastSent = React.useRef<Props['value'] | null>(null);
 
   React.useEffect(() => {
     const currentData = {

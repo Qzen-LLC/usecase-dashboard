@@ -1,7 +1,7 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X, Eye, Trash2, RefreshCw } from 'lucide-react';
+import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X, Eye, Trash2, RefreshCw, Loader2, AlertTriangle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { useUseCases, useUpdateUseCaseStage, useDeleteUseCase, type MappedUseCase } from '@/hooks/useUseCases';
 
 const stages = [
   { id: 'discovery', title: 'Discovery', color: 'bg-white', textColor: 'text-foreground' },
@@ -23,7 +24,7 @@ const stages = [
   { id: 'deployment', title: 'Deployment', color: 'bg-white', textColor: 'text-foreground' }
 ] as const;
 
-const STAGE_ORDER = [
+const _STAGE_ORDER = [
   'discovery',
   'business-case',
   'proof-of-value',
@@ -34,67 +35,31 @@ const STAGE_ORDER = [
   'deployment',
 ];
 
-function isAfterOrAtBacklog(stage?: string) {
-  if (!stage) return false;
-  const idx = STAGE_ORDER.indexOf(stage);
-  return idx >= STAGE_ORDER.indexOf('backlog');
-}
+// function isAfterOrAtBacklog(stage?: string) {
+//   if (!stage) return false;
+//   const idx = STAGE_ORDER.indexOf(stage);
+//   return idx >= STAGE_ORDER.indexOf('backlog');
+// }
 
-const priorities = {
+const _priorities = {
   CRITICAL: { color: 'bg-red-50 text-red-700 border-red-200', label: 'Critical' },
   HIGH: { color: 'bg-orange-50 text-orange-700 border-orange-200', label: 'High' },
   MEDIUM: { color: 'bg-yellow-50 text-yellow-700 border-yellow-200', label: 'Medium' },
   LOW: { color: 'bg-green-50 text-green-700 border-green-200', label: 'Low' }
 } as const;
 
-type UseCase = {
-  id: string;
-  title: string;
-  problemStatement: string;
-  proposedAISolution: string;
-  currentState: string;
-  desiredState: string;
-  primaryStakeholders: string[];
-  secondaryStakeholders: string[];
-  successCriteria: string[];
-  problemValidation: string;
-  solutionHypothesis: string;
-  keyAssumptions: string[];
-  initialROI: string;
-  confidenceLevel: number;
-  operationalImpactScore: number;
-  productivityImpactScore: number;
-  revenueImpactScore: number;
-  implementationComplexity: number;
-  estimatedTimeline: string;
-  requiredResources: string;
-  createdAt: string;
-  updatedAt: string;
-  // Add these for frontend mapping
-  stage?: string;
-  priority?: string;
-  owner?: string;
-  lastUpdated?: string;
-  scores?: {
-    operational: number;
-    productivity: number;
-    revenue: number;
-  };
-  description?: string;
-  complexity?: number;
-  roi?: string;
-  timeline?: string;
-  stakeholders?: string[];
-  risks?: string[];
-  aiucId: number;
-};
+// UseCase type is now imported from the hooks file
 
 const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBy, setFilterBy] = useState('all');
-  const [useCases, setUseCases] = useState<UseCase[]>([]);
-  const [selectedUseCase, setSelectedUseCase] = useState<UseCase | null>(null);
+  const [selectedUseCase, setSelectedUseCase] = useState<MappedUseCase | null>(null);
   const router = useRouter();
+
+  // React Query hooks for optimized data fetching
+  const { data: useCases = [], isLoading, error, refetch } = useUseCases();
+  const updateStageMutation = useUpdateUseCaseStage();
+  const deleteUseCaseMutation = useDeleteUseCase();
 
   const handleEdit = (id: string) => {
     router.push(`/edit-usecase/${id}`);
@@ -114,16 +79,7 @@ const Dashboard = () => {
     }
 
     try {
-      const response = await fetch(`/api/delete-usecase?id=${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete use case');
-      }
-
-      // Remove the use case from the local state
-      setUseCases(prev => prev.filter(uc => uc.id !== id));
+      await deleteUseCaseMutation.mutateAsync(id);
       setSelectedUseCase(null);
     } catch (error) {
       console.error('Error deleting use case:', error);
@@ -178,7 +134,7 @@ const Dashboard = () => {
   });
 
   // Helper to check if all required fields are filled
-  const isUseCaseComplete = (useCase: UseCase) => {
+  const isUseCaseComplete = (useCase: MappedUseCase) => {
     // List all required fields except id, createdAt, updatedAt, and frontend-only fields
     const requiredFields = Object.keys(useCase).filter(
       k => !['id','createdAt','updatedAt','stage','priority','owner','lastUpdated','scores','description','complexity','roi','timeline','stakeholders','risks'].includes(k)
@@ -214,34 +170,51 @@ const Dashboard = () => {
 
   // Handler to update the stage of a use case
   const handleMoveToStage = async (useCaseId: string, newStage: string) => {
-    setUseCases(prev =>
-      prev.map(uc =>
-        uc.id === useCaseId ? { ...uc, stage: newStage } : uc
-      )
-    );
-    setSelectedUseCase(prev =>
-      prev ? { ...prev, stage: newStage } : prev
-    );
     try {
-      const res = await fetch('/api/update-stage', {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          useCaseId, newStage
-        })
-      });
-    } catch(error) {
-      console.error("Unable to update stage");
+      await updateStageMutation.mutateAsync({ useCaseId, newStage });
+      setSelectedUseCase(prev =>
+        prev ? { ...prev, stage: newStage } : prev
+      );
+      setSelectedUseCase(null);
+    } catch (error) {
+      console.error("Unable to update stage", error);
     }
-    setSelectedUseCase(null)
   };
 
+  // Loading and error states
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-[#5b5be6] animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading use cases...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Unable to Load Dashboard</h2>
+          <p className="text-gray-600 mb-4">{error.message}</p>
+          <button 
+            onClick={() => refetch()}
+            className="px-4 py-2 bg-[#5b5be6] text-white rounded-lg hover:bg-[#4a4ac7] transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Modal for use case details
-  const UseCaseDetailModal = ({ useCase, onClose }: { useCase: UseCase, onClose: () => void }) => {
+  const UseCaseDetailModal = ({ useCase, onClose }: { useCase: MappedUseCase, onClose: () => void }) => {
     if (!useCase) return null;
-    const availableStages = stages.filter(s => s.id !== useCase.stage);
+              const _availableStages = stages.filter(s => s.id !== useCase.stage);
 
     return (
       <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-start justify-center z-50 fade-in p-4 pt-24 overflow-y-auto">
@@ -524,13 +497,13 @@ const Dashboard = () => {
                               <DropdownMenuTrigger asChild>
                                 <button 
                                   onClick={(e) => e.stopPropagation()}
-                                  className={`px-4 py-1.5 rounded-full text-xs font-medium ${priorities[useCase.priority as keyof typeof priorities]?.color || priorities.MEDIUM.color} border shadow-sm hover:bg-opacity-80 transition-colors`}
+                                  className={`px-4 py-1.5 rounded-full text-xs font-medium ${_priorities[useCase.priority as keyof typeof _priorities]?.color || _priorities.MEDIUM.color} border shadow-sm hover:bg-opacity-80 transition-colors`}
                                 >
-                                  {priorities[useCase.priority as keyof typeof priorities]?.label || 'Medium'}
+                                  {_priorities[useCase.priority as keyof typeof _priorities]?.label || 'Medium'}
                                 </button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-32">
-                                {Object.entries(priorities).map(([key, value]) => (
+                                {Object.entries(_priorities).map(([key, value]) => (
                                   <DropdownMenuItem
                                     key={key}
                                     onClick={async (e) => {
@@ -542,10 +515,7 @@ const Dashboard = () => {
                                           body: JSON.stringify({ useCaseId: useCase.id, priority: key }),
                                         });
                                         if (!res.ok) throw new Error('Failed to update priority');
-                                        // Update local state
-                                        setUseCases(prev => prev.map(uc => 
-                                          uc.id === useCase.id ? { ...uc, priority: key } : uc
-                                        ));
+                                        // Optimistic update will be handled by React Query
                                       } catch (error) {
                                         console.error('Error updating priority:', error);
                                       }

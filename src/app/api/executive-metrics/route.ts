@@ -1,25 +1,68 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prismaClient } from '@/utils/db';
+
+type UseCase = {
+  id: string;
+  stage?: string;
+  priority?: string;
+  businessFunction: string;
+  operationalImpactScore: number;
+  productivityImpactScore: number;
+  revenueImpactScore: number;
+  implementationComplexity: number;
+  confidenceLevel: number;
+  finopsData?: {
+    ROI: number;
+    totalInvestment: number;
+    cumValue: number;
+    netValue: number;
+    devCostBase: number;
+    infraCostBase: number;
+    opCostBase: number;
+    apiCostBase: number;
+  } | null;
+  assessData?: {
+    stepsData: any;
+  } | null;
+  Approval?: {
+    governanceStatus?: string;
+    riskStatus?: string;
+    legalStatus?: string;
+    businessStatus?: string;
+  } | null;
+};
 
 export async function GET() {
   try {
-    // Fetch all use cases with related data
+    // Fetch all use cases with optimized selection and related data
     const useCases = await prismaClient.useCase.findMany({
       select: {
         id: true,
         stage: true,
+<<<<<<< Updated upstream
         businessFunction: true,
         priority: true,
+=======
+        priority: true,
+        businessFunction: true,
+>>>>>>> Stashed changes
         operationalImpactScore: true,
         productivityImpactScore: true,
         revenueImpactScore: true,
         implementationComplexity: true,
         confidenceLevel: true,
+<<<<<<< Updated upstream
         createdAt: true,
         finopsData: {
           select: {
             totalInvestment: true,
             ROI: true,
+=======
+        finopsData: {
+          select: {
+            ROI: true,
+            totalInvestment: true,
+>>>>>>> Stashed changes
             cumValue: true,
             netValue: true,
             devCostBase: true,
@@ -41,8 +84,15 @@ export async function GET() {
             businessStatus: true
           }
         }
+<<<<<<< Updated upstream
       }
+=======
+      },
+      orderBy: { updatedAt: 'desc' }
+>>>>>>> Stashed changes
     });
+
+    const typedUseCases = useCases as UseCase[];
 
     // Calculate portfolio metrics
     const totalUseCases = useCases.length;
@@ -83,20 +133,20 @@ export async function GET() {
     }
     
     // Stage Distribution
-    const stageDistribution = useCases.reduce((acc: Record<string, number>, uc) => {
+    const stageDistribution = useCases.reduce((acc: Record<string, number>, uc: any) => {
       const stage = uc.stage || 'discovery';
       acc[stage] = (acc[stage] || 0) + 1;
       return acc;
     }, {});
 
     // Business Function Distribution
-    const businessFunctionDistribution = useCases.reduce((acc: Record<string, number>, uc) => {
+    const businessFunctionDistribution = useCases.reduce((acc: Record<string, number>, uc: any) => {
       acc[uc.businessFunction] = (acc[uc.businessFunction] || 0) + 1;
       return acc;
     }, {});
 
     // Priority Distribution
-    const priorityDistribution = useCases.reduce((acc: Record<string, number>, uc) => {
+    const priorityDistribution = useCases.reduce((acc: Record<string, number>, uc: any) => {
       const priority = uc.priority || 'medium';
       acc[priority] = (acc[priority] || 0) + 1;
       return acc;
@@ -105,16 +155,16 @@ export async function GET() {
     // Impact Scores
     const impactScores = {
       operational: {
-        average: totalUseCases > 0 ? useCases.reduce((sum, uc) => sum + uc.operationalImpactScore, 0) / totalUseCases : 0,
-        total: useCases.reduce((sum, uc) => sum + uc.operationalImpactScore, 0)
+        average: totalUseCases > 0 ? useCases.reduce((sum: number, uc: any) => sum + uc.operationalImpactScore, 0) / totalUseCases : 0,
+        total: useCases.reduce((sum: number, uc: any) => sum + uc.operationalImpactScore, 0)
       },
       productivity: {
-        average: totalUseCases > 0 ? useCases.reduce((sum, uc) => sum + uc.productivityImpactScore, 0) / totalUseCases : 0,
-        total: useCases.reduce((sum, uc) => sum + uc.productivityImpactScore, 0)
+        average: totalUseCases > 0 ? useCases.reduce((sum: number, uc: any) => sum + uc.productivityImpactScore, 0) / totalUseCases : 0,
+        total: useCases.reduce((sum: number, uc: any) => sum + uc.productivityImpactScore, 0)
       },
       revenue: {
-        average: totalUseCases > 0 ? useCases.reduce((sum, uc) => sum + uc.revenueImpactScore, 0) / totalUseCases : 0,
-        total: useCases.reduce((sum, uc) => sum + uc.revenueImpactScore, 0)
+        average: totalUseCases > 0 ? useCases.reduce((sum: number, uc: any) => sum + uc.revenueImpactScore, 0) / totalUseCases : 0,
+        total: useCases.reduce((sum: number, uc: any) => sum + uc.revenueImpactScore, 0)
       }
     };
 
@@ -122,25 +172,25 @@ export async function GET() {
     const overallScore = (impactScores.operational.average + impactScores.productivity.average + impactScores.revenue.average) / 3;
 
     // Financial Metrics (from FinOps data)
-    const finopsUseCases = useCases.filter(uc => uc.finopsData);
+    const finopsUseCases = useCases.filter((uc: any) => uc.finopsData);
     const financialMetrics = {
-      totalInvestment: finopsUseCases.reduce((sum, uc) => sum + (uc.finopsData?.totalInvestment || 0), 0),
-      totalROI: finopsUseCases.reduce((sum, uc) => sum + (uc.finopsData?.ROI || 0), 0),
-      averageROI: finopsUseCases.length > 0 ? finopsUseCases.reduce((sum, uc) => sum + (uc.finopsData?.ROI || 0), 0) / finopsUseCases.length : 0,
-      projectedValue: finopsUseCases.reduce((sum, uc) => sum + (uc.finopsData?.cumValue || 0), 0),
-      netValue: finopsUseCases.reduce((sum, uc) => sum + (uc.finopsData?.netValue || 0), 0),
+      totalInvestment: finopsUseCases.reduce((sum: number, uc: any) => sum + (uc.finopsData?.totalInvestment || 0), 0),
+      totalROI: finopsUseCases.reduce((sum: number, uc: any) => sum + (uc.finopsData?.ROI || 0), 0),
+      averageROI: finopsUseCases.length > 0 ? finopsUseCases.reduce((sum: number, uc: any) => sum + (uc.finopsData?.ROI || 0), 0) / finopsUseCases.length : 0,
+      projectedValue: finopsUseCases.reduce((sum: number, uc: any) => sum + (uc.finopsData?.cumValue || 0), 0),
+      netValue: finopsUseCases.reduce((sum: number, uc: any) => sum + (uc.finopsData?.netValue || 0), 0),
       costBreakdown: {
-        development: finopsUseCases.reduce((sum, uc) => sum + (uc.finopsData?.devCostBase || 0), 0),
-        infrastructure: finopsUseCases.reduce((sum, uc) => sum + (uc.finopsData?.infraCostBase || 0), 0),
-        operations: finopsUseCases.reduce((sum, uc) => sum + (uc.finopsData?.opCostBase || 0), 0),
-        api: finopsUseCases.reduce((sum, uc) => sum + (uc.finopsData?.apiCostBase || 0), 0)
+        development: finopsUseCases.reduce((sum: number, uc: any) => sum + (uc.finopsData?.devCostBase || 0), 0),
+        infrastructure: finopsUseCases.reduce((sum: number, uc: any) => sum + (uc.finopsData?.infraCostBase || 0), 0),
+        operations: finopsUseCases.reduce((sum: number, uc: any) => sum + (uc.finopsData?.opCostBase || 0), 0),
+        api: finopsUseCases.reduce((sum: number, uc: any) => sum + (uc.finopsData?.apiCostBase || 0), 0)
       }
     };
 
     // Complexity Analysis
     const complexityAnalysis = {
-      average: totalUseCases > 0 ? useCases.reduce((sum, uc) => sum + uc.implementationComplexity, 0) / totalUseCases : 0,
-      distribution: useCases.reduce((acc: Record<string, number>, uc) => {
+      average: totalUseCases > 0 ? useCases.reduce((sum: number, uc: any) => sum + uc.implementationComplexity, 0) / totalUseCases : 0,
+      distribution: useCases.reduce((acc: Record<string, number>, uc: any) => {
         const complexity = uc.implementationComplexity;
         const level = complexity <= 3 ? 'Low' : complexity <= 6 ? 'Medium' : 'High';
         acc[level] = (acc[level] || 0) + 1;
@@ -150,8 +200,8 @@ export async function GET() {
 
     // Confidence Levels
     const confidenceAnalysis = {
-      average: totalUseCases > 0 ? useCases.reduce((sum, uc) => sum + uc.confidenceLevel, 0) / totalUseCases : 0,
-      distribution: useCases.reduce((acc: Record<string, number>, uc) => {
+      average: totalUseCases > 0 ? useCases.reduce((sum: number, uc: any) => sum + uc.confidenceLevel, 0) / totalUseCases : 0,
+      distribution: useCases.reduce((acc: Record<string, number>, uc: any) => {
         const confidence = uc.confidenceLevel;
         const level = confidence <= 30 ? 'Low' : confidence <= 70 ? 'Medium' : 'High';
         acc[level] = (acc[level] || 0) + 1;
@@ -160,8 +210,8 @@ export async function GET() {
     };
 
     // Risk Analysis (from Assessment data)
-    const assessedUseCases = useCases.filter(uc => uc.assessData);
-    let riskAnalysis = {
+    const assessedUseCases = useCases.filter((uc: any) => uc.assessData);
+    const riskAnalysis = {
       totalAssessed: assessedUseCases.length,
       riskDistribution: { Low: 0, Medium: 0, High: 0 },
       riskCategories: {
@@ -173,7 +223,7 @@ export async function GET() {
     };
 
     // Process assessment data for risk analysis
-    assessedUseCases.forEach(uc => {
+    assessedUseCases.forEach((uc: any) => {
       try {
         const stepsData = uc.assessData?.stepsData as any;
         if (stepsData?.riskAssessment) {
@@ -207,44 +257,44 @@ export async function GET() {
     });
 
     // Approval Status Analysis
-    const approvalsUseCases = useCases.filter(uc => uc.Approval);
+    const approvalsUseCases = useCases.filter((uc: any) => uc.Approval);
     const approvalStatus = {
       totalWithApprovals: approvalsUseCases.length,
       governance: {
-        approved: approvalsUseCases.filter(uc => uc.Approval?.governanceStatus === 'approved').length,
-        pending: approvalsUseCases.filter(uc => uc.Approval?.governanceStatus === 'pending').length,
-        rejected: approvalsUseCases.filter(uc => uc.Approval?.governanceStatus === 'rejected').length
+        approved: approvalsUseCases.filter((uc: any) => uc.Approval?.governanceStatus === 'approved').length,
+        pending: approvalsUseCases.filter((uc: any) => uc.Approval?.governanceStatus === 'pending').length,
+        rejected: approvalsUseCases.filter((uc: any) => uc.Approval?.governanceStatus === 'rejected').length
       },
       risk: {
-        approved: approvalsUseCases.filter(uc => uc.Approval?.riskStatus === 'approved').length,
-        pending: approvalsUseCases.filter(uc => uc.Approval?.riskStatus === 'pending').length,
-        rejected: approvalsUseCases.filter(uc => uc.Approval?.riskStatus === 'rejected').length
+        approved: approvalsUseCases.filter((uc: any) => uc.Approval?.riskStatus === 'approved').length,
+        pending: approvalsUseCases.filter((uc: any) => uc.Approval?.riskStatus === 'pending').length,
+        rejected: approvalsUseCases.filter((uc: any) => uc.Approval?.riskStatus === 'rejected').length
       },
       legal: {
-        approved: approvalsUseCases.filter(uc => uc.Approval?.legalStatus === 'approved').length,
-        pending: approvalsUseCases.filter(uc => uc.Approval?.legalStatus === 'pending').length,
-        rejected: approvalsUseCases.filter(uc => uc.Approval?.legalStatus === 'rejected').length
+        approved: approvalsUseCases.filter((uc: any) => uc.Approval?.legalStatus === 'approved').length,
+        pending: approvalsUseCases.filter((uc: any) => uc.Approval?.legalStatus === 'pending').length,
+        rejected: approvalsUseCases.filter((uc: any) => uc.Approval?.legalStatus === 'rejected').length
       },
       business: {
-        approved: approvalsUseCases.filter(uc => uc.Approval?.businessStatus === 'approved').length,
-        pending: approvalsUseCases.filter(uc => uc.Approval?.businessStatus === 'pending').length,
-        rejected: approvalsUseCases.filter(uc => uc.Approval?.businessStatus === 'rejected').length
+        approved: approvalsUseCases.filter((uc: any) => uc.Approval?.businessStatus === 'approved').length,
+        pending: approvalsUseCases.filter((uc: any) => uc.Approval?.businessStatus === 'pending').length,
+        rejected: approvalsUseCases.filter((uc: any) => uc.Approval?.businessStatus === 'rejected').length
       }
     };
 
     // Business Function Performance
     const businessFunctionPerformance = Object.keys(businessFunctionDistribution).map(func => {
-      const funcUseCases = useCases.filter(uc => uc.businessFunction === func);
+      const funcUseCases = useCases.filter((uc: any) => uc.businessFunction === func);
       const funcCount = funcUseCases.length;
       return {
         function: func,
         count: funcCount,
-        avgOperationalScore: funcCount > 0 ? funcUseCases.reduce((sum, uc) => sum + uc.operationalImpactScore, 0) / funcCount : 0,
-        avgProductivityScore: funcCount > 0 ? funcUseCases.reduce((sum, uc) => sum + uc.productivityImpactScore, 0) / funcCount : 0,
-        avgRevenueScore: funcCount > 0 ? funcUseCases.reduce((sum, uc) => sum + uc.revenueImpactScore, 0) / funcCount : 0,
-        totalInvestment: funcUseCases.reduce((sum, uc) => sum + (uc.finopsData?.totalInvestment || 0), 0),
-        averageROI: funcUseCases.filter(uc => uc.finopsData).length > 0 ? 
-          funcUseCases.reduce((sum, uc) => sum + (uc.finopsData?.ROI || 0), 0) / funcUseCases.filter(uc => uc.finopsData).length : 0
+        avgOperationalScore: funcCount > 0 ? funcUseCases.reduce((sum: any, uc: any) => sum + uc.operationalImpactScore, 0) / funcCount : 0,
+        avgProductivityScore: funcCount > 0 ? funcUseCases.reduce((sum: any, uc: any) => sum + uc.productivityImpactScore, 0) / funcCount : 0,
+        avgRevenueScore: funcCount > 0 ? funcUseCases.reduce((sum: any, uc: any) => sum + uc.revenueImpactScore, 0) / funcCount : 0,
+        totalInvestment: funcUseCases.reduce((sum: any, uc: any) => sum + (uc.finopsData?.totalInvestment || 0), 0),
+        averageROI: funcUseCases.filter((uc: any) => uc.finopsData).length > 0 ? 
+          funcUseCases.reduce((sum: any, uc: any) => sum + (uc.finopsData?.ROI || 0), 0) / funcUseCases.filter((uc: any) => uc.finopsData).length : 0
       };
     });
 
@@ -273,11 +323,11 @@ export async function GET() {
       strategic: {
         businessFunctionPerformance,
         portfolioBalance: {
-          highImpactLowComplexity: useCases.filter(uc => 
+          highImpactLowComplexity: typedUseCases.filter((uc: UseCase) => 
             (uc.operationalImpactScore + uc.productivityImpactScore + uc.revenueImpactScore) / 3 >= 7 && 
             uc.implementationComplexity <= 4
           ).length,
-          quickWins: useCases.filter(uc => 
+          quickWins: typedUseCases.filter((uc: UseCase) => 
             uc.confidenceLevel >= 70 && 
             uc.implementationComplexity <= 3
           ).length
@@ -286,6 +336,10 @@ export async function GET() {
     };
 
     const response = NextResponse.json(executiveMetrics);
+<<<<<<< Updated upstream
+=======
+    // Add caching headers for executive metrics (cache for 5 minutes)
+>>>>>>> Stashed changes
     response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
     return response;
 

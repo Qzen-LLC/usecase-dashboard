@@ -7,12 +7,6 @@ import RiskAssessment from '@/components/RiskAssessment';
 import BusinessFeasibility from "@/components/BusinessFeasibility";
 import BudgetPlanning from "@/components/BudgetPlanning";
 import {
-  TrendingUp,
-  Shield,
-  AlertTriangle,
-  Brain,
-  DollarSign,
-  Calendar,
   ChevronRight,
   ChevronLeft,
 } from "lucide-react";
@@ -21,7 +15,6 @@ import DataReadiness from "@/components/DataReadiness";
 import FinancialDashboard from './financial-dashboard/page';
 import ApprovalsPage from '@/components/ApprovalsPage';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
-import { Button } from "@/components/ui/button";
 
 const assessmentSteps = [
   { id: 1, title: "Technical Feasibility" },
@@ -191,7 +184,6 @@ export default function AssessmentPage() {
 
   const handleAssessmentChange = (section: string, data: any) => {
     setAssessmentData((prevData: any) => {
-      // @ts-ignore
       return {
         ...prevData,
         [section]: data,
@@ -243,7 +235,7 @@ export default function AssessmentPage() {
   }, []);
 
   const isFirstStep = currentStep === 1;
-  const isLastStep = currentStep === assessmentSteps.length;
+      // const isLastStep = currentStep === assessmentSteps.length;
   
   const handleSave = async () => {
     try {

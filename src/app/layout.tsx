@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, Lora, Nunito, Merriweather } from "next/font/google";
 import "./globals.css";
 import SidebarLayout from "@/components/ui/sidebar-layout";
+import Image from "next/image";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,6 +35,8 @@ const merriweather = Merriweather({
   variable: "--font-merriweather",
   weight: ["400"],
 });
+
+
 
 export const metadata: Metadata = {
   title: "QUBE - AI Platform",

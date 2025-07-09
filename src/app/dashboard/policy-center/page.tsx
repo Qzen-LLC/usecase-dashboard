@@ -329,6 +329,18 @@ export default function PolicyCenterPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">AI Policy Center</h1>
+          <p className="mt-4 text-lg text-gray-600 max-w-4xl">
+            Our AI Policy Center serves as the central hub for understanding and implementing responsible artificial intelligence practices within our organization. 
+            This comprehensive resource provides guidance on ethical AI development, responsible use policies, and compliance with global AI governance frameworks.
+          </p>
+          <p className="mt-3 text-gray-600 max-w-4xl">
+            As AI technologies continue to evolve, it&apos;s crucial to establish clear policies that promote transparency, accountability, and fairness while ensuring 
+            the protection of privacy and human rights. Our policies align with international standards and best practices to create a trustworthy AI ecosystem.
+          </p>
+        </div>
 
         {/* Tabs Navigation */}
         <div className="mb-8">

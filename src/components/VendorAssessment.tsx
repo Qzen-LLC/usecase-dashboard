@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Save, X, Download, Upload, Eye, Trash2, Filter, Search, BarChart3, Users } from 'lucide-react';
+import { Plus, Edit2, Save, X, Eye, Trash2, Search, BarChart3, Users } from 'lucide-react';
 import { vendorService, type Vendor } from '@/lib/vendorService';
 
 // Types
@@ -16,7 +16,7 @@ interface VendorAssessmentProps {
 
 type ViewMode = 'list' | 'form' | 'dashboard';
 
-const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
+const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [currentVendor, setCurrentVendor] = useState<Vendor | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -124,11 +124,12 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
     setLoading(true);
     setError(null);
     const { data, error } = await vendorService.getVendors();
-    if (error) {
-      setError(error);
+    if (error instanceof Error) {
+      setError(error.message);
     } else {
-      setVendors(data || []);
+      setError(String(error));
     }
+    setVendors(data || []);
     setLoading(false);
   };
 
@@ -171,13 +172,13 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
     setError(null);
 
     try {
-      let result: { data?: any; error?: string | null };
+      let result: { data: Vendor | null; error: string | null };
       if (currentVendor.id && typeof currentVendor.id === 'string' && currentVendor.id.includes('-')) {
         result = await vendorService.updateVendor(currentVendor.id, currentVendor);
       } else {
         result = await vendorService.createVendor(currentVendor);
         if (result.data) {
-          setCurrentVendor(prev => prev ? ({ ...prev, id: result.data.id }) : null);
+          setCurrentVendor(prev => prev ? ({ ...prev, id: result.data!.id }) : null);
         }
       }
 
@@ -189,8 +190,12 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
       await saveApprovalAreas();
       await loadVendors();
       setIsEditing(false);
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError(String(error));
+      }
     } finally {
       setLoading(false);
     }
@@ -349,7 +354,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user }) => {
       });
       if (!response.ok) throw new Error('Failed to delete vendor');
       setVendors(prev => prev.filter(v => v.id !== vendorId));
-    } catch (error: any) {
+    } catch {
       setError('Failed to delete vendor. Please try again.');
       alert('Failed to delete vendor. Please try again.');
     } finally {

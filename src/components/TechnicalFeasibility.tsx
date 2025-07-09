@@ -1,5 +1,4 @@
-import React, { useEffect } from 'react';
-import isEqual from 'lodash.isequal';
+import React from 'react';
 import {
   Checkbox
 } from "@/components/ui/checkbox";

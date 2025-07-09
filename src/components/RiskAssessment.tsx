@@ -1,6 +1,5 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import isEqual from 'lodash.isequal';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -39,7 +38,7 @@ type Props = {
     riskTolerance?: string;
     aiExperience?: string;
   };
-  onChange?: (data: any) => void;
+  onChange?: (data: Props['value']) => void;
 };
 
 

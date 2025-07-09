@@ -179,7 +179,7 @@ export default function FinancialDashboard() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Save failed');
-    } catch (e) {
+          } catch {
       setError('Failed to save');
     }
     setSaving(false);
@@ -398,11 +398,11 @@ export default function FinancialDashboard() {
             if (label.includes('Value') || label.includes('Cost') || label.includes('Profit')) {
               value = formatCurrency(value);
             }
-            let color = ctx.dataset.borderColor;
-            if (label.includes('Development')) color = '#ff4d4f';
-            if (label.includes('Cumulative')) color = '#ff9900';
-            if (label.includes('Lifetime')) color = '#10b981';
-            if (label.includes('Net')) color = '#2563eb';
+            let _color = ctx.dataset.borderColor;
+            if (label.includes('Development')) _color = '#ff4d4f';
+            if (label.includes('Cumulative')) _color = '#ff9900';
+            if (label.includes('Lifetime')) _color = '#10b981';
+            if (label.includes('Net')) _color = '#2563eb';
             return `${label}: ${value}`;
           },
           labelTextColor: (ctx: any) => ctx.dataset.borderColor,

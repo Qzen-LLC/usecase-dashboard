@@ -2,7 +2,21 @@ import React from 'react';
 import TechnicalFeasibility from './TechnicalFeasibility';
 
 interface ReadOnlyTechnicalFeasibilityProps {
-  data: any;
+  data: {
+    modelTypes: string[];
+    modelSizes: string[];
+    deploymentModels: string[];
+    cloudProviders: string[];
+    computeRequirements: string[];
+    integrationPoints: string[];
+    apiSpecs: string[];
+    authMethods: string[];
+    encryptionStandards: string[];
+    technicalComplexity: number;
+    outputTypes: string[];
+    confidenceScore: string;
+    modelUpdateFrequency: string;
+  };
 }
 
 const ReadOnlyTechnicalFeasibility: React.FC<ReadOnlyTechnicalFeasibilityProps> = ({ data }) => {

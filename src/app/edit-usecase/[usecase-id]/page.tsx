@@ -1,9 +1,9 @@
 'use client'
-import { prismaClient } from "@/utils/db";
+
 import { useParams, useSearchParams } from "next/navigation";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, ChevronLeft, Target, TrendingUp, Zap, DollarSign, Save, Download, Plus, Minus } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Target, TrendingUp, Zap, DollarSign, Download, Plus, Minus } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -131,9 +131,9 @@ const getUseCase = async(params: string) => {
         }
         const useCaseData = await res.json();
         return useCaseData;
-    } catch (error) {
-        console.error('Error fetching use case:', error);
-        throw error;
+    } catch (_error) {
+        console.error('Error fetching use case:', _error);
+        throw _error;
     }
 };
 
@@ -142,7 +142,7 @@ const AIUseCaseTool = () => {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [invalidFields, setInvalidFields] = useState<string[]>([]);
   const [showError, setShowError] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [_saving, setSaving] = useState(false);
   const router = useRouter();
 
   const params = useParams();
@@ -161,8 +161,8 @@ const AIUseCaseTool = () => {
             ...data,
           }));
         }
-      } catch (error) {
-        console.error('Error fetching use case:', error);
+      } catch (_error) {
+        console.error('Error fetching use case:', _error);
         setShowError(true);
       }
     };
@@ -191,7 +191,7 @@ const AIUseCaseTool = () => {
     }));
   };
 
-  const handleChange = (field: keyof FormData, val: any) => {
+  const handleChange = (field: keyof FormData, val: string | number | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: val }));
   };
 

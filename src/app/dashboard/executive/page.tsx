@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Card } from '@/components/ui/card';
 import { 
   TrendingUp, 
@@ -16,99 +16,13 @@ import {
   Settings,
   Loader2
 } from 'lucide-react';
+import { useExecutiveMetrics } from '@/hooks/useExecutiveMetrics';
 
-interface ExecutiveMetrics {
-  portfolio: {
-    totalUseCases: number;
-    stageDistribution: Record<string, number>;
-    businessFunctionDistribution: Record<string, number>;
-    priorityDistribution: Record<string, number>;
-    impactScores: {
-      operational: { average: number; total: number };
-      productivity: { average: number; total: number };
-      revenue: { average: number; total: number };
-    };
-    overallScore: number;
-    complexityAnalysis: {
-      average: number;
-      distribution: Record<string, number>;
-    };
-    confidenceAnalysis: {
-      average: number;
-      distribution: Record<string, number>;
-    };
-  };
-  financial: {
-    totalInvestment: number;
-    totalROI: number;
-    averageROI: number;
-    projectedValue: number;
-    netValue: number;
-    costBreakdown: {
-      development: number;
-      infrastructure: number;
-      operations: number;
-      api: number;
-    };
-    investmentByFunction: Record<string, number>;
-  };
-  risk: {
-    totalAssessed: number;
-    riskDistribution: Record<string, number>;
-    riskCategories: Record<string, Record<string, number>>;
-    approvalStatus: {
-      totalWithApprovals: number;
-      governance: Record<string, number>;
-      risk: Record<string, number>;
-      legal: Record<string, number>;
-      business: Record<string, number>;
-    };
-  };
-  strategic: {
-    businessFunctionPerformance: Array<{
-      function: string;
-      count: number;
-      avgOperationalScore: number;
-      avgProductivityScore: number;
-      avgRevenueScore: number;
-      totalInvestment: number;
-      averageROI: number;
-    }>;
-    portfolioBalance: {
-      highImpactLowComplexity: number;
-      quickWins: number;
-    };
-  };
-}
+
 
 const ExecutiveDashboard = () => {
-  const [metrics, setMetrics] = useState<ExecutiveMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchMetrics();
-  }, []);
-
-  const fetchMetrics = async () => {
-    try {
-      setError(null);
-      const response = await fetch('/api/executive-metrics');
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || 'Failed to fetch metrics');
-      }
-      
-      const data = await response.json();
-      setMetrics(data);
-    } catch (error) {
-      console.error('Error fetching executive metrics:', error);
-      setError(error instanceof Error ? error.message : 'Unknown error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Use React Query for optimized data fetching with caching
+  const { data: metrics, isLoading: loading, error, refetch } = useExecutiveMetrics();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -137,9 +51,9 @@ const ExecutiveDashboard = () => {
         <div className="text-center max-w-md">
           <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Unable to Load Dashboard</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="text-gray-600 mb-4">{error?.message}</p>
           <button 
-            onClick={fetchMetrics}
+            onClick={() => refetch()}
             className="px-4 py-2 bg-[#5b5be6] text-white rounded-lg hover:bg-[#4a4ac7] transition-colors"
           >
             Try Again

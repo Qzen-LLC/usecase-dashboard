@@ -2,7 +2,10 @@ import React from 'react';
 import RiskAssessment from './RiskAssessment';
 
 interface ReadOnlyRiskAssessmentProps {
-  data: any;
+  data: {
+    technicalRisks: { risk: string; probability: string; impact: string }[];
+    businessRisks: { risk: string; probability: string; impact: string }[];
+  };
 }
 
 const ReadOnlyRiskAssessment: React.FC<ReadOnlyRiskAssessmentProps> = ({ data }) => {

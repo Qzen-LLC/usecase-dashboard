@@ -12,13 +12,13 @@ import { Brain, DollarSign, Shield, AlertTriangle, FileText, Calendar, TrendingU
 interface ReadOnlyAssessmentDisplayProps {
   assessData: {
     stepsData: {
-      technicalFeasibility?: any;
-      businessFeasibility?: any;
-      ethicalImpact?: any;
-      riskAssessment?: any;
-      dataReadiness?: any;
-      roadmapPosition?: any;
-      budgetPlanning?: any;
+      technicalFeasibility?: Record<string, unknown>;
+      businessFeasibility?: Record<string, unknown>;
+      ethicalImpact?: Record<string, unknown>;
+      riskAssessment?: Record<string, unknown>;
+      dataReadiness?: Record<string, unknown>;
+      roadmapPosition?: Record<string, unknown>;
+      budgetPlanning?: Record<string, unknown>;
     };
   };
 }
@@ -40,7 +40,21 @@ const ReadOnlyAssessmentDisplay: React.FC<ReadOnlyAssessmentDisplayProps> = ({ a
             <CardTitle>Technical Feasibility Assessment</CardTitle>
           </CardHeader>
           <CardContent>
-            <ReadOnlyTechnicalFeasibility data={stepsData.technicalFeasibility} />
+            <ReadOnlyTechnicalFeasibility data={stepsData.technicalFeasibility as {
+              modelTypes: string[];
+              modelSizes: string[];
+              deploymentModels: string[];
+              cloudProviders: string[];
+              computeRequirements: string[];
+              integrationPoints: string[];
+              apiSpecs: string[];
+              authMethods: string[];
+              encryptionStandards: string[];
+              technicalComplexity: number;
+              outputTypes: string[];
+              confidenceScore: string;
+              modelUpdateFrequency: string;
+            }} />
           </CardContent>
         </Card>
       )}
@@ -53,7 +67,28 @@ const ReadOnlyAssessmentDisplay: React.FC<ReadOnlyAssessmentDisplayProps> = ({ a
             <CardTitle>Business Feasibility Assessment</CardTitle>
           </CardHeader>
           <CardContent>
-            <ReadOnlyBusinessFeasibility data={stepsData.businessFeasibility} />
+            <ReadOnlyBusinessFeasibility data={stepsData.businessFeasibility as {
+              strategicAlignment: number;
+              marketOpportunity: string;
+              stakeholder: {
+                exec: boolean;
+                endUser: boolean;
+                it: boolean;
+              };
+              annualSavings: string;
+              efficiencyGain: number;
+              paybackPeriod: number;
+              availabilityRequirement: string;
+              responseTimeRequirement: string;
+              concurrentUsers: string;
+              revenueImpactType: string;
+              estimatedFinancialImpact: string;
+              userCategories: string[];
+              systemCriticality: string;
+              failureImpact: string;
+              executiveSponsorLevel: string;
+              stakeholderGroups: string[];
+            }} />
           </CardContent>
         </Card>
       )}
@@ -66,7 +101,37 @@ const ReadOnlyAssessmentDisplay: React.FC<ReadOnlyAssessmentDisplayProps> = ({ a
             <CardTitle>Ethical Impact Assessment</CardTitle>
           </CardHeader>
           <CardContent>
-            <ReadOnlyEthicalImpact data={stepsData.ethicalImpact} />
+            <ReadOnlyEthicalImpact data={stepsData.ethicalImpact as {
+              biasFairness: {
+                historicalBias: boolean;
+                demographicGaps: boolean;
+                geographicBias: boolean;
+                selectionBias: boolean;
+                confirmationBias: boolean;
+                temporalBias: boolean;
+              };
+              privacySecurity: {
+                dataMinimization: boolean;
+                consentManagement: boolean;
+                dataAnonymization: boolean;
+              };
+              decisionMaking: {
+                automationLevel: string;
+                decisionTypes: string[];
+              };
+              modelCharacteristics: {
+                explainabilityLevel: string;
+                biasTesting: string;
+              };
+              aiGovernance: {
+                humanOversightLevel: string;
+                performanceMonitoring: string[];
+              };
+              ethicalConsiderations: {
+                potentialHarmAreas: string[];
+                vulnerablePopulations: string[];
+              };
+            }} />
           </CardContent>
         </Card>
       )}
@@ -79,7 +144,10 @@ const ReadOnlyAssessmentDisplay: React.FC<ReadOnlyAssessmentDisplayProps> = ({ a
             <CardTitle>Risk Assessment</CardTitle>
           </CardHeader>
           <CardContent>
-            <ReadOnlyRiskAssessment data={stepsData.riskAssessment} />
+            <ReadOnlyRiskAssessment data={stepsData.riskAssessment as {
+              technicalRisks: { risk: string; probability: string; impact: string }[];
+              businessRisks: { risk: string; probability: string; impact: string }[];
+            }} />
           </CardContent>
         </Card>
       )}
@@ -92,7 +160,23 @@ const ReadOnlyAssessmentDisplay: React.FC<ReadOnlyAssessmentDisplayProps> = ({ a
             <CardTitle>Data Readiness Assessment</CardTitle>
           </CardHeader>
           <CardContent>
-            <ReadOnlyDataReadiness data={stepsData.dataReadiness} />
+            <ReadOnlyDataReadiness data={stepsData.dataReadiness as {
+              dataTypes: string[];
+              dataVolume: string;
+              growthRate: string;
+              numRecords: string;
+              primarySources: string[];
+              dataQualityScore: number;
+              dataCompleteness: number;
+              dataAccuracyConfidence: number;
+              dataFreshness: string;
+              dataSubjectLocations: string;
+              dataStorageLocations: string;
+              dataProcessingLocations: string;
+              crossBorderTransfer: boolean;
+              dataLocalization: string;
+              dataRetention: string;
+            }} />
           </CardContent>
         </Card>
       )}
@@ -105,7 +189,18 @@ const ReadOnlyAssessmentDisplay: React.FC<ReadOnlyAssessmentDisplayProps> = ({ a
             <CardTitle>Roadmap Position Assessment</CardTitle>
           </CardHeader>
           <CardContent>
-            <ReadOnlyRoadmapPosition data={stepsData.roadmapPosition} />
+            <ReadOnlyRoadmapPosition data={stepsData.roadmapPosition as {
+              priority: string;
+              projectStage: string;
+              timelineConstraints: string[];
+              timeline: string;
+              dependencies: {
+                dataPlatform: boolean;
+                security: boolean;
+                hiring: boolean;
+              };
+              metrics: string;
+            }} />
           </CardContent>
         </Card>
       )}
@@ -118,7 +213,17 @@ const ReadOnlyAssessmentDisplay: React.FC<ReadOnlyAssessmentDisplayProps> = ({ a
             <CardTitle>Budget Planning Assessment</CardTitle>
           </CardHeader>
           <CardContent>
-            <ReadOnlyBudgetPlanning data={stepsData.budgetPlanning} />
+            <ReadOnlyBudgetPlanning data={stepsData.budgetPlanning as {
+              initialDevCost: number;
+              baseApiCost: number;
+              baseInfraCost: number;
+              baseOpCost: number;
+              baseMonthlyValue: number;
+              valueGrowthRate: number;
+              budgetRange: string;
+              error?: string;
+              loading?: boolean;
+            }} />
           </CardContent>
         </Card>
       )}

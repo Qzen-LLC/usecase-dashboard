@@ -147,7 +147,7 @@ export const vendorService = {
   },
 
   // Initialize approval areas for a vendor (called automatically on vendor creation)
-  async initializeApprovalAreas(vendorId: string) {
+  async initializeApprovalAreas(_vendorId: string) {
     // This is handled automatically by the API when creating a vendor
     return { error: null };
   },

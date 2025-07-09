@@ -1,7 +1,7 @@
 'use client'
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, ChevronLeft, Target, TrendingUp, Zap, DollarSign, Save, Download, Plus, Minus } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Target, TrendingUp, Zap, DollarSign, Download, Plus, Minus } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -147,7 +147,7 @@ const AIUseCaseTool = () => {
     }));
   };
 
-  const handleChange = (field: keyof FormData, val: any) => {
+  const handleChange = (field: keyof FormData, val: string | number | string[]) => {
     console.log(val);
     setFormData((prev) => ({ ...prev, [field]: val }));
   };
@@ -489,7 +489,7 @@ const AIUseCaseTool = () => {
         k => !['id','createdAt','updatedAt'].includes(k)
       );
       const allFilled = requiredFields.every(k => {
-        const v = (formData as any)[k];
+        const v = formData[k as keyof typeof formData];
         if (Array.isArray(v)) return v.length > 0;
         if (typeof v === 'string') return !!v.trim();
         if (typeof v === 'number') return v !== null && v !== undefined;
@@ -514,8 +514,7 @@ const AIUseCaseTool = () => {
       } else {
         alert("Failed to save use case. Please try again.");
       }
-      } catch(error)
-      {
+      } catch {
         console.error("Unable to submit Use Case")
         alert("Unable to submit Use Case. Please try again.");
       }

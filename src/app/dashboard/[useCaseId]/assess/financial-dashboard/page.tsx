@@ -20,8 +20,7 @@ import {
   Legend,
   Filler
 } from 'chart.js';
-import type { ChartData, ChartOptions } from 'chart.js';
-import { format, parse } from 'date-fns';
+
 
 ChartJS.register(
   CategoryScale,
@@ -69,8 +68,8 @@ const FinancialDashboard = () => {
   const [baseMonthlyValue, setBaseMonthlyValue] = useState<number>(0);
   const [valueGrowthRate, setValueGrowthRate] = useState<number>(0);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState<boolean>(true);
+  const [_error, setError] = useState('');
+  const [_loading, setLoading] = useState<boolean>(true);
   const [showFormulae, setShowFormulae] = useState(false);
   
   useEffect(() => {
@@ -112,7 +111,7 @@ const FinancialDashboard = () => {
       cumulativeValue += monthlyValue;
       cumulativeOpCosts += totalMonthlyCost;
       const totalInvestment = initialDevCost + cumulativeOpCosts;
-      const monthlyProfit = monthlyValue - totalMonthlyCost;
+      const _monthlyProfit = monthlyValue - totalMonthlyCost;
       const netValue = cumulativeValue - totalInvestment;
       const ROI = totalInvestment > 0 ? (netValue / totalInvestment) * 100 : 0;
       if (breakEvenMonth === null && netValue >= 0) breakEvenMonth = month;
@@ -126,7 +125,7 @@ const FinancialDashboard = () => {
         cumulativeValue,
         cumulativeOpCosts,
         totalInvestment,
-        monthlyProfit,
+        monthlyProfit: _monthlyProfit,
         netValue,
         ROI,
       });
@@ -276,7 +275,12 @@ const FinancialDashboard = () => {
             if (label.includes('Value') || label.includes('Cost') || label.includes('Profit')) {
               value = formatCurrency(value);
             }
-            return `  ${label}: ${value}`;
+            let _color = ctx.dataset.borderColor;
+            if (label.includes('Development')) _color = '#ff4d4f';
+            if (label.includes('Cumulative')) _color = '#ff9900';
+            if (label.includes('Lifetime')) _color = '#10b981';
+            if (label.includes('Net')) _color = '#2563eb';
+            return `${label}: ${value}`;
           },
         },
         bodyFont: { weight: 600, size: 14 },
@@ -828,7 +832,7 @@ const FinancialDashboard = () => {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Save failed');
-    } catch (e) {
+    } catch {
       setError('Failed to save');
     }
     setSaving(false);

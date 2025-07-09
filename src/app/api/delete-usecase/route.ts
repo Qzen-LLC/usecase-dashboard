@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prismaClient } from '@/utils/db';
+import { prismaClient } from '../../../utils/db';
 
 export async function DELETE(request: Request) {
   try {

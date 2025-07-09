@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" WEBPACK_DISABLE_SYMLINKS=true next build",
+    "build:safe": "next build --no-lint",
     "start": "next start",
     "lint": "next lint"
   },
@@ -27,6 +28,8 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "^1.2.5",
     "@supabase/supabase-js": "^2.50.0",
+    "@tanstack/react-query": "^5.81.5",
+    "@tanstack/react-query-devtools": "^5.81.5",
     "@types/chart.js": "^2.9.41",
     "chart.js": "^4.5.0",
     "class-variance-authority": "^0.7.1",
@@ -51,6 +54,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^7.0.3",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
     "prisma": "^6.10.1",

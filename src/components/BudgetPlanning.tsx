@@ -81,7 +81,7 @@ const BudgetPlanning = forwardRef<{ saveFinops: () => Promise<void> }, BudgetPla
         cumulativeValue += monthlyValue;
         cumulativeOpCosts += totalMonthlyCost;
         const totalInvestment = value.initialDevCost + cumulativeOpCosts;
-        const monthlyProfit = monthlyValue - totalMonthlyCost;
+        const _monthlyProfit = monthlyValue - totalMonthlyCost;
         const netValue = cumulativeValue - totalInvestment;
         const ROI = totalInvestment > 0 ? (netValue / totalInvestment) * 100 : 0;
         if (breakEvenMonth === null && netValue >= 0) breakEvenMonth = month;

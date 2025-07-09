@@ -1,6 +1,6 @@
 "use client"
 
-import { TrendingUp } from "lucide-react"
+
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart } from "recharts"
 
 import {
@@ -36,7 +36,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function ChartRadarDots({ chartData }: { chartData: any }) {
+export function ChartRadarDots({ chartData }: { chartData: Array<{ month: string; desktop: number }> }) {
   return (
     <Card>
       <CardHeader className="items-center">

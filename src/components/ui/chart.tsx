@@ -118,7 +118,29 @@ function ChartTooltipContent({
   color,
   nameKey,
   labelKey,
-}: any) {
+}: {
+  active?: boolean;
+  payload?: Array<{
+    dataKey?: string;
+    name?: string;
+    value?: number;
+    color?: string;
+    payload?: {
+      fill?: string;
+    };
+  }>;
+  className?: string;
+  indicator?: 'dot' | 'line' | 'dashed';
+  hideLabel?: boolean;
+  hideIndicator?: boolean;
+  label?: string;
+  labelFormatter?: (value: unknown, payload: unknown) => React.ReactNode;
+  labelClassName?: string;
+  formatter?: (value: unknown, name: unknown, item: unknown, index: number, payload: unknown) => React.ReactNode;
+  color?: string;
+  nameKey?: string;
+  labelKey?: string;
+}) {
   const { config } = useChart()
 
   const tooltipLabel = React.useMemo(() => {
@@ -172,10 +194,18 @@ function ChartTooltipContent({
     >
       {!nestLabel ? tooltipLabel : null}
       <div className="grid gap-1.5">
-        {payload.map((item: any, index: number) => {
+        {payload.map((item: {
+          dataKey?: string;
+          name?: string;
+          value?: number;
+          color?: string;
+          payload?: {
+            fill?: string;
+          };
+        }, index: number) => {
           const key = `${nameKey || item.name || item.dataKey || "value"}`
           const itemConfig = getPayloadConfigFromPayload(config, item, key)
-          const indicatorColor = color || item.payload.fill || item.color
+          const indicatorColor = color || item.payload?.fill || item.color
 
           return (
             <div
@@ -249,7 +279,17 @@ function ChartLegendContent({
   payload,
   verticalAlign = "bottom",
   nameKey,
-}: any) {
+}: {
+  className?: string;
+  hideIcon?: boolean;
+  payload?: Array<{
+    dataKey?: string;
+    value?: string;
+    color?: string;
+  }>;
+  verticalAlign?: 'top' | 'bottom';
+  nameKey?: string;
+}) {
   const { config } = useChart()
 
   if (!payload?.length) {
@@ -264,7 +304,11 @@ function ChartLegendContent({
         className
       )}
     >
-      {payload.map((item: any) => {
+      {payload.map((item: {
+        dataKey?: string;
+        value?: string;
+        color?: string;
+      }) => {
         const key = `${nameKey || item.dataKey || "value"}`
         const itemConfig = getPayloadConfigFromPayload(config, item, key)
 
