@@ -124,10 +124,8 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
     setLoading(true);
     setError(null);
     const { data, error } = await vendorService.getVendors();
-    if (error instanceof Error) {
-      setError(error.message);
-    } else {
-      setError(String(error));
+    if (error) {
+      setError(error instanceof Error ? error.message : String(error));
     }
     setVendors(data || []);
     setLoading(false);
@@ -193,8 +191,10 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
     } catch (error: unknown) {
       if (error instanceof Error) {
         setError(error.message);
-      } else {
+      } else if (error) {
         setError(String(error));
+      } else {
+        setError('An unknown error occurred');
       }
     } finally {
       setLoading(false);

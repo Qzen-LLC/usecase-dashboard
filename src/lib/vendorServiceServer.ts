@@ -151,20 +151,20 @@ export const vendorServiceServer = {
 
         return {
           id: vendor.id,
-          name: vendor.name,
-          category: vendor.category,
+          name: vendor.name || '',
+          category: vendor.category || '',
           website: vendor.website || '',
           contactPerson: vendor.contactPerson || '',
           contactEmail: vendor.contactEmail || '',
           assessmentDate: vendor.assessmentDate?.toISOString().split('T')[0] || '',
-          overallScore: vendor.overallScore,
-          status: statusMap[vendor.status as keyof typeof statusMap],
+          overallScore: vendor.overallScore || 0,
+          status: statusMap[vendor.status as keyof typeof statusMap] || 'In Assessment',
           notes: vendor.notes || '',
           scores,
           comments,
           approvals: { ...defaultApprovals, ...approvals } as any,
-          createdAt: vendor.createdAt.toISOString(),
-          updatedAt: vendor.updatedAt.toISOString()
+          createdAt: vendor.createdAt?.toISOString() || new Date().toISOString(),
+          updatedAt: vendor.updatedAt?.toISOString() || new Date().toISOString()
         };
       });
 
@@ -439,29 +439,29 @@ export const vendorServiceServer = {
       ];
 
       const categoryData = categories.map(category => {
-        const categoryVendors = vendors.filter((v: VendorData) => v.category === category);
+        const categoryVendors = vendors.filter((v: any) => v.category === category);
         return {
           category,
           total: categoryVendors.length,
-          approved: categoryVendors.filter((v: VendorData) => v.status === 'Approved').length,
-          inAssessment: categoryVendors.filter((v: VendorData) => v.status === 'In Assessment').length,
-          rejected: categoryVendors.filter((v: VendorData) => v.status === 'Rejected').length,
-          onHold: categoryVendors.filter((v: VendorData) => v.status === 'On Hold').length,
+          approved: categoryVendors.filter((v: any) => v.status === 'APPROVED').length,
+          inAssessment: categoryVendors.filter((v: any) => v.status === 'IN_ASSESSMENT').length,
+          rejected: categoryVendors.filter((v: any) => v.status === 'REJECTED').length,
+          onHold: categoryVendors.filter((v: any) => v.status === 'ON_HOLD').length,
           avgScore: categoryVendors.length > 0 ? 
-            Math.round((categoryVendors.reduce((sum: number, v: VendorData) => sum + (v.overallScore || 0), 0) / categoryVendors.length) * 10) / 10 : 0
+            Math.round((categoryVendors.reduce((sum: number, v: any) => sum + (v.overallScore || 0), 0) / categoryVendors.length) * 10) / 10 : 0
         };
       });
 
       const overallStats = {
         totalVendors: vendors.length,
-        approved: vendors.filter((v: VendorData) => v.status === 'Approved').length,
-        inAssessment: vendors.filter((v: VendorData) => v.status === 'In Assessment').length,
-        rejected: vendors.filter((v: VendorData) => v.status === 'Rejected').length,
-        onHold: vendors.filter((v: VendorData) => v.status === 'On Hold').length,
+        approved: vendors.filter((v: any) => v.status === 'APPROVED').length,
+        inAssessment: vendors.filter((v: any) => v.status === 'IN_ASSESSMENT').length,
+        rejected: vendors.filter((v: any) => v.status === 'REJECTED').length,
+        onHold: vendors.filter((v: any) => v.status === 'ON_HOLD').length,
         avgScore: vendors.length > 0 ? 
-          Math.round((vendors.reduce((sum: number, v: VendorData) => sum + (v.overallScore || 0), 0) / vendors.length) * 10) / 10 : 0,
-        highPerformers: vendors.filter((v: VendorData) => v.overallScore >= 4).length,
-        needsAttention: vendors.filter((v: VendorData) => v.overallScore > 0 && v.overallScore < 3).length
+          Math.round((vendors.reduce((sum: number, v: any) => sum + (v.overallScore || 0), 0) / vendors.length) * 10) / 10 : 0,
+        highPerformers: vendors.filter((v: any) => v.overallScore >= 4).length,
+        needsAttention: vendors.filter((v: any) => v.overallScore > 0 && v.overallScore < 3).length
       };
 
       return { data: { categoryData, overallStats }, error: null };

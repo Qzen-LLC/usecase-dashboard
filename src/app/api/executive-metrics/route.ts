@@ -39,30 +39,17 @@ export async function GET() {
       select: {
         id: true,
         stage: true,
-<<<<<<< Updated upstream
-        businessFunction: true,
-        priority: true,
-=======
         priority: true,
         businessFunction: true,
->>>>>>> Stashed changes
         operationalImpactScore: true,
         productivityImpactScore: true,
         revenueImpactScore: true,
         implementationComplexity: true,
         confidenceLevel: true,
-<<<<<<< Updated upstream
-        createdAt: true,
-        finopsData: {
-          select: {
-            totalInvestment: true,
-            ROI: true,
-=======
         finopsData: {
           select: {
             ROI: true,
             totalInvestment: true,
->>>>>>> Stashed changes
             cumValue: true,
             netValue: true,
             devCostBase: true,
@@ -84,12 +71,8 @@ export async function GET() {
             businessStatus: true
           }
         }
-<<<<<<< Updated upstream
-      }
-=======
       },
       orderBy: { updatedAt: 'desc' }
->>>>>>> Stashed changes
     });
 
     const typedUseCases = useCases as UseCase[];
@@ -336,10 +319,7 @@ export async function GET() {
     };
 
     const response = NextResponse.json(executiveMetrics);
-<<<<<<< Updated upstream
-=======
     // Add caching headers for executive metrics (cache for 5 minutes)
->>>>>>> Stashed changes
     response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
     return response;
 

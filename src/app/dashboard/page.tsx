@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X, Eye, Trash2, RefreshCw, Loader2, AlertTriangle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -87,43 +87,7 @@ const Dashboard = () => {
     }
   };
 
-  const fetchUseCases = async () => {
-    try {
-      const response = await fetch('/api/read-usecases');
-      if (!response.ok) {
-        throw new Error('Failed to fetch use cases');
-      }
-      const data = await response.json();
-      // Add default frontend fields
-      const mapped = (data || []).map((uc: any) => ({
-        ...uc,
-        stage: uc.stage, // All start in discovery
-        priority: uc.priority, // Directly use value from DB, no default
-        owner: uc.primaryStakeholders?.[0] || 'Unknown',
-        lastUpdated: uc.updatedAt
-          ? new Date(uc.updatedAt).toLocaleDateString()
-          : '',
-        description: uc.problemStatement || '',
-        scores: {
-          operational: uc.operationalImpactScore,
-          productivity: uc.productivityImpactScore,
-          revenue: uc.revenueImpactScore,
-        },
-        complexity: uc.implementationComplexity,
-        roi: uc.initialROI,
-        timeline: uc.estimatedTimeline,
-        stakeholders: uc.primaryStakeholders,
-        risks: uc.keyAssumptions,
-      }));
-      setUseCases(mapped);
-    } catch (error) {
-      console.error('Error fetching use cases:', error);
-    }
-  };
 
-  useEffect(() => {
-    fetchUseCases();
-  }, []);
 
   const filteredUseCases = useCases.filter(useCase => {
     const matchesSearch = useCase.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -427,7 +391,7 @@ const Dashboard = () => {
                 New Use Case
               </Button>
               <Button
-                onClick={fetchUseCases}
+                onClick={refetch}
                 className="flex items-center gap-2 bg-white border border-gray-200 text-blue-600 hover:bg-blue-50 px-4 py-2.5 rounded-full shadow-sm font-medium text-sm ml-2"
                 title="Refresh Use Cases"
               >
