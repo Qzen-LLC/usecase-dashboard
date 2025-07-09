@@ -30,6 +30,7 @@ type FormData = {
   estimatedTimeline: string;
   requiredResources: string;
   businessFunction: string;
+  priority: string;
 };
 
 const initialFormData: FormData = {
@@ -53,6 +54,7 @@ const initialFormData: FormData = {
   estimatedTimeline: "",
   requiredResources: "",
   businessFunction: "",
+  priority: "MEDIUM",
 };
 
 type ArrayField = 'primaryStakeholders' | 'secondaryStakeholders' | 'successCriteria' | 'keyAssumptions';

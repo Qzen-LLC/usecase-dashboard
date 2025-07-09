@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X, Eye, Trash2 } from 'lucide-react';
+import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X, Eye, Trash2, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -131,51 +131,49 @@ const Dashboard = () => {
     }
   };
 
-  // Fetch use case s from API
-  useEffect(() => {
-    const fetchUseCases = async () => {
-      try {
-        const response = await fetch('/api/read-usecases');
-        if (!response.ok) {
-          throw new Error('Failed to fetch use cases');
-        }
-        const data = await response.json();
-
-        // Add default frontend fields
-        const mapped = (data || []).map((uc: any) => ({
-          ...uc,
-          stage: uc.stage, // All start in discovery
-          priority: uc.priority, // Directly use value from DB, no default
-          owner: uc.primaryStakeholders?.[0] || 'Unknown',
-          lastUpdated: uc.updatedAt
-            ? new Date(uc.updatedAt).toLocaleDateString()
-            : '',
-          description: uc.problemStatement || '',
-          scores: {
-            operational: uc.operationalImpactScore,
-            productivity: uc.productivityImpactScore,
-            revenue: uc.revenueImpactScore,
-          },
-          complexity: uc.implementationComplexity,
-          roi: uc.initialROI,
-          timeline: uc.estimatedTimeline,
-          stakeholders: uc.primaryStakeholders,
-          risks: uc.keyAssumptions,
-
-        }));
-        setUseCases(mapped);
-      } catch (error) {
-        console.error('Error fetching use cases:', error);
+  const fetchUseCases = async () => {
+    try {
+      const response = await fetch('/api/read-usecases');
+      if (!response.ok) {
+        throw new Error('Failed to fetch use cases');
       }
-    };
+      const data = await response.json();
+      // Add default frontend fields
+      const mapped = (data || []).map((uc: any) => ({
+        ...uc,
+        stage: uc.stage, // All start in discovery
+        priority: uc.priority, // Directly use value from DB, no default
+        owner: uc.primaryStakeholders?.[0] || 'Unknown',
+        lastUpdated: uc.updatedAt
+          ? new Date(uc.updatedAt).toLocaleDateString()
+          : '',
+        description: uc.problemStatement || '',
+        scores: {
+          operational: uc.operationalImpactScore,
+          productivity: uc.productivityImpactScore,
+          revenue: uc.revenueImpactScore,
+        },
+        complexity: uc.implementationComplexity,
+        roi: uc.initialROI,
+        timeline: uc.estimatedTimeline,
+        stakeholders: uc.primaryStakeholders,
+        risks: uc.keyAssumptions,
+      }));
+      setUseCases(mapped);
+    } catch (error) {
+      console.error('Error fetching use cases:', error);
+    }
+  };
+
+  useEffect(() => {
     fetchUseCases();
   }, []);
 
   const filteredUseCases = useCases.filter(useCase => {
     const matchesSearch = useCase.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       useCase.owner?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterBy === 'all' ||
-      useCase.priority === filterBy;
+    const matchesFilter = filterBy.toLowerCase() === 'all' ||
+      (useCase.priority && useCase.priority.toLowerCase() === filterBy.toLowerCase());
     return matchesSearch && matchesFilter;
   });
 
@@ -416,11 +414,11 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 flex flex-col justify-center items-center m-8">
-      <div className="w-full max-w-screen-2xl mx-8 card-elevated mt-6 mb-6 mx-auto relative z-10">
-        <div className="px-8 py-8">
+    <div className="bg-gray-50 min-h-full">
+      <div className="px-6 py-6">
+        <div className="w-full max-w-screen-2xl mx-auto">
           {/* Main Content */}
-          <div className="p-4">
+          <div className="">
             {/* Filters and Add Button */}
             <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-3 mb-5">
               <div className="relative flex-1 max-w-md w-full">
@@ -454,6 +452,14 @@ const Dashboard = () => {
               >
                 <Plus className="w-4 h-4" />
                 New Use Case
+              </Button>
+              <Button
+                onClick={fetchUseCases}
+                className="flex items-center gap-2 bg-white border border-gray-200 text-blue-600 hover:bg-blue-50 px-4 py-2.5 rounded-full shadow-sm font-medium text-sm ml-2"
+                title="Refresh Use Cases"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Refresh
               </Button>
             </div>
             {/* Stage Stats */}

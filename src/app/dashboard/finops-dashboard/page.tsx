@@ -99,7 +99,6 @@ const FinOpsDashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
-      <h1 className="text-3xl font-bold mb-6 text-[#23235b]">FinOps Dashboard</h1>
       <div className="mb-6 flex flex-col md:flex-row gap-3 items-center">
         <Input
           type="text"

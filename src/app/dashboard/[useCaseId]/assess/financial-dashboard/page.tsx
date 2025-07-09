@@ -62,12 +62,12 @@ const FinancialDashboard = () => {
   const params = useParams();
   const useCaseId = params.useCaseId as string;
   // 6 Inputs
-  const [initialDevCost, setInitialDevCost] = useState<number>(150000);
-  const [baseApiCost, setBaseApiCost] = useState<number>(8000);
-  const [baseInfraCost, setBaseInfraCost] = useState<number>(2000);
-  const [baseOpCost, setBaseOpCost] = useState<number>(5000);
-  const [baseMonthlyValue, setBaseMonthlyValue] = useState<number>(25000);
-  const [valueGrowthRate, setValueGrowthRate] = useState<number>(0.15);
+  const [initialDevCost, setInitialDevCost] = useState<number>(0);
+  const [baseApiCost, setBaseApiCost] = useState<number>(0);
+  const [baseInfraCost, setBaseInfraCost] = useState<number>(0);
+  const [baseOpCost, setBaseOpCost] = useState<number>(0);
+  const [baseMonthlyValue, setBaseMonthlyValue] = useState<number>(0);
+  const [valueGrowthRate, setValueGrowthRate] = useState<number>(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -249,7 +249,7 @@ const FinancialDashboard = () => {
         labels: { 
           usePointStyle: true,
           pointStyle: 'circle',
-          font: { size: 14, weight: '600' as const },
+          font: { size: 14, weight: 600 },
           color: '#1f2937',
           padding: 25,
           boxWidth: 12,
@@ -279,7 +279,7 @@ const FinancialDashboard = () => {
             return `  ${label}: ${value}`;
           },
         },
-        bodyFont: { weight: '600' as const, size: 14 },
+        bodyFont: { weight: 600, size: 14 },
         titleFont: { weight: 'bold' as const, size: 15 },
         boxPadding: 8,
       },
@@ -290,7 +290,7 @@ const FinancialDashboard = () => {
         ticks: {
           callback: (tickValue: string | number) => formatK(Number(tickValue)),
           color: '#6b7280',
-          font: { size: 13, weight: '600' as const },
+          font: { size: 13, weight: 600 },
           padding: 12,
           maxTicksLimit: 8,
         },
@@ -318,7 +318,7 @@ const FinancialDashboard = () => {
         },
         ticks: {
           color: '#6b7280',
-          font: { size: 13, weight: '600' as const },
+          font: { size: 13, weight: 600 },
           padding: 10,
           maxTicksLimit: 12,
         },
@@ -425,7 +425,7 @@ const FinancialDashboard = () => {
         labels: { 
           usePointStyle: true,
           pointStyle: 'circle',
-          font: { size: 14, weight: '600' as const },
+          font: { size: 14, weight: 600 },
           color: '#1f2937',
           padding: 25,
           boxWidth: 12,
@@ -457,7 +457,7 @@ const FinancialDashboard = () => {
             return `  ${icon} ${label}: ${value}`;
           },
         },
-        bodyFont: { weight: '600' as const, size: 14 },
+        bodyFont: { weight: 600, size: 14 },
         titleFont: { weight: 'bold' as const, size: 15 },
         boxPadding: 8,
       },
@@ -469,7 +469,7 @@ const FinancialDashboard = () => {
         ticks: {
           callback: (tickValue: string | number) => formatK(Number(tickValue)),
           color: '#6b7280',
-          font: { size: 13, weight: '600' as const },
+          font: { size: 13, weight: 600 },
           padding: 12,
           maxTicksLimit: 8,
         },
@@ -497,7 +497,7 @@ const FinancialDashboard = () => {
         },
         ticks: {
           color: '#6b7280',
-          font: { size: 13, weight: '600' as const },
+          font: { size: 13, weight: 600 },
           padding: 10,
           maxTicksLimit: 12,
         },
@@ -536,8 +536,8 @@ const FinancialDashboard = () => {
         borderRadius: {
           topLeft: 8,
           topRight: 8,
-          bottomLeft: r => r.parsed.y < 0 ? 8 : 0,
-          bottomRight: r => r.parsed.y < 0 ? 8 : 0,
+          bottomLeft: ((r: any) => r.parsed.y < 0 ? 8 : 0) as any,
+          bottomRight: ((r: any) => r.parsed.y < 0 ? 8 : 0) as any,
         },
         borderSkipped: false,
         barPercentage: 0.75,
@@ -575,7 +575,7 @@ const FinancialDashboard = () => {
         labels: { 
           usePointStyle: true,
           pointStyle: 'rectRounded',
-          font: { size: 14, weight: '600' as const },
+          font: { size: 14, weight: 600 },
           color: '#1f2937',
           padding: 25,
           boxWidth: 15,
@@ -604,7 +604,7 @@ const FinancialDashboard = () => {
             return `  ${icon} ${isProfit ? 'Profit' : 'Loss'}: ${value}`;
           },
         },
-        bodyFont: { weight: '600' as const, size: 14 },
+        bodyFont: { weight: 600, size: 14 },
         titleFont: { weight: 'bold' as const, size: 15 },
         boxPadding: 8,
       },
@@ -615,7 +615,7 @@ const FinancialDashboard = () => {
         ticks: {
           callback: (tickValue: string | number) => formatK(Number(tickValue)),
           color: '#6b7280',
-          font: { size: 13, weight: '600' as const },
+          font: { size: 13, weight: 600 },
           padding: 12,
           maxTicksLimit: 8,
         },
@@ -643,7 +643,7 @@ const FinancialDashboard = () => {
         },
         ticks: {
           color: '#6b7280',
-          font: { size: 13, weight: '600' as const },
+          font: { size: 13, weight: 600 },
           padding: 10,
           maxTicksLimit: 12,
         },
@@ -716,7 +716,7 @@ const FinancialDashboard = () => {
         labels: { 
           usePointStyle: true,
           pointStyle: 'circle',
-          font: { size: 14, weight: '600' as const },
+          font: { size: 14, weight: 600 },
           color: '#1f2937',
           padding: 25,
           boxWidth: 12,
@@ -749,7 +749,7 @@ const FinancialDashboard = () => {
             return `  ${label}: ${value}`;
           },
         },
-        bodyFont: { weight: '600' as const, size: 14 },
+        bodyFont: { weight: 600, size: 14 },
         titleFont: { weight: 'bold' as const, size: 15 },
         boxPadding: 8,
       },
@@ -760,7 +760,7 @@ const FinancialDashboard = () => {
         ticks: {
           callback: (tickValue: string | number) => `${Number(tickValue).toFixed(0)}%`,
           color: '#6b7280',
-          font: { size: 13, weight: '600' as const },
+          font: { size: 13, weight: 600 },
           padding: 12,
           maxTicksLimit: 8,
         },
@@ -788,7 +788,7 @@ const FinancialDashboard = () => {
         },
         ticks: {
           color: '#6b7280',
-          font: { size: 13, weight: '600' as const },
+          font: { size: 13, weight: 600 },
           padding: 10,
           maxTicksLimit: 12,
         },
