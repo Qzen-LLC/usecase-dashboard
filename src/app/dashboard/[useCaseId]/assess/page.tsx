@@ -155,17 +155,26 @@ const defaultAssessmentData = {
 
 const validateAssessmentData = (data: any) => {
   if (!data) return false;
-  
-  // Check if at least one section has data
-  const hasData = Object.values(data).some(section => {
-    if (!section) return false;
-    if (typeof section === 'object') {
-      return Object.keys(section).length > 0;
+  // List all required assessment sections
+  const requiredSections = [
+    'technicalFeasibility',
+    'businessFeasibility',
+    'ethicalImpact',
+    'riskAssessment',
+    'dataReadiness',
+    'roadmapPosition',
+    'budgetPlanning'
+  ];
+  // Check each section is present and filled
+  return requiredSections.every(section => {
+    const val = data[section];
+    if (!val) return false;
+    if (typeof val === 'object') {
+      // For objects, check if any value is empty or falsy
+      return !Object.values(val).some(v => v === '' || v === null || v === undefined || (Array.isArray(v) && v.length === 0));
     }
-    return true;
+    return val !== '' && val !== null && val !== undefined;
   });
-
-  return hasData;
 };
 
 export default function AssessmentPage() {
@@ -239,29 +248,14 @@ export default function AssessmentPage() {
   
   const handleSave = async () => {
     try {
-      if (!validateAssessmentData(assessmentData)) {
-        setError("No assessment data to save");
-        setTimeout(() => setError(""), 3000);
-        return;
-      }
-
+      // Always save whatever is filled and exit to dashboard
       setSaving(true);
-      console.log("Saving data:", assessmentData);
-      const res = await fetch("/api/post-stepdata", {
+      await fetch("/api/post-stepdata", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ useCaseId, assessData: assessmentData }),
       });
-      
-      const data = await res.json();
-      
-      if (res.ok) {
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 2000);
-      } else {
-        setError(data.error || "Failed to save assessment data");
-        setTimeout(() => setError(""), 3000);
-      }
+      window.location.href = '/dashboard';
     } catch (err) {
       console.error("Error saving assessment:", err);
       setError("Failed to save assessment data");
@@ -483,6 +477,10 @@ export default function AssessmentPage() {
           <button
             className="px-4 py-2 w-64 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white rounded-xl shadow-lg font-semibold text-lg transition"
             onClick={async () => {
+              if (!validateAssessmentData(assessmentData)) {
+                alert('Please complete all assessment fields before moving to Backlog.');
+                return;
+              }
               try {
                 if (approvalsPageRef.current && approvalsPageRef.current.handleComplete) {
                   await approvalsPageRef.current.handleComplete();

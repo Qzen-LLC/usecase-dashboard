@@ -322,14 +322,14 @@ const AIUseCaseTool = () => {
             </div>
             <Label htmlFor="confidenceLevel" className='text-sm font-normal text-gray-800'>How confident are you in your estimates?</Label>
           </div>
-          <Label htmlFor="estimatedTimeline">Estimated estimatedTimeline</Label>
+          <Label htmlFor="estimatedTimeline">Estimated Timeline</Label>
           <Input
             id="estimatedTimeline"
             value={formData.estimatedTimeline}
             onChange={(e) => handleChange("estimatedTimeline", e.target.value)}
             className={invalidFields.includes('estimatedTimeline') ? 'border-red-500' : ''}
           />
-          <Label htmlFor="requiredResources">Required requiredResources</Label>
+          <Label htmlFor="requiredResources">Required Resources</Label>
           <Input
             id="requiredResources"
             value={formData.requiredResources}
