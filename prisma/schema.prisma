@@ -41,7 +41,6 @@ model UseCase {
   euAiActAssessments       EuAiActAssessment[]
   iso42001Assessments      Iso42001Assessment[]
 
-  @@unique([aiucId])
   @@index([stage])
   @@index([priority])
   @@index([businessFunction])
