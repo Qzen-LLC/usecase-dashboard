@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import isEqual from 'lodash.isequal';
 
 
 const riskLevels = ['None', 'Low', 'Medium', 'High'];

@@ -81,13 +81,20 @@ const FinancialDashboard = () => {
         if (Array.isArray(data) && data.length > 0) {
           const d = data[0];
           if (d) {
-            setInitialDevCost(d.devCostBase ?? 150000);
-            setBaseApiCost(d.apiCostBase ?? 8000);
-            setBaseInfraCost(d.infraCostBase ?? 2000);
-            setBaseOpCost(d.opCostBase ?? 5000);
-            setBaseMonthlyValue(d.valueBase ?? 25000);
-            setValueGrowthRate(d.valueGrowthRate ?? 0.15);
+            setInitialDevCost(d.devCostBase ?? 0);
+            setBaseApiCost(d.apiCostBase ?? 0);
+            setBaseInfraCost(d.infraCostBase ?? 0);
+            setBaseOpCost(d.opCostBase ?? 0);
+            setBaseMonthlyValue(d.valueBase ?? 0);
+            setValueGrowthRate(d.valueGrowthRate ?? 0);
           }
+        } else {
+          setInitialDevCost(0);
+          setBaseApiCost(0);
+          setBaseInfraCost(0);
+          setBaseOpCost(0);
+          setBaseMonthlyValue(0);
+          setValueGrowthRate(0);
         }
         setLoading(false);
       })

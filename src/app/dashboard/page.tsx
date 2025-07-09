@@ -136,10 +136,11 @@ const Dashboard = () => {
   const handleMoveToStage = async (useCaseId: string, newStage: string) => {
     try {
       await updateStageMutation.mutateAsync({ useCaseId, newStage });
-      setSelectedUseCase(prev =>
+      setSelectedUseCase((prev: MappedUseCase | null) =>
         prev ? { ...prev, stage: newStage } : prev
       );
       setSelectedUseCase(null);
+      refetch(); // Refresh the use case list after stage change
     } catch (error) {
       console.error("Unable to update stage", error);
     }
@@ -256,7 +257,7 @@ const Dashboard = () => {
             <div className="mb-6">
               <h3 className="font-semibold text-gray-800 mb-2 text-sm">Key Stakeholders</h3>
               <div className="flex flex-wrap gap-2">
-                {useCase.stakeholders.map((stakeholder, idx) => (
+                {useCase.stakeholders.map((stakeholder: string, idx: number) => (
                   <span key={idx} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium border border-blue-100">
                     {stakeholder}
                   </span>
@@ -270,7 +271,7 @@ const Dashboard = () => {
             <div className="mb-6">
               <h3 className="font-semibold text-gray-800 mb-2 text-sm">Key Risks</h3>
               <div className="flex flex-wrap gap-2">
-                {useCase.risks.map((risk, idx) => (
+                {useCase.risks.map((risk: string, idx: number) => (
                   <span key={idx} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium border border-blue-100">
                     {risk}
                   </span>
@@ -327,10 +328,32 @@ const Dashboard = () => {
                     return;
                   }
                 }
-                // If moving from proof-of-value to backlog, show alert
+                // If moving from proof-of-value to backlog, require assessment to be complete
                 if (useCase.stage === 'proof-of-value' && nextStage === 'backlog') {
-                  alert('Please complete the assessment before moving to Backlog.');
-                  return;
+                  // Check for assessment completion
+                  const assessData = (useCase as any).assessData?.stepsData;
+                  const requiredSections = [
+                    'technicalFeasibility',
+                    'businessFeasibility',
+                    'ethicalImpact',
+                    'riskAssessment',
+                    'dataReadiness',
+                    'roadmapPosition',
+                    'budgetPlanning'
+                  ];
+                  const incomplete = !assessData || requiredSections.some(section => {
+                    const val = assessData[section];
+                    if (!val) return true;
+                    if (typeof val === 'object') {
+                      // For objects, check if any value is empty or falsy
+                      return Object.values(val).some(v => v === '' || v === null || v === undefined || (Array.isArray(v) && v.length === 0));
+                    }
+                    return val === '' || val === null || val === undefined;
+                  });
+                  if (incomplete) {
+                    alert('Please complete all assessment steps before moving to Backlog.');
+                    return;
+                  }
                 }
                 await handleMoveToStage(useCase.id, nextStage);
               }}
@@ -442,7 +465,7 @@ const Dashboard = () => {
                       </span>
                     </div>
                     <div className="flex-1 space-y-5">
-                      {getUseCasesByStage(stage.id).map(useCase => (
+                      {getUseCasesByStage(stage.id).map((useCase: MappedUseCase) => (
                         <Card
                           key={useCase.id}
                           className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer p-5 border border-gray-200 hover:border-blue-200 w-full group"

@@ -141,12 +141,12 @@ const defaultAssessmentData = {
     metrics: '',
   },
   budgetPlanning: {
-    initialDevCost: 150000,
-    baseApiCost: 8000,
-    baseInfraCost: 2000,
-    baseOpCost: 5000,
-    baseMonthlyValue: 25000,
-    valueGrowthRate: 0.15,
+    initialDevCost: 0,
+    baseApiCost: 0,
+    baseInfraCost: 0,
+    baseOpCost: 0,
+    baseMonthlyValue: 0,
+    valueGrowthRate: 0,
     budgetRange: '',
     error: '',
     loading: false,
@@ -303,7 +303,7 @@ export default function AssessmentPage() {
           <div className="text-2xl font-semibold text-gray-900">{useCase.title}</div>
           <div className="text-gray-600">{useCase.department} {useCase.owner}</div>
         </div>
-        <button className="text-blue-700 hover:underline mt-4 sm:mt-0">&larr; Back to Pipeline</button>
+        {/* Removed 'Back to Pipeline' button */}
       </div>
 
       {/* Assessment Steps Navigation */}
