@@ -38,6 +38,8 @@ model UseCase {
   Approval                 Approval?
   assessData               Assess?
   finopsData               FinOps?
+  euAiActAssessments       EuAiActAssessment[]
+  iso42001Assessments      Iso42001Assessment[]
 
   @@unique([aiucId])
   @@index([stage])
@@ -179,4 +181,244 @@ enum Priority {
   HIGH
   MEDIUM
   LOW
+}
+
+// EU AI ACT Framework Models
+model EuAiActTopic {
+  id          String @id @default(uuid())
+  topicId     String @unique
+  title       String
+  description String
+  orderIndex  Int
+  subtopics   EuAiActSubtopic[]
+  
+  @@index([orderIndex])
+}
+
+model EuAiActSubtopic {
+  id          String @id @default(uuid())
+  subtopicId  String @unique
+  title       String
+  description String
+  orderIndex  Int
+  topicId     String
+  topic       EuAiActTopic @relation(fields: [topicId], references: [topicId])
+  questions   EuAiActQuestion[]
+  
+  @@index([topicId, orderIndex])
+}
+
+model EuAiActQuestion {
+  id          String @id @default(uuid())
+  questionId  String @unique
+  question    String
+  priority    String // High, Medium, Low
+  answerType  String // Long text, Short text, etc.
+  orderIndex  Int
+  subtopicId  String
+  subtopic    EuAiActSubtopic @relation(fields: [subtopicId], references: [subtopicId])
+  answers     EuAiActAnswer[]
+  
+  @@index([subtopicId, orderIndex])
+}
+
+model EuAiActAnswer {
+  id           String @id @default(uuid())
+  answer       String?
+  evidenceFiles String[] // Array of file paths/URLs
+  status       String @default("pending") // pending, completed, reviewed
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  questionId   String
+  question     EuAiActQuestion @relation(fields: [questionId], references: [questionId])
+  assessmentId String
+  assessment   EuAiActAssessment @relation(fields: [assessmentId], references: [id])
+  
+  @@unique([questionId, assessmentId])
+  @@index([assessmentId])
+}
+
+model EuAiActAssessment {
+  id         String @id @default(uuid())
+  useCaseId  String
+  useCase    UseCase @relation(fields: [useCaseId], references: [id])
+  status     String @default("in_progress") // in_progress, completed, reviewed
+  progress   Float @default(0) // 0-100
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  answers    EuAiActAnswer[]
+  controls   EuAiActControl[]
+  
+  @@unique([useCaseId])
+  @@index([status])
+}
+
+model EuAiActControlCategory {
+  id          String @id @default(uuid())
+  categoryId  String @unique
+  title       String
+  description String
+  orderIndex  Int
+  controls    EuAiActControlStruct[]
+  
+  @@index([orderIndex])
+}
+
+model EuAiActControlStruct {
+  id           String @id @default(uuid())
+  controlId    String @unique
+  title        String
+  description  String
+  orderIndex   Int
+  categoryId   String
+  category     EuAiActControlCategory @relation(fields: [categoryId], references: [categoryId])
+  subcontrols  EuAiActSubcontrolStruct[]
+  instances    EuAiActControl[]
+  
+  @@index([categoryId, orderIndex])
+}
+
+model EuAiActSubcontrolStruct {
+  id           String @id @default(uuid())
+  subcontrolId String @unique
+  title        String
+  description  String
+  orderIndex   Int
+  controlId    String
+  control      EuAiActControlStruct @relation(fields: [controlId], references: [controlId])
+  instances    EuAiActSubcontrol[]
+  
+  @@index([controlId, orderIndex])
+}
+
+model EuAiActControl {
+  id           String @id @default(uuid())
+  status       String @default("pending") // pending, implemented, reviewed
+  notes        String?
+  evidenceFiles String[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  controlId    String
+  controlStruct EuAiActControlStruct @relation(fields: [controlId], references: [controlId])
+  assessmentId String
+  assessment   EuAiActAssessment @relation(fields: [assessmentId], references: [id])
+  subcontrols  EuAiActSubcontrol[]
+  
+  @@unique([controlId, assessmentId])
+  @@index([assessmentId])
+}
+
+model EuAiActSubcontrol {
+  id              String @id @default(uuid())
+  status          String @default("pending") // pending, implemented, reviewed
+  notes           String?
+  evidenceFiles   String[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  subcontrolId    String
+  subcontrolStruct EuAiActSubcontrolStruct @relation(fields: [subcontrolId], references: [subcontrolId])
+  controlId       String
+  control         EuAiActControl @relation(fields: [controlId], references: [id])
+  
+  @@unique([subcontrolId, controlId])
+  @@index([controlId])
+}
+
+// ISO 42001 Framework Models
+model Iso42001Clause {
+  id          String @id @default(uuid())
+  clauseId    String @unique
+  title       String
+  description String
+  orderIndex  Int
+  subclauses  Iso42001Subclause[]
+  
+  @@index([orderIndex])
+}
+
+model Iso42001Subclause {
+  id          String @id @default(uuid())
+  subclauseId String @unique
+  title       String
+  summary     String
+  questions   String[]
+  evidenceExamples String[]
+  orderIndex  Int
+  clauseId    String
+  clause      Iso42001Clause @relation(fields: [clauseId], references: [clauseId])
+  instances   Iso42001SubclauseInstance[]
+  
+  @@index([clauseId, orderIndex])
+}
+
+model Iso42001SubclauseInstance {
+  id            String @id @default(uuid())
+  implementation String?
+  evidenceFiles String[]
+  status        String @default("pending") // pending, implemented, reviewed
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  subclauseId   String
+  subclause     Iso42001Subclause @relation(fields: [subclauseId], references: [subclauseId])
+  assessmentId  String
+  assessment    Iso42001Assessment @relation(fields: [assessmentId], references: [id])
+  
+  @@unique([subclauseId, assessmentId])
+  @@index([assessmentId])
+}
+
+model Iso42001Assessment {
+  id          String @id @default(uuid())
+  useCaseId   String
+  useCase     UseCase @relation(fields: [useCaseId], references: [id])
+  status      String @default("in_progress") // in_progress, completed, reviewed
+  progress    Float @default(0) // 0-100
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  subclauses  Iso42001SubclauseInstance[]
+  annexes     Iso42001AnnexInstance[]
+  
+  @@unique([useCaseId])
+  @@index([status])
+}
+
+model Iso42001AnnexCategory {
+  id          String @id @default(uuid())
+  categoryId  String @unique
+  title       String
+  description String
+  orderIndex  Int
+  items       Iso42001AnnexItem[]
+  
+  @@index([orderIndex])
+}
+
+model Iso42001AnnexItem {
+  id          String @id @default(uuid())
+  itemId      String @unique
+  title       String
+  description String
+  guidance    String
+  orderIndex  Int
+  categoryId  String
+  category    Iso42001AnnexCategory @relation(fields: [categoryId], references: [categoryId])
+  instances   Iso42001AnnexInstance[]
+  
+  @@index([categoryId, orderIndex])
+}
+
+model Iso42001AnnexInstance {
+  id            String @id @default(uuid())
+  implementation String?
+  evidenceFiles String[]
+  status        String @default("pending") // pending, implemented, reviewed
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  itemId        String
+  item          Iso42001AnnexItem @relation(fields: [itemId], references: [itemId])
+  assessmentId  String
+  assessment    Iso42001Assessment @relation(fields: [assessmentId], references: [id])
+  
+  @@unique([itemId, assessmentId])
+  @@index([assessmentId])
 }

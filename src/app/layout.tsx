@@ -82,6 +82,7 @@ export default function RootLayout({
                 <Link href="/dashboard/vendor-assessment" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-indigo-400 hover:to-cyan-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Vendor Assessment</Link>
                 <Link href="/dashboard/finops-dashboard" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-purple-500 hover:to-fuchsia-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>FinOps Dashboard</Link>
                 <Link href="/dashboard/policy-center" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-yellow-400 hover:to-pink-400 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Policy Center</Link>
+                <Link href="/dashboard/governance" className="flex items-center px-5 py-3 text-base font-semibold text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-teal-400 hover:to-green-500 rounded-full transition-all duration-200 shadow-sm" prefetch={false}>Governance</Link>
               </nav>
             </SheetContent>
           </Sheet>
@@ -98,6 +99,7 @@ export default function RootLayout({
             <Link href="/dashboard/vendor-assessment" className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-indigo-400 hover:to-cyan-500 rounded-full transition-all duration-300 interactive-soft" prefetch={false}>Vendor Assessment</Link>
             <Link href="/dashboard/finops-dashboard" className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-purple-500 hover:to-fuchsia-500 rounded-full transition-all duration-300 interactive-soft" prefetch={false}>FinOps Dashboard</Link>
             <Link href="/dashboard/policy-center" className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-yellow-400 hover:to-pink-400 rounded-full transition-all duration-300 interactive-soft" prefetch={false}>Policy Center</Link>
+            <Link href="/dashboard/governance" className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-white hover:bg-gradient-to-r hover:from-teal-400 hover:to-green-500 rounded-full transition-all duration-300 interactive-soft" prefetch={false}>Governance</Link>
           </nav>
         </header>
         {children}
