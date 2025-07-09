@@ -120,9 +120,14 @@ export default function Iso42001AssessmentPage() {
       const assessmentData = await assessmentResponse.json();
 
       // Check if framework tables are available
-      if (assessmentData.status === 'not_available' || clausesData.length === 0) {
-        // Show setup message for missing database tables
+      if (clausesData.length === 0) {
         setError('ISO 42001 framework tables need to be set up. Please run the database setup scripts to enable full functionality.');
+        return;
+      }
+      
+      // If assessment is not available, it means the use case doesn't exist
+      if (assessmentData.status === 'not_available') {
+        setError('Use case not found. Please ensure you are accessing a valid use case from the dashboard.');
         return;
       }
 
@@ -311,22 +316,19 @@ export default function Iso42001AssessmentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <Link href="/dashboard/governance">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Governance
-              </Button>
-            </Link>
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-6 h-6 text-purple-600" />
-              <h1 className="text-3xl font-bold text-gray-900">ISO 42001 Assessment</h1>
+    <div className="bg-gray-50 min-h-full">
+      <div className="px-6 py-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex items-center gap-4 mb-4">
+              <Link href="/dashboard/governance">
+                <Button variant="outline" size="sm">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Governance
+                </Button>
+              </Link>
             </div>
-          </div>
           
           {assessment && (
             <div className="bg-white rounded-lg p-6 shadow-sm border">
@@ -351,6 +353,7 @@ export default function Iso42001AssessmentPage() {
               </div>
             </div>
           )}
+        </div>
         </div>
 
         {/* Tabs */}

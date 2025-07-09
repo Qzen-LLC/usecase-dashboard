@@ -414,11 +414,11 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 flex flex-col justify-center items-center m-8">
-      <div className="w-full max-w-screen-2xl mx-8 card-elevated mt-6 mb-6 mx-auto relative z-10">
-        <div className="px-8 py-8">
+    <div className="bg-gray-50 min-h-full">
+      <div className="px-6 py-6">
+        <div className="w-full max-w-screen-2xl mx-auto">
           {/* Main Content */}
-          <div className="p-4">
+          <div className="">
             {/* Filters and Add Button */}
             <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-3 mb-5">
               <div className="relative flex-1 max-w-md w-full">

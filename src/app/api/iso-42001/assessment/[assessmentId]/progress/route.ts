@@ -3,10 +3,10 @@ import { prismaClient } from '@/utils/db';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { assessmentId: string } }
+  { params }: { params: Promise<{ assessmentId: string }> }
 ) {
   try {
-    const { assessmentId } = params;
+    const { assessmentId } = await params;
     const { progress } = await request.json();
 
     const updatedAssessment = await prismaClient.iso42001Assessment.update({

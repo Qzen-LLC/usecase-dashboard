@@ -3,10 +3,28 @@ import { prismaClient } from '@/utils/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { useCaseId: string } }
+  { params }: { params: Promise<{ useCaseId: string }> }
 ) {
+  const { useCaseId } = await params;
+  
   try {
-    const { useCaseId } = params;
+    // First check if the use case exists
+    const useCase = await prismaClient.useCase.findUnique({
+      where: { id: useCaseId }
+    });
+
+    if (!useCase) {
+      return NextResponse.json({
+        id: 'temp-' + useCaseId,
+        useCaseId,
+        status: 'not_available',
+        progress: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        subclauses: [],
+        annexes: []
+      });
+    }
 
     // Check if assessment exists, create if not
     let assessment = await prismaClient.iso42001Assessment.findUnique({

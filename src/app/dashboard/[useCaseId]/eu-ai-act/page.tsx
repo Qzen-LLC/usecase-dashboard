@@ -140,167 +140,16 @@ export default function EuAiActAssessmentPage() {
       const assessmentData = await assessmentResponse.json();
 
       // Check if framework tables are available
-      if (assessmentData.status === 'not_available' || topicsData.length === 0) {
-        // Load sample data for demonstration
-        const sampleControlCategories = [
-          {
-            id: 'PC',
-            categoryId: 'PC',
-            title: 'Project Controls',
-            description: 'Controls related to project governance and management',
-            orderIndex: 1,
-            controls: [
-              {
-                id: 'PC.1',
-                controlId: 'PC.1',
-                title: 'AI Project Charter',
-                description: 'Establish a formal project charter for AI initiatives',
-                orderIndex: 1,
-                subcontrols: [
-                  {
-                    id: 'PC.1.1',
-                    subcontrolId: 'PC.1.1',
-                    title: 'Project Scope Definition',
-                    description: 'Define clear project scope, objectives, and deliverables',
-                    orderIndex: 1
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            id: 'DG',
-            categoryId: 'DG',
-            title: 'Data Governance',
-            description: 'Controls for data management and governance in AI systems',
-            orderIndex: 2,
-            controls: [
-              {
-                id: 'DG.1',
-                controlId: 'DG.1',
-                title: 'Data Quality Management',
-                description: 'Ensure data quality throughout the AI lifecycle',
-                orderIndex: 1,
-                subcontrols: [
-                  {
-                    id: 'DG.1.1',
-                    subcontrolId: 'DG.1.1',
-                    title: 'Data Validation Procedures',
-                    description: 'Implement systematic data validation procedures',
-                    orderIndex: 1
-                  }
-                ]
-              }
-            ]
-          }
-        ];
-
-        const sampleTopics = [
-          {
-            id: '1',
-            topicId: '1',
-            title: 'Project Scope',
-            description: 'Define and document the scope of the AI project including environment, technology, and stakeholder requirements.',
-            orderIndex: 1,
-            subtopics: [
-              {
-                id: '1.1',
-                subtopicId: '1.1',
-                title: 'General',
-                description: 'General project scope documentation',
-                orderIndex: 1,
-                questions: [
-                  {
-                    id: '1.1.1',
-                    questionId: '1.1.1',
-                    question: 'Describe the AI environment/application used',
-                    priority: 'High',
-                    answerType: 'Long text',
-                    orderIndex: 1
-                  },
-                  {
-                    id: '1.1.2',
-                    questionId: '1.1.2',
-                    question: 'Is a new form of AI technology used?',
-                    priority: 'High',
-                    answerType: 'Long text',
-                    orderIndex: 2
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            id: '2',
-            topicId: '2',
-            title: 'Risk Management System',
-            description: 'Establish comprehensive risk management processes for AI systems.',
-            orderIndex: 2,
-            subtopics: [
-              {
-                id: '2.1',
-                subtopicId: '2.1',
-                title: 'Transparency and Provision of Information',
-                description: 'Ensure transparency in AI system deployment and information sharing',
-                orderIndex: 1,
-                questions: [
-                  {
-                    id: '2.1.1',
-                    questionId: '2.1.1',
-                    question: 'What business problem does the AI system solve, and what are its capabilities?',
-                    priority: 'High',
-                    answerType: 'Long text',
-                    orderIndex: 1
-                  }
-                ]
-              }
-            ]
-          }
-        ];
-
-        const sampleAssessment = {
-          id: 'sample-' + useCaseId,
-          useCaseId,
-          status: 'in_progress',
-          progress: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          answers: [],
-          controls: [
-            {
-              id: 'control-1',
-              status: 'pending',
-              notes: '',
-              evidenceFiles: [],
-              controlStruct: {
-                controlId: 'PC.1',
-                title: 'AI Project Charter',
-                description: 'Establish a formal project charter for AI initiatives',
-                category: {
-                  title: 'Project Controls'
-                }
-              },
-              subcontrols: [
-                {
-                  id: 'subcontrol-1',
-                  status: 'pending',
-                  notes: '',
-                  evidenceFiles: [],
-                  subcontrolStruct: {
-                    subcontrolId: 'PC.1.1',
-                    title: 'Project Scope Definition',
-                    description: 'Define clear project scope, objectives, and deliverables'
-                  }
-                }
-              ]
-            }
-          ]
-        };
-
-        setTopics(sampleTopics);
-        setControlCategories(sampleControlCategories);
-        setAssessment(sampleAssessment);
-        setError('Note: This is a demo version with sample questions. Database tables need to be set up for full functionality.');
+      if (topicsData.length === 0) {
+        setError('EU AI ACT framework tables need to be set up. Please run the database setup scripts to enable full functionality.');
+        setLoading(false);
+        return;
+      }
+      
+      // If assessment is not available, it means the use case doesn't exist
+      if (assessmentData.status === 'not_available') {
+        setError('Use case not found. Please ensure you are accessing a valid use case from the dashboard.');
+        setLoading(false);
         return;
       }
 
@@ -372,7 +221,6 @@ export default function EuAiActAssessmentPage() {
         throw new Error('Failed to save answer');
       }
 
-      // Update local state with saved data
       const savedAnswer = await response.json();
       setTopics(prevTopics => 
         prevTopics.map(topic => ({
@@ -388,7 +236,6 @@ export default function EuAiActAssessmentPage() {
         }))
       );
 
-      // Recalculate progress
       await updateAssessmentProgress();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save answer');
@@ -606,7 +453,7 @@ export default function EuAiActAssessmentPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center">
+      <div className="bg-gray-50 min-h-full flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading EU AI ACT Assessment...</p>
@@ -617,7 +464,7 @@ export default function EuAiActAssessmentPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center">
+      <div className="bg-gray-50 min-h-full flex items-center justify-center">
         <Card className="max-w-md w-full">
           <CardHeader>
             <CardTitle className="text-red-600">Error</CardTitle>
@@ -632,121 +479,111 @@ export default function EuAiActAssessmentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <Link href="/dashboard/governance">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Governance
-              </Button>
-            </Link>
-            <div className="flex items-center gap-2">
-              <FileText className="w-6 h-6 text-blue-600" />
-              <h1 className="text-3xl font-bold text-gray-900">EU AI ACT Assessment</h1>
-            </div>
-          </div>
-          
-          {assessment && (
-            <div className="bg-white rounded-lg p-6 shadow-sm border">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Assessment Progress</h2>
-                  <p className="text-sm text-gray-600">Complete all required questions and controls to ensure compliance</p>
-                </div>
-                <Badge 
-                  variant="outline" 
-                  className={assessment.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}
-                >
-                  {assessment.status === 'completed' ? 'Completed' : 'In Progress'}
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Progress</span>
-                  <span>{Math.round(assessment.progress)}% Complete</span>
-                </div>
-                <Progress value={assessment.progress} className="h-2" />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Enhanced Tabs */}
-        <div className="mb-8">
-          <div className="bg-white rounded-lg shadow-sm border">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <nav className="flex space-x-8">
-                <button
-                  onClick={() => setActiveTab('assessment')}
-                  className={`${
-                    activeTab === 'assessment'
-                      ? 'bg-blue-100 text-blue-700 border-blue-300'
-                      : 'bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100'
-                  } px-4 py-2 rounded-lg border font-medium text-sm transition-colors flex items-center gap-2`}
-                >
-                  <HelpCircle className="w-4 h-4" />
-                  Assessment Questions
-                  <span className="text-xs bg-white px-2 py-1 rounded-full">
-                    {topics.reduce((total, topic) => total + topic.subtopics.reduce((subTotal, subtopic) => subTotal + subtopic.questions.length, 0), 0)}
-                  </span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('controls')}
-                  className={`${
-                    activeTab === 'controls'
-                      ? 'bg-green-100 text-green-700 border-green-300'
-                      : 'bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100'
-                  } px-4 py-2 rounded-lg border font-medium text-sm transition-colors flex items-center gap-2`}
-                >
-                  <Shield className="w-4 h-4" />
-                  Compliance Controls
-                  <span className="text-xs bg-white px-2 py-1 rounded-full">
-                    {controlCategories.reduce((total, category) => total + category.controls.length, 0)}
-                  </span>
-                </button>
-              </nav>
+    <div className="bg-gray-50 min-h-full">
+      <div className="px-6 py-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex items-center gap-4 mb-4">
+              <Link href="/dashboard/governance">
+                <Button variant="outline" size="sm">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Governance
+                </Button>
+              </Link>
             </div>
             
-            {/* Tab Content Header */}
-            <div className="px-6 py-4 bg-gray-50">
-              {activeTab === 'assessment' ? (
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-100 p-2 rounded-lg">
-                    <HelpCircle className="w-5 h-5 text-blue-600" />
-                  </div>
+            {assessment && (
+              <div className="bg-white rounded-lg p-6 shadow-sm border">
+                <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="font-semibold text-gray-900">Assessment Questions</h3>
-                    <p className="text-sm text-gray-600">Answer all questions to demonstrate compliance with EU AI ACT requirements</p>
+                    <h2 className="text-lg font-semibold text-gray-900">Assessment Progress</h2>
+                    <p className="text-sm text-gray-600">Complete all required questions and controls to ensure compliance</p>
                   </div>
+                  <Badge 
+                    variant="outline" 
+                    className={assessment.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}
+                  >
+                    {assessment.status === 'completed' ? 'Completed' : 'In Progress'}
+                  </Badge>
                 </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <div className="bg-green-100 p-2 rounded-lg">
-                    <Shield className="w-5 h-5 text-green-600" />
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Progress</span>
+                    <span>{Math.round(assessment.progress)}% Complete</span>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Compliance Controls</h3>
-                    <p className="text-sm text-gray-600">Implement and document required controls for AI system governance</p>
-                  </div>
+                  <Progress value={assessment.progress} className="h-2" />
                 </div>
-              )}
+              </div>
+            )}
+          </div>
+
+          {/* Enhanced Tabs */}
+          <div className="mb-8">
+            <div className="bg-white rounded-lg shadow-sm border">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <nav className="flex space-x-8">
+                  <button
+                    onClick={() => setActiveTab('assessment')}
+                    className={`${
+                      activeTab === 'assessment'
+                        ? 'bg-blue-100 text-blue-700 border-blue-300'
+                        : 'bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100'
+                    } px-4 py-2 rounded-lg border font-medium text-sm transition-colors flex items-center gap-2`}
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                    Assessment Questions
+                    <span className="text-xs bg-white px-2 py-1 rounded-full">
+                      {topics.reduce((total, topic) => total + topic.subtopics.reduce((subTotal, subtopic) => subTotal + subtopic.questions.length, 0), 0)}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('controls')}
+                    className={`${
+                      activeTab === 'controls'
+                        ? 'bg-green-100 text-green-700 border-green-300'
+                        : 'bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100'
+                    } px-4 py-2 rounded-lg border font-medium text-sm transition-colors flex items-center gap-2`}
+                  >
+                    <Shield className="w-4 h-4" />
+                    Compliance Controls
+                    <span className="text-xs bg-white px-2 py-1 rounded-full">
+                      {controlCategories.reduce((total, category) => total + category.controls.length, 0)}
+                    </span>
+                  </button>
+                </nav>
+              </div>
+              
+              {/* Tab Content Header */}
+              <div className="px-6 py-4 bg-gray-50">
+                {activeTab === 'assessment' ? (
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-100 p-2 rounded-lg">
+                      <HelpCircle className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Assessment Questions</h3>
+                      <p className="text-sm text-gray-600">Answer all questions to demonstrate compliance with EU AI ACT requirements</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <div className="bg-green-100 p-2 rounded-lg">
+                      <Shield className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Compliance Controls</h3>
+                      <p className="text-sm text-gray-600">Implement and document required controls for AI system governance</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Assessment Content */}
-        <div className="space-y-6">
-          {activeTab === 'assessment' && topics.map((topic) => {
-            const totalQuestions = topic.subtopics.reduce((total, subtopic) => total + subtopic.questions.length, 0);
-            const answeredQuestions = topic.subtopics.reduce((total, subtopic) => 
-              total + subtopic.questions.filter(q => q.answer?.answer?.trim()).length, 0
-            );
-            const completionPercentage = totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
-
-            return (
+          {/* Assessment Content */}
+          <div className="space-y-6">
+            {activeTab === 'assessment' && topics.map((topic) => (
               <Card key={topic.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader 
                   className="cursor-pointer bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 transition-all duration-200"
@@ -757,32 +594,9 @@ export default function EuAiActAssessmentPage() {
                       <div className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-xl w-12 h-12 flex items-center justify-center text-sm font-bold shadow-lg">
                         {topic.orderIndex}
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <CardTitle className="text-lg text-gray-900">{topic.title}</CardTitle>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
-                              {totalQuestions} questions
-                            </span>
-                            {answeredQuestions > 0 && (
-                              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
-                                {answeredQuestions} answered
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                      <div>
+                        <CardTitle className="text-lg text-gray-900">{topic.title}</CardTitle>
                         <CardDescription className="text-sm text-gray-600">{topic.description}</CardDescription>
-                        <div className="mt-2">
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <div className="w-32 bg-gray-200 rounded-full h-1.5">
-                              <div 
-                                className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
-                                style={{ width: `${completionPercentage}%` }}
-                              ></div>
-                            </div>
-                            <span>{Math.round(completionPercentage)}% complete</span>
-                          </div>
-                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -800,7 +614,7 @@ export default function EuAiActAssessmentPage() {
                     {topic.subtopics.map((subtopic) => (
                       <div key={subtopic.id} className="border-t border-gray-100">
                         <div 
-                          className="p-4 cursor-pointer hover:bg-gray-50 transition-colors border-l-4 border-l-transparent hover:border-l-blue-300"
+                          className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
                           onClick={() => toggleSubtopic(subtopic.subtopicId)}
                         >
                           <div className="flex items-center justify-between">
@@ -890,18 +704,9 @@ export default function EuAiActAssessmentPage() {
                   </CardContent>
                 )}
               </Card>
-            );
-          })}
+            ))}
 
-          {activeTab === 'controls' && controlCategories.map((category) => {
-            const totalControls = category.controls.length;
-            const implementedControls = category.controls.filter(control => {
-              const controlInstance = assessment?.controls?.find(c => c.controlStruct.controlId === control.controlId);
-              return controlInstance?.status === 'implemented' || controlInstance?.status === 'reviewed';
-            }).length;
-            const completionPercentage = totalControls > 0 ? (implementedControls / totalControls) * 100 : 0;
-
-            return (
+            {activeTab === 'controls' && controlCategories.map((category) => (
               <Card key={category.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader 
                   className="cursor-pointer bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 transition-all duration-200"
@@ -912,32 +717,9 @@ export default function EuAiActAssessmentPage() {
                       <div className="bg-gradient-to-br from-green-600 to-emerald-600 text-white rounded-xl w-12 h-12 flex items-center justify-center text-sm font-bold shadow-lg">
                         {category.categoryId}
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <CardTitle className="text-lg text-gray-900">{category.title}</CardTitle>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
-                              {totalControls} controls
-                            </span>
-                            {implementedControls > 0 && (
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
-                                {implementedControls} implemented
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                      <div>
+                        <CardTitle className="text-lg text-gray-900">{category.title}</CardTitle>
                         <CardDescription className="text-sm text-gray-600">{category.description}</CardDescription>
-                        <div className="mt-2">
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <div className="w-32 bg-gray-200 rounded-full h-1.5">
-                              <div 
-                                className="bg-green-600 h-1.5 rounded-full transition-all duration-300" 
-                                style={{ width: `${completionPercentage}%` }}
-                              ></div>
-                            </div>
-                            <span>{Math.round(completionPercentage)}% complete</span>
-                          </div>
-                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -951,176 +733,15 @@ export default function EuAiActAssessmentPage() {
                 </CardHeader>
 
                 {expandedCategories.has(category.categoryId) && (
-                  <CardContent className="p-0">
-                    {category.controls.map((control) => {
-                      const controlInstance = assessment?.controls?.find(c => c.controlStruct.controlId === control.controlId);
-                      const isImplemented = controlInstance?.status === 'implemented' || controlInstance?.status === 'reviewed';
-                      
-                      return (
-                        <div key={control.id} className="border-t border-gray-100">
-                          <div className="p-6 hover:bg-gray-50 transition-colors">
-                            <div className="space-y-4">
-                              <div className="flex items-start gap-4">
-                                <div className="flex-shrink-0 mt-1">
-                                  {getControlStatusIcon(controlInstance?.status || 'pending')}
-                                </div>
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-3 mb-2">
-                                    <h4 className="font-semibold text-gray-900 text-base">{control.title}</h4>
-                                    <Badge variant="outline" className="text-xs bg-gray-100">
-                                      {control.controlId}
-                                    </Badge>
-                                    <Badge 
-                                      variant="outline" 
-                                      className={`text-xs ${getStatusColor(controlInstance?.status || 'pending')}`}
-                                    >
-                                      {controlInstance?.status || 'pending'}
-                                    </Badge>
-                                  </div>
-                                  <p className="text-sm text-gray-600 mb-4 leading-relaxed">{control.description}</p>
-                                  
-                                  {control.subcontrols.length > 0 && (
-                                    <div className="mb-4">
-                                      <h5 className="text-sm font-medium text-gray-700 mb-3">Subcontrols:</h5>
-                                      <div className="space-y-3 border-l-2 border-gray-200 pl-4">
-                                        {control.subcontrols.map((subcontrol) => {
-                                          const subcontrolInstance = controlInstance?.subcontrols?.find(sc => sc.subcontrolStruct.subcontrolId === subcontrol.subcontrolId);
-                                          return (
-                                            <div key={subcontrol.id} className="bg-gray-50 p-4 rounded-lg">
-                                              <div className="flex items-center gap-3 mb-2">
-                                                {getControlStatusIcon(subcontrolInstance?.status || 'pending')}
-                                                <span className="font-medium text-sm">{subcontrol.subcontrolId}:</span>
-                                                <span className="text-sm text-gray-700">{subcontrol.title}</span>
-                                                <Badge 
-                                                  variant="outline" 
-                                                  className={`text-xs ${getStatusColor(subcontrolInstance?.status || 'pending')}`}
-                                                >
-                                                  {subcontrolInstance?.status || 'pending'}
-                                                </Badge>
-                                              </div>
-                                              <p className="text-xs text-gray-600 mb-3 ml-8">{subcontrol.description}</p>
-                                              
-                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-8">
-                                                <div>
-                                                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                    Status
-                                                  </label>
-                                                  <select
-                                                    value={subcontrolInstance?.status || 'pending'}
-                                                    onChange={(e) => handleSubcontrolStatusChange(control.controlId, subcontrol.subcontrolId, e.target.value, subcontrolInstance?.notes || '')}
-                                                    className="w-full p-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                                  >
-                                                    <option value="pending">Pending</option>
-                                                    <option value="implemented">Implemented</option>
-                                                    <option value="reviewed">Reviewed</option>
-                                                  </select>
-                                                </div>
-                                                <div>
-                                                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                    Evidence
-                                                  </label>
-                                                  <div className="flex items-center gap-2 text-xs text-gray-600 p-2 border border-gray-200 rounded-lg bg-gray-50">
-                                                    <Upload className="w-3 h-3" />
-                                                    <span>{subcontrolInstance?.evidenceFiles?.length || 0} files</span>
-                                                  </div>
-                                                </div>
-                                              </div>
-                                              
-                                              <div className="mt-3 ml-8">
-                                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                  Implementation Notes
-                                                </label>
-                                                <textarea
-                                                  value={subcontrolInstance?.notes || ''}
-                                                  onChange={(e) => handleSubcontrolStatusChange(control.controlId, subcontrol.subcontrolId, subcontrolInstance?.status || 'pending', e.target.value)}
-                                                  placeholder="Describe implementation details..."
-                                                  className="w-full p-2 text-xs border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                                  rows={2}
-                                                />
-                                              </div>
-                                              
-                                              <div className="mt-3 ml-8 flex justify-end">
-                                                <Button
-                                                  onClick={() => handleSaveSubcontrol(control.controlId, subcontrol.subcontrolId)}
-                                                  disabled={saving}
-                                                  size="sm"
-                                                  variant="outline"
-                                                  className="text-xs flex items-center gap-1"
-                                                >
-                                                  <Save className="w-3 h-3" />
-                                                  {saving ? 'Saving...' : 'Save'}
-                                                </Button>
-                                              </div>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                      Overall Status
-                                    </label>
-                                    <select
-                                      value={controlInstance?.status || 'pending'}
-                                      onChange={(e) => handleControlStatusChange(control.controlId, e.target.value, controlInstance?.notes || '')}
-                                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                    >
-                                      <option value="pending">Pending</option>
-                                      <option value="implemented">Implemented</option>
-                                      <option value="reviewed">Reviewed</option>
-                                    </select>
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                      Evidence Files
-                                    </label>
-                                    <div className="flex items-center gap-2 text-sm text-gray-600 p-3 border border-gray-200 rounded-lg bg-gray-50">
-                                      <Upload className="w-4 h-4" />
-                                      <span>{controlInstance?.evidenceFiles?.length || 0} files</span>
-                                    </div>
-                                  </div>
-                                </div>
-                                
-                                <div className="mb-4">
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Implementation Notes
-                                  </label>
-                                  <textarea
-                                    value={controlInstance?.notes || ''}
-                                    onChange={(e) => handleControlStatusChange(control.controlId, controlInstance?.status || 'pending', e.target.value)}
-                                    placeholder="Describe how this control is implemented..."
-                                    className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                    rows={3}
-                                  />
-                                </div>
-
-                                <div className="flex justify-end">
-                                  <Button
-                                    onClick={() => handleSaveControl(control.controlId)}
-                                    disabled={saving}
-                                    className="flex items-center gap-2"
-                                  >
-                                    <Save className="w-4 h-4" />
-                                    {saving ? 'Saving...' : 'Save Control'}
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <CardContent className="p-6">
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">Controls functionality will be available once the database tables are set up.</p>
+                    </div>
                   </CardContent>
                 )}
               </Card>
-            );
-          })}
+            ))}
+          </div>
         </div>
       </div>
     </div>

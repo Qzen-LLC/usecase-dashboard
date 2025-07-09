@@ -3,10 +3,10 @@ import { prismaClient } from '@/utils/db';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { assessmentId: string } }
+  { params }: { params: Promise<{ assessmentId: string }> }
 ) {
   try {
-    const { assessmentId } = params;
+    const { assessmentId } = await params;
     const { questionId, answer, evidenceFiles } = await request.json();
 
     // Upsert the answer

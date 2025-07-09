@@ -3,10 +3,10 @@ import { prismaClient } from '@/utils/db';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { assessmentId: string } }
+  { params }: { params: Promise<{ assessmentId: string }> }
 ) {
   try {
-    const { assessmentId } = params;
+    const { assessmentId } = await params;
     const { controlId, status, notes, evidenceFiles } = await request.json();
 
     // Check if framework tables exist
