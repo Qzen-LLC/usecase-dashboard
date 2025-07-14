@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter, Lora, Nunito, Merriweather } from "next/font/google";
+import { Geist, Geist_Mono, Inter, /*Lora,*/ Nunito /*, Merriweather*/ } from "next/font/google";
 import "./globals.css";
-import SidebarLayout from "@/components/ui/sidebar-layout";
+import { ClerkProvider } from "@clerk/nextjs";
 import Image from "next/image";
+import React from "react";
+import ConditionalSidebarLayout from '@/components/ConditionalSidebarLayout';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,10 +21,10 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-const lora = Lora({
-  subsets: ["latin"],
-  variable: "--font-lora",
-});
+// const lora = Lora({
+//   subsets: ["latin"],
+//   variable: "--font-lora",
+// });
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -30,13 +32,11 @@ const nunito = Nunito({
   weight: ["600"],
 });
 
-const merriweather = Merriweather({
-  subsets: ["latin"],
-  variable: "--font-merriweather",
-  weight: ["400"],
-});
-
-
+// const merriweather = Merriweather({
+//   subsets: ["latin"],
+//   variable: "--font-merriweather",
+//   weight: ["400"],
+// });
 
 export const metadata: Metadata = {
   title: "QUBE - AI Platform",
@@ -47,15 +47,15 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${lora.variable} ${nunito.variable} ${merriweather.variable} antialiased font-sans`}
-        suppressHydrationWarning
-      >
-        <SidebarLayout>
-          {children}
-        </SidebarLayout>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${nunito.variable} antialiased font-sans`}
+          suppressHydrationWarning
+        >
+          <ConditionalSidebarLayout>{children}</ConditionalSidebarLayout>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

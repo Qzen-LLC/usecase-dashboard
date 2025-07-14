@@ -1,21 +1,63 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
-export async function middleware(request: NextRequest) {
-  // No authentication needed - just allow all requests
-  return NextResponse.next()
-}
+const isProtectedRoute = createRouteMatcher([
+  '/dashboard(.*)',
+  '/admin(.*)',
+  '/edit-usecase(.*)',
+  '/view-usecase(.*)',
+  '/new-usecase(.*)',
+  '/invite(.*)',
+  '/user-profile(.*)',
+]);
+
+const isAdminRoute = createRouteMatcher([
+  '/admin(.*)',
+]);
+
+const isPublicRoute = createRouteMatcher([
+  '/',
+  '/sign-in(.*)',
+  '/sign-up(.*)',
+  '/api/webhook(.*)',
+]);
+
+export default clerkMiddleware((auth, req) => {
+  const userId = auth.userId;
+  const { pathname } = req.nextUrl;
+
+  // Debug log for authentication
+  console.log("[Middleware] userId:", userId, "pathname:", pathname);
+
+  // Allow public routes
+  if (isPublicRoute(req)) {
+    return NextResponse.next();
+  }
+
+  // TEMPORARY BYPASS: Commented out protected route check for local development
+  // if (!userId && isProtectedRoute(req)) {
+  //   const signInUrl = new URL('/sign-in', req.url);
+  //   signInUrl.searchParams.set('redirect_url', pathname);
+  //   return NextResponse.redirect(signInUrl);
+  // }
+
+  // If user is signed in and trying to access auth pages, redirect to appropriate dashboard
+  if (userId && (pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up'))) {
+    return NextResponse.redirect(new URL('/dashboard', req.url));
+  }
+
+  return NextResponse.next();
+});
 
 export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
   ],
-}
+};

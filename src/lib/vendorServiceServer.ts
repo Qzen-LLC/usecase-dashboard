@@ -67,9 +67,20 @@ type ApprovalAreaObj = {
 
 export const vendorServiceServer = {
   // Get all vendors
-  async getVendors() {
+  async getVendors(filter?: { role?: string; organizationId?: string; userId?: string }) {
     try {
+      const where: any = {};
+      if (filter) {
+        if (filter.role === 'QZEN_ADMIN') {
+          // No filter, return all vendors
+        } else if ((filter.role === 'ORG_ADMIN' || filter.role === 'ORG_USER') && filter.organizationId) {
+          where.organizationId = filter.organizationId;
+        } else if (filter.role === 'USER' && filter.userId) {
+          where.userId = filter.userId;
+        }
+      }
       const vendors = await prisma.vendor.findMany({
+        where,
         select: {
           id: true,
           name: true,
@@ -176,7 +187,7 @@ export const vendorServiceServer = {
   },
 
   // Create a new vendor
-  async createVendor(vendorData: Partial<VendorData>) {
+  async createVendor(vendorData: Partial<VendorData> & { userId?: string; organizationId?: string }) {
     try {
       const vendor = await prisma.vendor.create({
         data: {
@@ -188,13 +199,13 @@ export const vendorServiceServer = {
           assessmentDate: vendorData.assessmentDate ? new Date(vendorData.assessmentDate) : null,
           overallScore: vendorData.overallScore || 0,
           status: vendorData.status ? reverseStatusMap[vendorData.status as keyof typeof reverseStatusMap] : 'IN_ASSESSMENT',
-          notes: vendorData.notes || null
+          notes: vendorData.notes || null,
+          userId: vendorData.userId || null,
+          organizationId: vendorData.organizationId || null
         }
       });
-
       // Initialize approval areas for the new vendor
       await this.initializeApprovalAreas(vendor.id);
-
       return { data: vendor, error: null };
     } catch (error: any) {
       console.error('Error creating vendor:', error);
@@ -408,15 +419,44 @@ export const vendorServiceServer = {
   },
 
   // Get dashboard statistics
-  async getDashboardStats() {
+  async getDashboardStats(userRole?: string, userId?: string, organizationId?: string) {
     try {
-      const vendors = await prisma.vendor.findMany({
-        select: {
-          category: true,
-          status: true,
-          overallScore: true
-        }
-      });
+      let vendors;
+      if (userRole === 'QZEN_ADMIN') {
+        vendors = await prisma.vendor.findMany({
+          select: {
+            category: true,
+            status: true,
+            overallScore: true
+          }
+        });
+      } else if (organizationId) {
+        vendors = await prisma.vendor.findMany({
+          where: { organizationId },
+          select: {
+            category: true,
+            status: true,
+            overallScore: true
+          }
+        });
+      } else if (userId) {
+        vendors = await prisma.vendor.findMany({
+          where: { userId },
+          select: {
+            category: true,
+            status: true,
+            overallScore: true
+          }
+        });
+      } else {
+        vendors = await prisma.vendor.findMany({
+          select: {
+            category: true,
+            status: true,
+            overallScore: true
+          }
+        });
+      }
 
       const categories = [
         'LLM/Foundation Models',

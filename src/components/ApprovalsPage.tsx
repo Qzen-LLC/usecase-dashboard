@@ -49,7 +49,26 @@ type StepsData = {
 };
 
 const statusOptions = ["Approved", "Rejected", "Pending"];
-const businessFunctions = ["Function A", "Function B", "Function C"];
+const businessFunctions = [
+  'Sales',
+  'Marketing',
+  'Product Development',
+  'Operations',
+  'Customer Support',
+  'HR',
+  'Finance',
+  'IT',
+  'Legal',
+  'Procurement',
+  'Facilities',
+  'Strategy',
+  'Communications',
+  'Risk & Audit',
+  'Innovation Office',
+  'ESG',
+  'Data Office',
+  'PMO'
+];
 const finalQualifications = [
   "Operational Enhancer",
   "Productivity Driver",
@@ -441,6 +460,18 @@ const RiskCalculation = (stepsData: StepsData) => {
   };
 }
 
+function getMissingAssessmentFields(stepsData: StepsData) {
+  if (!stepsData) return ['All assessment sections'];
+  const missing = [];
+  if (!stepsData.dataReadiness || !Array.isArray(stepsData.dataReadiness.dataTypes) || stepsData.dataReadiness.dataTypes.length === 0) missing.push('Data Readiness > Data Types');
+  if (!stepsData.technicalFeasibility || !stepsData.technicalFeasibility.modelTypes || stepsData.technicalFeasibility.modelTypes.length === 0) missing.push('Technical Feasibility > Model Types');
+  if (!stepsData.businessFeasibility || !stepsData.businessFeasibility.userCategories || stepsData.businessFeasibility.userCategories.length === 0) missing.push('Business Feasibility > User Categories');
+  if (!stepsData.riskAssessment || !stepsData.riskAssessment.dataProtection || !Array.isArray(stepsData.riskAssessment.dataProtection.jurisdictions) || stepsData.riskAssessment.dataProtection.jurisdictions.length === 0) missing.push('Risk Assessment > Jurisdictions');
+  if (!stepsData.ethicalImpact || !stepsData.ethicalImpact.modelCharacteristics || !stepsData.ethicalImpact.modelCharacteristics.explainabilityLevel) missing.push('Ethical Impact > Explainability Level');
+  // Add more checks as needed for your required fields
+  return missing;
+}
+
 const ApprovalsPage = forwardRef((props, ref) => {
   const params = useParams();
   const useCaseId = params.useCaseId as string;
@@ -472,7 +503,17 @@ const ApprovalsPage = forwardRef((props, ref) => {
   const [summaryError, setSummaryError] = useState("");
   const [stepsData, setStepsData] = useState<StepsData | null>(null);
   const [chartData, setChartData] = useState<{ month: string; desktop: number }[]>([]);
+  const [finops, setFinops] = useState<any>(null);
 
+  // Fetch financial data
+  useEffect(() => {
+    if (!useCaseId) return;
+    fetch(`/api/get-finops?id=${useCaseId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) setFinops(data[0]);
+      });
+  }, [useCaseId]);
 
   useEffect(() => {
     if (!useCaseId) return;
@@ -534,6 +575,12 @@ const ApprovalsPage = forwardRef((props, ref) => {
   };
 
   const handleComplete = async () => {
+    // Check for missing assessment fields
+    const missingFields = getMissingAssessmentFields(stepsData ?? {});
+    if (missingFields.length > 0) {
+      alert('Please complete the following fields before completing assessment:\n' + missingFields.join('\n'));
+      return;
+    }
     try {
       await handleSave();
       
@@ -597,19 +644,19 @@ const ApprovalsPage = forwardRef((props, ref) => {
             {/* Summary Cards Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <Card className="flex flex-col items-center justify-center p-6">
-                <div className="text-2xl font-bold text-red-600">{formatCurrency(typeof summary.totalInvestment === 'number' ? summary.totalInvestment : 0)}</div>
+                <div className="text-2xl font-bold text-red-600">{formatCurrency(finops?.totalInvestment ?? 0)}</div>
                 <div className="text-gray-600 mt-1">Total Investment</div>
               </Card>
               <Card className="flex flex-col items-center justify-center p-6">
-                <div className="text-2xl font-bold text-green-600">{formatCurrency(typeof summary.totalValueGenerated === 'number' ? summary.totalValueGenerated : 0)}</div>
+                <div className="text-2xl font-bold text-green-600">{formatCurrency(finops?.cumValue ?? 0)}</div>
                 <div className="text-gray-600 mt-1">Total Value Generated</div>
               </Card>
               <Card className="flex flex-col items-center justify-center p-6">
-                <div className="text-2xl font-bold text-blue-600">{typeof summary.netROI === 'number' ? `${summary.netROI}%` : '0%'}</div>
+                <div className="text-2xl font-bold text-blue-600">{typeof finops?.ROI === 'number' ? `${finops.ROI.toFixed(1)}%` : '0%'}</div>
                 <div className="text-gray-600 mt-1">Net ROI</div>
               </Card>
               <Card className="flex flex-col items-center justify-center p-6">
-                <div className="text-2xl font-bold text-green-600">{typeof summary.paybackPeriod === 'number' ? `${summary.paybackPeriod} months` : 'N/A'}</div>
+                <div className="text-2xl font-bold text-green-600">{typeof finops?.breakEvenMonth === 'number' ? `${finops.breakEvenMonth} months` : 'N/A'}</div>
                 <div className="text-gray-600 mt-1">Payback Period</div>
               </Card>
             </div>

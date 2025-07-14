@@ -67,7 +67,12 @@ const FinOpsDashboardPage = () => {
       setError('');
       try {
         const usecasesRes = await fetch('/api/read-usecases');
-        const usecases = await usecasesRes.json();
+        const usecasesJson = await usecasesRes.json();
+        const usecases = Array.isArray(usecasesJson)
+          ? usecasesJson
+          : Array.isArray(usecasesJson.useCases)
+            ? usecasesJson.useCases
+            : [];
         const filtered = (usecases || []).filter((uc: any) => isAfterOrAtBacklog(uc.stage));
         const finopsArr: FinOpsData[] = [];
         for (const uc of filtered) {

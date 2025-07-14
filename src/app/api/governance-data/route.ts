@@ -1,13 +1,25 @@
 import { NextResponse } from 'next/server';
 import { prismaClient, retryDatabaseOperation } from '@/utils/db';
+import { currentUser } from '@clerk/nextjs/server';
 
 export async function GET() {
   try {
-    // First try to get use cases with framework assessments, fallback if tables don't exist
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId: user.id },
+    });
+    if (!userRecord) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    // Only include use cases for this user if USER role
     let useCases;
     try {
       useCases = await retryDatabaseOperation(() => 
         prismaClient.useCase.findMany({
+          where: userRecord.role === 'QZEN_ADMIN' ? {} : { userId: userRecord.id },
           include: {
             assessData: true,
             euAiActAssessments: true,
@@ -20,6 +32,7 @@ export async function GET() {
       console.log('Framework tables not found, falling back to basic data');
       useCases = await retryDatabaseOperation(() => 
         prismaClient.useCase.findMany({
+          where: userRecord.role === 'QZEN_ADMIN' ? {} : { userId: userRecord.id },
           include: {
             assessData: true,
           },

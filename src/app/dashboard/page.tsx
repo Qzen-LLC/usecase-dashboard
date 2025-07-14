@@ -1,10 +1,12 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X, Eye, Trash2, RefreshCw, Loader2, AlertTriangle } from 'lucide-react';
+import { useUser } from '@clerk/nextjs';
+import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X, Eye, Trash2, RefreshCw, Loader2, AlertTriangle, Users, Building2, Edit as EditIcon, ArrowRight as ArrowRightIcon } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -12,6 +14,16 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { useUseCases, useUpdateUseCaseStage, useDeleteUseCase, type MappedUseCase } from '@/hooks/useUseCases';
+import OrganizationUserManagement from '@/components/OrganizationUserManagement';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+  SheetClose,
+} from '@/components/ui/sheet';
 
 const stages = [
   { id: 'discovery', title: 'Discovery', color: 'bg-white', textColor: 'text-foreground' },
@@ -35,12 +47,6 @@ const _STAGE_ORDER = [
   'deployment',
 ];
 
-// function isAfterOrAtBacklog(stage?: string) {
-//   if (!stage) return false;
-//   const idx = STAGE_ORDER.indexOf(stage);
-//   return idx >= STAGE_ORDER.indexOf('backlog');
-// }
-
 const _priorities = {
   CRITICAL: { color: 'bg-red-50 text-red-700 border-red-200', label: 'Critical' },
   HIGH: { color: 'bg-orange-50 text-orange-700 border-orange-200', label: 'High' },
@@ -48,18 +54,69 @@ const _priorities = {
   LOW: { color: 'bg-green-50 text-green-700 border-green-200', label: 'Low' }
 } as const;
 
-// UseCase type is now imported from the hooks file
+const getNextStage = (currentStage: string) => {
+  const idx = _STAGE_ORDER.indexOf(currentStage);
+  return idx >= 0 && idx < _STAGE_ORDER.length - 1 ? _STAGE_ORDER[idx + 1] : currentStage;
+}
 
 const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBy, setFilterBy] = useState('all');
   const [selectedUseCase, setSelectedUseCase] = useState<MappedUseCase | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userOrganization, setUserOrganization] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'useCases' | 'users'>('useCases');
   const router = useRouter();
+  const { user, isSignedIn } = useUser();
+  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [selectedOrgId, setSelectedOrgId] = useState<string>(''); // '' means All Organizations
+  const [modalUseCase, setModalUseCase] = useState<MappedUseCase | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartX, setDragStartX] = useState(0);
+  const [scrollStartX, setScrollStartX] = useState(0);
 
   // React Query hooks for optimized data fetching
   const { data: useCases = [], isLoading, error, refetch } = useUseCases();
   const updateStageMutation = useUpdateUseCaseStage();
   const deleteUseCaseMutation = useDeleteUseCase();
+  const [priorityLoadingId, setPriorityLoadingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isSignedIn) {
+      fetchUserData();
+    }
+  }, [isSignedIn]);
+
+  useEffect(() => {
+    // Fetch organizations for the dropdown
+    const fetchOrganizations = async () => {
+      try {
+        const res = await fetch('/api/admin/organizations');
+        const data = await res.json();
+        if (res.ok && Array.isArray(data.organizations)) {
+          setOrganizations(data.organizations);
+        }
+      } catch (err) {
+        // fail silently for now
+      }
+    };
+    fetchOrganizations();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      const response = await fetch('/api/user/me');
+      if (response.ok) {
+        const data = await response.json();
+        setUserRole(data.user?.role);
+        setUserOrganization(data.user?.organization);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  };
 
   const handleEdit = (id: string) => {
     router.push(`/edit-usecase/${id}`);
@@ -87,9 +144,12 @@ const Dashboard = () => {
     }
   };
 
+  // Add organization filtering to use cases
+  const orgFilteredUseCases = selectedOrgId
+    ? useCases.filter((uc: any) => uc.organizationId === selectedOrgId)
+    : useCases;
 
-
-  const filteredUseCases = useCases.filter(useCase => {
+  const filteredUseCases = orgFilteredUseCases.filter(useCase => {
     const matchesSearch = useCase.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       useCase.owner?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterBy.toLowerCase() === 'all' ||
@@ -146,6 +206,59 @@ const Dashboard = () => {
     }
   };
 
+  // Add a handler to update priority (stub for now)
+  const handlePriorityChange = async (useCaseId: string, newPriority: string) => {
+    setPriorityLoadingId(useCaseId);
+    try {
+      const response = await fetch('/api/update-priority', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ useCaseId, priority: newPriority })
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update priority');
+      }
+      await refetch();
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setPriorityLoadingId(null);
+    }
+  };
+
+  // Drag-to-scroll handlers
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    setDragStartX(e.clientX);
+    setScrollStartX(scrollRef.current ? scrollRef.current.scrollLeft : 0);
+  };
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging || !scrollRef.current) return;
+    const dx = e.clientX - dragStartX;
+    scrollRef.current.scrollLeft = scrollStartX - dx;
+  };
+  const handleMouseUp = () => setIsDragging(false);
+  const handleMouseLeave = () => setIsDragging(false);
+
+  // Touch events for mobile
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    setDragStartX(e.touches[0].clientX);
+    setScrollStartX(scrollRef.current ? scrollRef.current.scrollLeft : 0);
+  };
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isDragging || !scrollRef.current) return;
+    const dx = e.touches[0].clientX - dragStartX;
+    scrollRef.current.scrollLeft = scrollStartX - dx;
+  };
+  const handleTouchEnd = () => setIsDragging(false);
+
+  // Show user management for org admins
+  if (userRole === 'ORG_ADMIN' && activeTab === 'users') {
+    return <OrganizationUserManagement />;
+  }
+
   // Loading and error states
   if (isLoading) {
     return (
@@ -176,378 +289,222 @@ const Dashboard = () => {
     );
   }
 
-  // Modal for use case details
-  const UseCaseDetailModal = ({ useCase, onClose }: { useCase: MappedUseCase, onClose: () => void }) => {
-    if (!useCase) return null;
-              const _availableStages = stages.filter(s => s.id !== useCase.stage);
-
-    return (
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-start justify-center z-50 fade-in p-4 pt-24 overflow-y-auto">
-        <div className="glass rounded-3xl w-full max-w-3xl mx-auto p-8 relative shadow-glow-lg border border-white/30 mb-8 slide-in-bottom">
-          <button
-            className="absolute top-4 right-4 text-gray-400 hover:text-blue-600 transition"
-            onClick={onClose}
-            aria-label="Close"
-          >
-            <X className="w-6 h-6" />
-          </button>
-          
-          {/* Header Section */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-extrabold mb-1 text-gray-800 tracking-tight">
-              <span className="font-mono text-gray-500">AIUC-{useCase.aiucId}</span>
-              <br />
-              {useCase.title}
-            </h2>
-            <p className="text-gray-500 text-base font-medium">{useCase.owner}</p>
-          </div>
-
-          {/* Scores Grid */}
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <div className="card-modern p-4 text-center interactive-soft">
-              <TrendingUp className="w-5 h-5 text-blue-600 mx-auto mb-2" />
-              <div className="text-lg font-bold text-gray-800">{useCase.scores?.operational}</div>
-              <div className="text-xs text-gray-500">Operational</div>
-            </div>
-            <div className="card-modern p-4 text-center interactive-soft">
-              <Zap className="w-5 h-5 text-emerald-600 mx-auto mb-2" />
-              <div className="text-lg font-bold text-gray-800">{useCase.scores?.productivity}</div>
-              <div className="text-xs text-gray-500">Productivity</div>
-            </div>
-            <div className="card-modern p-4 text-center interactive-soft">
-              <DollarSign className="w-5 h-5 text-purple-600 mx-auto mb-2" />
-              <div className="text-lg font-bold text-gray-800">{useCase.scores?.revenue}</div>
-              <div className="text-xs text-gray-500">Revenue</div>
-            </div>
-            <div className="card-modern p-4 text-center interactive-soft border-2 border-purple-200">
-              <span className="inline-block w-5 h-5 text-purple-600 mx-auto mb-2">🎯</span>
-              <div className="text-lg font-bold bg-gradient-primary bg-clip-text text-transparent">{getOverallScore(useCase.scores || { operational: 0, productivity: 0, revenue: 0 })}</div>
-              <div className="text-xs text-gray-500">Overall</div>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="mb-6">
-            <h3 className="font-semibold text-gray-800 mb-2 text-base">Description</h3>
-            <p className="text-gray-700 text-sm leading-relaxed bg-gray-50 p-4 rounded-lg border border-gray-100">{useCase.description}</p>
-          </div>
-
-          {/* Details Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-              <h3 className="font-semibold text-gray-800 mb-1 text-sm">Owner</h3>
-              <p className="text-gray-700 text-sm">{useCase.owner}</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-              <h3 className="font-semibold text-gray-800 mb-1 text-sm">Timeline</h3>
-              <p className="text-gray-700 text-sm">{useCase.timeline}</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-              <h3 className="font-semibold text-gray-800 mb-1 text-sm">Expected ROI</h3>
-              <p className="text-gray-700 text-sm">{useCase.roi}</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-              <h3 className="font-semibold text-gray-800 mb-1 text-sm">Complexity</h3>
-              <p className="text-gray-700 text-sm">{useCase.complexity}/10</p>
-            </div>
-          </div>
-
-          {/* Stakeholders */}
-          {useCase.stakeholders && useCase.stakeholders.length > 0 && (
-            <div className="mb-6">
-              <h3 className="font-semibold text-gray-800 mb-2 text-sm">Key Stakeholders</h3>
-              <div className="flex flex-wrap gap-2">
-                {useCase.stakeholders.map((stakeholder: string, idx: number) => (
-                  <span key={idx} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium border border-blue-100">
-                    {stakeholder}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Risks */}
-          {useCase.risks && useCase.risks.length > 0 && (
-            <div className="mb-6">
-              <h3 className="font-semibold text-gray-800 mb-2 text-sm">Key Risks</h3>
-              <div className="flex flex-wrap gap-2">
-                {useCase.risks.map((risk: string, idx: number) => (
-                  <span key={idx} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium border border-blue-100">
-                    {risk}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex flex-wrap gap-3 pt-2 border-t border-gray-100">
-            <Button 
-              className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg shadow-sm font-medium text-sm transition" 
-              onClick={() => {handleEdit(useCase.id as string)}}
-            >
-              Edit Use Case
-            </Button>
-            <Button 
-              className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg shadow-sm font-medium text-sm transition flex items-center gap-2" 
-              onClick={() => {handleView(useCase.id as string)}}
-            >
-              <Eye className="w-4 h-4" />
-              View Use Case
-            </Button>
-            {useCase.stage === 'proof-of-value' && (
-              <Button 
-                className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg shadow-sm font-medium text-sm transition" 
-                onClick={() => {handleAssess(useCase.id as string)}}
-              >
-                Assess
-              </Button>
-            )}
-            <Button
-              className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg shadow-sm font-medium text-sm transition"
-              onClick={async () => {
-                // Only allow moving one step forward
-                const currentStageIdx = stages.findIndex(s => s.id === useCase.stage);
-                if (currentStageIdx === -1 || currentStageIdx === stages.length - 1) return;
-                const nextStage = stages[currentStageIdx + 1].id;
-                // If moving from discovery to business-case, validate all fields
-                if (useCase.stage === 'discovery' && nextStage === 'business-case') {
-                  // Validate all fields except id, createdAt, updatedAt, and frontend-only fields
-                  const requiredFields = Object.keys(useCase).filter(
-                    k => !['id','createdAt','updatedAt','stage','priority','owner','lastUpdated','scores','description','complexity','roi','timeline','stakeholders','risks'].includes(k)
-                  );
-                  const missing = requiredFields.filter(k => {
-                    const v = (useCase as any)[k];
-                    if (Array.isArray(v)) return v.length === 0;
-                    if (typeof v === 'string') return !v.trim();
-                    if (typeof v === 'number') return v === null || v === undefined;
-                    return false;
-                  });
-                  if (missing.length > 0) {
-                    alert('Please complete all required fields in the use case form before moving to Business Case.');
-                    return;
-                  }
-                }
-                // If moving from proof-of-value to backlog, require assessment to be complete
-                if (useCase.stage === 'proof-of-value' && nextStage === 'backlog') {
-                  // Check for assessment completion
-                  const assessData = (useCase as any).assessData?.stepsData;
-                  const requiredSections = [
-                    'technicalFeasibility',
-                    'businessFeasibility',
-                    'ethicalImpact',
-                    'riskAssessment',
-                    'dataReadiness',
-                    'roadmapPosition',
-                    'budgetPlanning'
-                  ];
-                  const incomplete = !assessData || requiredSections.some(section => {
-                    const val = assessData[section];
-                    if (!val) return true;
-                    if (typeof val === 'object') {
-                      // For objects, check if any value is empty or falsy
-                      return Object.values(val).some(v => v === '' || v === null || v === undefined || (Array.isArray(v) && v.length === 0));
-                    }
-                    return val === '' || val === null || val === undefined;
-                  });
-                  if (incomplete) {
-                    alert('Please complete all assessment steps before moving to Backlog.');
-                    return;
-                  }
-                }
-                await handleMoveToStage(useCase.id, nextStage);
-              }}
-            >
-              Move to Next Stage
-            </Button>
-            <Button
-              className="bg-red-50 hover:bg-red-100 text-red-700 px-4 py-2 rounded-lg shadow-sm font-medium text-sm transition flex items-center gap-2"
-              onClick={() => {handleDelete(useCase.id as string)}}
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete Use Case
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <div className="bg-gray-50 min-h-full">
-      <div className="px-6 py-6">
-        <div className="w-full max-w-screen-2xl mx-auto">
-          {/* Main Content */}
-          <div className="">
-            {/* Filters and Add Button */}
-            <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-3 mb-5">
-              <div className="relative flex-1 max-w-md w-full">
-                <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-blue-600" />
-                <Input
-                  type="text"
-                  placeholder="Search use cases..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:border-blue-200 focus:ring-1 focus:ring-blue-200 shadow-sm transition text-sm w-full"
-                />
-              </div>
-              <select
-                value={filterBy}
-                onChange={e => setFilterBy(e.target.value)}
-                className="px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-900 focus:border-blue-200 focus:ring-1 focus:ring-blue-200 shadow-sm transition text-sm"
-              >
-                <option value="all">All Departments</option>
-                <option value="CRITICAL">Critical</option>
-                <option value="HIGH">High</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="LOW">Low</option>
-                <option value="customer service">Customer Service</option>
-                <option value="sales">Sales</option>
-                <option value="finance">Finance</option>
-                <option value="manufacturing">Manufacturing</option>
-              </select>
-              <Button
-                onClick={() => router.push('/new-usecase')}
-                className="flex items-center gap-2 bg-gradient-success text-white hover:shadow-glow px-6 py-2.5 rounded-full shadow-md interactive font-medium text-sm"
-              >
-                <Plus className="w-4 h-4" />
-                New Use Case
-              </Button>
-              <Button
-                onClick={refetch}
-                className="flex items-center gap-2 bg-white border border-gray-200 text-blue-600 hover:bg-blue-50 px-4 py-2.5 rounded-full shadow-sm font-medium text-sm ml-2"
-                title="Refresh Use Cases"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Refresh
-              </Button>
-            </div>
-            {/* Stage Stats */}
-            <div className="glass p-6 rounded-2xl mb-10 shadow-glow border border-white/30">
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 text-center">
-                {stages.map((stage, index) => {
-                  const count = getUseCasesByStage(stage.id).length;
-                  const colors = [
-                    'text-blue-600', 'text-emerald-600', 'text-purple-600', 'text-orange-600',
-                    'text-pink-600', 'text-teal-600', 'text-indigo-600', 'text-rose-600'
-                  ];
-                  const iconColor = colors[index % colors.length];
-                  const icon = stage.id === 'discovery' ? <Search className={`w-6 h-6 mx-auto mb-2 ${iconColor}`} /> :
-                    stage.id === 'business-case' ? <DollarSign className={`w-6 h-6 mx-auto mb-2 ${iconColor}`} /> :
-                    stage.id === 'proof-of-value' ? <TrendingUp className={`w-6 h-6 mx-auto mb-2 ${iconColor}`} /> :
-                    stage.id === 'backlog' ? <Clock className={`w-6 h-6 mx-auto mb-2 ${iconColor}`} /> :
-                    stage.id === 'in-progress' ? <Zap className={`w-6 h-6 mx-auto mb-2 ${iconColor}`} /> :
-                    stage.id === 'solution-validation' ? <User className={`w-6 h-6 mx-auto mb-2 ${iconColor}`} /> :
-                    stage.id === 'pilot' ? <User className={`w-6 h-6 mx-auto mb-2 ${iconColor}`} /> :
-                    <Clock className={`w-6 h-6 mx-auto mb-2 ${iconColor}`} />;
-                  return (
-                    <div key={stage.id} className="card-modern p-4 interactive hover:shadow-glow border-white/50">
-                      {icon}
-                      <div className="text-2xl font-bold text-gray-800">{count}</div>
-                      <div className="text-sm text-gray-600 font-medium mt-1">{stage.title}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            {/* Kanban Board with Drag and Drop */}
-            <div className="overflow-x-auto">
-              <div className="flex space-x-8 min-w-max items-stretch">
-                {stages.map(stage => (
-                  <div
-                    key={stage.id}
-                    className="w-96 min-h-[350px] bg-blue-50 rounded-2xl p-5 flex flex-col shadow-lg flex-grow max-w-full sm:w-96 border border-blue-100 transition hover:shadow-xl"
-                  >
-                    <div className="flex items-center justify-between mb-5">
-                      <h3 className="font-semibold text-base text-gray-700 tracking-tight">{stage.title}</h3>
-                      <span className="bg-white text-blue-700 px-3 py-1 rounded-full text-sm border border-blue-100 font-medium shadow-sm">
-                        {getUseCasesByStage(stage.id).length}
-                      </span>
-                    </div>
-                    <div className="flex-1 space-y-5">
-                      {getUseCasesByStage(stage.id).map((useCase: MappedUseCase) => (
-                        <Card
-                          key={useCase.id}
-                          className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer p-5 border border-gray-200 hover:border-blue-200 w-full group"
-                          onClick={() => setSelectedUseCase(useCase)}
-                        >
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <h4 className="font-semibold text-gray-800 text-base group-hover:text-blue-600 transition-colors">
-                                <span className="font-mono text-gray-500">AIUC-{useCase.aiucId}</span>
-                                <br />
-                                {useCase.title}
-                              </h4>
-                              <p className="text-xs text-gray-500 mt-0.5">{useCase.owner}</p>
-                            </div>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <button 
-                                  onClick={(e) => e.stopPropagation()}
-                                  className={`px-4 py-1.5 rounded-full text-xs font-medium ${_priorities[useCase.priority as keyof typeof _priorities]?.color || _priorities.MEDIUM.color} border shadow-sm hover:bg-opacity-80 transition-colors`}
-                                >
-                                  {_priorities[useCase.priority as keyof typeof _priorities]?.label || 'Medium'}
-                                </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-32">
-                                {Object.entries(_priorities).map(([key, value]) => (
-                                  <DropdownMenuItem
-                                    key={key}
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      try {
-                                        const res = await fetch('/api/update-priority', {
-                                          method: 'POST',
-                                          headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify({ useCaseId: useCase.id, priority: key }),
-                                        });
-                                        if (!res.ok) throw new Error('Failed to update priority');
-                                        // Optimistic update will be handled by React Query
-                                      } catch (error) {
-                                        console.error('Error updating priority:', error);
-                                      }
-                                    }}
-                                    className={`text-xs font-medium ${key === useCase.priority ? 'bg-gray-100' : ''}`}
-                                  >
-                                    {value.label}
-                                  </DropdownMenuItem>
-                                ))}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                          <div className="flex justify-between mb-3 text-xs bg-gray-50 p-3 rounded-lg border border-gray-100">
-                            <div className="flex items-center"><TrendingUp className="w-3 h-3 text-blue-600 mr-1.5" />{useCase.scores?.operational}</div>
-                            <div className="flex items-center"><Zap className="w-3 h-3 text-blue-600 mr-1.5" />{useCase.scores?.productivity}</div>
-                            <div className="flex items-center"><DollarSign className="w-3 h-3 text-blue-600 mr-1.5" />{useCase.scores?.revenue}</div>
-                            <div className="font-semibold text-blue-600">{getOverallScore(useCase.scores || { operational: 0, productivity: 0, revenue: 0 })}</div>
-                          </div>
-                          <div className="flex items-center justify-between text-xs text-gray-500">
-                            <div className="flex items-center"><User className="w-3 h-3 mr-1.5" />{useCase.owner}</div>
-                            <div className="flex items-center"><Clock className="w-3 h-3 mr-1.5" />{useCase.timeline}</div>
-                          </div>
-                          <div className="mt-2 text-xs text-gray-400">Updated {useCase.lastUpdated}</div>
-                        </Card>
-                      ))}
-                      {getUseCasesByStage(stage.id).length === 0 && (
-                        <div className="text-center py-8 px-4 bg-gray-50 rounded-xl border border-gray-200">
-                          <p className="text-sm text-gray-900 font-medium">No use cases in this stage</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {/* Modal */}
-            {selectedUseCase && (
-              <UseCaseDetailModal
-                useCase={selectedUseCase}
-                onClose={() => setSelectedUseCase(null)}
-              />
-            )}
+    <div className="min-h-screen bg-gradient-to-br from-[#f5f7fa] to-[#e9eafc] py-8 px-2 sm:px-8">
+      {/* Header with role-based tabs */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 mb-1">Dashboard</h1>
+          {userOrganization && (
+            <p className="text-gray-500 text-lg">
+              {userOrganization.name} • <span className="font-medium text-[#5b5be6]">{userRole === 'ORG_ADMIN' ? 'Organization Admin' : 'User'}</span>
+            </p>
+          )}
+        </div>
+        {userRole === 'ORG_ADMIN' && (
+          <div className="flex gap-2">
+            <Button
+              variant={activeTab === 'useCases' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('useCases')}
+              className="rounded-full px-6 py-2 text-base shadow-sm"
+            >
+              Use Cases
+            </Button>
+            <Button
+              variant={activeTab === 'users' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('users')}
+              className="rounded-full px-6 py-2 text-base shadow-sm flex items-center"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Manage Users
+            </Button>
           </div>
+        )}
+      </div>
+
+      {/* Search and Filter Section */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Input
+            placeholder="Search use cases..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-12 py-3 rounded-xl border border-gray-200 shadow-sm focus:ring-2 focus:ring-[#5b5be6] bg-white"
+          />
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <select
+            value={filterBy}
+            onChange={(e) => setFilterBy(e.target.value)}
+            className="px-4 py-2 border border-gray-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5b5be6] text-base"
+          >
+            <option value="all">All Priorities</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <select
+            value={selectedOrgId}
+            onChange={e => setSelectedOrgId(e.target.value)}
+            className="px-4 py-2 border border-gray-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5b5be6] text-base"
+            style={{ minWidth: 180 }}
+          >
+            <option value="">All Departments</option>
+            {organizations.map(org => (
+              <option key={org.id} value={org.id}>{org.name}</option>
+            ))}
+          </select>
+          <Button onClick={() => router.push('/new-usecase')} className="flex items-center gap-2 bg-gradient-to-r from-[#5b5be6] to-[#8b5cf6] text-white font-semibold rounded-xl px-6 py-2 shadow-md hover:from-[#4a4ac7] hover:to-[#6d4ad7] transition">
+            <Plus className="w-4 h-4" />
+            New Use Case
+          </Button>
+          <Button onClick={refetch} variant="outline" className="flex items-center gap-2 rounded-xl px-6 py-2 shadow-sm">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </Button>
         </div>
       </div>
+
+      {/* Draggable horizontally scrollable summary cards and Kanban board, aligned by column */}
+      <div
+        ref={scrollRef}
+        className="w-full select-none cursor-grab active:cursor-grabbing mb-8 pb-6 overflow-x-hidden"
+        style={{ userSelect: isDragging ? 'none' : undefined }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div className="flex flex-row gap-4 min-w-[900px] xl:min-w-[1200px] 2xl:min-w-[1600px]">
+          {stages.map((stage, idx) => {
+            const stageUseCases = getUseCasesByStage(stage.id);
+            return (
+              <div key={stage.id} className="flex flex-col items-center w-60">
+                {/* Summary card */}
+                <div className="flex flex-col items-center justify-center w-60 h-20 mb-2 rounded-xl bg-gradient-to-br from-[#e9eafc] to-[#f5f6fa] border border-gray-100 shadow hover:shadow-lg transition-all cursor-pointer group">
+                  <div className="text-2xl mb-1 group-hover:scale-110 transition-transform">
+                    {idx === 0 && <Search className="text-blue-500 w-5 h-5" />}
+                    {idx === 1 && <DollarSign className="text-green-500 w-5 h-5" />}
+                    {idx === 2 && <TrendingUp className="text-purple-500 w-5 h-5" />}
+                    {idx === 3 && <Clock className="text-orange-500 w-5 h-5" />}
+                    {idx === 4 && <Zap className="text-pink-500 w-5 h-5" />}
+                    {idx === 5 && <Users className="text-teal-500 w-5 h-5" />}
+                    {idx === 6 && <User className="text-indigo-500 w-5 h-5" />}
+                    {idx === 7 && <Clock className="text-red-500 w-5 h-5" />}
+                  </div>
+                  <div className="font-semibold text-gray-700 text-sm group-hover:text-[#5b5be6] transition-colors">{stage.title}</div>
+                  <div className="text-2xl font-extrabold text-gray-900 group-hover:text-[#5b5be6] transition-colors">{stageUseCases.length}</div>
+                </div>
+                {/* Use case column */}
+                <div className="flex-shrink-0 w-60 space-y-4">
+                  <div className="flex items-center justify-between mb-1 px-1">
+                    <h3 className="font-semibold text-sm text-gray-800">{stage.title}</h3>
+                    <span className="text-xs text-gray-500 bg-gray-100 px-1 py-0.5 rounded-full">
+                      {stageUseCases.length}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {stageUseCases.length === 0 ? (
+                      <div className="bg-gray-50 rounded-lg p-3 text-center text-gray-400 border border-dashed border-gray-200 text-xs">No use cases in this stage</div>
+                    ) : stageUseCases.map((useCase) => (
+                      <Card key={useCase.id} className="rounded-xl shadow border bg-white p-3 hover:shadow-lg transition-shadow cursor-pointer group" onClick={() => { setModalUseCase(useCase); setIsSheetOpen(true); }}>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center justify-between">
+                            <div className="font-bold text-[10px] text-gray-500">{useCase.aiucId || useCase.id}</div>
+                            {useCase.priority && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <span className={`text-[10px] px-1 py-0.5 rounded-full font-semibold cursor-pointer flex items-center gap-1 ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-gray-100'}`}>
+                                    {_priorities[useCase.priority as keyof typeof _priorities]?.label || useCase.priority}
+                                    {priorityLoadingId === useCase.id && <Loader2 className="w-3 h-3 animate-spin ml-1" />}
+                                  </span>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((priority) => (
+                                    <DropdownMenuItem key={priority} onClick={() => handlePriorityChange(useCase.id, priority)}>
+                                      {_priorities[priority as keyof typeof _priorities]?.label || priority}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </div>
+                          <div className="font-semibold text-base text-gray-900 line-clamp-1 group-hover:text-[#5b5be6] transition-colors">{useCase.title}</div>
+                          <div className="text-xs text-gray-500 line-clamp-1">{useCase.description}</div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-0.5 text-[11px] text-blue-700"><TrendingUp className="w-3 h-3" />{useCase.scores.operational}</div>
+                            <div className="flex items-center gap-0.5 text-[11px] text-purple-700"><Zap className="w-3 h-3" />{useCase.scores.productivity}</div>
+                            <div className="flex items-center gap-0.5 text-[11px] text-green-700"><DollarSign className="w-3 h-3" />{useCase.scores.revenue}</div>
+                            <div className="flex items-center gap-0.5 text-[11px] text-blue-500 font-bold">{getOverallScore(useCase.scores)}</div>
+                          </div>
+                          <div className="flex items-center justify-between text-[10px] text-gray-400 mt-1">
+                            <span className="flex items-center gap-0.5"><User className="w-3 h-3" />{useCase.owner}</span>
+                            <span className="flex items-center gap-0.5"><Eye className="w-3 h-3" />4</span>
+                          </div>
+                          <div className="text-[10px] text-gray-400">Updated {useCase.lastUpdated}</div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Sheet Modal for Use Case Actions */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent side="right">
+          {modalUseCase && (
+            <>
+              <SheetHeader>
+                <SheetTitle>{modalUseCase.title}</SheetTitle>
+                <SheetDescription>{modalUseCase.description}</SheetDescription>
+              </SheetHeader>
+              <div className="flex flex-col gap-2 p-4">
+                <div className="text-xs text-gray-500 mb-2">ID: {modalUseCase.aiucId || modalUseCase.id}</div>
+                <div className="flex items-center gap-4 mb-2">
+                  <div className="flex items-center gap-1 text-xs text-blue-700"><TrendingUp className="w-4 h-4" />{modalUseCase.scores.operational}</div>
+                  <div className="flex items-center gap-1 text-xs text-purple-700"><Zap className="w-4 h-4" />{modalUseCase.scores.productivity}</div>
+                  <div className="flex items-center gap-1 text-xs text-green-700"><DollarSign className="w-4 h-4" />{modalUseCase.scores.revenue}</div>
+                  <div className="flex items-center gap-1 text-xs text-blue-500 font-bold">{getOverallScore(modalUseCase.scores)}</div>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-gray-400 mb-2"><User className="w-4 h-4" />{modalUseCase.owner}</div>
+                <div className="text-xs text-gray-400 mb-2">Updated {modalUseCase.lastUpdated}</div>
+              </div>
+              <SheetFooter>
+                <Button size="sm" variant="outline" onClick={() => { handleView(modalUseCase.id); setIsSheetOpen(false); }}>
+                  <Eye className="w-4 h-4 mr-1" /> View
+                </Button>
+                {(userRole === 'USER' || userRole === 'ORG_ADMIN') && (
+                  <Button size="sm" variant="outline" onClick={() => { handleEdit(modalUseCase.id); setIsSheetOpen(false); }}>
+                    <EditIcon className="w-4 h-4 mr-1" /> Edit
+                  </Button>
+                )}
+                {(userRole === 'USER' || userRole === 'ORG_ADMIN') && modalUseCase.stage !== 'deployment' && (
+                  <Button size="sm" variant="outline" onClick={() => { handleMoveToStage(modalUseCase.id, getNextStage(modalUseCase.stage)); setIsSheetOpen(false); }}>
+                    <ArrowRightIcon className="w-4 h-4 mr-1" /> Move to Next Stage
+                  </Button>
+                )}
+                {(userRole === 'USER' || userRole === 'ORG_ADMIN') && modalUseCase.stage === 'proof-of-value' && (
+                  <Button size="sm" variant="outline" onClick={() => { handleAssess(modalUseCase.id); setIsSheetOpen(false); }}>
+                    <Zap className="w-4 h-4 mr-1" /> Assess
+                  </Button>
+                )}
+                <SheetClose asChild>
+                  <Button size="sm" variant="secondary">Close</Button>
+                </SheetClose>
+              </SheetFooter>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

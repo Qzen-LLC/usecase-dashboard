@@ -1,14 +1,30 @@
 import { NextResponse } from 'next/server';
 import { vendorServiceServer } from '@/lib/vendorServiceServer';
+import { currentUser } from '@clerk/nextjs/server';
+import { prismaClient } from '@/utils/db';
 
 export async function GET() {
   try {
-    const result = await vendorServiceServer.getDashboardStats();
-    
+    // Get current user
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    // Get user data from database
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId: user.id },
+    });
+    if (!userRecord) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    const result = await vendorServiceServer.getVendors({
+      role: userRecord.role,
+      userId: userRecord.id,
+      organizationId: userRecord.organizationId || undefined
+    });
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
-    
     return NextResponse.json(result.data);
   } catch (error: any) {
     console.error('Vendor dashboard API error:', error);

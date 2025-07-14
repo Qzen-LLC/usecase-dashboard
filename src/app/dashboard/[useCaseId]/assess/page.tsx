@@ -177,6 +177,27 @@ const validateAssessmentData = (data: any) => {
   });
 };
 
+function getMissingAssessmentFields(data: any) {
+  if (!data) return ['All assessment sections'];
+  const missing = [];
+  if (!data.technicalFeasibility || !data.technicalFeasibility.modelTypes || data.technicalFeasibility.modelTypes.length === 0) missing.push('Technical Feasibility > Model Types');
+  if (!data.businessFeasibility || !data.businessFeasibility.userCategories || data.businessFeasibility.userCategories.length === 0) missing.push('Business Feasibility > User Categories');
+  if (!data.ethicalImpact || !data.ethicalImpact.modelCharacteristics || !data.ethicalImpact.modelCharacteristics.explainabilityLevel) missing.push('Ethical Impact > Explainability Level');
+  // PATCH: Check operatingJurisdictions for at least one selected country
+  if (
+    !data.riskAssessment ||
+    !data.riskAssessment.operatingJurisdictions ||
+    Object.values(data.riskAssessment.operatingJurisdictions).every(
+      (region: any) => !(Object.values(region) as boolean[]).some(v => v)
+    )
+  ) missing.push('Risk Assessment > Jurisdictions');
+  if (!data.dataReadiness || !Array.isArray(data.dataReadiness.dataTypes) || data.dataReadiness.dataTypes.length === 0) missing.push('Data Readiness > Data Types');
+  if (!data.roadmapPosition) missing.push('Roadmap Position');
+  if (!data.budgetPlanning) missing.push('Budget Planning');
+  // Add more checks as needed for your required fields
+  return missing;
+}
+
 export default function AssessmentPage() {
   const router = useRouter();
   const params = useParams();
@@ -477,8 +498,9 @@ export default function AssessmentPage() {
           <button
             className="px-4 py-2 w-64 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white rounded-xl shadow-lg font-semibold text-lg transition"
             onClick={async () => {
-              if (!validateAssessmentData(assessmentData)) {
-                alert('Please complete all assessment fields before moving to Backlog.');
+              const missingFields = getMissingAssessmentFields(assessmentData);
+              if (missingFields.length > 0) {
+                alert('Please complete the following fields before completing assessment:\n' + missingFields.join('\n'));
                 return;
               }
               try {
