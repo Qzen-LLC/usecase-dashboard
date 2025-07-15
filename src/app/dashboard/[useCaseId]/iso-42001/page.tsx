@@ -111,8 +111,22 @@ export default function Iso42001AssessmentPage() {
         fetch(`/api/iso-42001/assessment/by-usecase/${useCaseId}`)
       ]);
 
-      if (!clausesResponse.ok || !annexResponse.ok || !assessmentResponse.ok) {
-        throw new Error('Failed to fetch assessment data');
+      if (!clausesResponse.ok || !annexResponse.ok) {
+        throw new Error(`Failed to fetch framework data: ${clausesResponse.status} ${annexResponse.status}`);
+      }
+      
+      // Handle assessment response separately to provide better error messages
+      if (!assessmentResponse.ok) {
+        const errorData = await assessmentResponse.json();
+        if (assessmentResponse.status === 404) {
+          setError(`${errorData.message || 'Use case not found'}\n\nSuggestions:\n• ${errorData.suggestions?.join('\n• ') || 'Check the use case ID'}`);
+          return;
+        } else if (assessmentResponse.status === 503) {
+          setError(`${errorData.message || 'Service unavailable'}\n\nSuggestions:\n• ${errorData.suggestions?.join('\n• ') || 'Contact support'}`);
+          return;
+        } else {
+          throw new Error(`API Error: ${errorData.message || 'Failed to fetch assessment data'}`);
+        }
       }
 
       const clausesData = await clausesResponse.json();
@@ -125,9 +139,23 @@ export default function Iso42001AssessmentPage() {
         return;
       }
       
-      // If assessment is not available, it means the use case doesn't exist
+      // Handle different error types from the API
       if (assessmentData.status === 'not_available') {
-        setError('Use case not found. Please ensure you are accessing a valid use case from the dashboard.');
+        if (assessmentData.error === 'USE_CASE_NOT_FOUND') {
+          setError(`${assessmentData.message}\n\nSuggestions:\n• ${assessmentData.suggestions?.join('\n• ')}`);
+        } else {
+          setError('Use case not found. Please ensure you are accessing a valid use case from the dashboard.');
+        }
+        return;
+      }
+      
+      if (assessmentData.status === 'framework_missing') {
+        setError(`${assessmentData.message}\n\nSuggestions:\n• ${assessmentData.suggestions?.join('\n• ')}`);
+        return;
+      }
+      
+      if (assessmentData.status === 'error') {
+        setError(`Database error: ${assessmentData.message}\n\nDetails: ${assessmentData.details}`);
         return;
       }
 

@@ -391,18 +391,19 @@ model Iso42001AnnexItem {
 }
 
 model Iso42001AnnexInstance {
-  id           String             @id @default(uuid())
-  assessmentId String
-  annexItemId  String
-  status       String             @default("NOT_STARTED")
-  evidence     String?
-  notes        String?
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
-  annexItem    Iso42001AnnexItem  @relation(fields: [annexItemId], references: [id])
-  assessment   Iso42001Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  id             String             @id @default(uuid())
+  implementation String?
+  evidenceFiles  String[]
+  status         String             @default("pending")
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  itemId         String
+  item           Iso42001AnnexItem  @relation(fields: [itemId], references: [itemId])
+  assessmentId   String
+  assessment     Iso42001Assessment @relation(fields: [assessmentId], references: [id])
 
-  @@unique([assessmentId, annexItemId])
+  @@unique([itemId, assessmentId])
+  @@index([assessmentId])
 }
 
 model User {
