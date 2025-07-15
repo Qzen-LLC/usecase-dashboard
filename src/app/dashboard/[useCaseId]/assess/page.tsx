@@ -177,27 +177,6 @@ const validateAssessmentData = (data: any) => {
   });
 };
 
-function getMissingAssessmentFields(data: any) {
-  if (!data) return ['All assessment sections'];
-  const missing = [];
-  if (!data.technicalFeasibility || !data.technicalFeasibility.modelTypes || data.technicalFeasibility.modelTypes.length === 0) missing.push('Technical Feasibility > Model Types');
-  if (!data.businessFeasibility || !data.businessFeasibility.userCategories || data.businessFeasibility.userCategories.length === 0) missing.push('Business Feasibility > User Categories');
-  if (!data.ethicalImpact || !data.ethicalImpact.modelCharacteristics || !data.ethicalImpact.modelCharacteristics.explainabilityLevel) missing.push('Ethical Impact > Explainability Level');
-  // PATCH: Check operatingJurisdictions for at least one selected country
-  if (
-    !data.riskAssessment ||
-    !data.riskAssessment.operatingJurisdictions ||
-    Object.values(data.riskAssessment.operatingJurisdictions).every(
-      (region: any) => !(Object.values(region) as boolean[]).some(v => v)
-    )
-  ) missing.push('Risk Assessment > Jurisdictions');
-  if (!data.dataReadiness || !Array.isArray(data.dataReadiness.dataTypes) || data.dataReadiness.dataTypes.length === 0) missing.push('Data Readiness > Data Types');
-  if (!data.roadmapPosition) missing.push('Roadmap Position');
-  if (!data.budgetPlanning) missing.push('Budget Planning');
-  // Add more checks as needed for your required fields
-  return missing;
-}
-
 export default function AssessmentPage() {
   const router = useRouter();
   const params = useParams();
@@ -498,31 +477,19 @@ export default function AssessmentPage() {
           <button
             className="px-4 py-2 w-64 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white rounded-xl shadow-lg font-semibold text-lg transition"
             onClick={async () => {
-              const missingFields = getMissingAssessmentFields(assessmentData);
-              if (missingFields.length > 0) {
-                alert('Please complete the following fields before completing assessment:\n' + missingFields.join('\n'));
-                return;
-              }
               try {
+                // Save filled fields before completing
+                await fetch("/api/post-stepdata", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ useCaseId, assessData: assessmentData }),
+                });
                 if (approvalsPageRef.current && approvalsPageRef.current.handleComplete) {
                   await approvalsPageRef.current.handleComplete();
                 }
-                // Move use case to backlog
-                const response = await fetch('/api/update-stage', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ useCaseId, newStage: 'backlog' }),
-                });
-                
-                if (!response.ok) {
-                  console.error('Failed to update stage:', response.statusText);
-                }
-                
-                // Navigate to dashboard
                 window.location.href = '/dashboard';
               } catch (error) {
                 console.error('Error completing assessment:', error);
-                // Still navigate to dashboard even if stage update fails
                 window.location.href = '/dashboard';
               }
             }}

@@ -492,7 +492,7 @@ const Dashboard = () => {
                     <ArrowRightIcon className="w-4 h-4 mr-1" /> Move to Next Stage
                   </Button>
                 )}
-                {(userRole === 'USER' || userRole === 'ORG_ADMIN') && modalUseCase.stage === 'proof-of-value' && (
+                {(userRole === 'USER' || userRole === 'ORG_ADMIN') && modalUseCase.stage !== 'discovery' && (
                   <Button size="sm" variant="outline" onClick={() => { handleAssess(modalUseCase.id); setIsSheetOpen(false); }}>
                     <Zap className="w-4 h-4 mr-1" /> Assess
                   </Button>
