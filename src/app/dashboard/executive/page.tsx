@@ -126,7 +126,7 @@ const ExecutiveDashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Portfolio Score</p>
-                      <p className="text-2xl font-bold text-gray-900">{metrics.portfolio.overallScore.toFixed(1)}/10</p>
+                      <p className="text-2xl font-bold text-gray-900">{(metrics.portfolio.overallScore ?? 0).toFixed(1)}/10</p>
                     </div>
                   </div>
                 </Card>
@@ -138,7 +138,7 @@ const ExecutiveDashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Avg Complexity</p>
-                      <p className="text-2xl font-bold text-gray-900">{metrics.portfolio.complexityAnalysis.average.toFixed(1)}/10</p>
+                      <p className="text-2xl font-bold text-gray-900">{(metrics.portfolio.complexityAnalysis?.average ?? 0).toFixed(1)}/10</p>
                     </div>
                   </div>
                 </Card>
@@ -150,7 +150,7 @@ const ExecutiveDashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Avg Confidence</p>
-                      <p className="text-2xl font-bold text-gray-900">{metrics.portfolio.confidenceAnalysis.average.toFixed(0)}%</p>
+                      <p className="text-2xl font-bold text-gray-900">{(metrics.portfolio.confidenceAnalysis?.average ?? 0).toFixed(0)}%</p>
                     </div>
                   </div>
                 </Card>
@@ -158,11 +158,11 @@ const ExecutiveDashboard = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Stage Distribution */}
-                {Object.keys(metrics.portfolio.stageDistribution).length > 0 && (
+                {Object.keys(metrics.portfolio.stageDistribution ?? {}).length > 0 && (
                   <Card className="p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Stage Distribution</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {Object.entries(metrics.portfolio.stageDistribution).map(([stage, count]) => (
+                      {Object.entries(metrics.portfolio.stageDistribution ?? {}).map(([stage, count]) => (
                         <div key={stage} className="text-center p-4 bg-gradient-to-br from-[#b3d8fa] to-[#d1b3fa] rounded-lg">
                           <div className="text-2xl font-bold text-[#5b5be6]">{count}</div>
                           <div className="text-sm text-gray-700 mt-1 capitalize">{stage.replace('-', ' ')}</div>
@@ -181,21 +181,21 @@ const ExecutiveDashboard = () => {
                         <Activity className="w-8 h-8 text-[#5b5be6]" />
                       </div>
                       <p className="text-xs font-medium text-gray-600">Operational</p>
-                      <p className="text-2xl font-bold text-gray-900">{metrics.portfolio.impactScores.operational.average.toFixed(1)}</p>
+                      <p className="text-2xl font-bold text-gray-900">{(metrics.portfolio.impactScores?.operational?.average ?? 0).toFixed(1)}</p>
                     </div>
                     <div className="text-center">
                       <div className="p-3 rounded-full bg-[#10b981] bg-opacity-10 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                         <Zap className="w-8 h-8 text-[#10b981]" />
                       </div>
                       <p className="text-xs font-medium text-gray-600">Productivity</p>
-                      <p className="text-2xl font-bold text-gray-900">{metrics.portfolio.impactScores.productivity.average.toFixed(1)}</p>
+                      <p className="text-2xl font-bold text-gray-900">{(metrics.portfolio.impactScores?.productivity?.average ?? 0).toFixed(1)}</p>
                     </div>
                     <div className="text-center">
                       <div className="p-3 rounded-full bg-[#f59e0b] bg-opacity-10 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                         <DollarSign className="w-8 h-8 text-[#f59e0b]" />
                       </div>
                       <p className="text-xs font-medium text-gray-600">Revenue</p>
-                      <p className="text-2xl font-bold text-gray-900">{metrics.portfolio.impactScores.revenue.average.toFixed(1)}</p>
+                      <p className="text-2xl font-bold text-gray-900">{(metrics.portfolio.impactScores?.revenue?.average ?? 0).toFixed(1)}</p>
                     </div>
                   </div>
                 </Card>
@@ -218,7 +218,7 @@ const ExecutiveDashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Total Investment</p>
-                      <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.financial.totalInvestment)}</p>
+                      <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.financial?.totalInvestment ?? 0)}</p>
                     </div>
                   </div>
                 </Card>
@@ -230,7 +230,7 @@ const ExecutiveDashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Average ROI</p>
-                      <p className="text-2xl font-bold text-gray-900">{metrics.financial.averageROI.toFixed(1)}%</p>
+                      <p className="text-2xl font-bold text-gray-900">{(metrics.financial?.averageROI ?? 0).toFixed(1)}%</p>
                     </div>
                   </div>
                 </Card>
@@ -242,7 +242,7 @@ const ExecutiveDashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Projected Value</p>
-                      <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.financial.projectedValue)}</p>
+                      <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.financial?.projectedValue ?? 0)}</p>
                     </div>
                   </div>
                 </Card>
@@ -254,7 +254,7 @@ const ExecutiveDashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Net Value</p>
-                      <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.financial.netValue)}</p>
+                      <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.financial?.netValue ?? 0)}</p>
                     </div>
                   </div>
                 </Card>
@@ -265,19 +265,19 @@ const ExecutiveDashboard = () => {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Cost Breakdown</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-4 bg-gradient-to-br from-[#b3d8fa] to-[#d1b3fa] rounded-lg">
-                    <div className="text-xl font-bold text-[#5b5be6]">{formatCurrency(metrics.financial.costBreakdown.development)}</div>
+                    <div className="text-xl font-bold text-[#5b5be6]">{formatCurrency(metrics.financial?.costBreakdown?.development ?? 0)}</div>
                     <div className="text-sm text-gray-700 mt-1">Development</div>
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-[#b3d8fa] to-[#d1b3fa] rounded-lg">
-                    <div className="text-xl font-bold text-[#5b5be6]">{formatCurrency(metrics.financial.costBreakdown.infrastructure)}</div>
+                    <div className="text-xl font-bold text-[#5b5be6]">{formatCurrency(metrics.financial?.costBreakdown?.infrastructure ?? 0)}</div>
                     <div className="text-sm text-gray-700 mt-1">Infrastructure</div>
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-[#b3d8fa] to-[#d1b3fa] rounded-lg">
-                    <div className="text-xl font-bold text-[#5b5be6]">{formatCurrency(metrics.financial.costBreakdown.operations)}</div>
+                    <div className="text-xl font-bold text-[#5b5be6]">{formatCurrency(metrics.financial?.costBreakdown?.operations ?? 0)}</div>
                     <div className="text-sm text-gray-700 mt-1">Operations</div>
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-[#b3d8fa] to-[#d1b3fa] rounded-lg">
-                    <div className="text-xl font-bold text-[#5b5be6]">{formatCurrency(metrics.financial.costBreakdown.api)}</div>
+                    <div className="text-xl font-bold text-[#5b5be6]">{formatCurrency(metrics.financial?.costBreakdown?.api ?? 0)}</div>
                     <div className="text-sm text-gray-700 mt-1">API</div>
                   </div>
                 </div>
@@ -300,7 +300,7 @@ const ExecutiveDashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Total Assessed</p>
-                      <p className="text-2xl font-bold text-gray-900">{metrics.risk.totalAssessed}</p>
+                      <p className="text-2xl font-bold text-gray-900">{metrics.risk?.totalAssessed ?? 0}</p>
                     </div>
                   </div>
                 </Card>
@@ -312,7 +312,7 @@ const ExecutiveDashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Low Risk</p>
-                      <p className="text-2xl font-bold text-gray-900">{metrics.risk.riskDistribution.Low || 0}</p>
+                      <p className="text-2xl font-bold text-gray-900">{metrics.risk?.riskDistribution?.Low ?? 0}</p>
                     </div>
                   </div>
                 </Card>
@@ -324,7 +324,7 @@ const ExecutiveDashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Medium Risk</p>
-                      <p className="text-2xl font-bold text-gray-900">{metrics.risk.riskDistribution.Medium || 0}</p>
+                      <p className="text-2xl font-bold text-gray-900">{metrics.risk?.riskDistribution?.Medium ?? 0}</p>
                     </div>
                   </div>
                 </Card>
@@ -336,7 +336,7 @@ const ExecutiveDashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">High Risk</p>
-                      <p className="text-2xl font-bold text-gray-900">{metrics.risk.riskDistribution.High || 0}</p>
+                      <p className="text-2xl font-bold text-gray-900">{metrics.risk?.riskDistribution?.High ?? 0}</p>
                     </div>
                   </div>
                 </Card>
@@ -351,13 +351,13 @@ const ExecutiveDashboard = () => {
                       <span className="text-sm font-medium text-gray-600">Governance</span>
                       <div className="flex space-x-2">
                         <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
-                          ✓ {metrics.risk.approvalStatus.governance.approved || 0}
+                          ✓ {metrics.risk?.approvalStatus?.governance?.approved ?? 0}
                         </span>
                         <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
-                          ⏳ {metrics.risk.approvalStatus.governance.pending || 0}
+                          ⏳ {metrics.risk?.approvalStatus?.governance?.pending ?? 0}
                         </span>
                         <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
-                          ✗ {metrics.risk.approvalStatus.governance.rejected || 0}
+                          ✗ {metrics.risk?.approvalStatus?.governance?.rejected ?? 0}
                         </span>
                       </div>
                     </div>
@@ -365,13 +365,13 @@ const ExecutiveDashboard = () => {
                       <span className="text-sm font-medium text-gray-600">Risk</span>
                       <div className="flex space-x-2">
                         <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
-                          ✓ {metrics.risk.approvalStatus.risk.approved || 0}
+                          ✓ {metrics.risk?.approvalStatus?.risk?.approved ?? 0}
                         </span>
                         <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
-                          ⏳ {metrics.risk.approvalStatus.risk.pending || 0}
+                          ⏳ {metrics.risk?.approvalStatus?.risk?.pending ?? 0}
                         </span>
                         <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
-                          ✗ {metrics.risk.approvalStatus.risk.rejected || 0}
+                          ✗ {metrics.risk?.approvalStatus?.risk?.rejected ?? 0}
                         </span>
                       </div>
                     </div>
@@ -381,13 +381,13 @@ const ExecutiveDashboard = () => {
                       <span className="text-sm font-medium text-gray-600">Legal</span>
                       <div className="flex space-x-2">
                         <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
-                          ✓ {metrics.risk.approvalStatus.legal.approved || 0}
+                          ✓ {metrics.risk?.approvalStatus?.legal?.approved ?? 0}
                         </span>
                         <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
-                          ⏳ {metrics.risk.approvalStatus.legal.pending || 0}
+                          ⏳ {metrics.risk?.approvalStatus?.legal?.pending ?? 0}
                         </span>
                         <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
-                          ✗ {metrics.risk.approvalStatus.legal.rejected || 0}
+                          ✗ {metrics.risk?.approvalStatus?.legal?.rejected ?? 0}
                         </span>
                       </div>
                     </div>
@@ -395,13 +395,13 @@ const ExecutiveDashboard = () => {
                       <span className="text-sm font-medium text-gray-600">Business</span>
                       <div className="flex space-x-2">
                         <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
-                          ✓ {metrics.risk.approvalStatus.business.approved || 0}
+                          ✓ {metrics.risk?.approvalStatus?.business?.approved ?? 0}
                         </span>
                         <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
-                          ⏳ {metrics.risk.approvalStatus.business.pending || 0}
+                          ⏳ {metrics.risk?.approvalStatus?.business?.pending ?? 0}
                         </span>
                         <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
-                          ✗ {metrics.risk.approvalStatus.business.rejected || 0}
+                          ✗ {metrics.risk?.approvalStatus?.business?.rejected ?? 0}
                         </span>
                       </div>
                     </div>
@@ -426,7 +426,7 @@ const ExecutiveDashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Quick Wins</p>
-                      <p className="text-2xl font-bold text-gray-900">{metrics.strategic.portfolioBalance.quickWins}</p>
+                      <p className="text-2xl font-bold text-gray-900">{metrics.strategic?.portfolioBalance?.quickWins ?? 0}</p>
                     </div>
                   </div>
                 </Card>
@@ -438,7 +438,7 @@ const ExecutiveDashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">High Impact Low Complexity</p>
-                      <p className="text-2xl font-bold text-gray-900">{metrics.strategic.portfolioBalance.highImpactLowComplexity}</p>
+                      <p className="text-2xl font-bold text-gray-900">{metrics.strategic?.portfolioBalance?.highImpactLowComplexity ?? 0}</p>
                     </div>
                   </div>
                 </Card>
@@ -450,7 +450,7 @@ const ExecutiveDashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Business Functions</p>
-                      <p className="text-2xl font-bold text-gray-900">{metrics.strategic.businessFunctionPerformance.length}</p>
+                      <p className="text-2xl font-bold text-gray-900">{metrics.strategic?.businessFunctionPerformance?.length ?? 0}</p>
                     </div>
                   </div>
                 </Card>
@@ -463,7 +463,7 @@ const ExecutiveDashboard = () => {
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Avg Function ROI</p>
                       <p className="text-2xl font-bold text-gray-900">
-                        {metrics.strategic.businessFunctionPerformance.length > 0 
+                        {metrics.strategic?.businessFunctionPerformance?.length > 0 
                           ? (metrics.strategic.businessFunctionPerformance.reduce((sum, func) => sum + func.averageROI, 0) / 
                              metrics.strategic.businessFunctionPerformance.length).toFixed(1)
                           : '0.0'}%
@@ -474,7 +474,7 @@ const ExecutiveDashboard = () => {
               </div>
 
               {/* Business Function Performance Table */}
-              {metrics.strategic.businessFunctionPerformance.length > 0 && (
+              {metrics.strategic?.businessFunctionPerformance?.length > 0 && (
                 <Card className="p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Business Function Performance</h3>
                   <div className="overflow-x-auto">
@@ -491,7 +491,7 @@ const ExecutiveDashboard = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {metrics.strategic.businessFunctionPerformance.map((func, index) => (
+                        {metrics.strategic?.businessFunctionPerformance?.map((func, index) => (
                           <tr key={index} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               {func.function.charAt(0).toUpperCase() + func.function.slice(1)}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -18,8 +18,11 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { Button } from './button';
+import { UserButton, useUser } from '@clerk/nextjs';
 
 const navigationItems = [
+  // Admin Dashboard for QZEN_ADMIN
+  // This will be conditionally added below
   {
     title: 'Executive Dashboard',
     href: '/dashboard/executive',
@@ -71,10 +74,33 @@ interface SidebarLayoutProps {
 export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
+  const { user, isSignedIn } = useUser();
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    fetch('/api/user/me')
+      .then(res => res.json())
+      .then(data => setUserRole(data.user?.role || null))
+      .catch(() => setUserRole(null));
+  }, [isSignedIn]);
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
+
+  // Build sidebar items, add Admin Dashboard for QZEN_ADMIN
+  const sidebarItems = [
+    ...(userRole === 'QZEN_ADMIN'
+      ? [{
+          title: 'Admin Dashboard',
+          href: '/admin',
+          icon: LayoutDashboard,
+          description: 'Platform Admin'
+        }]
+      : []),
+    ...navigationItems
+  ];
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -121,7 +147,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
 
         {/* Navigation */}
         <nav className={`flex-1 p-2 ${isCollapsed ? 'space-y-2' : 'space-y-1'}`}>
-          {navigationItems.map((item) => {
+          {sidebarItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
             const Icon = item.icon;
             
@@ -184,26 +210,38 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4">
               <h1 className="text-xl font-semibold text-gray-900">
-                {navigationItems.find(item => {
+                {sidebarItems.find(item => {
                   const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
                   return isActive;
                 })?.title || 'Dashboard'}
               </h1>
+              {/* Removed Admin Dashboard button from top bar */}
             </div>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                  <Users className="w-4 h-4 text-gray-600" />
+              {isSignedIn ? (
+                <div className="flex items-center gap-2">
+                  <UserButton afterSignOutUrl="/sign-in" />
+                  <span className="text-sm text-gray-700 font-medium">
+                    {user.fullName || user.emailAddresses[0]?.emailAddress}
+                  </span>
                 </div>
-                <span className="text-sm text-gray-700">Admin User</span>
-              </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                    <Users className="w-4 h-4 text-gray-600" />
+                  </div>
+                  <span className="text-sm text-gray-700">Guest</span>
+                </div>
+              )}
             </div>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto">
-          {children}
+        <main className="flex-1 overflow-auto bg-gray-50">
+          <div className="min-h-full">
+            {children}
+          </div>
         </main>
       </div>
     </div>

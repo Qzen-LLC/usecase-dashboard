@@ -1,0 +1,96 @@
+import { NextResponse } from 'next/server';
+import { currentUser } from '@clerk/nextjs/server';
+import { PrismaClient } from '@/generated/prisma';
+
+const prisma = new PrismaClient();
+
+export async function POST(req: Request) {
+  try {
+    const user = await currentUser();
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { invitationToken, organizationName, organizationDomain } = await req.json();
+
+    if (!invitationToken) {
+      return NextResponse.json({ error: 'Invitation token is required' }, { status: 400 });
+    }
+
+    // Find and validate the invitation
+    const invitation = await prisma.invitation.findUnique({
+      where: { token: invitationToken },
+      include: {
+        organization: true,
+      },
+    });
+
+    if (!invitation) {
+      return NextResponse.json({ error: 'Invalid invitation token' }, { status: 404 });
+    }
+
+    if (invitation.expiresAt < new Date()) {
+      return NextResponse.json({ error: 'Invitation has expired' }, { status: 400 });
+    }
+
+    if (invitation.status === 'ACCEPTED') {
+      return NextResponse.json({ error: 'Invitation has already been accepted' }, { status: 400 });
+    }
+
+    // Check if user already exists
+    let userRecord = await prisma.user.findUnique({
+      where: { clerkId: user.id },
+    });
+
+    if (!userRecord) {
+      // Create user record if it doesn't exist
+      userRecord = await prisma.user.create({
+        data: {
+          clerkId: user.id,
+          email: user.emailAddresses[0]?.emailAddress || '',
+          firstName: user.firstName || null,
+          lastName: user.lastName || null,
+          role: invitation.role,
+          organizationId: invitation.organizationId,
+        },
+      });
+    } else {
+      // Update existing user with organization and role
+      userRecord = await prisma.user.update({
+        where: { id: userRecord.id },
+        data: {
+          role: invitation.role,
+          organizationId: invitation.organizationId,
+        },
+      });
+    }
+
+    // Mark invitation as accepted
+    await prisma.invitation.update({
+      where: { id: invitation.id },
+      data: {
+        status: 'ACCEPTED',
+        acceptedAt: new Date(),
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: userRecord.id,
+        email: userRecord.email,
+        role: userRecord.role,
+        organizationId: userRecord.organizationId,
+      },
+      organization: {
+        id: invitation.organization.id,
+        name: invitation.organization.name,
+      },
+    });
+
+  } catch (error) {
+    console.error('Error creating organization:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+} 

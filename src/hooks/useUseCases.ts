@@ -88,7 +88,12 @@ export function useUseCases(): UseUseCasesReturn {
       const useCases = await response.json();
       
       // Map the data to include frontend-specific fields
-      const mappedUseCases: MappedUseCase[] = (useCases.data || useCases || []).map((uc: UseCase) => ({
+      const arr = Array.isArray(useCases)
+        ? useCases
+        : Array.isArray(useCases.useCases)
+          ? useCases.useCases
+          : [];
+      const mappedUseCases: MappedUseCase[] = arr.map((uc: UseCase) => ({
         ...uc,
         stage: uc.stage || 'discovery',
         priority: uc.priority || 'medium',
