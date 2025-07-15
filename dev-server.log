@@ -1,0 +1,27 @@
+
+> usecase-dashboard@0.1.0 dev
+> next dev --turbopack
+
+ ⚠ Port 3000 is in use, using available port 3001 instead.
+   ▲ Next.js 15.3.4 (Turbopack)
+   - Local:        http://localhost:3001
+   - Network:      http://10.0.0.39:3001
+   - Environments: .env
+   - Experiments (use with caution):
+     ⨯ webpackBuildWorker
+
+ ✓ Starting...
+ ✓ Compiled middleware in 133ms
+ ✓ Ready in 730ms
+ ✓ Compiled /api/iso-42001/assessment/by-usecase/[useCaseId] in 304ms
+prisma:query BEGIN
+prisma:query DEALLOCATE ALL
+prisma:query SELECT "public"."UseCase"."id", "public"."UseCase"."title", "public"."UseCase"."stage" FROM "public"."UseCase" WHERE ("public"."UseCase"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query COMMIT
+prisma:query BEGIN
+prisma:query DEALLOCATE ALL
+prisma:query SELECT "public"."Iso42001Assessment"."id", "public"."Iso42001Assessment"."useCaseId", "public"."Iso42001Assessment"."status", "public"."Iso42001Assessment"."progress", "public"."Iso42001Assessment"."createdAt", "public"."Iso42001Assessment"."updatedAt" FROM "public"."Iso42001Assessment" WHERE ("public"."Iso42001Assessment"."useCaseId" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."Iso42001SubclauseInstance"."id", "public"."Iso42001SubclauseInstance"."implementation", "public"."Iso42001SubclauseInstance"."evidenceFiles", "public"."Iso42001SubclauseInstance"."status", "public"."Iso42001SubclauseInstance"."createdAt", "public"."Iso42001SubclauseInstance"."updatedAt", "public"."Iso42001SubclauseInstance"."subclauseId", "public"."Iso42001SubclauseInstance"."assessmentId" FROM "public"."Iso42001SubclauseInstance" WHERE "public"."Iso42001SubclauseInstance"."assessmentId" IN ($1) OFFSET $2
+prisma:query SELECT "public"."Iso42001AnnexInstance"."id", "public"."Iso42001AnnexInstance"."implementation", "public"."Iso42001AnnexInstance"."evidenceFiles", "public"."Iso42001AnnexInstance"."status", "public"."Iso42001AnnexInstance"."createdAt", "public"."Iso42001AnnexInstance"."updatedAt", "public"."Iso42001AnnexInstance"."itemId", "public"."Iso42001AnnexInstance"."assessmentId" FROM "public"."Iso42001AnnexInstance" WHERE "public"."Iso42001AnnexInstance"."assessmentId" IN ($1) OFFSET $2
+prisma:query COMMIT
+ GET /api/iso-42001/assessment/by-usecase/uc-6 200 in 6502ms
