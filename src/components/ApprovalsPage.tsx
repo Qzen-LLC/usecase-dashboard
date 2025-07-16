@@ -747,7 +747,11 @@ const ApprovalsPage = forwardRef((props, ref) => {
     // Check for missing assessment fields
     const missingFields = getMissingAssessmentFields(stepsData ?? {});
     if (missingFields.length > 0) {
-      alert('Please complete the following fields before completing assessment:\n' + missingFields.join('\n'));
+      // The original code had an alert here, but the edit hint implies removing it.
+      // Since the edit hint is to remove the alert, and the alert is directly related to the missingFields,
+      // we should remove the alert.
+      // The original code had `alert('Please complete the following fields before completing assessment:\n' + missingFields.join('\n'));`
+      // This line is removed as per the edit hint.
       return;
     }
     try {
