@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { useParams, useRouter } from "next/navigation";
 import { ChartRadarDots } from "@/components/ui/radar-chart";
 import { ApprovalsRiskSummary } from "@/components/ui/approvals-risk-summary"
+import { InformationCircleIcon } from '@heroicons/react/24/outline';
 
 type StepsData = {
   dataReadiness?: {
@@ -77,6 +78,7 @@ const finalQualifications = [
 const calculateDataPrivacyRisk = (stepsData: StepsData) => {
   let score = 1; // Base score
   const factors = [];
+  const infoMessages: string[] = [];
   const weights = {
     sensitiveData: 3,
     largeVolume: 1.5,
@@ -91,6 +93,17 @@ const calculateDataPrivacyRisk = (stepsData: StepsData) => {
   if (_hasSensitiveData) {
     score += weights.sensitiveData;
     factors.push(`Processing sensitive PII (+${weights.sensitiveData})`);
+  }
+  // Dynamic info: If Children's Data or Biometric Data is present, always flag as sensitive
+  if (stepsData?.dataReadiness?.dataTypes?.includes("Children's Data (under 16)")) {
+    infoMessages.push("Children's Data (under 16) detected. Data privacy risk has been flagged as sensitive.");
+  }
+  if (stepsData?.dataReadiness?.dataTypes?.includes("Biometric Data")) {
+    infoMessages.push("Biometric Data detected. Data privacy risk has been flagged as sensitive.");
+  }
+  // Cross-border transfer without jurisdictions
+  if (stepsData?.dataReadiness?.crossBorderTransfer && (!stepsData?.riskAssessment?.dataProtection?.jurisdictions || stepsData?.riskAssessment?.dataProtection?.jurisdictions.length === 0)) {
+    infoMessages.push("Cross-border data transfer is required, but no jurisdictions are specified. Please review data protection requirements.");
   }
 
   //TODO
@@ -131,13 +144,15 @@ const calculateDataPrivacyRisk = (stepsData: StepsData) => {
   return {
     score: Math.min(score, 10), // Cap at 10
     factors,
-    formula: `Base(1) + ${factors.map(f => f.match(/\+(\d+\.?\d*)/)?.[1]).join(' + ')} = ${Math.min(score, 10)}`
+    formula: `Base(1) + ${factors.map(f => f.match(/\+(\d+\.?\d*)/)?.[1]).join(' + ')} = ${Math.min(score, 10)}`,
+    infoMessages
   };
 }
 
 const calculateSecurityRisk = (stepsData: StepsData) => {
   let score = 1; // Base score
   const factors = [];
+  const infoMessages: string[] = [];
   const weights = {
     publicAPI: 2,
     partnerAPI: 1.5,
@@ -193,10 +208,23 @@ const calculateSecurityRisk = (stepsData: StepsData) => {
     factors.push(`Authentication complexity (+${weights.authComplexity})`);
   }
   
+  // Dynamic info: Public/Partner API without security controls
+  if (["Public API", "Partner API"].includes(stepsData?.technicalFeasibility?.apiSpecs || '')) {
+    if (!stepsData?.technicalFeasibility?.integrationPoints || stepsData.technicalFeasibility.integrationPoints.length === 0) {
+      infoMessages.push("Public or Partner API selected, but no integration points specified. Please ensure security controls are in place.");
+    }
+  }
+  // Cloud/Hybrid deployment without security controls
+  if (["Public Cloud", "Hybrid Cloud"].includes(stepsData?.technicalFeasibility?.deploymentModels || '')) {
+    if (!stepsData?.technicalFeasibility?.integrationPoints || stepsData.technicalFeasibility.integrationPoints.length === 0) {
+      infoMessages.push("Cloud or Hybrid deployment selected, but no integration points specified. Please ensure security controls are in place.");
+    }
+  }
   return {
     score: Math.min(score, 10),
     factors,
-    formula: `Base(1) + ${factors.map(f => f.match(/\+(\d+\.?\d*)/)?.[1]).join(' + ')} = ${Math.min(score, 10)}`
+    formula: `Base(1) + ${factors.map(f => f.match(/\+(\d+\.?\d*)/)?.[1]).join(' + ')} = ${Math.min(score, 10)}`,
+    infoMessages
   };
 }
 
@@ -211,39 +239,146 @@ const calculateRegulatoryRisk = (stepsData: StepsData) => {
     financialRegs: 2.5,
     aiRegulations: 1.8,
     multiJurisdiction: 1,
-    sectorSpecific: 2
+    sectorSpecific: 2,
+    LGPD: 2.5,
+    PIPEDA: 2.5,
+    POPI: 2.5,
+    APPI: 2.5,
+    PrivacyActAU: 2.5,
+    PDPA: 2.5
   };
 
-  // Check for major regulations
-  if ((stepsData?.riskAssessment?.dataProtection?.jurisdictions || []).includes('GDPR (EU)')) {
+  let regulatoryWarnings: string[] = [];
+
+  // Helper: get operating jurisdictions
+  let operatingJurisdictions: any = undefined;
+  if (stepsData?.riskAssessment && 'operatingJurisdictions' in stepsData.riskAssessment) {
+    operatingJurisdictions = (stepsData.riskAssessment as any).operatingJurisdictions;
+  } else if (stepsData?.dataReadiness && 'operatingJurisdictions' in stepsData.dataReadiness) {
+    operatingJurisdictions = (stepsData.dataReadiness as any).operatingJurisdictions;
+  }
+  // Helper: get sectorSpecific as string or object
+  let sectorSpecific = stepsData?.riskAssessment?.sectorSpecific;
+  let sectorSpecificStr = typeof sectorSpecific === 'string' ? sectorSpecific : '';
+  if (!sectorSpecificStr && typeof sectorSpecific === 'object') {
+    sectorSpecificStr = Object.keys(sectorSpecific).find(k => sectorSpecific[k]) || '';
+  }
+  // Helper: get data types
+  const dataTypes = stepsData?.dataReadiness?.dataTypes || [];
+
+  // Helper: get dataProtection.jurisdictions
+  const dataProtectionJurisdictions = stepsData?.riskAssessment?.dataProtection?.jurisdictions || [];
+
+  // --- Dynamic Inference for all major frameworks ---
+  // GDPR
+  let hasGDPR = dataProtectionJurisdictions.includes('GDPR (EU)');
+  let euJurisdictionSelected = operatingJurisdictions && operatingJurisdictions['Europe'] && operatingJurisdictions['Europe']['European Union'];
+  if (hasGDPR || euJurisdictionSelected) {
     score += weights.GDPR;
     factors.push(`GDPR compliance required (+${weights.GDPR})`);
-  } 
-
-  if ((stepsData?.riskAssessment?.sectorSpecific || '') === 'HIPAA (Healthcare)') {
+    if (euJurisdictionSelected && !hasGDPR) {
+      regulatoryWarnings.push('European Union is selected as an operating jurisdiction, but GDPR (EU) is not checked in Data Protection. GDPR risk has been inferred.');
+    }
+  }
+  // HIPAA
+  let hasHIPAA = dataProtectionJurisdictions.includes('HIPAA (Healthcare)') || sectorSpecificStr === 'HIPAA (Healthcare)';
+  let usJurisdictionSelected = operatingJurisdictions && operatingJurisdictions['Americas'] && operatingJurisdictions['Americas']['United States (Federal)'];
+  let healthcareSector = sectorSpecificStr === 'HIPAA (Healthcare)' || (typeof sectorSpecific === 'object' && sectorSpecific['HIPAA (Healthcare)']);
+  if (hasHIPAA || (usJurisdictionSelected && healthcareSector)) {
     score += weights.HIPAA;
     factors.push(`HIPAA compliance required (+${weights.HIPAA})`);
+    if (usJurisdictionSelected && healthcareSector && !hasHIPAA) {
+      regulatoryWarnings.push('United States (Federal) and Healthcare sector are selected, but HIPAA is not checked. HIPAA risk has been inferred.');
+    }
   }
-
-  if ((stepsData?.dataReadiness?.dataTypes || []).includes('Financial Records')) {
+  // PCI-DSS
+  let hasPCI = dataProtectionJurisdictions.includes('PCI-DSS (Payment Cards)') || sectorSpecificStr === 'PCI-DSS (Payment Cards)';
+  let hasFinancialRecords = dataTypes.includes('Financial Records');
+  if (hasPCI || hasFinancialRecords) {
     score += weights.PCI;
     factors.push(`PCI-DSS compliance required (+${weights.PCI})`);
+    if (hasFinancialRecords && !hasPCI) {
+      regulatoryWarnings.push('Financial Records data type is selected, but PCI-DSS is not checked. PCI-DSS risk has been inferred.');
+    }
+  }
+  // SOX
+  let hasSOX = dataProtectionJurisdictions.includes('SOX (Financial Reporting)') || sectorSpecificStr === 'SOX (Financial Reporting)' || sectorSpecificStr === 'SOX (Financial Services)';
+  let financialSector = sectorSpecificStr === 'SOX (Financial Services)' || sectorSpecificStr === 'SOX (Financial Reporting)';
+  if (hasSOX || (usJurisdictionSelected && financialSector)) {
+    score += weights.SOX;
+    factors.push(`SOX compliance required (+${weights.SOX})`);
+    if (usJurisdictionSelected && financialSector && !hasSOX) {
+      regulatoryWarnings.push('United States (Federal) and Financial sector are selected, but SOX is not checked. SOX risk has been inferred.');
+    }
+  }
+  // LGPD (Brazil)
+  let hasLGPD = dataProtectionJurisdictions.includes('LGPD (Brazil)');
+  let brazilJurisdiction = operatingJurisdictions && operatingJurisdictions['Americas'] && operatingJurisdictions['Americas']['Brazil'];
+  if (hasLGPD || brazilJurisdiction) {
+    score += weights.LGPD;
+    factors.push(`LGPD compliance required (+${weights.LGPD})`);
+    if (brazilJurisdiction && !hasLGPD) {
+      regulatoryWarnings.push('Brazil is selected as an operating jurisdiction, but LGPD is not checked. LGPD risk has been inferred.');
+    }
+  }
+  // PIPEDA (Canada)
+  let hasPIPEDA = dataProtectionJurisdictions.includes('PIPEDA (Canada)');
+  let canadaJurisdiction = operatingJurisdictions && operatingJurisdictions['Americas'] && operatingJurisdictions['Americas']['Canada'];
+  if (hasPIPEDA || canadaJurisdiction) {
+    score += weights.PIPEDA;
+    factors.push(`PIPEDA compliance required (+${weights.PIPEDA})`);
+    if (canadaJurisdiction && !hasPIPEDA) {
+      regulatoryWarnings.push('Canada is selected as an operating jurisdiction, but PIPEDA is not checked. PIPEDA risk has been inferred.');
+    }
+  }
+  // POPI (South Africa)
+  let hasPOPI = dataProtectionJurisdictions.includes('POPI (South Africa)');
+  let saJurisdiction = operatingJurisdictions && operatingJurisdictions['Middle East & Africa'] && operatingJurisdictions['Middle East & Africa']['South Africa'];
+  if (hasPOPI || saJurisdiction) {
+    score += weights.POPI;
+    factors.push(`POPI compliance required (+${weights.POPI})`);
+    if (saJurisdiction && !hasPOPI) {
+      regulatoryWarnings.push('South Africa is selected as an operating jurisdiction, but POPI is not checked. POPI risk has been inferred.');
+    }
+  }
+  // APPI (Japan)
+  let hasAPPI = dataProtectionJurisdictions.includes('APPI (Japan)');
+  let japanJurisdiction = operatingJurisdictions && operatingJurisdictions['Asia-Pacific'] && operatingJurisdictions['Asia-Pacific']['Japan'];
+  if (hasAPPI || japanJurisdiction) {
+    score += weights.APPI;
+    factors.push(`APPI compliance required (+${weights.APPI})`);
+    if (japanJurisdiction && !hasAPPI) {
+      regulatoryWarnings.push('Japan is selected as an operating jurisdiction, but APPI is not checked. APPI risk has been inferred.');
+    }
+  }
+  // Privacy Act (Australia)
+  let hasPrivacyActAU = dataProtectionJurisdictions.includes('Privacy Act (Australia)');
+  let australiaJurisdiction = operatingJurisdictions && operatingJurisdictions['Asia-Pacific'] && operatingJurisdictions['Asia-Pacific']['Australia'];
+  if (hasPrivacyActAU || australiaJurisdiction) {
+    score += weights.PrivacyActAU;
+    factors.push(`Privacy Act (Australia) compliance required (+${weights.PrivacyActAU})`);
+    if (australiaJurisdiction && !hasPrivacyActAU) {
+      regulatoryWarnings.push('Australia is selected as an operating jurisdiction, but Privacy Act (Australia) is not checked. Privacy Act risk has been inferred.');
+    }
+  }
+  // PDPA (Singapore)
+  let hasPDPA = dataProtectionJurisdictions.includes('PDPA (Singapore)');
+  let singaporeJurisdiction = operatingJurisdictions && operatingJurisdictions['Asia-Pacific'] && operatingJurisdictions['Asia-Pacific']['Singapore'];
+  if (hasPDPA || singaporeJurisdiction) {
+    score += weights.PDPA;
+    factors.push(`PDPA (Singapore) compliance required (+${weights.PDPA})`);
+    if (singaporeJurisdiction && !hasPDPA) {
+      regulatoryWarnings.push('Singapore is selected as an operating jurisdiction, but PDPA (Singapore) is not checked. PDPA risk has been inferred.');
+    }
   }
 
-  // Financial sector specific
-  if ((stepsData?.riskAssessment?.sectorSpecific || '') === 'SOX (Financial Services)') {
-    score += weights.financialRegs;
-    factors.push(`Financial sector regulations (+${weights.financialRegs})`);
+  // AI-specific regulations (keep GDPR/EU logic for AI Act)
+  if ((hasGDPR || euJurisdictionSelected) && stepsData?.ethicalImpact?.modelCharacteristics?.explainabilityLevel === 'black-box') {
+    score += weights.aiRegulations;
+    factors.push(`AI Act compliance (+${weights.aiRegulations})`);
   }
 
-   // AI-specific regulations
-   if (stepsData?.riskAssessment?.dataProtection?.jurisdictions?.includes('GDPR (EU)') && 
-   stepsData?.ethicalImpact?.modelCharacteristics?.explainabilityLevel === 'black-box') {
- score += weights.aiRegulations;
- factors.push(`AI Act compliance (+${weights.aiRegulations})`);
-  } 
-
-  if (((stepsData?.riskAssessment?.dataProtection?.jurisdictions || []).length) > 2) {
+  if (dataProtectionJurisdictions.length > 2) {
     score += weights.multiJurisdiction;
     factors.push(`Multi-jurisdiction (+${weights.multiJurisdiction})`);
   }
@@ -251,13 +386,15 @@ const calculateRegulatoryRisk = (stepsData: StepsData) => {
   return {
     score: Math.min(score, 10),
     factors,
-    formula: `Base(1) + ${factors.map(f => f.match(/\+(\d+\.?\d*)/)?.[1]).join(' + ')} = ${Math.min(score, 10)}`
+    formula: `Base(1) + ${factors.map(f => f.match(/\+(\d+\.?\d*)/)?.[1]).join(' + ')} = ${Math.min(score, 10)}`,
+    regulatoryWarnings
   };
 }
 
 const calculateEthicalRisk = (stepsData: StepsData) => {
   let score = 1; // Base score
   const factors = [];
+  const infoMessages: string[] = [];
   const weights = {
     automatedDecisions: 2,
     biasRisk: 1.3,
@@ -298,16 +435,28 @@ const calculateEthicalRisk = (stepsData: StepsData) => {
     factors.push(`No human oversight (+${weights.noHumanOversight})`);
   }
 
+  // Dynamic info: Minors/Children as users but no bias testing
+  if ((stepsData?.businessFeasibility?.userCategories || []).includes('Minors/Children')) {
+    if (!stepsData?.ethicalImpact?.modelCharacteristics?.biasTesting || stepsData.ethicalImpact.modelCharacteristics.biasTesting === 'No Testing Planned') {
+      infoMessages.push("Minors/Children are users, but no bias testing is planned. Please review ethical risk.");
+    }
+  }
+  // Fully Automated without human oversight
+  if ((stepsData?.ethicalImpact?.decisionMaking?.automationLevel || '') === 'Fully Automated' && (!stepsData?.ethicalImpact?.aiGovernance?.humanOversightLevel || stepsData.ethicalImpact.aiGovernance.humanOversightLevel === 'fully-autonomous')) {
+    infoMessages.push("Fully Automated decision-making selected with no human oversight. Please review ethical risk.");
+  }
   return {
     score: Math.min(score, 10),
     factors,
-    formula: `Base(1) + ${factors.map(f => f.match(/\+(\d+\.?\d*)/)?.[1]).join(' + ')} = ${Math.min(score, 10)}`
+    formula: `Base(1) + ${factors.map(f => f.match(/\+(\d+\.?\d*)/)?.[1]).join(' + ')} = ${Math.min(score, 10)}`,
+    infoMessages
   };
 }
 
 const calculateOperationalRisk = (stepsData: StepsData) => {
   let score = 1; // Base score
   const factors = [];
+  const infoMessages: string[] = [];
   const weights = {
     missionCritical: 3,
     highCritical: 2,
@@ -354,10 +503,22 @@ const calculateOperationalRisk = (stepsData: StepsData) => {
     factors.push(`Limited redundancy (+${weights.limitedRedundancy})`);
   }
 
+  // Dynamic info: Mission Critical without redundancy
+  if ((stepsData?.businessFeasibility?.systemCriticality || '') === 'Mission Critical') {
+    if (!stepsData?.technicalFeasibility?.deploymentModels || !stepsData.technicalFeasibility.deploymentModels.includes('On-Premise')) {
+      infoMessages.push("Mission Critical system selected, but no redundancy or failover specified. Please review operational risk mitigation.");
+    }
+  }
+  // Catastrophic/Life Safety without mitigation
+  if ((stepsData?.businessFeasibility?.failureImpact || '') === 'Catastrophic/Life Safety') {
+    // Could check for a mitigation field if present
+    infoMessages.push("Catastrophic/Life Safety failure impact selected. Please ensure mitigation strategies are documented.");
+  }
   return {
     score: Math.min(score, 10),
     factors,
-    formula: `Base(1) + ${factors.map(f => f.match(/\+(\d+\.?\d*)/)?.[1]).join(' + ')} = ${Math.min(score, 10)}`
+    formula: `Base(1) + ${factors.map(f => f.match(/\+(\d+\.?\d*)/)?.[1]).join(' + ')} = ${Math.min(score, 10)}`,
+    infoMessages
   };
 }
 
@@ -410,13 +571,13 @@ const calculateReputationRisk = (stepsData: StepsData) => {
 }
 
 const RiskCalculation = (stepsData: StepsData) => {
-  // Weights for each dimension
+  // Regulatory and data-focused weights
   const weights = {
     dataPrivacy: 0.25,
     security: 0.20,
-    regulatory: 0.25,
+    regulatory: 0.30,
     ethical: 0.10,
-    operational: 0.15,
+    operational: 0.10,
     reputational: 0.05
   };
   const dataPrivacyRisk = calculateDataPrivacyRisk(stepsData);
@@ -449,14 +610,23 @@ const RiskCalculation = (stepsData: StepsData) => {
     riskTier = 'low';
   }
 
-  console.log("chartData type:", typeof chartData, chartData);
-
   return {
     chartData,
     score: parseFloat(weightedScore.toFixed(1)),
     riskTier,
-    formula: `(0.25×${dataPrivacyRisk.score} + 0.20×${securityRisk.score} + 0.ui25×${regulatoryRisk.score} + 0.10×${ethicalRisk.score} + 0.15×${operationalRisk.score} + 0.05×${reputationRisk.score})`,
-    calculation: `(0.25×Privacy + 0.20×Security + 0.25×Regulatory + 0.10×Ethical + 0.15×Operational + 0.05×Reputational)`
+    formula: `(0.25×${dataPrivacyRisk.score} + 0.20×${securityRisk.score} + 0.30×${regulatoryRisk.score} + 0.10×${ethicalRisk.score} + 0.10×${operationalRisk.score} + 0.05×${reputationRisk.score})`,
+    calculation: `(0.25×Privacy + 0.20×Security + 0.30×Regulatory + 0.10×Ethical + 0.10×Operational + 0.05×Reputational)`,
+    regulatoryWarnings: regulatoryRisk.regulatoryWarnings,
+    dataPrivacyInfo: dataPrivacyRisk.infoMessages,
+    securityInfo: securityRisk.infoMessages,
+    operationalInfo: operationalRisk.infoMessages,
+    ethicalInfo: ethicalRisk.infoMessages,
+    dataPrivacyFactors: dataPrivacyRisk.factors,
+    securityFactors: securityRisk.factors,
+    regulatoryFactors: regulatoryRisk.factors,
+    ethicalFactors: ethicalRisk.factors,
+    operationalFactors: operationalRisk.factors,
+    reputationalFactors: reputationRisk.factors
   };
 }
 
@@ -521,8 +691,8 @@ const ApprovalsPage = forwardRef((props, ref) => {
     fetch(`/api/get-usecase-details?useCaseId=${useCaseId}`)
       .then((res) => res.json())
       .then((data) => {
+        // console.log("[ApprovalsPage] API response from /api/get-usecase-details:", data);
         setStepsData(data.assessData.stepsData);
-        // console.log(data.assessData.stepsData);
         setSummary(data);
         setSummaryLoading(false);
       })
@@ -534,12 +704,11 @@ const ApprovalsPage = forwardRef((props, ref) => {
 
   useEffect(() => {
     if (!stepsData) return; // ✅ prevents early/invalid call
-  
+
+    // console.log("[ApprovalsPage] stepsData set in state:", stepsData);
     const result = RiskCalculation(stepsData);
     setChartData(Array.isArray(result.chartData) ? result.chartData : []);
-  
-    console.log("Updated stepsData:", stepsData);
-    console.log("chartData type:", typeof result.chartData, result.chartData);
+    // console.log("[ApprovalsPage] RiskCalculation result:", result);
   }, [stepsData]);
   
 
@@ -677,6 +846,91 @@ const ApprovalsPage = forwardRef((props, ref) => {
                     highCount={highCount}
                     mediumCount={mediumCount}
                   />
+                  {riskResult.regulatoryWarnings && riskResult.regulatoryWarnings.length > 0 && (
+                    <div className="mt-4 p-3 bg-blue-50 text-blue-900 rounded flex items-start gap-2 border border-blue-200">
+                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-blue-400 flex-shrink-0" />
+                      <div>
+                        <div className="font-semibold mb-1">Regulatory frameworks have been automatically inferred:</div>
+                        {riskResult.regulatoryWarnings.map((w, i) => <div key={i}>{w}</div>)}
+                      </div>
+                    </div>
+                  )}
+                  {riskResult.dataPrivacyInfo && riskResult.dataPrivacyInfo.length > 0 && (
+                    <div className="mt-4 p-3 bg-blue-50 text-blue-900 rounded flex items-start gap-2 border border-blue-200">
+                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-blue-400 flex-shrink-0" />
+                      <div>
+                        <div className="font-semibold mb-1">Data Privacy:</div>
+                        {riskResult.dataPrivacyInfo.map((w, i) => <div key={i}>{w}</div>)}
+                      </div>
+                    </div>
+                  )}
+                  {riskResult.securityInfo && riskResult.securityInfo.length > 0 && (
+                    <div className="mt-4 p-3 bg-blue-50 text-blue-900 rounded flex items-start gap-2 border border-blue-200">
+                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-blue-400 flex-shrink-0" />
+                      <div>
+                        <div className="font-semibold mb-1">Security:</div>
+                        {riskResult.securityInfo.map((w, i) => <div key={i}>{w}</div>)}
+                      </div>
+                    </div>
+                  )}
+                  {riskResult.operationalInfo && riskResult.operationalInfo.length > 0 && (
+                    <div className="mt-4 p-3 bg-blue-50 text-blue-900 rounded flex items-start gap-2 border border-blue-200">
+                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-blue-400 flex-shrink-0" />
+                      <div>
+                        <div className="font-semibold mb-1">Operational:</div>
+                        {riskResult.operationalInfo.map((w, i) => <div key={i}>{w}</div>)}
+                      </div>
+                    </div>
+                  )}
+                  {riskResult.ethicalInfo && riskResult.ethicalInfo.length > 0 && (
+                    <div className="mt-4 p-3 bg-blue-50 text-blue-900 rounded flex items-start gap-2 border border-blue-200">
+                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-blue-400 flex-shrink-0" />
+                      <div>
+                        <div className="font-semibold mb-1">Ethical:</div>
+                        {riskResult.ethicalInfo.map((w, i) => <div key={i}>{w}</div>)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+            {/* After info messages, add a Risk Action Summary */}
+            {(() => {
+              if (!stepsData) return null;
+              const riskResult = RiskCalculation(stepsData);
+              // Gather risk scores, info, and factors
+              const riskScores = [
+                { label: 'Data Privacy', score: riskResult.chartData[0]?.desktop || 0, info: riskResult.dataPrivacyInfo, factors: riskResult.dataPrivacyFactors },
+                { label: 'Security', score: riskResult.chartData[1]?.desktop || 0, info: riskResult.securityInfo, factors: riskResult.securityFactors },
+                { label: 'Regulatory', score: riskResult.chartData[2]?.desktop || 0, info: riskResult.regulatoryWarnings, factors: riskResult.regulatoryFactors },
+                { label: 'Ethical', score: riskResult.chartData[3]?.desktop || 0, info: riskResult.ethicalInfo, factors: riskResult.ethicalFactors },
+                { label: 'Operational', score: riskResult.chartData[4]?.desktop || 0, info: riskResult.operationalInfo, factors: riskResult.operationalFactors },
+                { label: 'Reputational', score: riskResult.chartData[5]?.desktop || 0, info: [], factors: riskResult.reputationalFactors },
+              ];
+              // Sort by score descending
+              const topRisks = riskScores.sort((a, b) => b.score - a.score).slice(0, 3);
+              return (
+                <div className="mt-8 p-6 bg-blue-100 border border-blue-200 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <InformationCircleIcon className="w-5 h-5 text-blue-400" />
+                    <span className="font-bold text-blue-900 text-lg">Risk Action Summary</span>
+                  </div>
+                  <ul className="list-disc pl-6 space-y-2">
+                    {topRisks.map((risk, idx) => (
+                      <li key={idx}>
+                        <span className="font-semibold">{risk.label} Risk ({risk.score}/10):</span>
+                        {risk.score >= 8 ? (
+                          <ul className="list-disc pl-6">
+                            {(risk.info && risk.info.length > 0 ? risk.info : risk.factors).map((msg, i) => <li key={i} className="text-blue-900">Action: {msg}</li>)}
+                          </ul>
+                        ) : risk.score >= 4 ? (
+                          <span className="text-blue-900 ml-2">Monitor this area. {risk.factors && risk.factors.length > 0 ? `Factors: ${risk.factors.join('; ')}` : ''}</span>
+                        ) : (
+                          <span className="text-blue-900 ml-2">No immediate action required.</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               );
             })()}
