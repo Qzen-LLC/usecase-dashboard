@@ -91,8 +91,8 @@ export async function GET() {
         },
         orderBy: { updatedAt: 'desc' }
       });
-    } else if (userRecord.role === 'ORG_ADMIN') {
-      // ORG_ADMIN can see all use cases in their organization
+    } else if (userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') {
+      // ORG_ADMIN and ORG_USER can see all use cases in their organization
       useCases = await prismaClient.useCase.findMany({
         where: { organizationId: userRecord.organizationId },
         select: {

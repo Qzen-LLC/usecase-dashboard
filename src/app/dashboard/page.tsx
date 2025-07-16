@@ -172,20 +172,8 @@ const Dashboard = () => {
     });
   };
 
-  // Modified getUseCasesByStage to enforce visual logic
+  // Fix: Only show use cases in the column matching their current stage
   const getUseCasesByStage = (stageId: string) => {
-    if (stageId === 'business-case') {
-      // Show use cases that are complete AND either already in business-case or in discovery
-      return filteredUseCases.filter(useCase => 
-        isUseCaseComplete(useCase) && 
-        (useCase.stage === 'business-case' || useCase.stage === 'discovery')
-      );
-    }
-    if (stageId === 'discovery') {
-      // Show ALL incomplete use cases, regardless of their current stage
-      return filteredUseCases.filter(useCase => !isUseCaseComplete(useCase));
-    }
-    // For all other stages, use the actual stage value from database
     return filteredUseCases.filter(useCase => useCase.stage === stageId);
   };
 
@@ -194,6 +182,13 @@ const Dashboard = () => {
 
   // Handler to update the stage of a use case
   const handleMoveToStage = async (useCaseId: string, newStage: string) => {
+    const useCase = filteredUseCases.find(uc => uc.id === useCaseId);
+    if (useCase && useCase.stage === 'discovery' && newStage === 'business-case') {
+      if (!isUseCaseComplete(useCase)) {
+        alert('Please complete all required input fields before moving to the next stage.');
+        return;
+      }
+    }
     try {
       await updateStageMutation.mutateAsync({ useCaseId, newStage });
       setSelectedUseCase((prev: MappedUseCase | null) =>
@@ -482,17 +477,17 @@ const Dashboard = () => {
                 <Button size="sm" variant="outline" onClick={() => { handleView(modalUseCase.id); setIsSheetOpen(false); }}>
                   <Eye className="w-4 h-4 mr-1" /> View
                 </Button>
-                {(userRole === 'USER' || userRole === 'ORG_ADMIN') && (
+                {(userRole === 'USER' || userRole === 'ORG_ADMIN' || userRole === 'ORG_USER') && (
                   <Button size="sm" variant="outline" onClick={() => { handleEdit(modalUseCase.id); setIsSheetOpen(false); }}>
                     <EditIcon className="w-4 h-4 mr-1" /> Edit
                   </Button>
                 )}
-                {(userRole === 'USER' || userRole === 'ORG_ADMIN') && modalUseCase.stage !== 'deployment' && (
+                {(userRole === 'USER' || userRole === 'ORG_ADMIN' || userRole === 'ORG_USER') && modalUseCase.stage !== 'deployment' && (
                   <Button size="sm" variant="outline" onClick={() => { handleMoveToStage(modalUseCase.id, getNextStage(modalUseCase.stage)); setIsSheetOpen(false); }}>
                     <ArrowRightIcon className="w-4 h-4 mr-1" /> Move to Next Stage
                   </Button>
                 )}
-                {(userRole === 'USER' || userRole === 'ORG_ADMIN') && modalUseCase.stage !== 'discovery' && (
+                {(userRole === 'USER' || userRole === 'ORG_ADMIN' || userRole === 'ORG_USER') && modalUseCase.stage !== 'discovery' && (
                   <Button size="sm" variant="outline" onClick={() => { handleAssess(modalUseCase.id); setIsSheetOpen(false); }}>
                     <Zap className="w-4 h-4 mr-1" /> Assess
                   </Button>

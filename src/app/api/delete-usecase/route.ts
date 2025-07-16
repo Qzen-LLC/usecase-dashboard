@@ -40,8 +40,8 @@ export async function POST(request: Request) {
     // Check permissions based on role
     if (userRecord.role === 'QZEN_ADMIN') {
       // QZen admin can delete any use case
-    } else if (userRecord.role === 'ORG_ADMIN') {
-      // Org admin can delete use cases in their organization
+    } else if (userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') {
+      // Org admin and org user can delete use cases in their organization
       if (useCase.organizationId !== userRecord.organizationId) {
         return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
       }

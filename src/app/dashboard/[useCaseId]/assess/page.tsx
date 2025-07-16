@@ -33,6 +33,7 @@ interface UseCase {
   department: string;
   owner: string;
   aiucId: number;
+  stage: string; // Added stage to the interface
 }
 
 const defaultAssessmentData = {
@@ -242,6 +243,25 @@ export default function AssessmentPage() {
       return next;
     });
   }, []);
+
+  // Add this useEffect for auto-move to next stage
+  useEffect(() => {
+    if (!useCaseId || !useCase) return;
+    // Only auto-move if currently in discovery
+    if (useCase.stage === 'discovery' && validateAssessmentData(assessmentData)) {
+      // Move to business-case
+      fetch('/api/update-stage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ useCaseId, newStage: 'business-case' })
+      })
+      .then(res => res.json())
+      .then(() => {
+        // Optionally, update local useCase state to reflect the new stage
+        setUseCase((prev: any) => prev ? { ...prev, stage: 'business-case' } : prev);
+      });
+    }
+  }, [assessmentData, useCaseId, useCase]);
 
   const isFirstStep = currentStep === 1;
       // const isLastStep = currentStep === assessmentSteps.length;

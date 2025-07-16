@@ -86,8 +86,8 @@ export async function POST(req: Request) {
             // Check permissions based on role
             if (userRecord.role === 'QZEN_ADMIN') {
                 // QZen admin can update any use case
-            } else if (userRecord.role === 'ORG_ADMIN') {
-                // Org admin can update use cases in their organization
+            } else if (userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') {
+                // Org admin and org user can update use cases in their organization
                 if (existingUseCase.organizationId !== userRecord.organizationId) {
                     return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
                 }

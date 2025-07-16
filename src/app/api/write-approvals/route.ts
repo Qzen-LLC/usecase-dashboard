@@ -39,8 +39,8 @@ export async function POST(req: Request) {
         if (useCase.userId !== userRecord.id) {
           return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
-      } else if (userRecord.role === 'ORG_ADMIN') {
-        // ORG_ADMIN can only write to use cases in their organization
+      } else if (userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') {
+        // ORG_ADMIN and ORG_USER can only write to use cases in their organization
         if (useCase.organizationId !== userRecord.organizationId) {
           return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }

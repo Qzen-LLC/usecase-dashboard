@@ -25,7 +25,7 @@ export async function GET(req: Request) {
             useCases = await prismaClient.useCase.findMany({
                 orderBy: { updatedAt: 'desc' }
             });
-        } else if (userRecord.role === 'ORG_ADMIN') {
+        } else if (userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') {
             useCases = await prismaClient.useCase.findMany({
                 where: { organizationId: userRecord.organizationId },
                 orderBy: { updatedAt: 'desc' }
