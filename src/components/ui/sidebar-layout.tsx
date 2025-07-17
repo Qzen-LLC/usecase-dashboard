@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Button } from './button';
 import { UserButton, useUser } from '@clerk/nextjs';
+import Image from 'next/image';
 
 const navigationItems = [
   // Admin Dashboard for QZEN_ADMIN
@@ -111,7 +112,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           {isCollapsed ? (
             <div className="flex flex-col items-center p-4 gap-3">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md bg-white">
-                <img src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MjA3ODUxMCwiZXhwIjo0OTA1Njc4NTEwfQ.ra2NZ9Flg45aZ-OLYnzc_xotXbyfOw3wOY3JgXWq9qw" alt="Logo" className="w-8 h-8 object-contain" />
+                <Image src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MjA3ODUxMCwiZXhwIjo0OTA1Njc4NTEwfQ.ra2NZ9Flg45aZ-OLYnzc_xotXbyfOw3wOY3JgXWq9qw" alt="Logo" width={32} height={32} className="object-contain" />
               </div>
               <Button
                 variant="ghost"
@@ -126,7 +127,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md bg-white">
-                  <img src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MjA3ODUxMCwiZXhwIjo0OTA1Njc4NTEwfQ.ra2NZ9Flg45aZ-OLYnzc_xotXbyfOw3wOY3JgXWq9qw" alt="Logo" className="w-8 h-8 object-contain" />
+                  <Image src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MjA3ODUxMCwiZXhwIjo0OTA1Njc4NTEwfQ.ra2NZ9Flg45aZ-OLYnzc_xotXbyfOw3wOY3JgXWq9qw" alt="Logo" width={32} height={32} className="object-contain" />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-lg font-bold text-gray-900">QZen QUBE</span>

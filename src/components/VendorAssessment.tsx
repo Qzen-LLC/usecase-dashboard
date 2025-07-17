@@ -907,4 +907,4 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
   );
 };
 
-export default VendorAssessment;
+export default React.memo(VendorAssessment);

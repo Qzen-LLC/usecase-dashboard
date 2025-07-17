@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { prismaClient } from '@/utils/db';
+import redis from '@/lib/redis';
 
 interface UseCase {
   id: string;
@@ -49,6 +50,13 @@ export async function GET() {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     
+    // Redis cache check
+    const cacheKey = `executive-metrics:${userRecord.role}:${userRecord.id}`;
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
+    }
+
     // Fetch use cases based on role
     let useCases = [];
     if (userRecord.role === 'QZEN_ADMIN') {
@@ -368,7 +376,7 @@ export async function GET() {
       }
     });
 
-    return NextResponse.json({
+    const responseData = {
       portfolio: {
         totalUseCases,
         stageDistribution,
@@ -393,7 +401,9 @@ export async function GET() {
         businessFunctionPerformance,
         portfolioBalance
       }
-    });
+    };
+    await redis.set(cacheKey, JSON.stringify(responseData), 'EX', 300);
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error('Error fetching executive metrics:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

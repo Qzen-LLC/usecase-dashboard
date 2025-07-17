@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prismaClient } from '@/utils/db';
+import redis from '@/lib/redis';
 
 export async function GET() {
   try {
+    // Redis cache check
+    const cacheKey = 'finops-dashboard';
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
+    }
     // Fetch all use cases with their FinOps data and relevant fields
     const useCases = await prismaClient.useCase.findMany({
       where: {
@@ -67,6 +74,8 @@ export async function GET() {
       organizationName: uc.organization?.name || '',
     }));
 
+    // After computing finops
+    await redis.set(cacheKey, JSON.stringify({ finops }), 'EX', 300);
     return NextResponse.json({ finops });
   } catch (err) {
     return NextResponse.json({ error: 'Failed to fetch FinOps dashboard data', details: String(err) }, { status: 500 });

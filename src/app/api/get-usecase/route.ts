@@ -1,6 +1,7 @@
 import { prismaClient } from "@/utils/db";
 import { NextResponse } from "next/server";
 import { currentUser } from '@clerk/nextjs/server';
+import redis from '@/lib/redis';
 
 export async function GET(req: Request) {
     try {
@@ -25,6 +26,13 @@ export async function GET(req: Request) {
                 { success: false, error: "ID is required" },
                 { status: 400 }
             );
+        }
+
+        // Redis cache check
+        const cacheKey = `usecase:${id}`;
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+            return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
         }
 
         // Check permissions based on role
@@ -89,7 +97,13 @@ export async function GET(req: Request) {
             );
         }
 
-        return NextResponse.json(useCase);
+        // Cache the result for 5 minutes
+        await redis.set(cacheKey, JSON.stringify(useCase), 'EX', 300);
+
+        // Add cache header
+        const response = NextResponse.json(useCase);
+        response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
+        return response;
     } catch (error) {
         console.error('Error fetching use case:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

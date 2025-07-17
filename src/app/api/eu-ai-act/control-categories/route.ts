@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prismaClient } from '@/utils/db';
+import redis from '@/lib/redis';
 
 export async function GET() {
   try {
+    // Redis cache check
+    const cacheKey = 'eu-ai-act:control-categories';
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
+    }
     // Try to fetch control categories from database
     let controlCategories;
     try {
@@ -49,6 +56,7 @@ export async function GET() {
       }))
     }));
 
+    await redis.set(cacheKey, JSON.stringify(transformedCategories), 'EX', 300);
     return NextResponse.json(transformedCategories);
   } catch (error) {
     console.error('Error fetching EU AI ACT control categories:', error);

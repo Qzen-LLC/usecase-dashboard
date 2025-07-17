@@ -1,7 +1,9 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import SidebarLayout from '@/components/ui/sidebar-layout';
+import dynamic from 'next/dynamic';
+
+const SidebarLayout = dynamic(() => import('@/components/ui/sidebar-layout'), { ssr: false });
 
 export default function ConditionalSidebarLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

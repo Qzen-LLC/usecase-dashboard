@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prismaClient } from '@/utils/db';
+import redis from '@/lib/redis';
 
 export async function GET(
   request: NextRequest,
@@ -8,6 +9,13 @@ export async function GET(
   const { useCaseId } = await params;
   
   try {
+    // Redis cache check
+    const cacheKey = `iso-42001:assessment:by-usecase:${useCaseId}`;
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
+    }
+
     // First check if the use case exists
     const useCase = await prismaClient.useCase.findUnique({
       where: { id: useCaseId },
@@ -152,6 +160,7 @@ export async function GET(
       });
     }
 
+    await redis.set(cacheKey, JSON.stringify(assessment), 'EX', 300);
     return NextResponse.json(assessment);
   } catch (error) {
     console.error('Error fetching ISO 42001 assessment:', error);
