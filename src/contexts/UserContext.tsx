@@ -27,7 +27,7 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const { user, isSignedIn } = useUser();
+  const { user, isSignedIn, isLoaded } = useUser();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,8 +61,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    fetchUserData();
-  }, [isSignedIn]);
+    // Only fetch data after Clerk has loaded and user is signed in
+    if (isLoaded && isSignedIn) {
+      fetchUserData();
+    } else if (isLoaded && !isSignedIn) {
+      setLoading(false);
+    }
+  }, [isLoaded, isSignedIn]);
 
   return (
     <UserContext.Provider value={{ userData, loading, error, refetch }}>
@@ -74,7 +79,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
 export function useUserData() {
   const context = useContext(UserContext);
   if (context === undefined) {
-    throw new Error('useUserData must be used within a UserProvider');
+    // Return a default context during SSR or when provider is not available
+    return {
+      userData: null,
+      loading: true,
+      error: null,
+      refetch: async () => {},
+    };
   }
   return context;
 } 

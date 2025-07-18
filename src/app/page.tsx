@@ -16,9 +16,9 @@ export default function HomePage() {
   const [isCheckingRole, setIsCheckingRole] = useState(false);
 
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded || loading) return;
 
-    if (isSignedIn && userData && !loading) {
+    if (isSignedIn && userData) {
       setIsCheckingRole(true);
       // Check user role and redirect accordingly
       if (userData.role === 'QZEN_ADMIN') {

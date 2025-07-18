@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import React from "react";
 import ConditionalSidebarLayout from '@/components/ConditionalSidebarLayout';
+import { UserProvider } from '@/contexts/UserContext';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,7 +33,9 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans`}
           suppressHydrationWarning
         >
-          <ConditionalSidebarLayout>{children}</ConditionalSidebarLayout>
+          <UserProvider>
+            <ConditionalSidebarLayout>{children}</ConditionalSidebarLayout>
+          </UserProvider>
         </body>
       </html>
     </ClerkProvider>

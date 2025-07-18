@@ -20,7 +20,7 @@ import {
 import { Button } from './button';
 import { UserButton, useUser } from '@clerk/nextjs';
 import Image from 'next/image';
-import { UserProvider, useUserData } from '@/contexts/UserContext';
+import { useUserData } from '@/contexts/UserContext';
 
 const navigationItems = [
   // Admin Dashboard for QZEN_ADMIN
@@ -243,9 +243,5 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
 }
 
 export default function SidebarLayout({ children }: SidebarLayoutProps) {
-  return (
-    <UserProvider>
-      <SidebarLayoutContent>{children}</SidebarLayoutContent>
-    </UserProvider>
-  );
+  return <SidebarLayoutContent>{children}</SidebarLayoutContent>;
 }
