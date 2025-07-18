@@ -4,29 +4,11 @@ import { useEffect, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useUserData } from '@/contexts/UserContext';
 
 export default function AdminTestPage() {
   const { user, isSignedIn, isLoaded } = useUser();
-  const [userData, setUserData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!isLoaded || !isSignedIn) return;
-
-    const fetchUserData = async () => {
-      try {
-        const response = await fetch('/api/user/me');
-        const data = await response.json();
-        setUserData(data);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, [isLoaded, isSignedIn]);
+  const { userData, loading, error } = useUserData();
 
   if (!isLoaded || loading) {
     return (
@@ -47,10 +29,19 @@ export default function AdminTestPage() {
             <h3 className="font-semibold mb-2">User Information:</h3>
             <div className="bg-gray-100 p-4 rounded">
               <pre className="text-sm overflow-auto">
-                {JSON.stringify(userData, null, 2)}
+                {JSON.stringify({ user: userData }, null, 2)}
               </pre>
             </div>
           </div>
+          
+          {error && (
+            <div>
+              <h3 className="font-semibold mb-2 text-red-600">Error:</h3>
+              <div className="bg-red-100 p-4 rounded">
+                <pre className="text-sm text-red-800">{error}</pre>
+              </div>
+            </div>
+          )}
           
           <div>
             <h3 className="font-semibold mb-2">Clerk User:</h3>
