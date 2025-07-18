@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Users, Plus, Trash2, UserCheck, UserX } from 'lucide-react';
+import { useUserData } from '@/contexts/UserContext';
 
 interface User {
   id: string;
@@ -27,24 +28,14 @@ export default function OrganizationUserManagement() {
   const [newUserFirstName, setNewUserFirstName] = useState('');
   const [newUserLastName, setNewUserLastName] = useState('');
   const [newUserRole, setNewUserRole] = useState('ORG_USER');
-  const [orgId, setOrgId] = useState<string | null>(null);
+  const { userData } = useUserData();
 
   useEffect(() => {
     fetchUsers();
-    fetchOrgId();
   }, []);
 
-  const fetchOrgId = async () => {
-    try {
-      const res = await fetch('/api/user/me');
-      const data = await res.json();
-      if (data.user && data.user.organizationId) {
-        setOrgId(data.user.organizationId);
-      }
-    } catch (err) {
-      setOrgId(null);
-    }
-  };
+  // Get organization ID from user data
+  const orgId = userData?.organizationId;
 
   const fetchUsers = async () => {
     try {

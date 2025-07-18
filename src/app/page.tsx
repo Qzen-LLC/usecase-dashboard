@@ -7,45 +7,28 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import { useUserData } from '@/contexts/UserContext';
 
 export default function HomePage() {
   const { isSignedIn, user, isLoaded } = useUser();
   const router = useRouter();
+  const { userData, loading } = useUserData();
   const [isCheckingRole, setIsCheckingRole] = useState(false);
 
   useEffect(() => {
     if (!isLoaded) return;
 
-    if (isSignedIn) {
+    if (isSignedIn && userData && !loading) {
       setIsCheckingRole(true);
       // Check user role and redirect accordingly
-      checkUserRoleAndRedirect();
-    }
-  }, [isSignedIn, isLoaded]);
-
-  const checkUserRoleAndRedirect = async () => {
-    try {
-      const response = await fetch('/api/user/me');
-      if (response.ok) {
-        const data = await response.json();
-        const userRole = data.user?.role;
-        
-        if (userRole === 'QZEN_ADMIN') {
-          router.push('/admin');
-        } else {
-          router.push('/dashboard');
-        }
+      if (userData.role === 'QZEN_ADMIN') {
+        router.push('/admin');
       } else {
-        // If user data not found, redirect to dashboard
         router.push('/dashboard');
       }
-    } catch (error) {
-      console.error('Error checking user role:', error);
-      router.push('/dashboard');
-    } finally {
       setIsCheckingRole(false);
     }
-  };
+  }, [isSignedIn, isLoaded, userData, loading, router]);
 
   // Show loading state while checking role
   if (isSignedIn && isCheckingRole) {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -20,6 +20,7 @@ import {
 import { Button } from './button';
 import { UserButton, useUser } from '@clerk/nextjs';
 import Image from 'next/image';
+import { UserProvider, useUserData } from '@/contexts/UserContext';
 
 const navigationItems = [
   // Admin Dashboard for QZEN_ADMIN
@@ -72,19 +73,11 @@ interface SidebarLayoutProps {
   children: React.ReactNode;
 }
 
-export default function SidebarLayout({ children }: SidebarLayoutProps) {
+function SidebarLayoutContent({ children }: SidebarLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
   const { user, isSignedIn } = useUser();
-  const [userRole, setUserRole] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isSignedIn) return;
-    fetch('/api/user/me')
-      .then(res => res.json())
-      .then(data => setUserRole(data.user?.role || null))
-      .catch(() => setUserRole(null));
-  }, [isSignedIn]);
+  const { userData } = useUserData();
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
@@ -92,7 +85,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
 
   // Build sidebar items, add Admin Dashboard for QZEN_ADMIN
   const sidebarItems = [
-    ...(userRole === 'QZEN_ADMIN'
+    ...(userData?.role === 'QZEN_ADMIN'
       ? [{
           title: 'Admin Dashboard',
           href: '/admin',
@@ -246,5 +239,13 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function SidebarLayout({ children }: SidebarLayoutProps) {
+  return (
+    <UserProvider>
+      <SidebarLayoutContent>{children}</SidebarLayoutContent>
+    </UserProvider>
   );
 }

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useUseCases, useUpdateUseCaseStage, useDeleteUseCase, type MappedUseCase } from '@/hooks/useUseCases';
 import OrganizationUserManagement from '@/components/OrganizationUserManagement';
+import { useUserData } from '@/contexts/UserContext';
 import {
   Sheet,
   SheetContent,
@@ -63,8 +64,6 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBy, setFilterBy] = useState('all');
   const [selectedUseCase, setSelectedUseCase] = useState<MappedUseCase | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [userOrganization, setUserOrganization] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'useCases' | 'users'>('useCases');
   const router = useRouter();
   const { user, isSignedIn } = useUser();
@@ -77,17 +76,14 @@ const Dashboard = () => {
   const [dragStartX, setDragStartX] = useState(0);
   const [scrollStartX, setScrollStartX] = useState(0);
 
+  // Get user data from context
+  const { userData } = useUserData();
+
   // React Query hooks for optimized data fetching
   const { data: useCases = [], isLoading, error, refetch } = useUseCases();
   const updateStageMutation = useUpdateUseCaseStage();
   const deleteUseCaseMutation = useDeleteUseCase();
   const [priorityLoadingId, setPriorityLoadingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (isSignedIn) {
-      fetchUserData();
-    }
-  }, [isSignedIn]);
 
   useEffect(() => {
     // Fetch organizations for the dropdown - only for QZEN_ADMIN users
@@ -104,23 +100,10 @@ const Dashboard = () => {
     };
     
     // Only fetch organizations if user is QZEN_ADMIN
-    if (userRole === 'QZEN_ADMIN') {
+    if (userData?.role === 'QZEN_ADMIN') {
       fetchOrganizations();
     }
-  }, [userRole]);
-
-  const fetchUserData = async () => {
-    try {
-      const response = await fetch('/api/user/me');
-      if (response.ok) {
-        const data = await response.json();
-        setUserRole(data.user?.role);
-        setUserOrganization(data.user?.organization);
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-    }
-  };
+  }, [userData?.role]);
 
   const handleEdit = (id: string) => {
     router.push(`/edit-usecase/${id}`);
@@ -254,7 +237,7 @@ const Dashboard = () => {
   const handleTouchEnd = () => setIsDragging(false);
 
   // Show user management for org admins
-  if (userRole === 'ORG_ADMIN' && activeTab === 'users') {
+  if (userData?.role === 'ORG_ADMIN' && activeTab === 'users') {
     return <OrganizationUserManagement />;
   }
 
@@ -294,13 +277,13 @@ const Dashboard = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 mb-1">Dashboard</h1>
-          {userOrganization && (
+          {userData?.organization && (
             <p className="text-gray-500 text-lg">
-              {userOrganization.name} • <span className="font-medium text-[#5b5be6]">{userRole === 'ORG_ADMIN' ? 'Organization Admin' : 'User'}</span>
+              {userData.organization.name} • <span className="font-medium text-[#5b5be6]">{userData.role === 'ORG_ADMIN' ? 'Organization Admin' : 'User'}</span>
             </p>
           )}
         </div>
-        {userRole === 'ORG_ADMIN' && (
+        {userData?.role === 'ORG_ADMIN' && (
           <div className="flex gap-2">
             <Button
               variant={activeTab === 'useCases' ? 'default' : 'outline'}
@@ -481,17 +464,17 @@ const Dashboard = () => {
                 <Button size="sm" variant="outline" onClick={() => { handleView(modalUseCase.id); setIsSheetOpen(false); }}>
                   <Eye className="w-4 h-4 mr-1" /> View
                 </Button>
-                {(userRole === 'USER' || userRole === 'ORG_ADMIN' || userRole === 'ORG_USER') && (
+                {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && (
                   <Button size="sm" variant="outline" onClick={() => { handleEdit(modalUseCase.id); setIsSheetOpen(false); }}>
                     <EditIcon className="w-4 h-4 mr-1" /> Edit
                   </Button>
                 )}
-                {(userRole === 'USER' || userRole === 'ORG_ADMIN' || userRole === 'ORG_USER') && modalUseCase.stage !== 'deployment' && (
+                {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && modalUseCase.stage !== 'deployment' && (
                   <Button size="sm" variant="outline" onClick={() => { handleMoveToStage(modalUseCase.id, getNextStage(modalUseCase.stage)); setIsSheetOpen(false); }}>
                     <ArrowRightIcon className="w-4 h-4 mr-1" /> Move to Next Stage
                   </Button>
                 )}
-                {(userRole === 'USER' || userRole === 'ORG_ADMIN' || userRole === 'ORG_USER') && modalUseCase.stage !== 'discovery' && (
+                {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && modalUseCase.stage !== 'discovery' && (
                   <Button size="sm" variant="outline" onClick={() => { handleAssess(modalUseCase.id); setIsSheetOpen(false); }}>
                     <Zap className="w-4 h-4 mr-1" /> Assess
                   </Button>
