@@ -4,8 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" WEBPACK_DISABLE_SYMLINKS=true next build",
-    "build:safe": "next build --no-lint",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "setup-admin": "tsx scripts/setup-admin.ts",
