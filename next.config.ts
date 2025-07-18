@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   generateEtags: true,
-  reactStrictMode: false,
+  reactStrictMode: false, // Disable strict mode to prevent double API calls in development
 
   // Ignore TypeScript and ESLint errors during build to avoid scanning issues
   typescript: {
