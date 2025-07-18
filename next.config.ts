@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   generateEtags: true,
+  reactStrictMode: false,
 
   // Ignore TypeScript and ESLint errors during build to avoid scanning issues
   typescript: {

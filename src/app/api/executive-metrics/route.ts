@@ -35,30 +35,52 @@ interface UseCase {
 }
 
 export async function GET() {
+  const startTime = Date.now(); // For API Round Trip Time & Server-side processing
+
   try {
     // Get current user
     const user = await currentUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     // Get user data from database
+    const dbUserQueryStart = Date.now();
     const userRecord = await prismaClient.user.findUnique({
       where: { clerkId: user.id },
     });
+    const dbUserQueryEnd = Date.now();
+    const dbUserQueryTime = dbUserQueryEnd - dbUserQueryStart;
+
     if (!userRecord) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-    
+
     // Redis cache check
     const cacheKey = `executive-metrics:${userRecord.role}:${userRecord.id}`;
     const cached = await redis.get(cacheKey);
+
     if (cached) {
-      return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
+      const endTime = Date.now();
+      const apiRoundTripTime = endTime - startTime;
+      const serverResponseTime = apiRoundTripTime; // In case of cache hit, server response time is almost RTT
+
+      return new NextResponse(cached, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Cache': 'HIT',
+          'X-API-RTT': apiRoundTripTime.toString(),
+          'X-Server-Response-Time': serverResponseTime.toString(),
+          'X-DB-Query-Time': 'N/A' // Not applicable for cache hit
+        }
+      });
     }
 
-    // Fetch use cases based on role
     let useCases = [];
+    let dbUseCaseQueryTime = 0;
+
+    // Fetch use cases based on role
+    const dbUseCaseQueryStart = Date.now();
     if (userRecord.role === 'QZEN_ADMIN') {
       useCases = await prismaClient.useCase.findMany({
         select: {
@@ -142,7 +164,7 @@ export async function GET() {
         orderBy: { updatedAt: 'desc' }
       });
     } else {
-      // USER and ORG_USER can only see their own use cases
+      // USER can only see their own use cases
       useCases = await prismaClient.useCase.findMany({
         where: { userId: userRecord.id },
         select: {
@@ -184,12 +206,14 @@ export async function GET() {
         orderBy: { updatedAt: 'desc' }
       });
     }
+    const dbUseCaseQueryEnd = Date.now();
+    dbUseCaseQueryTime = dbUseCaseQueryEnd - dbUseCaseQueryStart;
 
     const typedUseCases = useCases as UseCase[];
 
     // Calculate portfolio metrics
     const totalUseCases = useCases.length;
-    
+
     // Stage Distribution
     const stageDistribution = useCases.reduce((acc: Record<string, number>, uc: any) => {
       const stage = uc.stage || 'discovery';
@@ -245,7 +269,7 @@ export async function GET() {
     const totalInvestment = finopsUseCases.reduce((sum: number, uc: any) => sum + (uc.finopsData?.totalInvestment || 0), 0);
     const projectedValue = finopsUseCases.reduce((sum: number, uc: any) => sum + (uc.finopsData?.cumValue || 0), 0);
     const netValue = projectedValue - totalInvestment;
-    const averageROI = finopsUseCases.length > 0 ? 
+    const averageROI = finopsUseCases.length > 0 ?
       finopsUseCases.reduce((sum: number, uc: any) => sum + (uc.finopsData?.ROI || 0), 0) / finopsUseCases.length : 0;
 
     // Cost Breakdown
@@ -267,7 +291,7 @@ export async function GET() {
     useCases.forEach((uc: any) => {
       const complexity = uc.implementationComplexity || 0;
       const confidence = uc.confidenceLevel || 0;
-      
+
       // Simple risk calculation: high complexity + low confidence = high risk
       if (complexity >= 7 && confidence <= 40) {
         riskDistribution.High++;
@@ -293,17 +317,17 @@ export async function GET() {
         if (approval.governanceStatus === 'approved') approvalStatus.governance.approved++;
         else if (approval.governanceStatus === 'rejected') approvalStatus.governance.rejected++;
         else approvalStatus.governance.pending++;
-        
+
         // Risk
         if (approval.riskStatus === 'approved') approvalStatus.risk.approved++;
         else if (approval.riskStatus === 'rejected') approvalStatus.risk.rejected++;
         else approvalStatus.risk.pending++;
-        
+
         // Legal
         if (approval.legalStatus === 'approved') approvalStatus.legal.approved++;
         else if (approval.legalStatus === 'rejected') approvalStatus.legal.rejected++;
         else approvalStatus.legal.pending++;
-        
+
         // Business
         if (approval.businessStatus === 'approved') approvalStatus.business.approved++;
         else if (approval.businessStatus === 'rejected') approvalStatus.business.rejected++;
@@ -332,17 +356,17 @@ export async function GET() {
             totalROI: 0
           };
         }
-        
+
         acc[function_].count++;
         acc[function_].totalOperational += uc.operationalImpactScore || 0;
         acc[function_].totalProductivity += uc.productivityImpactScore || 0;
         acc[function_].totalRevenue += uc.revenueImpactScore || 0;
-        
+
         if (uc.finopsData) {
           acc[function_].totalInvestment += uc.finopsData.totalInvestment || 0;
           acc[function_].totalROI += uc.finopsData.ROI || 0;
         }
-        
+
         return acc;
       }, {})
     ).map(([function_, data]: [string, any]) => ({
@@ -367,7 +391,7 @@ export async function GET() {
       const productivity = uc.productivityImpactScore || 0;
       const revenue = uc.revenueImpactScore || 0;
       const avgImpact = (operational + productivity + revenue) / 3;
-      
+
       if (complexity <= 3 && avgImpact >= 7) {
         portfolioBalance.quickWins++;
       }
@@ -402,10 +426,34 @@ export async function GET() {
         portfolioBalance
       }
     };
+
     await redis.set(cacheKey, JSON.stringify(responseData), 'EX', 300);
-    return NextResponse.json(responseData);
+
+    const endTime = Date.now();
+    const apiRoundTripTime = endTime - startTime;
+    const serverResponseTime = endTime - startTime; // More accurate as it includes all server-side logic
+
+    return new NextResponse(JSON.stringify(responseData), {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Cache': 'MISS',
+        'X-API-RTT': apiRoundTripTime.toString(),
+        'X-Server-Response-Time': serverResponseTime.toString(),
+        'X-DB-Query-Time': (dbUserQueryTime + dbUseCaseQueryTime).toString()
+      }
+    });
   } catch (error) {
     console.error('Error fetching executive metrics:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const endTime = Date.now();
+    const apiRoundTripTime = endTime - startTime;
+    return new NextResponse(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-RTT': apiRoundTripTime.toString(),
+        'X-Server-Response-Time': (endTime - startTime).toString(),
+        'X-DB-Query-Time': 'N/A' // Error might occur before DB query
+      }
+    });
   }
 }
