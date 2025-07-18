@@ -37,23 +37,6 @@ interface FinOpsData {
   useCase?: UseCase;
 }
 
-const STAGE_ORDER = [
-  'discovery',
-  'business-case',
-  'proof-of-value',
-  'backlog',
-  'in-progress',
-  'solution-validation',
-  'pilot',
-  'deployment',
-];
-
-function isAfterOrAtBacklog(stage?: string) {
-  if (!stage) return false;
-  const idx = STAGE_ORDER.indexOf(stage);
-  return idx >= STAGE_ORDER.indexOf('backlog');
-}
-
 const FinOpsDashboardPage = () => {
   const router = useRouter();
   const [finops, setFinops] = useState<FinOpsData[]>([]);
@@ -66,24 +49,13 @@ const FinOpsDashboardPage = () => {
       setLoading(true);
       setError('');
       try {
-        const usecasesRes = await fetch('/api/read-usecases');
-        const usecasesJson = await usecasesRes.json();
-        const usecases = Array.isArray(usecasesJson)
-          ? usecasesJson
-          : Array.isArray(usecasesJson.useCases)
-            ? usecasesJson.useCases
-            : [];
-        const filtered = (usecases || []).filter((uc: any) => isAfterOrAtBacklog(uc.stage));
-        const finopsArr: FinOpsData[] = [];
-        for (const uc of filtered) {
-          const res = await fetch(`/api/get-finops?id=${uc.id}`);
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            finopsArr.push({ ...data[0], useCase: { title: uc.title, owner: uc.primaryStakeholders?.[0] || '', stage: uc.stage, aiucId: uc.aiucId } });
-          }
+        const response = await fetch('/api/finops-dashboard');
+        if (!response.ok) {
+          throw new Error('Failed to fetch FinOps data');
         }
-        setFinops(finopsArr);
-      } catch {
+        const data = await response.json();
+        setFinops(data.finops || []);
+      } catch (err) {
         setError('Failed to load FinOps data');
       }
       setLoading(false);

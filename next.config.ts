@@ -31,44 +31,6 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react', 'chart.js'],
   },
 
-  // Webpack optimizations
-  webpack: (config, { dev, isServer }) => {
-    // Optimize bundle size
-    if (!dev && !isServer) {
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              chunks: 'all',
-            },
-            chart: {
-              test: /[\\/]node_modules[\\/](chart\.js|react-chartjs-2)[\\/]/,
-              name: 'chart',
-              chunks: 'all',
-            },
-            ui: {
-              test: /[\\/]node_modules[\\/](@radix-ui|lucide-react)[\\/]/,
-              name: 'ui',
-              chunks: 'all',
-            },
-          },
-        },
-      };
-    }
-
-    // Tree shaking for lodash
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      'lodash': 'lodash-es',
-    };
-
-    return config;
-  },
-
   // Optimize headers
   async headers() {
     return [

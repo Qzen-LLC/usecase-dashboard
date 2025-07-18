@@ -90,7 +90,7 @@ const Dashboard = () => {
   }, [isSignedIn]);
 
   useEffect(() => {
-    // Fetch organizations for the dropdown
+    // Fetch organizations for the dropdown - only for QZEN_ADMIN users
     const fetchOrganizations = async () => {
       try {
         const res = await fetch('/api/admin/organizations');
@@ -102,8 +102,12 @@ const Dashboard = () => {
         // fail silently for now
       }
     };
-    fetchOrganizations();
-  }, []);
+    
+    // Only fetch organizations if user is QZEN_ADMIN
+    if (userRole === 'QZEN_ADMIN') {
+      fetchOrganizations();
+    }
+  }, [userRole]);
 
   const fetchUserData = async () => {
     try {

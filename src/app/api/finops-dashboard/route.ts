@@ -1,29 +1,58 @@
 import { NextResponse } from 'next/server';
 import { prismaClient } from '@/utils/db';
+import { currentUser } from '@clerk/nextjs/server';
 import redis from '@/lib/redis';
 
 export async function GET() {
   try {
-    // Redis cache check
-    const cacheKey = 'finops-dashboard';
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId: user.id },
+    });
+    
+    if (!userRecord) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Redis cache check with role-based key
+    const cacheKey = `finops-dashboard:${userRecord.role}:${userRecord.id}`;
     const cached = await redis.get(cacheKey);
     if (cached) {
       return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
     }
+
+    // Build where clause based on user role
+    let whereClause: any = {
+      stage: {
+        in: [
+          'backlog',
+          'in-progress',
+          'solution-validation',
+          'pilot',
+          'deployment',
+          'operational',
+        ],
+      },
+    };
+
+    // Apply role-based filtering
+    if (userRecord.role === 'QZEN_ADMIN') {
+      // QZEN_ADMIN can see all use cases
+    } else if (userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') {
+      // ORG_ADMIN and ORG_USER can only see use cases in their organization
+      whereClause.organizationId = userRecord.organizationId;
+    } else if (userRecord.role === 'USER') {
+      // USER can only see their own use cases
+      whereClause.userId = userRecord.id;
+    }
+
     // Fetch all use cases with their FinOps data and relevant fields
     const useCases = await prismaClient.useCase.findMany({
-      where: {
-        stage: {
-          in: [
-            'backlog',
-            'in-progress',
-            'solution-validation',
-            'pilot',
-            'deployment',
-            'operational',
-          ],
-        },
-      },
+      where: whereClause,
       select: {
         id: true,
         aiucId: true,
