@@ -133,6 +133,23 @@ export async function POST(req: Request) {
             });
         }
 
+        // Invalidate Redis cache for /read-usecases for this user
+        const redis = (await import('@/lib/redis')).default;
+        const cacheKey = `usecases:${userRecord.role}:${userRecord.id}`;
+        await redis.del(cacheKey);
+
+        // If user belongs to an organization, invalidate for all org users (regardless of role)
+        if (userRecord.organizationId) {
+            const orgUsers = await prismaClient.user.findMany({
+                where: { organizationId: userRecord.organizationId },
+                select: { id: true, role: true }
+            });
+            for (const u of orgUsers) {
+                const orgCacheKey = `usecases:${u.role}:${u.id}`;
+                await redis.del(orgCacheKey);
+            }
+        }
+
         return NextResponse.json({ success: true, useCase });
     } catch (error) {
         console.error('Error saving use case:', error);

@@ -171,7 +171,7 @@ export default function RoadmapPosition({ value, onChange }: Props) {
             <Textarea
               value={value.metrics}
               onChange={(e) => onChange({ ...value, metrics: e.target.value })}
-              placeholder="Define key performance indicators..."
+              // placeholder="Define key performance indicators..."
               className="w-full min-w-0 min-h-[120px]"
               style={{ maxWidth: '100vw' }}
             />
