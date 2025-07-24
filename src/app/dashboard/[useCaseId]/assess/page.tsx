@@ -189,7 +189,7 @@ export default function AssessmentPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [assessmentData, setAssessmentData] = useState<{ [key: string]: any }>(defaultAssessmentData);
   const budgetPlanningRef = useRef<{ saveFinops: () => Promise<void> }>(null);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false); // State to show success message
   const approvalsPageRef = useRef<{ handleComplete: () => Promise<void> }>(null);
 
   const handleAssessmentChange = (section: string, data: any) => {
@@ -208,24 +208,24 @@ export default function AssessmentPage() {
       .then((res) => res.json())
       .then((data) => {
         setUseCase(data);
-        
+
         // Load saved assessment data if it exists
         if (data.assessData?.stepsData) {
           setAssessmentData((prev: any) => {
             const savedData = data.assessData.stepsData;
             const mergedData = { ...defaultAssessmentData, ...prev };
-            
+
             // Merge saved data with defaults
             Object.keys(defaultAssessmentData).forEach(key => {
               if (savedData[key]) {
                 mergedData[key] = savedData[key];
               }
             });
-            
+
             return mergedData;
           });
         }
-        
+
         setLoading(false);
       })
       .catch(() => {
@@ -264,18 +264,24 @@ export default function AssessmentPage() {
   }, [assessmentData, useCaseId, useCase]);
 
   const isFirstStep = currentStep === 1;
-      // const isLastStep = currentStep === assessmentSteps.length;
-  
+  // const isLastStep = currentStep === assessmentSteps.length;
+
   const handleSave = async () => {
     try {
-      // Always save whatever is filled and exit to dashboard
       setSaving(true);
+      setError(""); // Clear previous errors
+      setSaveSuccess(false); // Reset success message
+
       await fetch("/api/post-stepdata", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ useCaseId, assessData: assessmentData }),
       });
-      window.location.href = '/dashboard';
+
+      // Instead of redirecting, just show a success message
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000); // Hide success message after 3 seconds
+
     } catch (err) {
       console.error("Error saving assessment:", err);
       setError("Failed to save assessment data");
@@ -390,11 +396,11 @@ export default function AssessmentPage() {
             <CardTitle>Approvals</CardTitle>
           </CardHeader>
         ) :
-         (
-          <div className="text-gray-600 text-lg font-medium">
-            You are on <strong>{assessmentSteps[currentStep - 1]?.title || 'Unknown'}</strong> step.
-          </div>
-        )}
+          (
+            <div className="text-gray-600 text-lg font-medium">
+              You are on <strong>{assessmentSteps[currentStep - 1]?.title || 'Unknown'}</strong> step.
+            </div>
+          )}
         <CardContent>
           {currentStep === 1 ? (
             <TechnicalFeasibility
@@ -437,11 +443,11 @@ export default function AssessmentPage() {
           ) : currentStep === 9 ? (
             <ApprovalsPage ref={approvalsPageRef} />
           ) :
-           (
-            <div className="text-gray-600 text-lg font-medium">
-              You are on <strong>{assessmentSteps[currentStep - 1].title}</strong> step.
-            </div>
-          )}
+            (
+              <div className="text-gray-600 text-lg font-medium">
+                You are on <strong>{assessmentSteps[currentStep - 1].title}</strong> step.
+              </div>
+            )}
         </CardContent>
       </Card>
 
@@ -463,7 +469,7 @@ export default function AssessmentPage() {
         </button>
         {currentStep < 8 && (
           <>
-            <button 
+            <button
               className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold flex items-center gap-2 ${saving ? 'opacity-75 cursor-not-allowed' : ''}`}
               onClick={handleSave}
               disabled={saving}
@@ -477,10 +483,10 @@ export default function AssessmentPage() {
                 'Save Progress'
               )}
             </button>
-            {saveSuccess && (
+            {saveSuccess && ( // Display success message
               <div className="ml-4 text-green-600 font-semibold">Progress saved!</div>
             )}
-            {error && (
+            {error && ( // Display error message
               <div className="ml-4 text-red-600 font-semibold">{error}</div>
             )}
           </>
@@ -520,4 +526,4 @@ export default function AssessmentPage() {
       </div>
     </div>
   );
-} 
+}
