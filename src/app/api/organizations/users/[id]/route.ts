@@ -24,7 +24,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    if (currentUserRecord.role !== 'ORG_ADMIN') {
+    if (currentUserRecord.role !== 'ORG_ADMIN' && currentUserRecord.role !== 'QZEN_ADMIN') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -40,8 +40,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Check if user belongs to the same organization
-    if (userToRemove.organizationId !== currentUserRecord.organizationId) {
+    // Check if user belongs to the same organization (only for ORG_ADMIN)
+    if (currentUserRecord.role === 'ORG_ADMIN' && userToRemove.organizationId !== currentUserRecord.organizationId) {
       return NextResponse.json({ error: 'User does not belong to this organization' }, { status: 403 });
     }
 

@@ -1,40 +1,53 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prismaClient } from '@/utils/db';
-import redis from '@/lib/redis';
+import { currentUser } from '@clerk/nextjs/server';
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ useCaseId: string }> }
+  request: Request,
+  { params }: { params: { useCaseId: string } }
 ) {
-  const { useCaseId } = await params;
-  
   try {
-    // Redis cache check
-    const cacheKey = `eu-ai-act:assessment:by-usecase:${useCaseId}`;
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // First check if the use case exists
+    const { useCaseId } = params;
+
+    // Check if use case exists and user has access
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId: user.id },
+      include: { organization: true }
+    });
+
+    if (!userRecord) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Verify use case exists and user has access
     const useCase = await prismaClient.useCase.findUnique({
-      where: { id: useCaseId }
+      where: { id: useCaseId },
     });
 
     if (!useCase) {
-      return NextResponse.json({
-        id: 'temp-' + useCaseId,
-        useCaseId,
+      return NextResponse.json({ 
         status: 'not_available',
-        progress: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        answers: [],
-        controls: []
-      });
+        message: 'Use case not found',
+        error: 'USE_CASE_NOT_FOUND'
+      }, { status: 404 });
     }
 
-    // Check if assessment exists, create if not
+    // Check permission
+    const hasPermission = userRecord.role === 'QZEN_ADMIN' || 
+                         (userRecord.role === 'ORG_ADMIN' && useCase.organizationId === userRecord.organizationId) ||
+                         (userRecord.role === 'ORG_USER' && useCase.organizationId === userRecord.organizationId) ||
+                         useCase.userId === userRecord.id;
+
+    if (!hasPermission) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    // Find or create EU AI Act assessment
     let assessment = await prismaClient.euAiActAssessment.findUnique({
       where: { useCaseId },
       include: {
@@ -47,8 +60,7 @@ export async function GET(
           include: {
             controlStruct: {
               include: {
-                category: true,
-                subcontrols: true
+                category: true
               }
             },
             subcontrols: {
@@ -79,8 +91,7 @@ export async function GET(
             include: {
               controlStruct: {
                 include: {
-                  category: true,
-                  subcontrols: true
+                  category: true
                 }
               },
               subcontrols: {
@@ -94,21 +105,12 @@ export async function GET(
       });
     }
 
-    await redis.set(cacheKey, JSON.stringify(assessment), 'EX', 300);
     return NextResponse.json(assessment);
   } catch (error) {
-    console.error('Error fetching EU AI ACT assessment:', error);
-    
-    // Return a default assessment structure if tables don't exist yet
-    return NextResponse.json({
-      id: 'temp-' + useCaseId,
-      useCaseId,
-      status: 'not_available',
-      progress: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      answers: [],
-      controls: []
-    });
+    console.error('Error fetching EU AI Act assessment:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch assessment' },
+      { status: 500 }
+    );
   }
 }

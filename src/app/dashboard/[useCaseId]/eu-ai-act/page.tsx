@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, FileText, CheckCircle, AlertCircle, Clock, Upload, Save, ChevronRight, ChevronDown, HelpCircle, Shield, ListChecks } from 'lucide-react';
 import Link from 'next/link';
+import { FileUpload } from '@/components/ui/file-upload';
 
 interface Question {
   id: string;
@@ -201,6 +202,31 @@ export default function EuAiActAssessmentPage() {
     );
   };
 
+  const handleEvidenceChange = (questionId: string, evidenceFiles: string[]) => {
+    setTopics(prevTopics => 
+      prevTopics.map(topic => ({
+        ...topic,
+        subtopics: topic.subtopics.map(subtopic => ({
+          ...subtopic,
+          questions: subtopic.questions.map(question => 
+            question.questionId === questionId 
+              ? { 
+                  ...question, 
+                  answer: { 
+                    ...question.answer,
+                    id: question.answer?.id || '',
+                    answer: question.answer?.answer || '',
+                    evidenceFiles,
+                    status: (question.answer?.answer?.trim() || evidenceFiles.length > 0) ? 'completed' : 'pending'
+                  }
+                }
+              : question
+          )
+        }))
+      }))
+    );
+  };
+
   const handleSaveAnswer = async (questionId: string) => {
     const question = findQuestionById(questionId);
     if (!question || !assessment) return;
@@ -346,6 +372,37 @@ export default function EuAiActAssessmentPage() {
             subcontrols: control.subcontrols.map(subcontrol => 
               subcontrol.subcontrolStruct.subcontrolId === subcontrolId
                 ? { ...subcontrol, status, notes }
+                : subcontrol
+            )
+          }
+        : control
+    ) : [];
+
+    setAssessment({ ...assessment, controls: updatedControls });
+  };
+
+  const handleControlEvidenceChange = (controlId: string, evidenceFiles: string[]) => {
+    if (!assessment) return;
+
+    const updatedControls = assessment.controls ? assessment.controls.map(control => 
+      control.controlStruct.controlId === controlId 
+        ? { ...control, evidenceFiles }
+        : control
+    ) : [];
+
+    setAssessment({ ...assessment, controls: updatedControls });
+  };
+
+  const handleSubcontrolEvidenceChange = (controlId: string, subcontrolId: string, evidenceFiles: string[]) => {
+    if (!assessment) return;
+
+    const updatedControls = assessment.controls ? assessment.controls.map(control => 
+      control.controlStruct.controlId === controlId 
+        ? { 
+            ...control, 
+            subcontrols: control.subcontrols.map(subcontrol => 
+              subcontrol.subcontrolStruct.subcontrolId === subcontrolId
+                ? { ...subcontrol, evidenceFiles }
                 : subcontrol
             )
           }
@@ -671,12 +728,19 @@ export default function EuAiActAssessmentPage() {
                                           className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                           rows={4}
                                         />
+                                        
+                                        <div className="mt-4">
+                                          <FileUpload
+                                            label="Evidence Files"
+                                            value={question.answer?.evidenceFiles || []}
+                                            onChange={(files) => handleEvidenceChange(question.questionId, files)}
+                                            maxFiles={5}
+                                            maxSize={10}
+                                          />
+                                        </div>
+                                        
                                         <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
                                           <div className="flex items-center gap-4">
-                                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                                              <Upload className="w-4 h-4" />
-                                              <span>Evidence files: {question.answer?.evidenceFiles?.length || 0}</span>
-                                            </div>
                                             <div className="text-xs text-gray-500">
                                               {question.answer?.answer?.length || 0} characters
                                             </div>
@@ -808,11 +872,17 @@ export default function EuAiActAssessmentPage() {
                                       />
                                     </div>
                                     
-                                    <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                                        <Upload className="w-4 h-4" />
-                                        <span>Evidence files: {assessmentControl?.evidenceFiles?.length || 0}</span>
-                                      </div>
+                                    <div className="mt-4">
+                                      <FileUpload
+                                        label="Evidence Files"
+                                        value={assessmentControl?.evidenceFiles || []}
+                                        onChange={(files) => handleControlEvidenceChange(control.controlId, files)}
+                                        maxFiles={5}
+                                        maxSize={10}
+                                      />
+                                    </div>
+                                    
+                                    <div className="flex items-center justify-end pt-3 border-t border-gray-200">
                                       <Button
                                         onClick={() => handleSaveControl(control.controlId)}
                                         disabled={saving}
@@ -872,6 +942,16 @@ export default function EuAiActAssessmentPage() {
                                                       placeholder="Implementation notes..."
                                                       className="w-full p-2 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                                                       rows={2}
+                                                    />
+                                                  </div>
+                                                  
+                                                  <div>
+                                                    <FileUpload
+                                                      label="Evidence Files"
+                                                      value={assessmentSubcontrol?.evidenceFiles || []}
+                                                      onChange={(files) => handleSubcontrolEvidenceChange(control.controlId, subcontrol.subcontrolId, files)}
+                                                      maxFiles={5}
+                                                      maxSize={10}
                                                     />
                                                   </div>
                                                   

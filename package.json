@@ -20,7 +20,21 @@
     "test-aiuc-api": "tsx scripts/test-aiuc-api.ts",
     "debug-usecase": "tsx scripts/debug-usecase-creation.ts",
     "check-real-user": "tsx scripts/check-real-user.ts",
-    "setup-ngrok": "node scripts/setup-ngrok-webhook.js"
+    "setup-ngrok": "node scripts/setup-ngrok-webhook.js",
+    "seed-frameworks": "tsx scripts/seed-frameworks.ts",
+    "seed-complete-frameworks": "tsx scripts/seed-complete-frameworks.ts",
+    "verify-frameworks": "tsx scripts/verify-framework-data.ts",
+    "test-governance": "tsx scripts/test-governance-apis.ts",
+    "bypass-auth": "tsx scripts/create-auth-bypass.ts",
+    "restore-auth": "tsx scripts/restore-auth.ts",
+    "debug-clerk-auth": "tsx scripts/debug-clerk-auth.ts",
+    "check-governance-data": "tsx scripts/check-governance-data.ts",
+    "debug-tables": "tsx scripts/debug-tables.ts",
+    "check-usecases": "tsx scripts/check-usecases.ts",
+    "seed-eu-ai-act-controls": "tsx scripts/seed-eu-ai-act-controls.ts",
+    "seed-eu-ai-act-subcontrols-complete": "tsx scripts/seed-eu-ai-act-subcontrols-complete.ts",
+    "seed-complete-eu-ai-act-data": "tsx scripts/seed-complete-eu-ai-act-data.ts",
+    "seed-complete-iso-42001-data": "tsx scripts/seed-complete-iso-42001-data.ts"
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^4.13.23",
@@ -53,7 +67,8 @@
     "react-dom": "^19.0.0",
     "recharts": "^3.0.2",
     "svix": "^1.69.0",
-    "tailwind-merge": "^3.3.1"
+    "tailwind-merge": "^3.3.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -64,6 +79,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/react-window": "^1.8.8",
+    "@types/uuid": "^10.0.0",
     "cross-env": "^7.0.3",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",

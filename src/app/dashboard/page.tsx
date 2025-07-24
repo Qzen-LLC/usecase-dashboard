@@ -25,6 +25,7 @@ import {
   SheetFooter,
   SheetClose,
 } from '@/components/ui/sheet';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const stages = [
   { id: 'discovery', title: 'Discovery', color: 'bg-white', textColor: 'text-foreground' },
@@ -75,6 +76,7 @@ const Dashboard = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartX, setDragStartX] = useState(0);
   const [scrollStartX, setScrollStartX] = useState(0);
+  const [validationError, setValidationError] = useState<{ show: boolean; fields: string[]; useCaseTitle: string }>({ show: false, fields: [], useCaseTitle: '' });
 
   // Get user data from context
   const { userData } = useUserData();
@@ -84,6 +86,7 @@ const Dashboard = () => {
   const updateStageMutation = useUpdateUseCaseStage();
   const deleteUseCaseMutation = useDeleteUseCase();
   const [priorityLoadingId, setPriorityLoadingId] = useState<string | null>(null);
+  const [stageUpdateLoadingId, setStageUpdateLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     // Fetch organizations for the dropdown - only for QZEN_ADMIN users
@@ -145,18 +148,66 @@ const Dashboard = () => {
   });
 
   // Helper to check if all required fields are filled
-  const isUseCaseComplete = (useCase: MappedUseCase) => {
-    // List all required fields except id, createdAt, updatedAt, and frontend-only fields
+  const getFieldDisplayName = (fieldName: string): string => {
+    const fieldMap: { [key: string]: string } = {
+      'title': 'Use Case Title',
+      'problemStatement': 'Problem Statement',
+      'proposedAISolution': 'Proposed AI Solution',
+      'currentState': 'Current State',
+      'desiredState': 'Desired State',
+      'primaryStakeholders': 'Primary Stakeholders',
+      'secondaryStakeholders': 'Secondary Stakeholders',
+      'successCriteria': 'Success Criteria',
+      'problemValidation': 'Problem Validation',
+      'solutionHypothesis': 'Solution Hypothesis',
+      'keyAssumptions': 'Key Assumptions',
+      'initialROI': 'Initial ROI',
+      'confidenceLevel': 'Confidence Level',
+      'operationalImpactScore': 'Operational Impact Score',
+      'productivityImpactScore': 'Productivity Impact Score',
+      'revenueImpactScore': 'Revenue Impact Score',
+      'implementationComplexity': 'Implementation Complexity',
+      'estimatedTimeline': 'Estimated Timeline',
+      'requiredResources': 'Required Resources',
+      'businessFunction': 'Business Function',
+      'aiucId': 'AI Use Case ID',
+      'organizationId': 'Organization',
+      'userId': 'User'
+    };
+    return fieldMap[fieldName] || fieldName;
+  };
+
+  const getMissingFields = (useCase: MappedUseCase): string[] => {
+    // List all required fields except id, createdAt, updatedAt, system-managed fields, and frontend-only fields
     const requiredFields = Object.keys(useCase).filter(
-      k => !['id','createdAt','updatedAt','stage','priority','owner','lastUpdated','scores','description','complexity','roi','timeline','stakeholders','risks'].includes(k)
+      k => !['id','createdAt','updatedAt','stage','priority','owner','lastUpdated','scores','description','complexity','roi','timeline','stakeholders','risks','organizationId','userId'].includes(k)
     );
-    return requiredFields.every(k => {
+    
+    const missingFields: string[] = [];
+    requiredFields.forEach(k => {
       const v = (useCase as any)[k];
-      if (Array.isArray(v)) return v.length > 0;
-      if (typeof v === 'string') return !!v.trim();
-      if (typeof v === 'number') return v !== null && v !== undefined;
-      return true;
+      let isEmpty = false;
+      
+      if (Array.isArray(v)) {
+        isEmpty = v.length === 0;
+      } else if (typeof v === 'string') {
+        isEmpty = !v.trim();
+      } else if (typeof v === 'number') {
+        isEmpty = v === null || v === undefined;
+      } else {
+        isEmpty = !v;
+      }
+      
+      if (isEmpty) {
+        missingFields.push(getFieldDisplayName(k));
+      }
     });
+    
+    return missingFields;
+  };
+
+  const isUseCaseComplete = (useCase: MappedUseCase) => {
+    return getMissingFields(useCase).length === 0;
   };
 
   // Fix: Only show use cases in the column matching their current stage
@@ -171,20 +222,43 @@ const Dashboard = () => {
   const handleMoveToStage = async (useCaseId: string, newStage: string) => {
     const useCase = filteredUseCases.find(uc => uc.id === useCaseId);
     if (useCase && useCase.stage === 'discovery' && newStage === 'business-case') {
-      if (!isUseCaseComplete(useCase)) {
-        alert('Please complete all required input fields before moving to the next stage.');
+      const missingFields = getMissingFields(useCase);
+      if (missingFields.length > 0) {
+        setValidationError({ 
+          show: true, 
+          fields: missingFields, 
+          useCaseTitle: useCase.title 
+        });
         return;
       }
     }
     try {
+      setStageUpdateLoadingId(useCaseId);
       await updateStageMutation.mutateAsync({ useCaseId, newStage });
+      
+      // Clear any validation errors
+      setValidationError({ show: false, fields: [], useCaseTitle: '' });
+      
+      // Update local state immediately for better UX
       setSelectedUseCase((prev: MappedUseCase | null) =>
         prev ? { ...prev, stage: newStage } : prev
       );
       setSelectedUseCase(null);
-      refetch(); // Refresh the use case list after stage change
+      
+      // Force refresh the use case list after stage change
+      await refetch();
+      
+      // Small delay to ensure database transaction is complete
+      setTimeout(() => {
+        refetch();
+      }, 500);
+      
+      console.log(`Successfully moved use case ${useCaseId} to stage ${newStage}`);
     } catch (error) {
       console.error("Unable to update stage", error);
+      alert("Failed to update use case stage. Please try again.");
+    } finally {
+      setStageUpdateLoadingId(null);
     }
   };
 
@@ -349,6 +423,47 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Validation Error Alert */}
+      {validationError.show && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Missing Required Fields</AlertTitle>
+          <AlertDescription>
+            <div className="mt-2">
+              <p className="mb-2">
+                Please complete the following required fields for "{validationError.useCaseTitle}" before moving to the Business Case stage:
+              </p>
+              <ul className="list-disc list-inside space-y-1 mb-3">
+                {validationError.fields.map((field, index) => (
+                  <li key={index} className="text-sm">{field}</li>
+                ))}
+              </ul>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  onClick={() => {
+                    const useCase = filteredUseCases.find(uc => uc.title === validationError.useCaseTitle);
+                    if (useCase) {
+                      router.push(`/edit-usecase/${useCase.id}`);
+                    }
+                    setValidationError({ show: false, fields: [], useCaseTitle: '' });
+                  }}
+                >
+                  Edit Use Case
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => setValidationError({ show: false, fields: [], useCaseTitle: '' })}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Draggable horizontally scrollable summary cards and Kanban board, aligned by column */}
       <div
         ref={scrollRef}
@@ -464,17 +579,30 @@ const Dashboard = () => {
                 <Button size="sm" variant="outline" onClick={() => { handleView(modalUseCase.id); setIsSheetOpen(false); }}>
                   <Eye className="w-4 h-4 mr-1" /> View
                 </Button>
-                {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && (
+                {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER' || userData?.role === 'QZEN_ADMIN') && (
                   <Button size="sm" variant="outline" onClick={() => { handleEdit(modalUseCase.id); setIsSheetOpen(false); }}>
                     <EditIcon className="w-4 h-4 mr-1" /> Edit
                   </Button>
                 )}
-                {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && modalUseCase.stage !== 'deployment' && (
-                  <Button size="sm" variant="outline" onClick={() => { handleMoveToStage(modalUseCase.id, getNextStage(modalUseCase.stage)); setIsSheetOpen(false); }}>
-                    <ArrowRightIcon className="w-4 h-4 mr-1" /> Move to Next Stage
+                {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER' || userData?.role === 'QZEN_ADMIN') && modalUseCase.stage !== 'deployment' && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    disabled={stageUpdateLoadingId === modalUseCase.id}
+                    onClick={() => { 
+                      handleMoveToStage(modalUseCase.id, getNextStage(modalUseCase.stage)); 
+                      setIsSheetOpen(false); 
+                    }}
+                  >
+                    {stageUpdateLoadingId === modalUseCase.id ? (
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    ) : (
+                      <ArrowRightIcon className="w-4 h-4 mr-1" />
+                    )}
+                    Move to Next Stage
                   </Button>
                 )}
-                {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && modalUseCase.stage !== 'discovery' && (
+                {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER' || userData?.role === 'QZEN_ADMIN') && modalUseCase.stage !== 'discovery' && (
                   <Button size="sm" variant="outline" onClick={() => { handleAssess(modalUseCase.id); setIsSheetOpen(false); }}>
                     <Zap className="w-4 h-4 mr-1" /> Assess
                   </Button>
