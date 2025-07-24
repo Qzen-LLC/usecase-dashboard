@@ -110,6 +110,28 @@ const BudgetPlanning = forwardRef<{ saveFinops: () => Promise<void> }, BudgetPla
           ...last,
         }),
       });
+
+      // Refresh data from database after saving to ensure consistency
+      try {
+        const response = await fetch(`/api/get-finops?id=${useCaseId}`);
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const d = data[0];
+          onChange({
+            ...value,
+            initialDevCost: d.devCostBase ?? value.initialDevCost,
+            baseApiCost: d.apiCostBase ?? value.baseApiCost,
+            baseInfraCost: d.infraCostBase ?? value.baseInfraCost,
+            baseOpCost: d.opCostBase ?? value.baseOpCost,
+            baseMonthlyValue: d.valueBase ?? value.baseMonthlyValue,
+            valueGrowthRate: d.valueGrowthRate ?? value.valueGrowthRate,
+            budgetRange: d.budgetRange ?? value.budgetRange,
+            error: '',
+          });
+        }
+      } catch (error) {
+        console.error('Failed to refresh data after save:', error);
+      }
     }
   }), [useCaseId, value]);
 

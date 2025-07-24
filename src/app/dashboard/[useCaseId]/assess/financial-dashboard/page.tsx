@@ -839,6 +839,25 @@ const FinancialDashboard = () => {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Save failed');
+
+      // Refresh data from database after saving to ensure consistency
+      try {
+        const refreshRes = await fetch(`/api/get-finops?id=${useCaseId}`);
+        const data = await refreshRes.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const d = data[0];
+          if (d) {
+            setInitialDevCost(d.devCostBase ?? initialDevCost);
+            setBaseApiCost(d.apiCostBase ?? baseApiCost);
+            setBaseInfraCost(d.infraCostBase ?? baseInfraCost);
+            setBaseOpCost(d.opCostBase ?? baseOpCost);
+            setBaseMonthlyValue(d.valueBase ?? baseMonthlyValue);
+            setValueGrowthRate(d.valueGrowthRate ?? valueGrowthRate);
+          }
+        }
+      } catch (refreshError) {
+        console.error('Failed to refresh data after save:', refreshError);
+      }
     } catch {
       setError('Failed to save');
     }
