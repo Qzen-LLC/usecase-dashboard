@@ -101,6 +101,13 @@ interface Assessment {
   createdAt: string;
   updatedAt: string;
   controls?: Control[];
+  answers?: {
+    id: string;
+    questionId: string;
+    answer: string;
+    evidenceFiles: string[];
+    status: string;
+  }[];
 }
 
 export default function EuAiActAssessmentPage() {
@@ -154,15 +161,39 @@ export default function EuAiActAssessmentPage() {
         return;
       }
 
-      setTopics(topicsData);
+      // Merge saved answers from assessment into topics structure
+      const topicsWithAnswers = topicsData.map((topic: Topic) => ({
+        ...topic,
+        subtopics: topic.subtopics.map((subtopic: Subtopic) => ({
+          ...subtopic,
+          questions: subtopic.questions.map((question: Question) => {
+            // Find corresponding saved answer in assessment
+            const savedAnswer = assessmentData.answers?.find(
+              (answer: any) => answer.questionId === question.questionId
+            );
+            
+            return {
+              ...question,
+              answer: savedAnswer ? {
+                id: savedAnswer.id,
+                answer: savedAnswer.answer || '',
+                evidenceFiles: savedAnswer.evidenceFiles || [],
+                status: savedAnswer.status || 'pending'
+              } : undefined
+            };
+          })
+        }))
+      }));
+
+      setTopics(topicsWithAnswers);
       setControlCategories(controlCategoriesData);
       setAssessment(assessmentData);
 
       // Expand first topic by default
-      if (topicsData.length > 0) {
-        setExpandedTopics(new Set([topicsData[0].topicId]));
-        if (topicsData[0].subtopics.length > 0) {
-          setExpandedSubtopics(new Set([topicsData[0].subtopics[0].subtopicId]));
+      if (topicsWithAnswers.length > 0) {
+        setExpandedTopics(new Set([topicsWithAnswers[0].topicId]));
+        if (topicsWithAnswers[0].subtopics.length > 0) {
+          setExpandedSubtopics(new Set([topicsWithAnswers[0].subtopics[0].subtopicId]));
         }
       }
 
