@@ -384,63 +384,174 @@ export default function EuAiActAssessmentPage() {
   const handleControlStatusChange = (controlId: string, status: string, notes: string) => {
     if (!assessment) return;
 
-    const updatedControls = assessment.controls ? assessment.controls.map(control => 
-      control.controlStruct.controlId === controlId 
-        ? { ...control, status, notes }
-        : control
-    ) : [];
-
-    setAssessment({ ...assessment, controls: updatedControls });
+    // Find existing control or create a new one in state
+    const existingControl = assessment.controls?.find(c => c.controlStruct.controlId === controlId);
+    
+    if (existingControl) {
+      // Update existing control
+      const updatedControls = assessment.controls?.map(control => 
+        control.controlStruct.controlId === controlId 
+          ? { ...control, status, notes }
+          : control
+      ) || [];
+      setAssessment({ ...assessment, controls: updatedControls });
+    } else {
+      // Create new control in state (will be saved to DB when user clicks save)
+      const newControl = {
+        id: `temp-${controlId}`,
+        status,
+        notes,
+        evidenceFiles: [],
+        controlStruct: {
+          controlId,
+          title: '',
+          description: '',
+          category: {
+            title: ''
+          }
+        },
+        subcontrols: []
+      };
+      setAssessment({ 
+        ...assessment, 
+        controls: [...(assessment.controls || []), newControl] 
+      });
+    }
   };
 
   const handleSubcontrolStatusChange = (controlId: string, subcontrolId: string, status: string, notes: string) => {
     if (!assessment) return;
 
-    const updatedControls = assessment.controls ? assessment.controls.map(control => 
-      control.controlStruct.controlId === controlId 
-        ? { 
-            ...control, 
-            subcontrols: control.subcontrols.map(subcontrol => 
-              subcontrol.subcontrolStruct.subcontrolId === subcontrolId
-                ? { ...subcontrol, status, notes }
-                : subcontrol
-            )
+    // Find existing control
+    const existingControl = assessment.controls?.find(c => c.controlStruct.controlId === controlId);
+    
+    if (existingControl) {
+      // Find existing subcontrol or create a new one
+      const existingSubcontrol = existingControl.subcontrols?.find(sc => sc.subcontrolStruct.subcontrolId === subcontrolId);
+      
+      if (existingSubcontrol) {
+        // Update existing subcontrol
+        const updatedControls = assessment.controls?.map(control => 
+          control.controlStruct.controlId === controlId 
+            ? { 
+                ...control, 
+                subcontrols: control.subcontrols?.map(subcontrol => 
+                  subcontrol.subcontrolStruct.subcontrolId === subcontrolId
+                    ? { ...subcontrol, status, notes }
+                    : subcontrol
+                ) || []
+              }
+            : control
+        ) || [];
+        setAssessment({ ...assessment, controls: updatedControls });
+      } else {
+        // Create new subcontrol in state
+        const newSubcontrol = {
+          id: `temp-${subcontrolId}`,
+          status,
+          notes,
+          evidenceFiles: [],
+          subcontrolStruct: {
+            subcontrolId,
+            title: '',
+            description: ''
           }
-        : control
-    ) : [];
-
-    setAssessment({ ...assessment, controls: updatedControls });
+        };
+        const updatedControls = assessment.controls?.map(control => 
+          control.controlStruct.controlId === controlId 
+            ? { 
+                ...control, 
+                subcontrols: [...(control.subcontrols || []), newSubcontrol] 
+              }
+            : control
+        ) || [];
+        setAssessment({ ...assessment, controls: updatedControls });
+      }
+    }
   };
 
   const handleControlEvidenceChange = (controlId: string, evidenceFiles: string[]) => {
     if (!assessment) return;
 
-    const updatedControls = assessment.controls ? assessment.controls.map(control => 
-      control.controlStruct.controlId === controlId 
-        ? { ...control, evidenceFiles }
-        : control
-    ) : [];
-
-    setAssessment({ ...assessment, controls: updatedControls });
+    const existingControl = assessment.controls?.find(c => c.controlStruct.controlId === controlId);
+    
+    if (existingControl) {
+      const updatedControls = assessment.controls?.map(control => 
+        control.controlStruct.controlId === controlId 
+          ? { ...control, evidenceFiles }
+          : control
+      ) || [];
+      setAssessment({ ...assessment, controls: updatedControls });
+    } else {
+      // Create new control with evidence files
+      const newControl = {
+        id: `temp-${controlId}`,
+        status: 'pending',
+        notes: '',
+        evidenceFiles,
+        controlStruct: {
+          controlId,
+          title: '',
+          description: '',
+          category: {
+            title: ''
+          }
+        },
+        subcontrols: []
+      };
+      setAssessment({ 
+        ...assessment, 
+        controls: [...(assessment.controls || []), newControl] 
+      });
+    }
   };
 
   const handleSubcontrolEvidenceChange = (controlId: string, subcontrolId: string, evidenceFiles: string[]) => {
     if (!assessment) return;
 
-    const updatedControls = assessment.controls ? assessment.controls.map(control => 
-      control.controlStruct.controlId === controlId 
-        ? { 
-            ...control, 
-            subcontrols: control.subcontrols.map(subcontrol => 
-              subcontrol.subcontrolStruct.subcontrolId === subcontrolId
-                ? { ...subcontrol, evidenceFiles }
-                : subcontrol
-            )
+    const existingControl = assessment.controls?.find(c => c.controlStruct.controlId === controlId);
+    
+    if (existingControl) {
+      const existingSubcontrol = existingControl.subcontrols?.find(sc => sc.subcontrolStruct.subcontrolId === subcontrolId);
+      
+      if (existingSubcontrol) {
+        const updatedControls = assessment.controls?.map(control => 
+          control.controlStruct.controlId === controlId 
+            ? { 
+                ...control, 
+                subcontrols: control.subcontrols?.map(subcontrol => 
+                  subcontrol.subcontrolStruct.subcontrolId === subcontrolId
+                    ? { ...subcontrol, evidenceFiles }
+                    : subcontrol
+                ) || []
+              }
+            : control
+        ) || [];
+        setAssessment({ ...assessment, controls: updatedControls });
+      } else {
+        // Create new subcontrol with evidence files
+        const newSubcontrol = {
+          id: `temp-${subcontrolId}`,
+          status: 'pending',
+          notes: '',
+          evidenceFiles,
+          subcontrolStruct: {
+            subcontrolId,
+            title: '',
+            description: ''
           }
-        : control
-    ) : [];
-
-    setAssessment({ ...assessment, controls: updatedControls });
+        };
+        const updatedControls = assessment.controls?.map(control => 
+          control.controlStruct.controlId === controlId 
+            ? { 
+                ...control, 
+                subcontrols: [...(control.subcontrols || []), newSubcontrol] 
+              }
+            : control
+        ) || [];
+        setAssessment({ ...assessment, controls: updatedControls });
+      }
+    }
   };
 
   const handleSaveControl = async (controlId: string) => {
@@ -463,6 +574,17 @@ export default function EuAiActAssessmentPage() {
       if (!response.ok) {
         throw new Error('Failed to save control');
       }
+
+      const savedControl = await response.json();
+
+      // Update the assessment state with the saved control
+      const updatedControls = assessment.controls?.filter(c => c.controlStruct.controlId !== controlId) || [];
+      updatedControls.push(savedControl);
+      
+      setAssessment({
+        ...assessment,
+        controls: updatedControls
+      });
 
       await updateAssessmentProgress();
     } catch (err) {
@@ -494,6 +616,29 @@ export default function EuAiActAssessmentPage() {
       if (!response.ok) {
         throw new Error('Failed to save subcontrol');
       }
+
+      const savedSubcontrol = await response.json();
+
+      // Update the assessment state with the saved subcontrol
+      const updatedControls = assessment.controls?.map(c => 
+        c.controlStruct.controlId === controlId 
+          ? {
+              ...c,
+              subcontrols: c.subcontrols?.filter(sc => sc.subcontrolStruct.subcontrolId !== subcontrolId) || []
+            }
+          : c
+      ) || [];
+
+      // Find the control and add the saved subcontrol
+      const targetControl = updatedControls.find(c => c.controlStruct.controlId === controlId);
+      if (targetControl) {
+        targetControl.subcontrols = [...(targetControl.subcontrols || []), savedSubcontrol];
+      }
+      
+      setAssessment({
+        ...assessment,
+        controls: updatedControls
+      });
 
       await updateAssessmentProgress();
     } catch (err) {
