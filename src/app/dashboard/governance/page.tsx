@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Shield, Users, Building, RefreshCw } from "lucide-react";
+import { Loader2, Shield, Users, Building, RefreshCw, AlertTriangle } from "lucide-react";
 import Link from 'next/link';
+import { calculateRiskScores, getRiskLevel, type StepsData } from '@/lib/risk-calculations';
 
 interface GovernanceData {
   useCaseId: string;
@@ -25,6 +26,15 @@ interface GovernanceData {
     id: string;
     status: string;
     progress: number;
+  }[];
+  assessData?: {
+    stepsData: any;
+  };
+  risks?: {
+    id: string;
+    category: string;
+    riskLevel: string;
+    status: string;
   }[];
 }
 
@@ -61,7 +71,11 @@ export default function GovernancePage() {
       const governanceResponse = await fetch(`/api/governance-data?t=${timestamp}`);
 
       // Check if response is ok
-      if (!governanceResponse.ok) throw new Error('Failed to fetch governance data');
+      if (!governanceResponse.ok) {
+        const errorData = await governanceResponse.text();
+        console.error('Governance API error:', errorData);
+        throw new Error(`Failed to fetch governance data: ${governanceResponse.status} - ${errorData}`);
+      }
 
       // Parse response
       const governanceData = await governanceResponse.json();
@@ -206,7 +220,57 @@ export default function GovernancePage() {
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3">
+                      {/* Risk Management Section */}
+                      <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-red-900 flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            Risk Management
+                          </span>
+                          {(() => {
+                            if (item.assessData?.stepsData) {
+                              const riskResult = calculateRiskScores(item.assessData.stepsData as StepsData);
+                              const riskLevel = getRiskLevel(riskResult.score);
+                              const openRisks = (item.risks || []).filter(r => r.status === 'OPEN').length;
+                              return (
+                                <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                  riskLevel === 'Critical' ? 'bg-red-100 text-red-800' :
+                                  riskLevel === 'High' ? 'bg-orange-100 text-orange-800' :
+                                  riskLevel === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-green-100 text-green-800'
+                                }`}>
+                                  {riskLevel} Risk ({openRisks} open)
+                                </span>
+                              );
+                            }
+                            return <span className="text-xs text-gray-500">Not assessed</span>;
+                          })()}
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <div className="text-xs text-red-700">
+                            {item.assessData?.stepsData ? (
+                              <span>
+                                {(() => {
+                                  const riskResult = calculateRiskScores(item.assessData.stepsData as StepsData);
+                                  const criticalCount = riskResult.chartData.filter(d => d.desktop >= 8).length;
+                                  const highCount = riskResult.chartData.filter(d => d.desktop >= 6 && d.desktop < 8).length;
+                                  return `${criticalCount} critical, ${highCount} high risk areas`;
+                                })()}
+                              </span>
+                            ) : (
+                              <span>Complete assessment to identify risks</span>
+                            )}
+                          </div>
+                          <Link href={`/dashboard/${item.useCaseId}/risks`}>
+                            <Button variant="outline" size="sm" className="text-xs h-6">
+                              {(item.risks || []).length > 0 ? 'Manage' : 'View'}
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                       <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm font-medium text-blue-900">EU AI ACT</span>

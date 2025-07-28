@@ -44,6 +44,7 @@ model UseCase {
   iso42001Assessments      Iso42001Assessment?
   organization             Organization?       @relation(fields: [organizationId], references: [id])
   user                     User?               @relation(fields: [userId], references: [id])
+  risks                    Risk[]
 
   @@unique([aiucId, organizationId])
   @@unique([aiucId, userId])
@@ -462,6 +463,55 @@ model Invitation {
   @@index([status])
   @@index([token])
   @@index([expiresAt])
+}
+
+model Risk {
+  id                String       @id @default(uuid())
+  useCaseId         String
+  category          String       // technical, business, data, ethical, operational, regulatory
+  riskLevel         String       // Low, Medium, High, Critical
+  riskScore         Float
+  title             String
+  description       String
+  impact            String
+  likelihood        String
+  status            RiskStatus   @default(OPEN)
+  assignedTo        String?
+  assignedToName    String?
+  assignedToEmail   String?
+  mitigationPlan    String?
+  mitigationStatus  String?      // planned, in_progress, completed
+  targetDate        DateTime?
+  actualDate        DateTime?
+  notes             String?
+  createdAt         DateTime     @default(now())
+  createdBy         String
+  createdByName     String
+  createdByEmail    String
+  updatedAt         DateTime     @updatedAt
+  updatedBy         String?
+  updatedByName     String?
+  updatedByEmail    String?
+  closedAt          DateTime?
+  closedBy          String?
+  closedByName      String?
+  closedByEmail     String?
+  closureReason     String?
+  useCase           UseCase      @relation(fields: [useCaseId], references: [id])
+
+  @@index([useCaseId])
+  @@index([status])
+  @@index([category])
+  @@index([riskLevel])
+  @@index([createdAt])
+}
+
+enum RiskStatus {
+  OPEN
+  IN_PROGRESS
+  MITIGATED
+  ACCEPTED
+  CLOSED
 }
 
 enum VendorStatus {
