@@ -48,19 +48,29 @@ export async function POST(
       }
     }
 
-    // Update the subclause instance
-    const updatedInstance = await prismaClient.iso42001SubclauseInstance.update({
+    // Upsert the subclause instance (create if doesn't exist, update if it does)
+    const updatedInstance = await prismaClient.iso42001SubclauseInstance.upsert({
       where: {
         subclauseId_assessmentId: {
           subclauseId,
           assessmentId
         }
       },
-      data: {
+      update: {
         implementation,
         evidenceFiles,
         status: implementation.trim() ? 'implemented' : 'pending',
         updatedAt: new Date()
+      },
+      create: {
+        subclauseId,
+        assessmentId,
+        implementation,
+        evidenceFiles,
+        status: implementation.trim() ? 'implemented' : 'pending'
+      },
+      include: {
+        subclause: true
       }
     });
 

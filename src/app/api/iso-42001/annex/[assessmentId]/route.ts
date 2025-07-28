@@ -22,6 +22,14 @@ export async function POST(
 
     const { assessmentId } = await params;
     const { itemId, implementation, evidenceFiles } = await request.json();
+    
+    console.log('🔄 ISO 42001 Annex API - Received data:', {
+      assessmentId,
+      itemId,
+      implementation: implementation?.substring(0, 50) + '...',
+      evidenceFilesCount: evidenceFiles?.length || 0,
+      evidenceFiles
+    });
 
     // Get the assessment to check ownership
     const assessment = await prismaClient.iso42001Assessment.findUnique({
@@ -48,19 +56,50 @@ export async function POST(
       }
     }
 
-    // Update the annex instance
-    const updatedInstance = await prismaClient.iso42001AnnexInstance.update({
+    // First find the item by its itemId to get the UUID
+    const annexItem = await prismaClient.iso42001AnnexItem.findUnique({
+      where: { itemId }
+    });
+
+    if (!annexItem) {
+      return NextResponse.json({ error: `Annex item ${itemId} not found` }, { status: 404 });
+    }
+
+    console.log('🔄 Found annex item:', { itemId, annexItemUuid: annexItem.id });
+
+    // Upsert the annex instance (create if doesn't exist, update if it does)
+    console.log('🔄 About to upsert annex instance with:', {
+      where: { assessmentId_itemId: { assessmentId, itemId: annexItem.id } },
+      evidenceFilesType: typeof evidenceFiles,
+      evidenceFiles
+    });
+    
+    const updatedInstance = await prismaClient.iso42001AnnexInstance.upsert({
       where: {
-        itemId_assessmentId: {
-          itemId,
-          assessmentId
+        assessmentId_itemId: {
+          assessmentId,
+          itemId: annexItem.id
         }
       },
-      data: {
+      update: {
         implementation,
         evidenceFiles,
         status: implementation.trim() ? 'implemented' : 'pending',
         updatedAt: new Date()
+      },
+      create: {
+        itemId: annexItem.id,
+        assessmentId,
+        implementation,
+        evidenceFiles,
+        status: implementation.trim() ? 'implemented' : 'pending'
+      },
+      include: {
+        item: {
+          include: {
+            category: true
+          }
+        }
       }
     });
 

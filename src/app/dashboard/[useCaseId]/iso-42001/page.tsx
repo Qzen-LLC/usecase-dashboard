@@ -6,8 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, FileText, CheckCircle, AlertCircle, Clock, Upload, Save, ChevronRight, ChevronDown, BookOpen } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle, AlertCircle, Clock, Upload, Save, ChevronRight, ChevronDown, BookOpen, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { FileUpload } from '@/components/ui/file-upload';
 
 interface SubclauseInstance {
   id: string;
@@ -97,6 +98,7 @@ export default function Iso42001AssessmentPage() {
   const [activeTab, setActiveTab] = useState<'clauses' | 'annex'>('clauses');
   const [expandedClauses, setExpandedClauses] = useState<Set<string>>(new Set());
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [savingFiles, setSavingFiles] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchAssessmentData();
@@ -201,6 +203,189 @@ export default function Iso42001AssessmentPage() {
     );
 
     setAssessment({ ...assessment, annexes: updatedAnnexes });
+  };
+
+  const handleSubclauseEvidenceChange = async (subclauseId: string, evidenceFiles: string[]) => {
+    if (!assessment) return;
+
+    const existingInstance = assessment.subclauses.find(sc => sc.subclause.subclauseId === subclauseId);
+    const currentFiles = existingInstance?.evidenceFiles || [];
+    const removedFiles = currentFiles.filter(file => !evidenceFiles.includes(file));
+
+    // Update local state immediately - handle case where instance doesn't exist yet
+    let updatedSubclauses;
+    if (existingInstance) {
+      updatedSubclauses = assessment.subclauses.map(sc => 
+        sc.subclause.subclauseId === subclauseId 
+          ? { ...sc, evidenceFiles }
+          : sc
+      );
+    } else {
+      // Instance doesn't exist yet, we'll create it in the API call
+      updatedSubclauses = assessment.subclauses;
+    }
+    setAssessment({ ...assessment, subclauses: updatedSubclauses });
+
+    // Auto-save the evidence files
+    setSavingFiles(prev => new Set(prev).add(`subclause-${subclauseId}`));
+    
+    try {
+      const response = await fetch(`/api/iso-42001/subclause/${assessment.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subclauseId,
+          implementation: existingInstance?.implementation || '',
+          evidenceFiles
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error:', response.status, errorData);
+        throw new Error(`Failed to save subclause evidence files: ${errorData.error || 'Unknown error'}`);
+      }
+
+      const savedInstance = await response.json();
+      
+      // Update the local state with the saved instance
+      let finalUpdatedSubclauses;
+      if (existingInstance) {
+        // Update existing instance
+        finalUpdatedSubclauses = assessment.subclauses.map(sc => 
+          sc.subclause.subclauseId === subclauseId 
+            ? { ...sc, ...savedInstance, subclause: sc.subclause }
+            : sc
+        );
+      } else {
+        // Add new instance to the list
+        finalUpdatedSubclauses = [...assessment.subclauses, savedInstance];
+      }
+      
+      setAssessment({ ...assessment, subclauses: finalUpdatedSubclauses });
+      
+      await updateAssessmentProgress();
+      
+      // Delete removed files from server
+      for (const removedFile of removedFiles) {
+        try {
+          await fetch('/api/upload/delete', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileUrl: removedFile })
+          });
+        } catch (fileDeleteErr) {
+          console.error('Failed to delete file from server:', removedFile, fileDeleteErr);
+        }
+      }
+      
+      // Clear any existing errors on successful save
+      if (error) {
+        setError(null);
+      }
+    } catch (err) {
+      console.error('Failed to auto-save subclause evidence:', err);
+      setError('Failed to save evidence files. Please try saving manually.');
+    } finally {
+      setSavingFiles(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(`subclause-${subclauseId}`);
+        return newSet;
+      });
+    }
+  };
+
+  const handleAnnexEvidenceChange = async (itemId: string, evidenceFiles: string[]) => {
+    if (!assessment) return;
+
+    const existingInstance = assessment.annexes.find(ann => ann.item.itemId === itemId);
+    const currentFiles = existingInstance?.evidenceFiles || [];
+    const removedFiles = currentFiles.filter(file => !evidenceFiles.includes(file));
+
+    // Update local state immediately - handle case where instance doesn't exist yet
+    let updatedAnnexes;
+    if (existingInstance) {
+      updatedAnnexes = assessment.annexes.map(ann => 
+        ann.item.itemId === itemId 
+          ? { ...ann, evidenceFiles }
+          : ann
+      );
+    } else {
+      // Instance doesn't exist yet, we'll create it in the API call
+      updatedAnnexes = assessment.annexes;
+    }
+    setAssessment({ ...assessment, annexes: updatedAnnexes });
+
+    // Auto-save the evidence files
+    setSavingFiles(prev => new Set(prev).add(`annex-${itemId}`));
+    
+    try {
+      const requestData = {
+        itemId,
+        implementation: existingInstance?.implementation || '',
+        evidenceFiles
+      };
+      console.log('🔄 Sending annex API request:', requestData);
+      
+      const response = await fetch(`/api/iso-42001/annex/${assessment.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error:', response.status, errorData);
+        throw new Error(`Failed to save annex evidence files: ${errorData.error || 'Unknown error'}`);
+      }
+
+      const savedInstance = await response.json();
+      
+      // Update the local state with the saved instance
+      let finalUpdatedAnnexes;
+      if (existingInstance) {
+        // Update existing instance
+        finalUpdatedAnnexes = assessment.annexes.map(ann => 
+          ann.item.itemId === itemId 
+            ? { ...ann, ...savedInstance, item: ann.item }
+            : ann
+        );
+      } else {
+        // Add new instance to the list
+        finalUpdatedAnnexes = [...assessment.annexes, savedInstance];
+      }
+      
+      setAssessment({ ...assessment, annexes: finalUpdatedAnnexes });
+      
+      await updateAssessmentProgress();
+      
+      // Delete removed files from server
+      for (const removedFile of removedFiles) {
+        try {
+          await fetch('/api/upload/delete', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileUrl: removedFile })
+          });
+        } catch (fileDeleteErr) {
+          console.error('Failed to delete file from server:', removedFile, fileDeleteErr);
+        }
+      }
+      
+      // Clear any existing errors on successful save
+      if (error) {
+        setError(null);
+      }
+    } catch (err) {
+      console.error('Failed to auto-save annex evidence:', err);
+      setError('Failed to save evidence files. Please try saving manually.');
+    } finally {
+      setSavingFiles(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(`annex-${itemId}`);
+        return newSet;
+      });
+    }
   };
 
   const handleSaveSubclause = async (subclauseId: string) => {
@@ -592,13 +777,28 @@ export default function Iso42001AssessmentPage() {
                                         rows={5}
                                       />
                                     </div>
+                                    
+                                    <div className="mt-4">
+                                      <div className="relative">
+                                        <FileUpload
+                                          label="Evidence Files"
+                                          value={instance?.evidenceFiles || []}
+                                          onChange={(files) => handleSubclauseEvidenceChange(subclause.subclauseId, files)}
+                                          maxFiles={5}
+                                          maxSize={10}
+                                          disabled={savingFiles.has(`subclause-${subclause.subclauseId}`)}
+                                        />
+                                        {savingFiles.has(`subclause-${subclause.subclauseId}`) && (
+                                          <div className="absolute top-0 right-0 bg-green-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                            Saving...
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
 
                                     <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                                       <div className="flex items-center gap-4">
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                          <Upload className="w-4 h-4" />
-                                          <span>Evidence files: {instance?.evidenceFiles?.length || 0}</span>
-                                        </div>
                                         <div className="text-xs text-gray-500">
                                           {instance?.implementation?.length || 0} characters
                                         </div>
@@ -744,13 +944,28 @@ export default function Iso42001AssessmentPage() {
                                         rows={5}
                                       />
                                     </div>
+                                    
+                                    <div className="mt-4">
+                                      <div className="relative">
+                                        <FileUpload
+                                          label="Evidence Files"
+                                          value={instance?.evidenceFiles || []}
+                                          onChange={(files) => handleAnnexEvidenceChange(item.itemId, files)}
+                                          maxFiles={5}
+                                          maxSize={10}
+                                          disabled={savingFiles.has(`annex-${item.itemId}`)}
+                                        />
+                                        {savingFiles.has(`annex-${item.itemId}`) && (
+                                          <div className="absolute top-0 right-0 bg-green-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                            Saving...
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
 
                                     <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                                       <div className="flex items-center gap-4">
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                          <Upload className="w-4 h-4" />
-                                          <span>Evidence files: {instance?.evidenceFiles?.length || 0}</span>
-                                        </div>
                                         <div className="text-xs text-gray-500">
                                           {instance?.implementation?.length || 0} characters
                                         </div>
