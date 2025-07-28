@@ -422,9 +422,10 @@ export default function EuAiActAssessmentPage() {
         body: JSON.stringify({ progress })
       });
 
-      if (assessment) {
-        setAssessment({ ...assessment, progress });
-      }
+      setAssessment(currentAssessment => {
+        if (!currentAssessment) return currentAssessment;
+        return { ...currentAssessment, progress };
+      });
     } catch (err) {
       console.error('Failed to update progress:', err);
     }
@@ -578,8 +579,63 @@ export default function EuAiActAssessmentPage() {
       removedFiles
     });
     
-    // Don't update local state immediately - wait for API response to avoid conflicts
-    console.log('⏳ Skipping immediate state update to prevent conflicts, waiting for API response...');
+    // Update local state immediately for better UX with forced re-render
+    setAssessment(prevAssessment => {
+      if (!prevAssessment) return prevAssessment;
+      
+      const existingControlIndex = prevAssessment.controls?.findIndex(c => c.controlStruct?.controlId === controlId) ?? -1;
+      
+      if (existingControlIndex >= 0) {
+        // Update existing control
+        const updatedControls = [...(prevAssessment.controls || [])];
+        updatedControls[existingControlIndex] = {
+          ...updatedControls[existingControlIndex],
+          evidenceFiles: [...evidenceFiles] // Ensure new array reference
+        };
+        
+        console.log('🔧 State Update - existing control:', {
+          controlId,
+          controlIndex: existingControlIndex,
+          newFiles: evidenceFiles,
+          updatedControl: updatedControls[existingControlIndex]
+        });
+        
+        return {
+          ...prevAssessment,
+          controls: updatedControls,
+          // Add timestamp to force re-render
+          lastUpdated: Date.now()
+        };
+      } else {
+        // Create new control
+        const newControl = {
+          id: `temp-${controlId}`,
+          status: 'pending',
+          notes: '',
+          evidenceFiles: [...evidenceFiles], // Ensure new array reference
+          controlStruct: {
+            controlId,
+            title: '',
+            description: '',
+            category: { title: '' }
+          },
+          subcontrols: []
+        };
+        
+        console.log('🔧 State Update - new control:', {
+          controlId,
+          newControl,
+          evidenceFiles
+        });
+        
+        return {
+          ...prevAssessment,
+          controls: [...(prevAssessment.controls || []), newControl],
+          // Add timestamp to force re-render
+          lastUpdated: Date.now()
+        };
+      }
+    });
 
     // Auto-save the evidence files
     setSavingFiles(prev => new Set(prev).add(`control-${controlId}`));
@@ -608,44 +664,42 @@ export default function EuAiActAssessmentPage() {
         subcontrols: savedControl.subcontrols?.length || 0
       });
       
-      // Update the local state with the saved control
-      let updatedControls: typeof assessment.controls;
-      const controlExists = assessment.controls?.some(c => c.controlStruct?.controlId === controlId);
-      
-      if (controlExists) {
-        // Update existing control
-        updatedControls = assessment.controls?.map(control => 
-          control.controlStruct?.controlId === controlId 
-            ? savedControl
-            : control
-        ) || [];
-      } else {
-        // Add new control
-        updatedControls = [...(assessment.controls || []), savedControl];
-      }
-      
-      console.log('🔧 State update logic check:', {
-        originalControls: assessment.controls?.length || 0,
-        updatedControls: updatedControls.length,
-        controlExists,
-        savedControlId: savedControl.controlStruct?.controlId,
-        savedControlFiles: savedControl.evidenceFiles,
-        updatedControlForTarget: updatedControls.find(c => c.controlStruct?.controlId === controlId)?.evidenceFiles
-      });
-      
-      console.log('🔄 State update before setAssessment:', {
-        originalControlsCount: assessment.controls?.length || 0,
-        updatedControlsCount: updatedControls.length,
-        targetControl: updatedControls.find(c => c.controlStruct?.controlId === controlId)?.evidenceFiles
-      });
-      
-      const newAssessment = { ...assessment, controls: updatedControls };
-      setAssessment(newAssessment);
-      
-      console.log('✅ State updated successfully:', {
-        controlId,
-        savedControlFiles: savedControl.evidenceFiles,
-        updatedControlInState: updatedControls.find(c => c.controlStruct?.controlId === controlId)?.evidenceFiles
+      // Update the local state with the saved control using functional update to avoid stale closure
+      setAssessment(currentAssessment => {
+        if (!currentAssessment) return currentAssessment;
+        
+        const controlExists = currentAssessment.controls?.some(c => c.controlStruct?.controlId === controlId);
+        let updatedControls: typeof currentAssessment.controls;
+        
+        if (controlExists) {
+          // Update existing control - merge with existing data to preserve any fields not in API response
+          updatedControls = currentAssessment.controls?.map(control => 
+            control.controlStruct?.controlId === controlId 
+              ? {
+                  ...control, // Preserve existing control data
+                  ...savedControl, // Overlay API response
+                  controlStruct: control.controlStruct // Preserve the original controlStruct
+                }
+              : control
+          ) || [];
+        } else {
+          // Add new control
+          updatedControls = [...(currentAssessment.controls || []), savedControl];
+        }
+        
+        console.log('✅ API State update - merging with current state:', {
+          controlId,
+          savedControlFiles: savedControl.evidenceFiles,
+          currentControlsCount: currentAssessment.controls?.length || 0,
+          updatedControlsCount: updatedControls.length,
+          finalControlFiles: updatedControls.find(c => c.controlStruct?.controlId === controlId)?.evidenceFiles
+        });
+        
+        return {
+          ...currentAssessment,
+          controls: updatedControls,
+          lastUpdated: Date.now()
+        };
       });
       
       await updateAssessmentProgress();
@@ -672,6 +726,26 @@ export default function EuAiActAssessmentPage() {
     } catch (err) {
       console.error('Failed to auto-save control evidence:', err);
       setError('Failed to save evidence files. Please try saving manually.');
+      
+      // Revert local state on API failure
+      setAssessment(prevAssessment => {
+        if (!prevAssessment) return prevAssessment;
+        
+        if (existingControl) {
+          const revertedControls = prevAssessment.controls?.map(control => 
+            control.controlStruct.controlId === controlId 
+              ? { ...control, evidenceFiles: [...currentFiles] }
+              : control
+          ) || [];
+          return { ...prevAssessment, controls: revertedControls, lastUpdated: Date.now() };
+        } else {
+          // Remove the temporary control we added
+          const revertedControls = prevAssessment.controls?.filter(c => 
+            !(c.id === `temp-${controlId}` && c.controlStruct.controlId === controlId)
+          ) || [];
+          return { ...prevAssessment, controls: revertedControls, lastUpdated: Date.now() };
+        }
+      });
     } finally {
       setSavingFiles(prev => {
         const newSet = new Set(prev);
@@ -690,45 +764,72 @@ export default function EuAiActAssessmentPage() {
     const removedFiles = currentFiles.filter(file => !evidenceFiles.includes(file));
     
     if (existingControl) {
-      
-      // Update local state immediately
-      if (existingSubcontrol) {
-        const updatedControls = assessment.controls?.map(control => 
-          control.controlStruct.controlId === controlId 
-            ? { 
-                ...control, 
-                subcontrols: control.subcontrols?.map(subcontrol => 
-                  subcontrol.subcontrolStruct.subcontrolId === subcontrolId
-                    ? { ...subcontrol, evidenceFiles }
-                    : subcontrol
-                ) || []
-              }
-            : control
-        ) || [];
-        setAssessment({ ...assessment, controls: updatedControls });
-      } else {
-        // Create new subcontrol with evidence files
-        const newSubcontrol = {
-          id: `temp-${subcontrolId}`,
-          status: 'pending',
-          notes: '',
-          evidenceFiles,
-          subcontrolStruct: {
-            subcontrolId,
-            title: '',
-            description: ''
+      // Update local state immediately with forced re-render
+      setAssessment(prevAssessment => {
+        if (!prevAssessment) return prevAssessment;
+        
+        const controlIndex = prevAssessment.controls?.findIndex(c => c.controlStruct?.controlId === controlId) ?? -1;
+        if (controlIndex < 0) return prevAssessment;
+        
+        const updatedControls = [...(prevAssessment.controls || [])];
+        const targetControl = updatedControls[controlIndex];
+        
+        if (existingSubcontrol) {
+          // Update existing subcontrol
+          const subcontrolIndex = targetControl.subcontrols?.findIndex(sc => sc.subcontrolStruct?.subcontrolId === subcontrolId) ?? -1;
+          if (subcontrolIndex >= 0) {
+            const updatedSubcontrols = [...(targetControl.subcontrols || [])];
+            updatedSubcontrols[subcontrolIndex] = {
+              ...updatedSubcontrols[subcontrolIndex],
+              evidenceFiles: [...evidenceFiles] // Ensure new array reference
+            };
+            
+            updatedControls[controlIndex] = {
+              ...targetControl,
+              subcontrols: updatedSubcontrols
+            };
+            
+            console.log('🔧 State Update - existing subcontrol:', {
+              controlId,
+              subcontrolId,
+              subcontrolIndex,
+              newFiles: evidenceFiles
+            });
           }
+        } else {
+          // Create new subcontrol with evidence files
+          const newSubcontrol = {
+            id: `temp-${subcontrolId}`,
+            status: 'pending',
+            notes: '',
+            evidenceFiles: [...evidenceFiles], // Ensure new array reference
+            subcontrolStruct: {
+              subcontrolId,
+              title: '',
+              description: ''
+            }
+          };
+          
+          updatedControls[controlIndex] = {
+            ...targetControl,
+            subcontrols: [...(targetControl.subcontrols || []), newSubcontrol]
+          };
+          
+          console.log('🔧 State Update - new subcontrol:', {
+            controlId,
+            subcontrolId,
+            newSubcontrol,
+            evidenceFiles
+          });
+        }
+        
+        return {
+          ...prevAssessment,
+          controls: updatedControls,
+          // Add timestamp to force re-render
+          lastUpdated: Date.now()
         };
-        const updatedControls = assessment.controls?.map(control => 
-          control.controlStruct.controlId === controlId 
-            ? { 
-                ...control, 
-                subcontrols: [...(control.subcontrols || []), newSubcontrol] 
-              }
-            : control
-        ) || [];
-        setAssessment({ ...assessment, controls: updatedControls });
-      }
+      });
 
       // Auto-save the subcontrol evidence files
       setSavingFiles(prev => new Set(prev).add(`subcontrol-${subcontrolId}`));
@@ -754,20 +855,34 @@ export default function EuAiActAssessmentPage() {
 
           const savedSubcontrol = await response.json();
 
-          // Update the control with the saved subcontrol
-          const updatedControls = assessment.controls?.map(control => 
-            control.controlStruct?.controlId === existingControl.controlStruct.controlId 
-              ? {
-                  ...control,
-                  subcontrols: [
-                    ...(control.subcontrols?.filter(sc => sc.subcontrolStruct?.subcontrolId !== subcontrolId) || []),
-                    savedSubcontrol
-                  ]
-                }
-              : control
-          ) || [];
-          
-          setAssessment({ ...assessment, controls: updatedControls });
+          // Update the control with the saved subcontrol using functional update
+          setAssessment(currentAssessment => {
+            if (!currentAssessment) return currentAssessment;
+            
+            const updatedControls = currentAssessment.controls?.map(control => 
+              control.controlStruct?.controlId === existingControl.controlStruct.controlId 
+                ? {
+                    ...control,
+                    subcontrols: [
+                      ...(control.subcontrols?.filter(sc => sc.subcontrolStruct?.subcontrolId !== subcontrolId) || []),
+                      savedSubcontrol
+                    ]
+                  }
+                : control
+            ) || [];
+            
+            console.log('✅ API Subcontrol update - merging with current state:', {
+              controlId,
+              subcontrolId,
+              savedSubcontrolFiles: savedSubcontrol.evidenceFiles
+            });
+            
+            return {
+              ...currentAssessment,
+              controls: updatedControls,
+              lastUpdated: Date.now()
+            };
+          });
 
           await updateAssessmentProgress();
           
@@ -827,18 +942,33 @@ export default function EuAiActAssessmentPage() {
 
           const savedSubcontrol = await subcontrolResponse.json();
 
-          // Update the assessment with the saved control that includes the subcontrol
-          const controlWithSubcontrol = {
-            ...savedControl,
-            subcontrols: [
-              ...(savedControl.subcontrols || []).filter((sc: any) => sc.subcontrolStruct?.subcontrolId !== subcontrolId),
-              savedSubcontrol
-            ]
-          };
-          
-          const updatedControls = assessment.controls?.filter(c => c.controlStruct?.controlId !== existingControl.controlStruct.controlId) || [];
-          updatedControls.push(controlWithSubcontrol);
-          setAssessment({ ...assessment, controls: updatedControls });
+          // Update the assessment with the saved control that includes the subcontrol using functional update
+          setAssessment(currentAssessment => {
+            if (!currentAssessment) return currentAssessment;
+            
+            const controlWithSubcontrol = {
+              ...savedControl,
+              subcontrols: [
+                ...(savedControl.subcontrols || []).filter((sc: any) => sc.subcontrolStruct?.subcontrolId !== subcontrolId),
+                savedSubcontrol
+              ]
+            };
+            
+            const updatedControls = currentAssessment.controls?.filter(c => c.controlStruct?.controlId !== existingControl.controlStruct.controlId) || [];
+            updatedControls.push(controlWithSubcontrol);
+            
+            console.log('✅ API New Subcontrol update - merging with current state:', {
+              controlId,
+              subcontrolId,
+              savedSubcontrolFiles: savedSubcontrol.evidenceFiles
+            });
+            
+            return {
+              ...currentAssessment,
+              controls: updatedControls,
+              lastUpdated: Date.now()
+            };
+          });
 
           await updateAssessmentProgress();
           
@@ -864,6 +994,40 @@ export default function EuAiActAssessmentPage() {
       } catch (err) {
         console.error('Failed to auto-save subcontrol evidence:', err);
         setError('Failed to save evidence files. Please try saving manually.');
+        
+        // Revert local state on API failure
+        setAssessment(prevAssessment => {
+          if (!prevAssessment) return prevAssessment;
+          
+          if (existingSubcontrol) {
+            const revertedControls = prevAssessment.controls?.map(control => 
+              control.controlStruct.controlId === controlId 
+                ? { 
+                    ...control, 
+                    subcontrols: control.subcontrols?.map(subcontrol => 
+                      subcontrol.subcontrolStruct.subcontrolId === subcontrolId
+                        ? { ...subcontrol, evidenceFiles: [...currentFiles] }
+                        : subcontrol
+                    ) || []
+                  }
+                : control
+            ) || [];
+            return { ...prevAssessment, controls: revertedControls, lastUpdated: Date.now() };
+          } else {
+            // Remove the temporary subcontrol we added
+            const revertedControls = prevAssessment.controls?.map(control => 
+              control.controlStruct.controlId === controlId 
+                ? { 
+                    ...control, 
+                    subcontrols: control.subcontrols?.filter(sc => 
+                      !(sc.id === `temp-${subcontrolId}` && sc.subcontrolStruct.subcontrolId === subcontrolId)
+                    ) || []
+                  }
+                : control
+            ) || [];
+            return { ...prevAssessment, controls: revertedControls, lastUpdated: Date.now() };
+          }
+        });
       } finally {
         setSavingFiles(prev => {
           const newSet = new Set(prev);
@@ -969,20 +1133,34 @@ export default function EuAiActAssessmentPage() {
 
       const savedSubcontrol = await response.json();
 
-      // Update the control with the saved subcontrol
-      const updatedControls = assessment.controls?.map(control => 
-        control.controlStruct?.controlId === controlId 
-          ? {
-              ...control,
-              subcontrols: [
-                ...(control.subcontrols?.filter(sc => sc.subcontrolStruct?.subcontrolId !== subcontrolId) || []),
-                savedSubcontrol
-              ]
-            }
-          : control
-      ) || [];
-      
-      setAssessment({ ...assessment, controls: updatedControls });
+      // Update the control with the saved subcontrol using functional update
+      setAssessment(currentAssessment => {
+        if (!currentAssessment) return currentAssessment;
+        
+        const updatedControls = currentAssessment.controls?.map(control => 
+          control.controlStruct?.controlId === controlId 
+            ? {
+                ...control,
+                subcontrols: [
+                  ...(control.subcontrols?.filter(sc => sc.subcontrolStruct?.subcontrolId !== subcontrolId) || []),
+                  savedSubcontrol
+                ]
+              }
+            : control
+        ) || [];
+        
+        console.log('✅ API Save Subcontrol update - merging with current state:', {
+          controlId,
+          subcontrolId,
+          savedSubcontrolFiles: savedSubcontrol.evidenceFiles
+        });
+        
+        return {
+          ...currentAssessment,
+          controls: updatedControls,
+          lastUpdated: Date.now()
+        };
+      });
 
       await updateAssessmentProgress();
     } catch (err) {

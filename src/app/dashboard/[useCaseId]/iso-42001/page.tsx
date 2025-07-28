@@ -212,19 +212,34 @@ export default function Iso42001AssessmentPage() {
     const currentFiles = existingInstance?.evidenceFiles || [];
     const removedFiles = currentFiles.filter(file => !evidenceFiles.includes(file));
 
-    // Update local state immediately - handle case where instance doesn't exist yet
-    let updatedSubclauses;
-    if (existingInstance) {
-      updatedSubclauses = assessment.subclauses.map(sc => 
-        sc.subclause.subclauseId === subclauseId 
-          ? { ...sc, evidenceFiles }
-          : sc
-      );
-    } else {
-      // Instance doesn't exist yet, we'll create it in the API call
-      updatedSubclauses = assessment.subclauses;
-    }
-    setAssessment({ ...assessment, subclauses: updatedSubclauses });
+    // Update local state immediately with forced re-render - handle case where instance doesn't exist yet
+    setAssessment(prevAssessment => {
+      if (!prevAssessment) return prevAssessment;
+      
+      if (existingInstance) {
+        const updatedSubclauses = prevAssessment.subclauses.map(sc => 
+          sc.subclause.subclauseId === subclauseId 
+            ? { ...sc, evidenceFiles: [...evidenceFiles] } // Ensure new array reference
+            : sc
+        );
+        
+        console.log('🔧 ISO State Update - existing subclause:', {
+          subclauseId,
+          newFiles: evidenceFiles,
+          updatedInstance: updatedSubclauses.find(sc => sc.subclause.subclauseId === subclauseId)
+        });
+        
+        return {
+          ...prevAssessment,
+          subclauses: updatedSubclauses,
+          lastUpdated: Date.now() // Force re-render
+        };
+      } else {
+        // Instance doesn't exist yet, we'll create it in the API call
+        console.log('🔧 ISO State Update - no existing instance for:', subclauseId);
+        return prevAssessment;
+      }
+    });
 
     // Auto-save the evidence files
     setSavingFiles(prev => new Set(prev).add(`subclause-${subclauseId}`));
@@ -248,21 +263,35 @@ export default function Iso42001AssessmentPage() {
 
       const savedInstance = await response.json();
       
-      // Update the local state with the saved instance
-      let finalUpdatedSubclauses;
-      if (existingInstance) {
-        // Update existing instance
-        finalUpdatedSubclauses = assessment.subclauses.map(sc => 
-          sc.subclause.subclauseId === subclauseId 
-            ? { ...sc, ...savedInstance, subclause: sc.subclause }
-            : sc
-        );
-      } else {
-        // Add new instance to the list
-        finalUpdatedSubclauses = [...assessment.subclauses, savedInstance];
-      }
-      
-      setAssessment({ ...assessment, subclauses: finalUpdatedSubclauses });
+      // Update the local state with the saved instance using functional update
+      setAssessment(currentAssessment => {
+        if (!currentAssessment) return currentAssessment;
+        
+        let finalUpdatedSubclauses;
+        if (existingInstance) {
+          // Update existing instance - merge with current data
+          finalUpdatedSubclauses = currentAssessment.subclauses.map(sc => 
+            sc.subclause.subclauseId === subclauseId 
+              ? { ...sc, ...savedInstance, subclause: sc.subclause }
+              : sc
+          );
+        } else {
+          // Add new instance to the list
+          finalUpdatedSubclauses = [...currentAssessment.subclauses, savedInstance];
+        }
+        
+        console.log('✅ ISO API Subclause update - merging with current state:', {
+          subclauseId,
+          savedInstanceFiles: savedInstance.evidenceFiles,
+          hasExisting: !!existingInstance
+        });
+        
+        return {
+          ...currentAssessment,
+          subclauses: finalUpdatedSubclauses,
+          lastUpdated: Date.now()
+        };
+      });
       
       await updateAssessmentProgress();
       
@@ -286,6 +315,23 @@ export default function Iso42001AssessmentPage() {
     } catch (err) {
       console.error('Failed to auto-save subclause evidence:', err);
       setError('Failed to save evidence files. Please try saving manually.');
+      
+      // Revert local state on API failure
+      setAssessment(prevAssessment => {
+        if (!prevAssessment || !existingInstance) return prevAssessment;
+        
+        const revertedSubclauses = prevAssessment.subclauses.map(sc => 
+          sc.subclause.subclauseId === subclauseId 
+            ? { ...sc, evidenceFiles: [...currentFiles] }
+            : sc
+        );
+        
+        return {
+          ...prevAssessment,
+          subclauses: revertedSubclauses,
+          lastUpdated: Date.now()
+        };
+      });
     } finally {
       setSavingFiles(prev => {
         const newSet = new Set(prev);
@@ -302,19 +348,34 @@ export default function Iso42001AssessmentPage() {
     const currentFiles = existingInstance?.evidenceFiles || [];
     const removedFiles = currentFiles.filter(file => !evidenceFiles.includes(file));
 
-    // Update local state immediately - handle case where instance doesn't exist yet
-    let updatedAnnexes;
-    if (existingInstance) {
-      updatedAnnexes = assessment.annexes.map(ann => 
-        ann.item.itemId === itemId 
-          ? { ...ann, evidenceFiles }
-          : ann
-      );
-    } else {
-      // Instance doesn't exist yet, we'll create it in the API call
-      updatedAnnexes = assessment.annexes;
-    }
-    setAssessment({ ...assessment, annexes: updatedAnnexes });
+    // Update local state immediately with forced re-render - handle case where instance doesn't exist yet
+    setAssessment(prevAssessment => {
+      if (!prevAssessment) return prevAssessment;
+      
+      if (existingInstance) {
+        const updatedAnnexes = prevAssessment.annexes.map(ann => 
+          ann.item.itemId === itemId 
+            ? { ...ann, evidenceFiles: [...evidenceFiles] } // Ensure new array reference
+            : ann
+        );
+        
+        console.log('🔧 ISO State Update - existing annex:', {
+          itemId,
+          newFiles: evidenceFiles,
+          updatedInstance: updatedAnnexes.find(ann => ann.item.itemId === itemId)
+        });
+        
+        return {
+          ...prevAssessment,
+          annexes: updatedAnnexes,
+          lastUpdated: Date.now() // Force re-render
+        };
+      } else {
+        // Instance doesn't exist yet, we'll create it in the API call
+        console.log('🔧 ISO State Update - no existing annex instance for:', itemId);
+        return prevAssessment;
+      }
+    });
 
     // Auto-save the evidence files
     setSavingFiles(prev => new Set(prev).add(`annex-${itemId}`));
@@ -341,21 +402,35 @@ export default function Iso42001AssessmentPage() {
 
       const savedInstance = await response.json();
       
-      // Update the local state with the saved instance
-      let finalUpdatedAnnexes;
-      if (existingInstance) {
-        // Update existing instance
-        finalUpdatedAnnexes = assessment.annexes.map(ann => 
-          ann.item.itemId === itemId 
-            ? { ...ann, ...savedInstance, item: ann.item }
-            : ann
-        );
-      } else {
-        // Add new instance to the list
-        finalUpdatedAnnexes = [...assessment.annexes, savedInstance];
-      }
-      
-      setAssessment({ ...assessment, annexes: finalUpdatedAnnexes });
+      // Update the local state with the saved instance using functional update
+      setAssessment(currentAssessment => {
+        if (!currentAssessment) return currentAssessment;
+        
+        let finalUpdatedAnnexes;
+        if (existingInstance) {
+          // Update existing instance - merge with current data
+          finalUpdatedAnnexes = currentAssessment.annexes.map(ann => 
+            ann.item.itemId === itemId 
+              ? { ...ann, ...savedInstance, item: ann.item }
+              : ann
+          );
+        } else {
+          // Add new instance to the list
+          finalUpdatedAnnexes = [...currentAssessment.annexes, savedInstance];
+        }
+        
+        console.log('✅ ISO API Annex update - merging with current state:', {
+          itemId,
+          savedInstanceFiles: savedInstance.evidenceFiles,
+          hasExisting: !!existingInstance
+        });
+        
+        return {
+          ...currentAssessment,
+          annexes: finalUpdatedAnnexes,
+          lastUpdated: Date.now()
+        };
+      });
       
       await updateAssessmentProgress();
       
@@ -379,6 +454,23 @@ export default function Iso42001AssessmentPage() {
     } catch (err) {
       console.error('Failed to auto-save annex evidence:', err);
       setError('Failed to save evidence files. Please try saving manually.');
+      
+      // Revert local state on API failure
+      setAssessment(prevAssessment => {
+        if (!prevAssessment || !existingInstance) return prevAssessment;
+        
+        const revertedAnnexes = prevAssessment.annexes.map(ann => 
+          ann.item.itemId === itemId 
+            ? { ...ann, evidenceFiles: [...currentFiles] }
+            : ann
+        );
+        
+        return {
+          ...prevAssessment,
+          annexes: revertedAnnexes,
+          lastUpdated: Date.now()
+        };
+      });
     } finally {
       setSavingFiles(prev => {
         const newSet = new Set(prev);
@@ -460,7 +552,10 @@ export default function Iso42001AssessmentPage() {
         body: JSON.stringify({ progress })
       });
 
-      setAssessment({ ...assessment, progress });
+      setAssessment(currentAssessment => {
+        if (!currentAssessment) return currentAssessment;
+        return { ...currentAssessment, progress };
+      });
     } catch (err) {
       console.error('Failed to update progress:', err);
     }
