@@ -7,6 +7,6 @@ const SidebarLayout = dynamic(() => import('@/components/ui/sidebar-layout'), { 
 
 export default function ConditionalSidebarLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAuthOrRootPage = pathname === '/' || pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up');
+  const isAuthOrRootPage = pathname === '/' || pathname.startsWith('/sign-in');
   return isAuthOrRootPage ? <>{children}</> : <SidebarLayout>{children}</SidebarLayout>;
 } 

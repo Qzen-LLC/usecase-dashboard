@@ -68,87 +68,215 @@ export async function POST(req: Request) {
 
     const { name, domain, adminEmail, adminFirstName, adminLastName } = await req.json();
 
-    if (!name || !adminEmail) {
-      return NextResponse.json({ error: 'Organization name and admin email are required' }, { status: 400 });
+    console.log('Creating organization with:', { name, domain, adminEmail, adminFirstName, adminLastName });
+
+    if (!name || !name.trim()) {
+      return NextResponse.json({ error: 'Organization name is required' }, { status: 400 });
     }
 
-    // Check if organization already exists
+    if (!adminEmail || !adminEmail.trim()) {
+      return NextResponse.json({ error: 'Admin email is required' }, { status: 400 });
+    }
+
+    // Check for existing org by name or domain (case-insensitive, trimmed)
     const existingOrg = await prismaClient.organization.findFirst({
       where: {
         OR: [
-          { name },
-          { domain: domain || null }
-        ]
-      }
-    });
-
-    if (existingOrg) {
-      return NextResponse.json({ error: 'Organization with this name or domain already exists' }, { status: 400 });
-    }
-
-    // Create organization
-    const organization = await prismaClient.organization.create({
-      data: {
-        name,
-        domain,
-        isActive: true,
+          { name: { equals: name.trim(), mode: 'insensitive' as const } },
+          ...(domain ? [{ domain: { equals: domain.trim(), mode: 'insensitive' as const } }] : []),
+        ],
       },
     });
 
-    // Create organization admin user in Clerk
-    let clerkUser;
-    try {
-      clerkUser = await clerk.users.createUser({
-        emailAddress: [adminEmail],
-        firstName: adminFirstName || 'Admin',
-        lastName: adminLastName || 'User',
-        publicMetadata: {
-          role: 'ORG_ADMIN',
-          organizationId: organization.id,
-        },
-      });
-    } catch (error: any) {
-      // If user already exists in Clerk, update their metadata
-      if (error?.errors?.[0]?.code === 'user_exists') {
-        const existingUsers = await clerk.users.getUserList({
-          emailAddress: [adminEmail],
-        });
-        if (existingUsers.length > 0) {
-          clerkUser = existingUsers[0];
-          await clerk.users.updateUser(clerkUser.id, {
-            publicMetadata: {
-              role: 'ORG_ADMIN',
-              organizationId: organization.id,
-            },
-          });
-        }
-      } else {
-        throw error;
-      }
+    console.log('Existing org check result:', existingOrg ? { id: existingOrg.id, name: existingOrg.name, domain: existingOrg.domain } : 'NONE');
+
+    if (existingOrg) {
+      console.log('Organization already exists, returning error');
+      return NextResponse.json(
+        { error: 'Organization with this name or domain already exists' },
+        { status: 400 }
+      );
     }
 
-    // Create user record in database
-    if (clerkUser) {
-      await prismaClient.user.create({
+    // Check if admin user already exists
+    const existingUser = await prismaClient.user.findUnique({
+      where: { email: adminEmail.trim() },
+    });
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'User with this email already exists' },
+        { status: 400 }
+      );
+    }
+
+    // Create the organization and invitation in a transaction
+    const result = await prismaClient.$transaction(async (tx) => {
+      // Create the organization
+      const org = await tx.organization.create({
         data: {
-          clerkId: clerkUser.id,
-          email: adminEmail,
-          firstName: adminFirstName || 'Admin',
-          lastName: adminLastName || 'User',
-          role: 'ORG_ADMIN',
-          organizationId: organization.id,
-          isActive: true,
+          name: name.trim(),
+          domain: domain ? domain.trim() : null,
         },
       });
+
+      // Create invitation for the admin user
+      const invitation = await tx.invitation.create({
+        data: {
+          email: adminEmail.trim(),
+          role: 'ORG_ADMIN',
+          organizationId: org.id,
+          invitedById: currentUserRecord.id,
+          token: `invite-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        },
+      });
+
+      return { org, invitation };
+    });
+
+    // Send email invitation via Clerk
+    try {
+      await clerk.invitations.createInvitation({
+        emailAddress: adminEmail.trim(),
+        publicMetadata: { 
+          role: 'ORG_ADMIN', 
+          organizationId: result.org.id 
+        },
+      });
+      console.log('Email invitation sent to:', adminEmail.trim());
+    } catch (error: any) {
+      console.error('Error sending email invitation:', error, error?.errors);
+      // Don't fail the organization creation if email fails
+      // The invitation record is still created in the database
     }
 
-    return NextResponse.json({
-      success: true,
-      organization,
-      message: 'Organization created successfully',
+    return NextResponse.json({ 
+      success: true, 
+      organization: result.org,
+      invitation: {
+        id: result.invitation.id,
+        email: result.invitation.email,
+        role: result.invitation.role,
+        token: result.invitation.token,
+      }
     });
   } catch (error) {
     console.error('Error creating organization:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// Delete organization (QZen Admin only)
+export async function DELETE(req: Request) {
+  try {
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const currentUserRecord = await prismaClient.user.findUnique({
+      where: { clerkId: user.id },
+    });
+    if (!currentUserRecord || currentUserRecord.role !== 'QZEN_ADMIN') {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const organizationId = searchParams.get('id');
+
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
+    }
+
+    // Check if organization exists
+    const organization = await prismaClient.organization.findUnique({
+      where: { id: organizationId },
+      include: {
+        users: true,
+        useCases: true,
+        vendors: true,
+        invitations: true,
+      },
+    });
+
+    if (!organization) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
+    }
+
+    console.log('Deleting organization:', {
+      id: organization.id,
+      name: organization.name,
+      usersCount: organization.users.length,
+      useCasesCount: organization.useCases.length,
+      vendorsCount: organization.vendors.length,
+      invitationsCount: organization.invitations.length,
+    });
+
+    // Delete organization and all related data in a transaction
+    await prismaClient.$transaction(async (tx) => {
+      // Delete invitations first (due to foreign key constraints)
+      await tx.invitation.deleteMany({
+        where: { organizationId: organizationId },
+      });
+
+      // Delete vendors
+      await tx.vendor.deleteMany({
+        where: { organizationId: organizationId },
+      });
+
+      // Delete use cases and related data
+      const useCaseIds = organization.useCases.map(uc => uc.id);
+      
+      // Delete use case related data
+      await tx.approval.deleteMany({
+        where: { useCaseId: { in: useCaseIds } },
+      });
+      
+      await tx.finOps.deleteMany({
+        where: { useCaseId: { in: useCaseIds } },
+      });
+      
+      await tx.assess.deleteMany({
+        where: { useCaseId: { in: useCaseIds } },
+      });
+      
+      await tx.euAiActAssessment.deleteMany({
+        where: { useCaseId: { in: useCaseIds } },
+      });
+      
+      await tx.iso42001Assessment.deleteMany({
+        where: { useCaseId: { in: useCaseIds } },
+      });
+      
+      // Delete use cases
+      await tx.useCase.deleteMany({
+        where: { organizationId: organizationId },
+      });
+
+      // Update users to remove organization association
+      await tx.user.updateMany({
+        where: { organizationId: organizationId },
+        data: { organizationId: null },
+      });
+
+      // Finally delete the organization
+      await tx.organization.delete({
+        where: { id: organizationId },
+      });
+    });
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Organization deleted successfully',
+      deletedOrganization: {
+        id: organization.id,
+        name: organization.name,
+        domain: organization.domain,
+      }
+    });
+  } catch (error) {
+    console.error('Error deleting organization:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 

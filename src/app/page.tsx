@@ -50,7 +50,7 @@ export default function HomePage() {
           <div className="mb-4">
             <Image 
               src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MjMxMDA0OCwiZXhwIjoxNzYwOTUwMDQ4fQ.OMnrUpd7vPASUkhCrepStmfEq9dbcdbrgrspJaXkpVk" 
-              alt="QZen QUBE Logo" 
+              alt="QUBE Logo" 
               width={64} 
               height={64} 
               className="mx-auto"
@@ -58,7 +58,7 @@ export default function HomePage() {
             />
           </div>
           <h1 className="text-4xl font-extrabold text-gray-900 mb-2 tracking-tight">
-            QZen QUBE
+            QUBE
           </h1>
           <p className="text-gray-600 mb-8 text-lg">
             AI Use Case Management Platform
@@ -73,11 +73,6 @@ export default function HomePage() {
                 <Link href="/sign-in" className="block">
                   <Button className="w-full py-3 text-lg font-semibold bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white shadow-md rounded-full hover:from-[#b84fff] hover:to-[#8f4fff] transition-all">
                     Sign In
-                  </Button>
-                </Link>
-                <Link href="/sign-up" className="block">
-                  <Button variant="outline" className="w-full py-3 text-lg font-semibold border-2 border-[#b84fff] text-[#8f4fff] bg-white rounded-full hover:bg-[#f5f7fa] transition-all">
-                    Sign Up
                   </Button>
                 </Link>
               </div>

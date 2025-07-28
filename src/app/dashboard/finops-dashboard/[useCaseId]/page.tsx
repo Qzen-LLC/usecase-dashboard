@@ -517,7 +517,7 @@ export default function FinancialDashboard() {
         <div className="p-8">
           {error && <div className="text-red-500 mb-2">{error}</div>}
           {loading && <div className="text-blue-500 mb-4">Loading saved data...</div>}
-          <Card className="mb-8 p-6 bg-gradient-to-br from-[#f5eaff] via-[#fbeaff] to-[#ffeafd] border border-blue-100 shadow-md rounded-xl">
+          <Card className="mb-8 p-6 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border border-blue-100 shadow-md rounded-xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="font-semibold text-blue-900">Initial Dev Cost</label>
@@ -544,13 +544,15 @@ export default function FinancialDashboard() {
                 <Input type="number" value={valueGrowthRate * 100} min={0} max={100} onChange={e => setValueGrowthRate(Number(e.target.value) / 100)} className="w-full" />
               </div>
             </div>
-            <Button 
-              className="mt-6 w-full bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 hover:from-blue-200 hover:via-blue-300 hover:to-blue-200 text-blue-900 hover:text-blue-950 px-6 py-3 rounded-xl shadow-lg font-semibold text-lg transition-all duration-200 border border-blue-200 hover:border-blue-300" 
-              onClick={handleSave} 
-              disabled={saving}
-            >
-              Save Forecast
-            </Button>
+            <div className="mt-6 flex justify-center">
+              <Button 
+                className="bg-gradient-to-r from-green-400 via-green-500 to-green-600 hover:from-green-500 hover:via-green-600 hover:to-green-700 text-white px-8 py-3 rounded-xl shadow-lg font-semibold text-lg transition-all duration-200 border border-green-500 hover:border-green-600" 
+                onClick={handleSave} 
+                disabled={saving}
+              >
+                Save Forecast
+              </Button>
+            </div>
           </Card>
           {/* Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 justify-center">
@@ -578,25 +580,25 @@ export default function FinancialDashboard() {
           </div>
           {/* Graphs */}
           <div className="flex flex-col gap-10 w-full justify-center items-center">
-            <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-[#e9eafc] via-[#f5eaff] to-[#ffeafd] border border-gray-200 shadow-md rounded-xl">
+            <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border border-gray-200 shadow-md rounded-xl">
               <h2 className="font-semibold mb-6 text-[#23235b] text-2xl">Cumulative Financial View</h2>
               <div className="flex justify-center" style={{ height: 420 }}>
                 <Line data={cumulativeChartData} options={cumulativeChartOptions} />
               </div>
             </Card>
-            <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-[#e9eafc] via-[#f5eaff] to-[#ffeafd] border border-gray-200 shadow-md rounded-xl">
+            <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border border-gray-200 shadow-md rounded-xl">
               <h2 className="font-semibold mb-6 text-[#23235b] text-2xl">ROI Trend</h2>
               <div className="flex justify-center" style={{ height: 420 }}>
                 <Line data={roiChart} options={roiOptions} />
               </div>
             </Card>
-            <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-[#e9eafc] via-[#f5eaff] to-[#ffeafd] border border-gray-200 shadow-md rounded-xl">
+            <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border border-gray-200 shadow-md rounded-xl">
               <h2 className="font-semibold mb-6 text-[#23235b] text-2xl">Monthly Cost Breakdown</h2>
               <div className="flex justify-center" style={{ height: 420 }}>
                 <Line data={costBreakdownChart} options={costBreakdownOptions} />
               </div>
             </Card>
-            <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-[#e9eafc] via-[#f5eaff] to-[#ffeafd] border border-gray-200 shadow-md rounded-xl">
+            <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border border-gray-200 shadow-md rounded-xl">
               <h2 className="font-semibold mb-6 text-[#23235b] text-2xl">Monthly Profit/Loss</h2>
               <div className="flex justify-center" style={{ height: 420 }}>
                 <Bar data={profitLossChart} options={profitLossOptions} />

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, Plus, Trash2, UserCheck, UserX } from 'lucide-react';
+import { Users, Plus, Trash2, UserCheck, UserX, Mail, Calendar, Shield, UserPlus, AlertCircle } from 'lucide-react';
 import { useUserData } from '@/contexts/UserContext';
 
 interface User {
@@ -28,6 +28,10 @@ export default function OrganizationUserManagement() {
   const [newUserFirstName, setNewUserFirstName] = useState('');
   const [newUserLastName, setNewUserLastName] = useState('');
   const [newUserRole, setNewUserRole] = useState('ORG_USER');
+  const [addUserLoading, setAddUserLoading] = useState(false);
+  const [removeUserLoading, setRemoveUserLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const { userData } = useUserData();
 
   useEffect(() => {
@@ -46,6 +50,7 @@ export default function OrganizationUserManagement() {
       }
     } catch (error) {
       console.error('Error fetching users:', error);
+      setError('Failed to load users');
     } finally {
       setLoading(false);
     }
@@ -53,13 +58,18 @@ export default function OrganizationUserManagement() {
 
   const handleAddUser = async () => {
     if (!newUserEmail) {
-      alert('Email is required');
+      setError('Email is required');
       return;
     }
     if (!orgId) {
-      alert('Organization ID not found. Please refresh and try again.');
+      setError('Organization ID not found. Please refresh and try again.');
       return;
     }
+    
+    setAddUserLoading(true);
+    setError(null);
+    setSuccess(null);
+    
     try {
       const response = await fetch('/api/invitations/send', {
         method: 'POST',
@@ -77,14 +87,16 @@ export default function OrganizationUserManagement() {
         setNewUserLastName('');
         setNewUserRole('ORG_USER');
         setShowAddUser(false);
+        setSuccess('Invitation sent successfully!');
         fetchUsers();
-        alert('Invitation sent successfully!');
       } else {
-        alert(data.error || 'Failed to send invitation');
+        setError(data.error || 'Failed to send invitation');
       }
     } catch (error) {
       console.error('Error sending invitation:', error);
-      alert('Failed to send invitation');
+      setError('Failed to send invitation');
+    } finally {
+      setAddUserLoading(false);
     }
   };
 
@@ -93,6 +105,10 @@ export default function OrganizationUserManagement() {
       return;
     }
 
+    setRemoveUserLoading(userId);
+    setError(null);
+    setSuccess(null);
+
     try {
       const response = await fetch(`/api/organizations/users/${userId}`, {
         method: 'DELETE',
@@ -100,163 +116,296 @@ export default function OrganizationUserManagement() {
 
       const data = await response.json();
       if (data.success) {
+        setSuccess('User removed successfully!');
         fetchUsers();
-        alert('User removed successfully!');
       } else {
-        alert(data.error || 'Failed to remove user');
+        setError(data.error || 'Failed to remove user');
       }
     } catch (error) {
       console.error('Error removing user:', error);
-      alert('Failed to remove user');
+      setError('Failed to remove user');
+    } finally {
+      setRemoveUserLoading(null);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading user management...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">User Management</h1>
-          <p className="text-gray-600 mt-2">Manage users within your organization</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
+        {/* Modern Header */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                User Management
+              </h1>
+              <p className="text-gray-600 mt-2 text-lg">Manage users within your organization</p>
+            </div>
+            <Button 
+              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200" 
+              onClick={() => setShowAddUser(true)}
+            >
+              <UserPlus className="w-5 h-5" />
+              Add User
+            </Button>
+          </div>
         </div>
-        <Button onClick={() => setShowAddUser(true)} className="flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Add User
-        </Button>
-      </div>
 
-      {/* Add User Modal */}
-      {showAddUser && (
-        <Card className="max-w-2xl">
-          <CardHeader>
-            <CardTitle>Add New User</CardTitle>
-            <CardDescription>
-              Add a new user to your organization. They will receive an invitation to join.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="userFirstName">First Name</Label>
-                <Input
-                  id="userFirstName"
-                  value={newUserFirstName}
-                  onChange={(e) => setNewUserFirstName(e.target.value)}
-                  placeholder="First Name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="userLastName">Last Name</Label>
-                <Input
-                  id="userLastName"
-                  value={newUserLastName}
-                  onChange={(e) => setNewUserLastName(e.target.value)}
-                  placeholder="Last Name"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="userEmail">Email *</Label>
-              <Input
-                id="userEmail"
-                type="email"
-                value={newUserEmail}
-                onChange={(e) => setNewUserEmail(e.target.value)}
-                placeholder="user@example.com"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="userRole">Role</Label>
-              <Select value={newUserRole} onValueChange={setNewUserRole}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ORG_ADMIN">Organization Admin</SelectItem>
-                  <SelectItem value="ORG_USER">Organization User</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex space-x-2 pt-4">
-              <Button onClick={handleAddUser} disabled={!newUserEmail}>
-                Add User
-              </Button>
-              <Button variant="outline" onClick={() => setShowAddUser(false)}>
-                Cancel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Users List */}
-      <div className="grid gap-6">
-        <h2 className="text-2xl font-semibold">Organization Users</h2>
-        {users.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-8">
-              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">No Users Yet</h3>
-              <p className="text-gray-500 mb-4">Add users to your organization to get started</p>
-              <Button onClick={() => setShowAddUser(true)}>
-                Add User
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4">
-            {users.map((user) => (
-              <Card key={user.id}>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Users className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <div className="font-medium">
-                          {user.firstName} {user.lastName}
-                        </div>
-                        <div className="text-sm text-gray-500">{user.email}</div>
-                        <div className="text-xs text-gray-400">
-                          Joined {new Date(user.createdAt).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Badge variant={user.role === 'ORG_ADMIN' ? 'default' : 'secondary'}>
-                        {user.role === 'ORG_ADMIN' ? 'Admin' : 'User'}
-                      </Badge>
-                      <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                        {user.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                      {user.role !== 'ORG_ADMIN' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRemoveUser(user.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+        {/* Success/Error Messages */}
+        {success && (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span className="text-green-800 font-medium">{success}</span>
           </div>
         )}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-2">
+            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+            <span className="text-red-800 font-medium">{error}</span>
+          </div>
+        )}
+
+        {/* Add User Modal */}
+        {showAddUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full mx-4 border border-gray-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <UserPlus className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Add New User</h2>
+                  <p className="text-gray-600">Send invitation to join your organization</p>
+                </div>
+              </div>
+              
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="userFirstName" className="text-sm font-medium text-gray-700 mb-2 block">First Name</Label>
+                    <Input
+                      id="userFirstName"
+                      value={newUserFirstName}
+                      onChange={(e) => setNewUserFirstName(e.target.value)}
+                      placeholder="First Name"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="userLastName" className="text-sm font-medium text-gray-700 mb-2 block">Last Name</Label>
+                    <Input
+                      id="userLastName"
+                      value={newUserLastName}
+                      onChange={(e) => setNewUserLastName(e.target.value)}
+                      placeholder="Last Name"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="userEmail" className="text-sm font-medium text-gray-700 mb-2 block">Email *</Label>
+                  <Input
+                    id="userEmail"
+                    type="email"
+                    value={newUserEmail}
+                    onChange={(e) => setNewUserEmail(e.target.value)}
+                    placeholder="user@example.com"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="userRole" className="text-sm font-medium text-gray-700 mb-2 block">Role</Label>
+                  <Select value={newUserRole} onValueChange={setNewUserRole}>
+                    <SelectTrigger className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ORG_ADMIN">Organization Admin</SelectItem>
+                      <SelectItem value="ORG_USER">Organization User</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button 
+                    onClick={handleAddUser} 
+                    disabled={!newUserEmail || addUserLoading}
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl"
+                  >
+                    {addUserLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b border-white"></div>
+                        Sending Invite...
+                      </div>
+                    ) : (
+                      'Send Invitation'
+                    )}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowAddUser(false)}
+                    className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50 px-6 py-3 rounded-xl"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Analytics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <Users className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Users</p>
+                  <p className="text-3xl font-bold text-gray-900">{users.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                  <UserCheck className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Active Users</p>
+                  <p className="text-3xl font-bold text-gray-900">{users.filter(u => u.isActive).length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                  <Shield className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Admins</p>
+                  <p className="text-3xl font-bold text-gray-900">{users.filter(u => u.role === 'ORG_ADMIN').length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Users List */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+              <Users className="w-6 h-6 text-blue-600" />
+              Organization Users
+            </h2>
+            <Badge variant="secondary" className="px-3 py-1 rounded-full">
+              {users.length} {users.length === 1 ? 'User' : 'Users'}
+            </Badge>
+          </div>
+          
+          {users.length === 0 ? (
+            <Card className="bg-white border-0 shadow-sm rounded-2xl">
+              <CardContent className="text-center py-12">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Users Yet</h3>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">Add users to your organization to get started with collaboration</p>
+                <Button 
+                  onClick={() => setShowAddUser(true)}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl"
+                >
+                  Add User
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-6">
+              {users.map((user) => (
+                <Card key={user.id} className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl overflow-hidden">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                          <span className="text-lg font-medium text-gray-700">
+                            {user.firstName?.[0]}{user.lastName?.[0]}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-1">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {user.firstName} {user.lastName}
+                            </h3>
+                            <Badge 
+                              variant={user.role === 'ORG_ADMIN' ? 'default' : 'secondary'}
+                              className="px-3 py-1 rounded-full"
+                            >
+                              {user.role === 'ORG_ADMIN' ? 'Admin' : 'User'}
+                            </Badge>
+                            <Badge 
+                              variant={user.isActive ? 'default' : 'secondary'}
+                              className="px-3 py-1 rounded-full"
+                            >
+                              {user.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <div className="flex items-center gap-1">
+                              <Mail className="w-4 h-4" />
+                              {user.email}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              Joined {new Date(user.createdAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {user.role !== 'ORG_ADMIN' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRemoveUser(user.id)}
+                            disabled={removeUserLoading === user.id}
+                            className="border-red-200 text-red-600 hover:bg-red-50 rounded-xl px-3 py-2"
+                          >
+                            {removeUserLoading === user.id ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b border-red-600"></div>
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

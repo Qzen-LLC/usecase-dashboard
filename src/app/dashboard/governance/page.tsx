@@ -16,16 +16,16 @@ interface GovernanceData {
   regulatoryFrameworks: string[];
   industryStandards: string[];
   lastUpdated: string;
-  euAiActAssessment?: {
+  euAiActAssessments: {
     id: string;
     status: string;
     progress: number;
-  };
-  iso42001Assessment?: {
+  }[];
+  iso42001Assessments: {
     id: string;
     status: string;
     progress: number;
-  };
+  }[];
 }
 
 interface EuAiActTopic {
@@ -254,34 +254,34 @@ export default function GovernancePage() {
                   <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-blue-900">EU AI ACT</span>
-                      <span className="text-xs text-blue-700">{item.euAiActAssessment ? `${Math.round(item.euAiActAssessment.progress)}%` : '0%'}</span>
+                      <span className="text-xs text-blue-700">{item.euAiActAssessments[0] ? `${Math.round(item.euAiActAssessments[0].progress)}%` : '0%'}</span>
                     </div>
                     <div className="w-full bg-blue-200 rounded-full h-1.5 mb-2">
-                      <div className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style={{ width: `${item.euAiActAssessment?.progress || 0}%` }}></div>
+                      <div className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style={{ width: `${item.euAiActAssessments[0]?.progress || 0}%` }}></div>
                     </div>
                     <div className="flex justify-between items-center">
-                      <Badge variant="outline" className={`text-xs ${item.euAiActAssessment?.status === 'completed' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
-                        {item.euAiActAssessment?.status === 'completed' ? 'Completed' : 'In Progress'}
+                      <Badge variant="outline" className={`text-xs ${item.euAiActAssessments[0]?.status === 'completed' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
+                        {item.euAiActAssessments[0]?.status === 'completed' ? 'Completed' : 'In Progress'}
                       </Badge>
                       <Link href={`/dashboard/${item.useCaseId}/eu-ai-act`}>
-                        <Button variant="outline" size="sm" className="text-xs h-6">{item.euAiActAssessment ? 'Continue' : 'Start'}</Button>
+                        <Button variant="outline" size="sm" className="text-xs h-6">{item.euAiActAssessments[0] ? 'Continue' : 'Start'}</Button>
                       </Link>
                     </div>
                   </div>
                   <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-purple-900">ISO 42001</span>
-                      <span className="text-xs text-purple-700">{item.iso42001Assessment ? `${Math.round(item.iso42001Assessment.progress)}%` : '0%'}</span>
+                      <span className="text-xs text-purple-700">{item.iso42001Assessments[0] ? `${Math.round(item.iso42001Assessments[0].progress)}%` : '0%'}</span>
                     </div>
                     <div className="w-full bg-purple-200 rounded-full h-1.5 mb-2">
-                      <div className="bg-purple-600 h-1.5 rounded-full transition-all duration-300" style={{ width: `${item.iso42001Assessment?.progress || 0}%` }}></div>
+                      <div className="bg-purple-600 h-1.5 rounded-full transition-all duration-300" style={{ width: `${item.iso42001Assessments[0]?.progress || 0}%` }}></div>
                     </div>
                     <div className="flex justify-between items-center">
-                      <Badge variant="outline" className={`text-xs ${item.iso42001Assessment?.status === 'completed' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
-                        {item.iso42001Assessment?.status === 'completed' ? 'Completed' : 'In Progress'}
+                      <Badge variant="outline" className={`text-xs ${item.iso42001Assessments[0]?.status === 'completed' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
+                        {item.iso42001Assessments[0]?.status === 'completed' ? 'Completed' : 'In Progress'}
                       </Badge>
                       <Link href={`/dashboard/${item.useCaseId}/iso-42001`}>
-                        <Button variant="outline" size="sm" className="text-xs h-6">{item.iso42001Assessment ? 'Continue' : 'Start'}</Button>
+                        <Button variant="outline" size="sm" className="text-xs h-6">{item.iso42001Assessments[0] ? 'Continue' : 'Start'}</Button>
                       </Link>
                     </div>
                   </div>

@@ -83,7 +83,11 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
     setIsCollapsed(!isCollapsed);
   };
 
-  // Build sidebar items, add Admin Dashboard for QZEN_ADMIN
+  // Debug: Log user data
+  console.log('Sidebar - userData:', userData);
+  console.log('Sidebar - userData?.role:', userData?.role);
+  
+  // Build sidebar items, add Admin Dashboard for QZEN_ADMIN and Manage Users for ORG_ADMIN
   const sidebarItems = [
     ...(userData?.role === 'QZEN_ADMIN'
       ? [{
@@ -91,6 +95,14 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
           href: '/admin',
           icon: LayoutDashboard,
           description: 'Platform Admin'
+        }]
+      : []),
+    ...(userData?.role === 'ORG_ADMIN'
+      ? [{
+          title: 'Manage Users',
+          href: '/dashboard/users',
+          icon: Users,
+          description: 'User Management'
         }]
       : []),
     ...navigationItems
@@ -117,24 +129,24 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
               </Button>
             </div>
           ) : (
-            <div className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md bg-white">
-                  <Image src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MjA3ODUxMCwiZXhwIjo0OTA1Njc4NTEwfQ.ra2NZ9Flg45aZ-OLYnzc_xotXbyfOw3wOY3JgXWq9qw" alt="Logo" width={32} height={32} className="object-contain" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-lg font-bold text-gray-900">QZen QUBE</span>
-                  <span className="text-xs text-gray-500 tracking-wide">AI Platform</span>
-                </div>
+            <div className="flex items-center gap-3 p-4">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-white">
+                <Image src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MjA3ODUxMCwiZXhwIjo0OTA1Njc4NTEwfQ.ra2NZ9Flg45aZ-OLYnzc_xotXbyfOw3wOY3JgXWq9qw" alt="Logo" width={40} height={40} className="object-contain" />
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleSidebar}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4 text-gray-600" />
-              </Button>
+              <div className="flex flex-col">
+                <span className="text-xl font-extrabold text-gray-900 leading-tight">QUBE</span>
+                <span className="text-xs text-gray-500 leading-tight">AI Platform</span>
+              </div>
+              <div className="flex-1 flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleSidebar}
+                  className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4 text-gray-600" />
+                </Button>
+              </div>
             </div>
           )}
         </div>

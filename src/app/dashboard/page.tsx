@@ -65,7 +65,6 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBy, setFilterBy] = useState('all');
   const [selectedUseCase, setSelectedUseCase] = useState<MappedUseCase | null>(null);
-  const [activeTab, setActiveTab] = useState<'useCases' | 'users'>('useCases');
   const router = useRouter();
   const { user, isSignedIn } = useUser();
   const [organizations, setOrganizations] = useState<any[]>([]);
@@ -310,11 +309,6 @@ const Dashboard = () => {
   };
   const handleTouchEnd = () => setIsDragging(false);
 
-  // Show user management for org admins
-  if (userData?.role === 'ORG_ADMIN' && activeTab === 'users') {
-    return <OrganizationUserManagement />;
-  }
-
   // Loading and error states
   if (isLoading) {
     return (
@@ -357,25 +351,6 @@ const Dashboard = () => {
             </p>
           )}
         </div>
-        {userData?.role === 'ORG_ADMIN' && (
-          <div className="flex gap-2">
-            <Button
-              variant={activeTab === 'useCases' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('useCases')}
-              className="rounded-full px-6 py-2 text-base shadow-sm"
-            >
-              Use Cases
-            </Button>
-            <Button
-              variant={activeTab === 'users' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('users')}
-              className="rounded-full px-6 py-2 text-base shadow-sm flex items-center"
-            >
-              <Users className="w-4 h-4 mr-2" />
-              Manage Users
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Search and Filter Section */}

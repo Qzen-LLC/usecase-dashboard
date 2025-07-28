@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prismaClient } from '@/utils/db';
 import { currentUser } from '@clerk/nextjs/server';
-import redis from '@/lib/redis';
+// Removed: import redis from '@/lib/redis';
 
 export async function GET() {
   try {
@@ -18,12 +18,7 @@ export async function GET() {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Redis cache check with role-based key
-    const cacheKey = `finops-dashboard:${userRecord.role}:${userRecord.id}`;
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
-    }
+    // Removed Redis cache check and cacheKey logic
 
     // Build where clause based on user role
     let whereClause: any = {
@@ -103,8 +98,7 @@ export async function GET() {
       organizationName: uc.organization?.name || '',
     }));
 
-    // After computing finops
-    await redis.set(cacheKey, JSON.stringify({ finops }), 'EX', 300);
+    // Removed Redis set logic
     return NextResponse.json({ finops });
   } catch (err) {
     return NextResponse.json({ error: 'Failed to fetch FinOps dashboard data', details: String(err) }, { status: 500 });

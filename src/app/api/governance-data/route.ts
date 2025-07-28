@@ -35,28 +35,70 @@ export async function GET() {
     // Only include use cases for this user if USER role
     let useCases;
     try {
-      useCases = await retryDatabaseOperation(() => 
-        prismaClient.useCase.findMany({
-          where: userRecord.role === 'QZEN_ADMIN' ? {} : { userId: userRecord.id },
-          include: {
-            assessData: true,
-            euAiActAssessments: true,
-            iso42001Assessments: true,
-          },
-        })
-      );
+      if (userRecord.role === 'QZEN_ADMIN') {
+        useCases = await retryDatabaseOperation(() =>
+          prismaClient.useCase.findMany({
+            include: {
+              assessData: true,
+              euAiActAssessments: true,
+              iso42001Assessments: true,
+            },
+          })
+        );
+      } else if (userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') {
+        useCases = await retryDatabaseOperation(() =>
+          prismaClient.useCase.findMany({
+            where: { organizationId: userRecord.organizationId },
+            include: {
+              assessData: true,
+              euAiActAssessments: true,
+              iso42001Assessments: true,
+            },
+          })
+        );
+      } else {
+        // USER or fallback: only their own use cases
+        useCases = await retryDatabaseOperation(() =>
+          prismaClient.useCase.findMany({
+            where: { userId: userRecord.id },
+            include: {
+              assessData: true,
+              euAiActAssessments: true,
+              iso42001Assessments: true,
+            },
+          })
+        );
+      }
     } catch (error) {
       // Fallback if framework tables don't exist yet
       console.log('Framework tables not found, falling back to basic data');
-      useCases = await retryDatabaseOperation(() => 
-        prismaClient.useCase.findMany({
-          where: userRecord.role === 'QZEN_ADMIN' ? {} : { userId: userRecord.id },
-          include: {
-            assessData: true,
-          },
-        })
-      );
-      
+      if (userRecord.role === 'QZEN_ADMIN') {
+        useCases = await retryDatabaseOperation(() =>
+          prismaClient.useCase.findMany({
+            include: {
+              assessData: true,
+            },
+          })
+        );
+      } else if (userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') {
+        useCases = await retryDatabaseOperation(() =>
+          prismaClient.useCase.findMany({
+            where: { organizationId: userRecord.organizationId },
+            include: {
+              assessData: true,
+            },
+          })
+        );
+      } else {
+        useCases = await retryDatabaseOperation(() =>
+          prismaClient.useCase.findMany({
+            where: { userId: userRecord.id },
+            include: {
+              assessData: true,
+            },
+          })
+        );
+      }
       // Add empty arrays for framework assessments
       useCases = useCases.map(uc => ({
         ...uc,
@@ -96,8 +138,9 @@ export async function GET() {
 
         // Only show use cases that have regulatory frameworks or industry standards selected
         const hasFrameworks = regulatoryFrameworks.length > 0 || industryStandards.length > 0;
-        const hasAssessments = useCase.euAiActAssessments && useCase.euAiActAssessments.length > 0 || 
-                              useCase.iso42001Assessments && useCase.iso42001Assessments.length > 0;
+        const euAiActAssessments = Array.isArray(useCase.euAiActAssessments) ? useCase.euAiActAssessments : [];
+        const iso42001Assessments = Array.isArray(useCase.iso42001Assessments) ? useCase.iso42001Assessments : [];
+        const hasAssessments = euAiActAssessments.length > 0 || iso42001Assessments.length > 0;
         
         // Filter: only show use cases with frameworks selected OR active assessments
         if (!hasFrameworks && !hasAssessments) {
@@ -113,16 +156,8 @@ export async function GET() {
           regulatoryFrameworks,
           industryStandards,
           lastUpdated: useCase.assessData?.updatedAt?.toISOString() || useCase.updatedAt.toISOString(),
-          euAiActAssessment: useCase.euAiActAssessments?.[0] ? {
-            id: useCase.euAiActAssessments[0].id,
-            status: useCase.euAiActAssessments[0].status,
-            progress: useCase.euAiActAssessments[0].progress,
-          } : undefined,
-          iso42001Assessment: useCase.iso42001Assessments?.[0] ? {
-            id: useCase.iso42001Assessments[0].id,
-            status: useCase.iso42001Assessments[0].status,
-            progress: useCase.iso42001Assessments[0].progress,
-          } : undefined,
+          euAiActAssessments,
+          iso42001Assessments,
         };
       })
       .filter((item) => item !== null);
