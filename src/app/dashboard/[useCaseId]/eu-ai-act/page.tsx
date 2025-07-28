@@ -131,6 +131,23 @@ export default function EuAiActAssessmentPage() {
     fetchAssessmentData();
   }, [useCaseId]);
 
+  // Monitor assessment state changes for debugging
+  useEffect(() => {
+    if (assessment) {
+      console.log('📊 ASSESSMENT STATE CHANGED:', {
+        totalControls: assessment.controls?.length || 0,
+        controlsWithFiles: assessment.controls?.filter(c => c.evidenceFiles?.length > 0).length || 0,
+        controlIds: assessment.controls?.map(c => c.controlStruct?.controlId) || [],
+        detailedControls: assessment.controls?.map(c => ({
+          id: c.id,
+          controlId: c.controlStruct?.controlId,
+          evidenceFilesCount: c.evidenceFiles?.length || 0,
+          evidenceFiles: c.evidenceFiles || []
+        })) || []
+      });
+    }
+  }, [assessment]);
+
   const fetchAssessmentData = async () => {
     try {
       setLoading(true);
@@ -188,6 +205,17 @@ export default function EuAiActAssessmentPage() {
 
       setTopics(topicsWithAnswers);
       setControlCategories(controlCategoriesData);
+      
+      console.log('🚀 INITIAL DATA LOAD - Assessment controls:', {
+        totalControls: assessmentData.controls?.length || 0,
+        controlsWithFiles: assessmentData.controls?.filter(c => c.evidenceFiles?.length > 0).length || 0,
+        sampleControl: assessmentData.controls?.[0] ? {
+          id: assessmentData.controls[0].id,
+          controlId: assessmentData.controls[0].controlStruct?.controlId,
+          evidenceFiles: assessmentData.controls[0].evidenceFiles
+        } : null
+      });
+      
       setAssessment(assessmentData);
 
       // Expand first topic by default
@@ -532,49 +560,26 @@ export default function EuAiActAssessmentPage() {
   };
 
   const handleControlEvidenceChange = async (controlId: string, evidenceFiles: string[]) => {
+    console.log('🔄 handleControlEvidenceChange START:', { controlId, evidenceFiles });
     if (!assessment) return;
 
     const existingControl = assessment.controls?.find(c => c.controlStruct.controlId === controlId);
     const currentFiles = existingControl?.evidenceFiles || [];
     const removedFiles = currentFiles.filter(file => !evidenceFiles.includes(file));
     
-    // Update local state immediately
-    if (existingControl) {
-      const updatedControls = assessment.controls?.map(control => 
-        control.controlStruct.controlId === controlId 
-          ? { ...control, evidenceFiles }
-          : control
-      ) || [];
-      setAssessment({ ...assessment, controls: updatedControls });
-    } else {
-      // Find the control structure from categories to get proper title/description
-      const controlStruct = controlCategories
-        .flatMap(cat => cat.controls)
-        .find(ctrl => ctrl.controlId === controlId);
-      
-      // Create new control with evidence files
-      const newControl = {
-        id: `temp-${controlId}`,
-        status: 'pending',
-        notes: '',
-        evidenceFiles,
-        controlStruct: {
-          controlId,
-          title: controlStruct?.title || '',
-          description: controlStruct?.description || '',
-          category: {
-            title: controlCategories.find(cat => 
-              cat.controls.some(ctrl => ctrl.controlId === controlId)
-            )?.title || ''
-          }
-        },
-        subcontrols: []
-      };
-      setAssessment({ 
-        ...assessment, 
-        controls: [...(assessment.controls || []), newControl] 
-      });
-    }
+    console.log('📊 Control state before update:', {
+      existingControl: existingControl ? {
+        id: existingControl.id,
+        controlId: existingControl.controlStruct?.controlId,
+        evidenceFiles: existingControl.evidenceFiles
+      } : null,
+      currentFiles,
+      newFiles: evidenceFiles,
+      removedFiles
+    });
+    
+    // Don't update local state immediately - wait for API response to avoid conflicts
+    console.log('⏳ Skipping immediate state update to prevent conflicts, waiting for API response...');
 
     // Auto-save the evidence files
     setSavingFiles(prev => new Set(prev).add(`control-${controlId}`));
@@ -596,20 +601,52 @@ export default function EuAiActAssessmentPage() {
       }
 
       const savedControl = await response.json();
+      console.log('💾 API Response - savedControl:', {
+        id: savedControl.id,
+        controlId: savedControl.controlStruct?.controlId,
+        evidenceFiles: savedControl.evidenceFiles,
+        subcontrols: savedControl.subcontrols?.length || 0
+      });
       
       // Update the local state with the saved control
-      const updatedControls = assessment.controls?.map(control => 
-        control.controlStruct?.controlId === controlId 
-          ? savedControl
-          : control
-      ) || [];
+      let updatedControls: typeof assessment.controls;
+      const controlExists = assessment.controls?.some(c => c.controlStruct?.controlId === controlId);
       
-      // If this is a new control, add it
-      if (!assessment.controls?.some(c => c.controlStruct?.controlId === controlId)) {
-        updatedControls.push(savedControl);
+      if (controlExists) {
+        // Update existing control
+        updatedControls = assessment.controls?.map(control => 
+          control.controlStruct?.controlId === controlId 
+            ? savedControl
+            : control
+        ) || [];
+      } else {
+        // Add new control
+        updatedControls = [...(assessment.controls || []), savedControl];
       }
       
-      setAssessment({ ...assessment, controls: updatedControls });
+      console.log('🔧 State update logic check:', {
+        originalControls: assessment.controls?.length || 0,
+        updatedControls: updatedControls.length,
+        controlExists,
+        savedControlId: savedControl.controlStruct?.controlId,
+        savedControlFiles: savedControl.evidenceFiles,
+        updatedControlForTarget: updatedControls.find(c => c.controlStruct?.controlId === controlId)?.evidenceFiles
+      });
+      
+      console.log('🔄 State update before setAssessment:', {
+        originalControlsCount: assessment.controls?.length || 0,
+        updatedControlsCount: updatedControls.length,
+        targetControl: updatedControls.find(c => c.controlStruct?.controlId === controlId)?.evidenceFiles
+      });
+      
+      const newAssessment = { ...assessment, controls: updatedControls };
+      setAssessment(newAssessment);
+      
+      console.log('✅ State updated successfully:', {
+        controlId,
+        savedControlFiles: savedControl.evidenceFiles,
+        updatedControlInState: updatedControls.find(c => c.controlStruct?.controlId === controlId)?.evidenceFiles
+      });
       
       await updateAssessmentProgress();
       
@@ -1314,6 +1351,12 @@ export default function EuAiActAssessmentPage() {
                       const assessmentControl = assessment?.controls?.find(
                         c => c.controlStruct?.controlId === control.controlId
                       );
+                      
+                      console.log(`🎨 UI RENDER - Control ${control.controlId}:`, {
+                        hasAssessmentControl: !!assessmentControl,
+                        evidenceFiles: assessmentControl?.evidenceFiles || [],
+                        evidenceFilesLength: (assessmentControl?.evidenceFiles || []).length
+                      });
                       
                       return (
                         <div key={control.id} className="border-t border-gray-100">
