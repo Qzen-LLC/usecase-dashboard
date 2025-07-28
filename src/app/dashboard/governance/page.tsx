@@ -175,7 +175,7 @@ export default function GovernancePage() {
         </div>
 
         {/* Use Case Cards */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {governanceData.length === 0 ? (
             <div className="text-center py-12">
               <Shield className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -184,124 +184,127 @@ export default function GovernancePage() {
               <p className="text-sm text-gray-400 mt-2">Complete risk assessments on use cases to see them here.</p>
             </div>
           ) : (
-            <div className="grid gap-6">
+            <div className="grid gap-4">
               {governanceData.map((item) => (
-                <Card key={item.useCaseId} className="border-l-4 border-l-blue-500 shadow-md hover:shadow-lg transition-shadow duration-300">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-lg font-semibold text-gray-900 mb-1">
+                <Card key={item.useCaseId} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <CardContent className="p-3">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-base font-semibold text-gray-900 mb-1 truncate">
                           AIUC-{item.useCaseNumber} - {item.useCaseName}
-                        </CardTitle>
-                        <CardDescription className="flex items-center gap-3 flex-wrap">
-                          <span className="flex items-center gap-1">
-                            <Building className="h-4 w-4" />
-                            {item.department}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Users className="h-4 w-4" />
-                            {item.useCaseType}
-                          </span>
-                          {item.regulatoryFrameworks.map((framework, index) => (
-                            <Badge key={index} variant="outline" className={`${getFrameworkColor(framework)} border font-medium text-xs`}>
+                        </h3>
+                        <div className="flex items-center gap-2 text-sm text-gray-600 mb-1.5">
+                          <Building className="h-3 w-3" />
+                          <span className="text-xs">{item.department}</span>
+                          <Users className="h-3 w-3 ml-1" />
+                          <span className="text-xs">{item.useCaseType}</span>
+                        </div>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {item.regulatoryFrameworks.slice(0, 2).map((framework, index) => (
+                            <Badge key={index} variant="outline" className="text-xs px-1.5 py-0.5 h-5 bg-blue-50 text-blue-700 border-blue-200">
                               {framework}
                             </Badge>
                           ))}
-                          {item.industryStandards.map((standard, index) => (
-                            <Badge key={index} variant="outline" className={`${getStandardColor(standard)} border font-medium text-xs`}>
-                              {standard}
+                          {item.industryStandards.slice(0, 2).map((standard, index) => (
+                            <Badge key={index} variant="outline" className="text-xs px-1.5 py-0.5 h-5 bg-purple-50 text-purple-700 border-purple-200">
+                              {standard.includes('FedRAMP') ? 'FedRAMP' : 
+                               standard.includes('AICPA') ? 'AICPA AI Auditing' :
+                               standard.includes('ISO/IEC 42001') ? 'ISO/IEC 42001:2023' :
+                               standard.includes('ISO/IEC JTC') ? 'ISO/IEC JTC 1/SC 42' :
+                               standard}
                             </Badge>
                           ))}
-                        </CardDescription>
+                        </div>
                       </div>
                       <Link href={`/dashboard/${item.useCaseId}/assess`}>
-                        <Button variant="outline" size="sm">View Assessment</Button>
+                        <Button variant="outline" size="sm" className="text-xs">View Assessment</Button>
                       </Link>
                     </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="grid grid-cols-1 gap-3">
+
+                    {/* All Sections on Same Line - Less Blocky */}
+                    <div className="grid grid-cols-3 gap-3">
                       {/* Risk Management Section */}
-                      <div className="bg-red-50 p-3 rounded-lg border border-red-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-red-900 flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4" />
-                            Risk Management
-                          </span>
+                      <div className="border-l-4 border-red-400 bg-gradient-to-r from-red-50 to-red-25 pl-3 pr-2 py-2.5 rounded-r">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
+                            <span className="text-xs font-medium text-red-900">Risk Management</span>
+                          </div>
+                          <Link href={`/dashboard/${item.useCaseId}/risks`}>
+                            <Button variant="ghost" size="sm" className="text-xs h-6 px-2 text-red-700 hover:bg-red-100">
+                              Manage
+                            </Button>
+                          </Link>
+                        </div>
+                        <div className="mb-1.5">
                           {(() => {
                             if (item.assessData?.stepsData) {
                               const riskResult = calculateRiskScores(item.assessData.stepsData as StepsData);
                               const riskLevel = getRiskLevel(riskResult.score);
                               const openRisks = (item.risks || []).filter(r => r.status === 'OPEN').length;
                               return (
-                                <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                                   riskLevel === 'Critical' ? 'bg-red-100 text-red-800' :
                                   riskLevel === 'High' ? 'bg-orange-100 text-orange-800' :
                                   riskLevel === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
                                   'bg-green-100 text-green-800'
                                 }`}>
-                                  {riskLevel} Risk ({openRisks} open)
+                                  {riskLevel} ({openRisks} open)
                                 </span>
                               );
                             }
-                            return <span className="text-xs text-gray-500">Not assessed</span>;
+                            return <span className="text-xs text-red-600 font-medium">Not assessed</span>;
                           })()}
                         </div>
-                        <div className="flex justify-between items-center">
-                          <div className="text-xs text-red-700">
-                            {item.assessData?.stepsData ? (
-                              <span>
-                                {(() => {
-                                  const riskResult = calculateRiskScores(item.assessData.stepsData as StepsData);
-                                  const criticalCount = riskResult.chartData.filter(d => d.desktop >= 8).length;
-                                  const highCount = riskResult.chartData.filter(d => d.desktop >= 6 && d.desktop < 8).length;
-                                  return `${criticalCount} critical, ${highCount} high risk areas`;
-                                })()}
-                              </span>
-                            ) : (
-                              <span>Complete assessment to identify risks</span>
-                            )}
-                          </div>
-                          <Link href={`/dashboard/${item.useCaseId}/risks`}>
-                            <Button variant="outline" size="sm" className="text-xs h-6">
-                              {(item.risks || []).length > 0 ? 'Manage' : 'View'}
-                            </Button>
-                          </Link>
+                        <div className="text-xs text-red-700">
+                          {item.assessData?.stepsData ? (
+                            (() => {
+                              const riskResult = calculateRiskScores(item.assessData.stepsData as StepsData);
+                              const criticalCount = riskResult.chartData.filter(d => d.desktop >= 8).length;
+                              const highCount = riskResult.chartData.filter(d => d.desktop >= 6 && d.desktop < 8).length;
+                              return `${criticalCount} critical, ${highCount} high areas`;
+                            })()
+                          ) : (
+                            'Complete assessment'
+                          )}
                         </div>
                       </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-                      <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-blue-900">EU AI ACT</span>
-                          <span className="text-xs text-blue-700">{item.euAiActAssessments[0] ? `${Math.round(item.euAiActAssessments[0].progress)}%` : '0%'}</span>
+
+                      {/* EU AI ACT Section */}
+                      <div className="border-l-4 border-blue-400 bg-gradient-to-r from-blue-50 to-blue-25 pl-3 pr-2 py-2.5 rounded-r">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-medium text-blue-900">EU AI ACT</span>
+                          <span className="text-xs text-blue-700 font-semibold">{item.euAiActAssessments[0] ? `${Math.round(item.euAiActAssessments[0].progress)}%` : '0%'}</span>
                         </div>
-                        <div className="w-full bg-blue-200 rounded-full h-1.5 mb-2">
-                          <div className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style={{ width: `${item.euAiActAssessments[0]?.progress || 0}%` }}></div>
+                        <div className="w-full bg-blue-200/60 rounded-full h-1.5 mb-2">
+                          <div className="bg-blue-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${item.euAiActAssessments[0]?.progress || 0}%` }}></div>
                         </div>
                         <div className="flex justify-between items-center">
-                          <Badge variant="outline" className={`text-xs ${item.euAiActAssessments[0]?.status === 'completed' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
+                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${item.euAiActAssessments[0]?.status === 'completed' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
                             {item.euAiActAssessments[0]?.status === 'completed' ? 'Completed' : 'In Progress'}
                           </Badge>
                           <Link href={`/dashboard/${item.useCaseId}/eu-ai-act`}>
-                            <Button variant="outline" size="sm" className="text-xs h-6">{item.euAiActAssessments[0] ? 'Continue' : 'Start'}</Button>
+                            <Button variant="ghost" size="sm" className="text-xs h-6 px-2 text-blue-700 hover:bg-blue-100">Start</Button>
                           </Link>
                         </div>
                       </div>
-                      <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-purple-900">ISO 42001</span>
-                          <span className="text-xs text-purple-700">{item.iso42001Assessments[0] ? `${Math.round(item.iso42001Assessments[0].progress)}%` : '0%'}</span>
+
+                      {/* ISO 42001 Section */}
+                      <div className="border-l-4 border-purple-400 bg-gradient-to-r from-purple-50 to-purple-25 pl-3 pr-2 py-2.5 rounded-r">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-medium text-purple-900">ISO 42001</span>
+                          <span className="text-xs text-purple-700 font-semibold">{item.iso42001Assessments[0] ? `${Math.round(item.iso42001Assessments[0].progress)}%` : '0%'}</span>
                         </div>
-                        <div className="w-full bg-purple-200 rounded-full h-1.5 mb-2">
-                          <div className="bg-purple-600 h-1.5 rounded-full transition-all duration-300" style={{ width: `${item.iso42001Assessments[0]?.progress || 0}%` }}></div>
+                        <div className="w-full bg-purple-200/60 rounded-full h-1.5 mb-2">
+                          <div className="bg-purple-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${item.iso42001Assessments[0]?.progress || 0}%` }}></div>
                         </div>
                         <div className="flex justify-between items-center">
-                          <Badge variant="outline" className={`text-xs ${item.iso42001Assessments[0]?.status === 'completed' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
+                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${item.iso42001Assessments[0]?.status === 'completed' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
                             {item.iso42001Assessments[0]?.status === 'completed' ? 'Completed' : 'In Progress'}
                           </Badge>
                           <Link href={`/dashboard/${item.useCaseId}/iso-42001`}>
-                            <Button variant="outline" size="sm" className="text-xs h-6">{item.iso42001Assessments[0] ? 'Continue' : 'Start'}</Button>
+                            <Button variant="ghost" size="sm" className="text-xs h-6 px-2 text-purple-700 hover:bg-purple-100">Start</Button>
                           </Link>
                         </div>
                       </div>

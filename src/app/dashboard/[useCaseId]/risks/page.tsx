@@ -270,10 +270,10 @@ export default function RiskManagementPage() {
           </div>
           <div className="flex gap-3">
             <Button
-              onClick={() => router.push(`/dashboard/${useCaseId}/assess`)}
+              onClick={() => router.push(`/dashboard/governance`)}
               variant="outline"
             >
-              Back to Assessment
+              Back to Governance
             </Button>
             <Button
               onClick={() => setCreatingRisk(true)}
