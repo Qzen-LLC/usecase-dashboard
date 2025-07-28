@@ -85,6 +85,11 @@ export async function POST(
             category: true,
             subcontrols: true
           }
+        },
+        subcontrols: {
+          include: {
+            subcontrolStruct: true
+          }
         }
       }
     });

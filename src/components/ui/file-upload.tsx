@@ -12,6 +12,7 @@ interface FileUploadProps {
   maxFiles?: number;
   maxSize?: number; // in MB
   disabled?: boolean;
+  disableRemove?: boolean;
   className?: string;
 }
 
@@ -30,6 +31,7 @@ export function FileUpload({
   maxFiles = 5,
   maxSize = 10, // 10MB default
   disabled = false,
+  disableRemove = false,
   className = ""
 }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
@@ -220,7 +222,7 @@ export function FileUpload({
                     }}
                     className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
                     title="Remove"
-                    disabled={disabled}
+                    disabled={disableRemove}
                   >
                     <X className="w-4 h-4" />
                   </Button>

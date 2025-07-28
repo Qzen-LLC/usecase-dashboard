@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, FileText, CheckCircle, AlertCircle, Clock, Upload, Save, ChevronRight, ChevronDown, HelpCircle, Shield, ListChecks } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle, AlertCircle, Clock, Upload, Save, ChevronRight, ChevronDown, HelpCircle, Shield, ListChecks, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { FileUpload } from '@/components/ui/file-upload';
 
@@ -120,6 +120,7 @@ export default function EuAiActAssessmentPage() {
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingFiles, setSavingFiles] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'assessment' | 'controls'>('assessment');
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
@@ -233,7 +234,13 @@ export default function EuAiActAssessmentPage() {
     );
   };
 
-  const handleEvidenceChange = (questionId: string, evidenceFiles: string[]) => {
+  const handleEvidenceChange = async (questionId: string, evidenceFiles: string[]) => {
+    // Find the current question to detect removed files
+    const currentQuestion = findQuestionById(questionId);
+    const currentFiles = currentQuestion?.answer?.evidenceFiles || [];
+    const removedFiles = currentFiles.filter(file => !evidenceFiles.includes(file));
+    
+    // Update local state immediately
     setTopics(prevTopics => 
       prevTopics.map(topic => ({
         ...topic,
@@ -256,6 +263,60 @@ export default function EuAiActAssessmentPage() {
         }))
       }))
     );
+
+    // Auto-save the evidence files
+    if (assessment) {
+      // Add to saving set
+      setSavingFiles(prev => new Set(prev).add(`question-${questionId}`));
+      
+      try {
+        const question = findQuestionById(questionId);
+        const response = await fetch(`/api/eu-ai-act/answer/${assessment.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            questionId,
+            answer: question?.answer?.answer || '',
+            evidenceFiles
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save evidence files');
+        }
+
+        await updateAssessmentProgress();
+        
+        // Delete removed files from server
+        for (const removedFile of removedFiles) {
+          try {
+            await fetch('/api/upload/delete', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fileUrl: removedFile })
+            });
+          } catch (fileDeleteErr) {
+            console.error('Failed to delete file from server:', removedFile, fileDeleteErr);
+            // Don't fail the whole operation if file deletion fails
+          }
+        }
+        
+        // Clear any existing errors on successful save
+        if (error) {
+          setError(null);
+        }
+      } catch (err) {
+        console.error('Failed to auto-save evidence files:', err);
+        setError('Failed to save evidence files. Please try saving manually.');
+      } finally {
+        // Remove from saving set
+        setSavingFiles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(`question-${questionId}`);
+          return newSet;
+        });
+      }
+    }
   };
 
   const handleSaveAnswer = async (questionId: string) => {
@@ -470,11 +531,14 @@ export default function EuAiActAssessmentPage() {
     }
   };
 
-  const handleControlEvidenceChange = (controlId: string, evidenceFiles: string[]) => {
+  const handleControlEvidenceChange = async (controlId: string, evidenceFiles: string[]) => {
     if (!assessment) return;
 
     const existingControl = assessment.controls?.find(c => c.controlStruct.controlId === controlId);
+    const currentFiles = existingControl?.evidenceFiles || [];
+    const removedFiles = currentFiles.filter(file => !evidenceFiles.includes(file));
     
+    // Update local state immediately
     if (existingControl) {
       const updatedControls = assessment.controls?.map(control => 
         control.controlStruct.controlId === controlId 
@@ -483,6 +547,11 @@ export default function EuAiActAssessmentPage() {
       ) || [];
       setAssessment({ ...assessment, controls: updatedControls });
     } else {
+      // Find the control structure from categories to get proper title/description
+      const controlStruct = controlCategories
+        .flatMap(cat => cat.controls)
+        .find(ctrl => ctrl.controlId === controlId);
+      
       // Create new control with evidence files
       const newControl = {
         id: `temp-${controlId}`,
@@ -491,10 +560,12 @@ export default function EuAiActAssessmentPage() {
         evidenceFiles,
         controlStruct: {
           controlId,
-          title: '',
-          description: '',
+          title: controlStruct?.title || '',
+          description: controlStruct?.description || '',
           category: {
-            title: ''
+            title: controlCategories.find(cat => 
+              cat.controls.some(ctrl => ctrl.controlId === controlId)
+            )?.title || ''
           }
         },
         subcontrols: []
@@ -504,16 +575,86 @@ export default function EuAiActAssessmentPage() {
         controls: [...(assessment.controls || []), newControl] 
       });
     }
+
+    // Auto-save the evidence files
+    setSavingFiles(prev => new Set(prev).add(`control-${controlId}`));
+    
+    try {
+      const response = await fetch(`/api/eu-ai-act/control/${assessment.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          controlId,
+          status: existingControl?.status || 'pending',
+          notes: existingControl?.notes || '',
+          evidenceFiles
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save control evidence files');
+      }
+
+      const savedControl = await response.json();
+      
+      // Update the local state with the saved control
+      const updatedControls = assessment.controls?.map(control => 
+        control.controlStruct?.controlId === controlId 
+          ? savedControl
+          : control
+      ) || [];
+      
+      // If this is a new control, add it
+      if (!assessment.controls?.some(c => c.controlStruct?.controlId === controlId)) {
+        updatedControls.push(savedControl);
+      }
+      
+      setAssessment({ ...assessment, controls: updatedControls });
+      
+      await updateAssessmentProgress();
+      
+      // Delete removed files from server
+      for (const removedFile of removedFiles) {
+        try {
+          await fetch('/api/upload/delete', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileUrl: removedFile })
+          });
+        } catch (fileDeleteErr) {
+          console.error('Failed to delete file from server:', removedFile, fileDeleteErr);
+          // Don't fail the whole operation if file deletion fails
+        }
+      }
+      
+      
+      // Clear any existing errors on successful save
+      if (error) {
+        setError(null);
+      }
+    } catch (err) {
+      console.error('Failed to auto-save control evidence:', err);
+      setError('Failed to save evidence files. Please try saving manually.');
+    } finally {
+      setSavingFiles(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(`control-${controlId}`);
+        return newSet;
+      });
+    }
   };
 
-  const handleSubcontrolEvidenceChange = (controlId: string, subcontrolId: string, evidenceFiles: string[]) => {
+  const handleSubcontrolEvidenceChange = async (controlId: string, subcontrolId: string, evidenceFiles: string[]) => {
     if (!assessment) return;
 
     const existingControl = assessment.controls?.find(c => c.controlStruct.controlId === controlId);
+    const existingSubcontrol = existingControl?.subcontrols?.find(sc => sc.subcontrolStruct.subcontrolId === subcontrolId);
+    const currentFiles = existingSubcontrol?.evidenceFiles || [];
+    const removedFiles = currentFiles.filter(file => !evidenceFiles.includes(file));
     
     if (existingControl) {
-      const existingSubcontrol = existingControl.subcontrols?.find(sc => sc.subcontrolStruct.subcontrolId === subcontrolId);
       
+      // Update local state immediately
       if (existingSubcontrol) {
         const updatedControls = assessment.controls?.map(control => 
           control.controlStruct.controlId === controlId 
@@ -551,6 +692,148 @@ export default function EuAiActAssessmentPage() {
         ) || [];
         setAssessment({ ...assessment, controls: updatedControls });
       }
+
+      // Auto-save the subcontrol evidence files
+      setSavingFiles(prev => new Set(prev).add(`subcontrol-${subcontrolId}`));
+      
+      try {
+        // First ensure the parent control exists and is saved
+        if (!existingControl.id.startsWith('temp-')) {
+          const response = await fetch(`/api/eu-ai-act/subcontrol/${assessment.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              controlId: existingControl.controlStruct.controlId, // Use structural controlId, not DB ID
+              subcontrolId,
+              status: existingSubcontrol?.status || 'pending',
+              notes: existingSubcontrol?.notes || '',
+              evidenceFiles
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to save subcontrol evidence files');
+          }
+
+          const savedSubcontrol = await response.json();
+
+          // Update the control with the saved subcontrol
+          const updatedControls = assessment.controls?.map(control => 
+            control.controlStruct?.controlId === existingControl.controlStruct.controlId 
+              ? {
+                  ...control,
+                  subcontrols: [
+                    ...(control.subcontrols?.filter(sc => sc.subcontrolStruct?.subcontrolId !== subcontrolId) || []),
+                    savedSubcontrol
+                  ]
+                }
+              : control
+          ) || [];
+          
+          setAssessment({ ...assessment, controls: updatedControls });
+
+          await updateAssessmentProgress();
+          
+          // Delete removed files from server
+          for (const removedFile of removedFiles) {
+            try {
+              await fetch('/api/upload/delete', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileUrl: removedFile })
+              });
+            } catch (fileDeleteErr) {
+              console.error('Failed to delete file from server:', removedFile, fileDeleteErr);
+              // Don't fail the whole operation if file deletion fails
+            }
+          }
+          
+          // Clear any existing errors on successful save
+          if (error) {
+            setError(null);
+          }
+        } else {
+          // If parent control is not saved yet, save it first
+          const controlResponse = await fetch(`/api/eu-ai-act/control/${assessment.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              controlId: existingControl.controlStruct.controlId,
+              status: existingControl.status || 'pending',
+              notes: existingControl.notes || '',
+              evidenceFiles: existingControl.evidenceFiles || []
+            })
+          });
+
+          if (!controlResponse.ok) {
+            throw new Error('Failed to save parent control');
+          }
+
+          const savedControl = await controlResponse.json();
+          
+          // Now save the subcontrol
+          const subcontrolResponse = await fetch(`/api/eu-ai-act/subcontrol/${assessment.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              controlId: existingControl.controlStruct.controlId,
+              subcontrolId,
+              status: existingSubcontrol?.status || 'pending',
+              notes: existingSubcontrol?.notes || '',
+              evidenceFiles
+            })
+          });
+
+          if (!subcontrolResponse.ok) {
+            throw new Error('Failed to save subcontrol evidence files');
+          }
+
+          const savedSubcontrol = await subcontrolResponse.json();
+
+          // Update the assessment with the saved control that includes the subcontrol
+          const controlWithSubcontrol = {
+            ...savedControl,
+            subcontrols: [
+              ...(savedControl.subcontrols || []).filter((sc: any) => sc.subcontrolStruct?.subcontrolId !== subcontrolId),
+              savedSubcontrol
+            ]
+          };
+          
+          const updatedControls = assessment.controls?.filter(c => c.controlStruct?.controlId !== existingControl.controlStruct.controlId) || [];
+          updatedControls.push(controlWithSubcontrol);
+          setAssessment({ ...assessment, controls: updatedControls });
+
+          await updateAssessmentProgress();
+          
+          // Delete removed files from server
+          for (const removedFile of removedFiles) {
+            try {
+              await fetch('/api/upload/delete', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileUrl: removedFile })
+              });
+            } catch (fileDeleteErr) {
+              console.error('Failed to delete file from server:', removedFile, fileDeleteErr);
+              // Don't fail the whole operation if file deletion fails
+            }
+          }
+          
+          // Clear any existing errors on successful save
+          if (error) {
+            setError(null);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to auto-save subcontrol evidence:', err);
+        setError('Failed to save evidence files. Please try saving manually.');
+      } finally {
+        setSavingFiles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(`subcontrol-${subcontrolId}`);
+          return newSet;
+        });
+      }
     }
   };
 
@@ -577,14 +860,19 @@ export default function EuAiActAssessmentPage() {
 
       const savedControl = await response.json();
 
-      // Update the assessment state with the saved control
-      const updatedControls = assessment.controls?.filter(c => c.controlStruct.controlId !== controlId) || [];
-      updatedControls.push(savedControl);
+      // Update the local state with the saved control
+      const updatedControls = assessment.controls?.map(control => 
+        control.controlStruct?.controlId === controlId 
+          ? savedControl
+          : control
+      ) || [];
       
-      setAssessment({
-        ...assessment,
-        controls: updatedControls
-      });
+      // If this is a new control, add it
+      if (!assessment.controls?.some(c => c.controlStruct?.controlId === controlId)) {
+        updatedControls.push(savedControl);
+      }
+      
+      setAssessment({ ...assessment, controls: updatedControls });
 
       await updateAssessmentProgress();
     } catch (err) {
@@ -597,15 +885,40 @@ export default function EuAiActAssessmentPage() {
   const handleSaveSubcontrol = async (controlId: string, subcontrolId: string) => {
     const control = assessment?.controls?.find(c => c.controlStruct.controlId === controlId);
     const subcontrol = control?.subcontrols?.find(sc => sc.subcontrolStruct.subcontrolId === subcontrolId);
-    if (!subcontrol || !assessment) return;
+    if (!subcontrol || !assessment || !control) return;
 
     setSaving(true);
     try {
+      // First ensure the parent control is saved if it's temporary
+      if (control.id.startsWith('temp-')) {
+        const controlResponse = await fetch(`/api/eu-ai-act/control/${assessment.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            controlId: control.controlStruct.controlId,
+            status: control.status || 'pending',
+            notes: control.notes || '',
+            evidenceFiles: control.evidenceFiles || []
+          })
+        });
+
+        if (!controlResponse.ok) {
+          throw new Error('Failed to save parent control');
+        }
+
+        const savedControl = await controlResponse.json();
+        
+        // Update the assessment with the saved control
+        const updatedControls = assessment.controls?.filter(c => c.controlStruct.controlId !== controlId) || [];
+        updatedControls.push(savedControl);
+        setAssessment({ ...assessment, controls: updatedControls });
+      }
+
       const response = await fetch(`/api/eu-ai-act/subcontrol/${assessment.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          controlId,
+          controlId: controlId, // Use structural controlId
           subcontrolId,
           status: subcontrol.status,
           notes: subcontrol.notes,
@@ -619,26 +932,20 @@ export default function EuAiActAssessmentPage() {
 
       const savedSubcontrol = await response.json();
 
-      // Update the assessment state with the saved subcontrol
-      const updatedControls = assessment.controls?.map(c => 
-        c.controlStruct.controlId === controlId 
+      // Update the control with the saved subcontrol
+      const updatedControls = assessment.controls?.map(control => 
+        control.controlStruct?.controlId === controlId 
           ? {
-              ...c,
-              subcontrols: c.subcontrols?.filter(sc => sc.subcontrolStruct.subcontrolId !== subcontrolId) || []
+              ...control,
+              subcontrols: [
+                ...(control.subcontrols?.filter(sc => sc.subcontrolStruct?.subcontrolId !== subcontrolId) || []),
+                savedSubcontrol
+              ]
             }
-          : c
+          : control
       ) || [];
-
-      // Find the control and add the saved subcontrol
-      const targetControl = updatedControls.find(c => c.controlStruct.controlId === controlId);
-      if (targetControl) {
-        targetControl.subcontrols = [...(targetControl.subcontrols || []), savedSubcontrol];
-      }
       
-      setAssessment({
-        ...assessment,
-        controls: updatedControls
-      });
+      setAssessment({ ...assessment, controls: updatedControls });
 
       await updateAssessmentProgress();
     } catch (err) {
@@ -906,13 +1213,22 @@ export default function EuAiActAssessmentPage() {
                                         />
                                         
                                         <div className="mt-4">
-                                          <FileUpload
-                                            label="Evidence Files"
-                                            value={question.answer?.evidenceFiles || []}
-                                            onChange={(files) => handleEvidenceChange(question.questionId, files)}
-                                            maxFiles={5}
-                                            maxSize={10}
-                                          />
+                                          <div className="relative">
+                                            <FileUpload
+                                              label="Evidence Files"
+                                              value={question.answer?.evidenceFiles || []}
+                                              onChange={(files) => handleEvidenceChange(question.questionId, files)}
+                                              maxFiles={5}
+                                              maxSize={10}
+                                              disabled={savingFiles.has(`question-${question.questionId}`)}
+                                            />
+                                            {savingFiles.has(`question-${question.questionId}`) && (
+                                              <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                Saving...
+                                              </div>
+                                            )}
+                                          </div>
                                         </div>
                                         
                                         <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
@@ -996,7 +1312,7 @@ export default function EuAiActAssessmentPage() {
                   <CardContent className="p-0">
                     {category.controls.map((control) => {
                       const assessmentControl = assessment?.controls?.find(
-                        c => c.controlStruct.controlId === control.controlId
+                        c => c.controlStruct?.controlId === control.controlId
                       );
                       
                       return (
@@ -1049,13 +1365,22 @@ export default function EuAiActAssessmentPage() {
                                     </div>
                                     
                                     <div className="mt-4">
-                                      <FileUpload
-                                        label="Evidence Files"
-                                        value={assessmentControl?.evidenceFiles || []}
-                                        onChange={(files) => handleControlEvidenceChange(control.controlId, files)}
-                                        maxFiles={5}
-                                        maxSize={10}
-                                      />
+                                      <div className="relative">
+                                        <FileUpload
+                                          label="Evidence Files"
+                                          value={assessmentControl?.evidenceFiles || []}
+                                          onChange={(files) => handleControlEvidenceChange(control.controlId, files)}
+                                          maxFiles={5}
+                                          maxSize={10}
+                                          disabled={savingFiles.has(`control-${control.controlId}`)}
+                                        />
+                                        {savingFiles.has(`control-${control.controlId}`) && (
+                                          <div className="absolute top-0 right-0 bg-green-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                            Saving...
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
                                     
                                     <div className="flex items-center justify-end pt-3 border-t border-gray-200">
@@ -1122,13 +1447,22 @@ export default function EuAiActAssessmentPage() {
                                                   </div>
                                                   
                                                   <div>
-                                                    <FileUpload
-                                                      label="Evidence Files"
-                                                      value={assessmentSubcontrol?.evidenceFiles || []}
-                                                      onChange={(files) => handleSubcontrolEvidenceChange(control.controlId, subcontrol.subcontrolId, files)}
-                                                      maxFiles={5}
-                                                      maxSize={10}
-                                                    />
+                                                    <div className="relative">
+                                                      <FileUpload
+                                                        label="Evidence Files"
+                                                        value={assessmentSubcontrol?.evidenceFiles || []}
+                                                        onChange={(files) => handleSubcontrolEvidenceChange(control.controlId, subcontrol.subcontrolId, files)}
+                                                        maxFiles={5}
+                                                        maxSize={10}
+                                                        disabled={savingFiles.has(`subcontrol-${subcontrol.subcontrolId}`)}
+                                                      />
+                                                      {savingFiles.has(`subcontrol-${subcontrol.subcontrolId}`) && (
+                                                        <div className="absolute top-0 right-0 bg-purple-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                                                          <Loader2 className="w-3 h-3 animate-spin" />
+                                                          Saving...
+                                                        </div>
+                                                      )}
+                                                    </div>
                                                   </div>
                                                   
                                                   <div className="flex justify-end">
