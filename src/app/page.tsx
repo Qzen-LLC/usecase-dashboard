@@ -75,6 +75,19 @@ export default function HomePage() {
                     Sign In
                   </Button>
                 </Link>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-gray-300" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white/90 text-gray-500">or</span>
+                  </div>
+                </div>
+                <Link href="/sign-up" className="block">
+                  <Button variant="outline" className="w-full py-3 text-lg font-semibold border-2 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-full transition-all">
+                    Create Account
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>

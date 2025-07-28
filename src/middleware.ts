@@ -8,22 +8,22 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware((auth, req) => {
-  // TEMPORARY BYPASS FOR TESTING - Mock authenticated user
-  const originalUserId = auth.userId;
+  const userId = (auth as any).userId;
   const { pathname } = req.nextUrl;
   
-  // Mock user ID for testing
-  const mockUserId = originalUserId || 'mock-test-user-123';
-  
-  console.log("[Middleware] userId:", mockUserId, "pathname:", pathname, originalUserId ? "(real)" : "(mock)");
+  console.log("[Middleware] userId:", userId, "pathname:", pathname);
 
   // Allow public routes
   if (isPublicRoute(req)) {
     return NextResponse.next();
   }
 
-  // For testing: allow all routes with mock user
-  // In production, this should be removed!
+  // For API routes, allow them to handle their own authentication
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next();
+  }
+
+  // For all other routes, allow access (temporary bypass)
   return NextResponse.next();
 });
 

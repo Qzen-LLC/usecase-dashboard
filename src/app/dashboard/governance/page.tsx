@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Shield, FileText, Users, Building, BookOpen, Gavel } from "lucide-react";
+import { Loader2, Shield, FileText, Users, Building, BookOpen, Gavel, RefreshCw } from "lucide-react";
 import Link from 'next/link';
 
 interface GovernanceData {
@@ -90,15 +90,31 @@ export default function GovernancePage() {
   const [iso42001Clauses, setIso42001Clauses] = useState<Iso42001Clause[]>([]);
   const [iso42001Annex, setIso42001Annex] = useState<Iso42001AnnexCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAllData();
+    
+    // Add focus event listener to refresh data when user returns to the page
+    const handleFocus = () => {
+      fetchAllData();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
-  const fetchAllData = async () => {
+  const fetchAllData = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      
+      // Add cache-busting parameter to force fresh data
+      const timestamp = Date.now();
       
       // Fetch all data in parallel
       const [
@@ -108,7 +124,7 @@ export default function GovernancePage() {
         isoClausesResponse,
         isoAnnexResponse
       ] = await Promise.all([
-        fetch('/api/governance-data'),
+        fetch(`/api/governance-data?t=${timestamp}`),
         fetch('/api/eu-ai-act/topics'),
         fetch('/api/eu-ai-act/control-categories'),
         fetch('/api/iso-42001/clauses'),
@@ -149,7 +165,12 @@ export default function GovernancePage() {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    fetchAllData(true);
   };
 
   const getFrameworkColor = (framework: string) => {
@@ -196,7 +217,7 @@ export default function GovernancePage() {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
           <p className="text-gray-600">{error}</p>
-          <Button onClick={fetchAllData} className="mt-4">
+          <Button onClick={() => fetchAllData()} className="mt-4">
             Try Again
           </Button>
         </div>
@@ -469,8 +490,22 @@ export default function GovernancePage() {
       <div className="px-6 py-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Governance</h1>
-          <p className="text-gray-600">Regulatory frameworks and industry standards for AI systems</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Governance</h1>
+              <p className="text-gray-600">Regulatory frameworks and industry standards for AI systems</p>
+            </div>
+            <Button 
+              onClick={handleRefresh} 
+              variant="outline" 
+              size="sm" 
+              disabled={refreshing}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
+          </div>
         </div>
 
         {/* Tab Navigation */}

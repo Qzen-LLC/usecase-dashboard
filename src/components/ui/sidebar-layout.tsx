@@ -22,7 +22,15 @@ import { UserButton, useUser } from '@clerk/nextjs';
 import Image from 'next/image';
 import { useUserData } from '@/contexts/UserContext';
 
-const navigationItems = [
+interface NavigationItem {
+  title: string;
+  href: string;
+  icon: React.ComponentType<any>;
+  description: string;
+  isAdmin?: boolean;
+}
+
+const navigationItems: NavigationItem[] = [
   // Admin Dashboard for QZEN_ADMIN
   // This will be conditionally added below
   {
@@ -86,6 +94,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
   // Debug: Log user data
   console.log('Sidebar - userData:', userData);
   console.log('Sidebar - userData?.role:', userData?.role);
+  console.log('Sidebar - is ORG_ADMIN:', userData?.role === 'ORG_ADMIN');
   
   // Build sidebar items, add Admin Dashboard for QZEN_ADMIN and Manage Users for ORG_ADMIN
   const sidebarItems = [
@@ -102,11 +111,14 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
           title: 'Manage Users',
           href: '/dashboard/users',
           icon: Users,
-          description: 'User Management'
+          description: 'User Management',
+          isAdmin: true // Add flag for styling
         }]
       : []),
     ...navigationItems
   ];
+
+  console.log('Sidebar - sidebarItems:', sidebarItems.map(item => ({ title: item.title, href: item.href })));
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -164,14 +176,19 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
                   rounded-lg transition-all duration-200 group
                   ${isActive 
                     ? 'bg-blue-50 text-blue-600 shadow-sm border-l-3 border-blue-600 font-medium' 
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-sm'
+                    : item.isAdmin 
+                      ? 'bg-purple-50 text-purple-700 border-l-3 border-purple-400 hover:bg-purple-100 hover:text-purple-800'
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-sm'
                   }
                 `}>
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-blue-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-blue-600' : item.isAdmin ? 'text-purple-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
                   {!isCollapsed && (
                     <div className="flex flex-col">
                       <span className="text-sm font-medium leading-tight">{item.title}</span>
                       <span className="text-xs text-gray-500 leading-tight">{item.description}</span>
+                      {item.isAdmin && (
+                        <span className="text-xs text-purple-600 font-medium">Admin Only</span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -226,7 +243,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
             <div className="flex items-center gap-4">
               {isSignedIn ? (
                 <div className="flex items-center gap-2">
-                  <UserButton afterSignOutUrl="/sign-in" />
+                  <UserButton afterSignOutUrl="/" />
                   <span className="text-sm text-gray-700 font-medium">
                     {user.fullName || user.emailAddresses[0]?.emailAddress}
                   </span>

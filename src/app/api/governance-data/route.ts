@@ -3,8 +3,12 @@ import { prismaClient, retryDatabaseOperation } from '@/utils/db';
 import { currentUser } from '@clerk/nextjs/server';
 import redis from '@/lib/redis';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Check for cache-busting parameter
+    const { searchParams } = new URL(request.url);
+    const cacheBust = searchParams.get('t');
+    
     // TEMPORARY: Auth bypass for testing
     const user = await currentUser();
     let userRecord;
@@ -26,12 +30,16 @@ export async function GET() {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
     }
-    // Redis cache check
+    
+    // Redis cache check (skip cache if cache-busting is requested)
     const cacheKey = `governance-data:${userRecord.role}:${userRecord.id}`;
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
+    if (!cacheBust) {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
+      }
     }
+    
     // Only include use cases for this user if USER role
     let useCases;
     try {
@@ -162,7 +170,11 @@ export async function GET() {
       })
       .filter((item) => item !== null);
 
-    await redis.set(cacheKey, JSON.stringify(governanceData), 'EX', 300);
+    // Only cache if not cache-busting
+    if (!cacheBust) {
+      await redis.set(cacheKey, JSON.stringify(governanceData), 'EX', 300);
+    }
+    
     return NextResponse.json(governanceData);
   } catch (error) {
     console.error('Error fetching governance data:', error);

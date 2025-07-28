@@ -135,6 +135,13 @@ export default function Iso42001AssessmentPage() {
       const annexData = await annexResponse.json();
       const assessmentData = await assessmentResponse.json();
 
+      // Debug logging
+      console.log('🔍 ISO 42001 Debug - Clauses loaded:', {
+        clausesCount: clausesData.length,
+        firstClause: clausesData[0]?.clauseId,
+        firstClauseSubclauses: clausesData[0]?.subclauses?.length || 0
+      });
+
       // Check if framework tables are available
       if (clausesData.length === 0) {
         setError('ISO 42001 framework tables need to be set up. Please run the database setup scripts to enable full functionality.');
@@ -168,6 +175,7 @@ export default function Iso42001AssessmentPage() {
       // Expand first clause by default
       if (clausesData.length > 0) {
         setExpandedClauses(new Set([clausesData[0].clauseId]));
+        console.log('🔍 ISO 42001 Debug - Expanded first clause:', clausesData[0].clauseId);
       }
 
       // Expand first annex category by default
@@ -184,11 +192,40 @@ export default function Iso42001AssessmentPage() {
   const handleSubclauseImplementationChange = (subclauseId: string, implementation: string) => {
     if (!assessment) return;
 
-    const updatedSubclauses = assessment.subclauses.map(sc => 
-      sc.subclause.subclauseId === subclauseId 
-        ? { ...sc, implementation, status: implementation.trim() ? 'implemented' : 'pending' }
-        : sc
-    );
+    console.log('🔍 ISO 42001 Debug - Implementation change:', {
+      subclauseId,
+      implementationLength: implementation.length,
+      currentAssessmentSubclauses: assessment.subclauses.length
+    });
+
+    // Check if instance already exists
+    const existingInstance = assessment.subclauses.find(sc => sc.subclause.subclauseId === subclauseId);
+    
+    let updatedSubclauses;
+    if (existingInstance) {
+      // Update existing instance
+      updatedSubclauses = assessment.subclauses.map(sc => 
+        sc.subclause.subclauseId === subclauseId 
+          ? { ...sc, implementation, status: implementation.trim() ? 'implemented' : 'pending' }
+          : sc
+      );
+    } else {
+      // Create new instance (temporary, will be saved to DB when user clicks Save)
+      const newInstance = {
+        id: `temp-${subclauseId}`,
+        implementation,
+        evidenceFiles: [],
+        status: implementation.trim() ? 'implemented' : 'pending',
+        subclause: {
+          subclauseId,
+          title: '', // Will be filled when saved
+          summary: '',
+          questions: [],
+          evidenceExamples: []
+        }
+      };
+      updatedSubclauses = [...assessment.subclauses, newInstance];
+    }
 
     setAssessment({ ...assessment, subclauses: updatedSubclauses });
   };
@@ -565,8 +602,10 @@ export default function Iso42001AssessmentPage() {
     const newExpanded = new Set(expandedClauses);
     if (newExpanded.has(clauseId)) {
       newExpanded.delete(clauseId);
+      console.log('🔍 ISO 42001 Debug - Collapsed clause:', clauseId);
     } else {
       newExpanded.add(clauseId);
+      console.log('🔍 ISO 42001 Debug - Expanded clause:', clauseId);
     }
     setExpandedClauses(newExpanded);
   };
@@ -589,7 +628,14 @@ export default function Iso42001AssessmentPage() {
   };
 
   const findSubclauseInstance = (subclauseId: string) => {
-    return assessment?.subclauses.find(sc => sc.subclause.subclauseId === subclauseId);
+    const instance = assessment?.subclauses.find(sc => sc.subclause.subclauseId === subclauseId);
+    console.log('🔍 ISO 42001 Debug - findSubclauseInstance:', {
+      subclauseId,
+      found: !!instance,
+      isTemporary: instance?.id?.startsWith('temp-'),
+      assessmentSubclausesCount: assessment?.subclauses?.length || 0
+    });
+    return instance;
   };
 
   const findAnnexInstance = (itemId: string) => {
@@ -710,6 +756,9 @@ export default function Iso42001AssessmentPage() {
                   <div>
                     <h3 className="font-semibold text-gray-900">ISO 42001 Main Clauses</h3>
                     <p className="text-sm text-gray-600">Implement the core requirements of the AI Management System standard</p>
+                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+                      💡 <strong>How to edit:</strong> Click on any clause header to expand it, then fill in the implementation details for each subclause requirement.
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -720,6 +769,9 @@ export default function Iso42001AssessmentPage() {
                   <div>
                     <h3 className="font-semibold text-gray-900">Annex A Control Objectives</h3>
                     <p className="text-sm text-gray-600">Additional controls to support the AI Management System implementation</p>
+                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+                      💡 <strong>How to edit:</strong> Click on any category header to expand it, then fill in the implementation details for each control objective.
+                    </div>
                   </div>
                 </div>
               )}
@@ -858,10 +910,27 @@ export default function Iso42001AssessmentPage() {
                                     <div>
                                       <label className="block text-sm font-semibold text-gray-700 mb-2">
                                         📝 Implementation Details
+                                        <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                          ✏️ Editable
+                                        </span>
                                       </label>
                                       <textarea
                                         value={instance?.implementation || ''}
-                                        onChange={(e) => handleSubclauseImplementationChange(subclause.subclauseId, e.target.value)}
+                                        onChange={(e) => {
+                                          console.log('🔍 ISO 42001 Debug - Textarea onChange:', {
+                                            subclauseId: subclause.subclauseId,
+                                            value: e.target.value,
+                                            instanceExists: !!instance
+                                          });
+                                          handleSubclauseImplementationChange(subclause.subclauseId, e.target.value);
+                                        }}
+                                        onFocus={() => {
+                                          console.log('🔍 ISO 42001 Debug - Textarea onFocus:', {
+                                            subclauseId: subclause.subclauseId,
+                                            instanceExists: !!instance,
+                                            currentValue: instance?.implementation || ''
+                                          });
+                                        }}
                                         placeholder="Describe how this requirement is implemented in your organization...
 
 • What processes are in place?

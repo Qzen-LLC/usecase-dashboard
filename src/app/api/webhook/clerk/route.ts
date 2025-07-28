@@ -145,6 +145,14 @@ export async function POST(req: Request) {
         
         // Type assertion for Prisma UserRole
         const userRole = role as 'QZEN_ADMIN' | 'ORG_ADMIN' | 'ORG_USER' | 'USER';
+        
+        console.log('🔧 Webhook - Creating new user:', {
+          email,
+          role: userRole,
+          organizationId: organizationId || 'No organization',
+          clerkId
+        });
+        
         if (email) {
           await prisma.user.create({
             data: {
@@ -156,7 +164,7 @@ export async function POST(req: Request) {
               organizationId,
             },
           });
-          console.log('User created in Supabase/Prisma:', email, userRole, organizationId || 'No organization');
+          console.log('✅ Webhook - User created successfully:', email, userRole, organizationId || 'No organization');
         }
       } catch (error) {
         console.error('Error creating user:', error);
