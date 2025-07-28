@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   generateEtags: true,
   reactStrictMode: false, // Disable strict mode to prevent double API calls in development
+  output: 'standalone', // Enable standalone output for Docker
 
   // Ignore TypeScript and ESLint errors during build to avoid scanning issues
   typescript: {
