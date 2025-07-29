@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { prismaClient } from '@/utils/db';
 import redis from '@/lib/redis';
+import { calculateRiskScores, getRiskLevel, getRiskCategoryScores, type StepsData } from '@/lib/risk-calculations';
 
 export async function GET() {
   try {
@@ -55,26 +56,25 @@ export async function GET() {
       return sum + finopsValue;
     }, 0);
     
-    // Calculate overall risk score (simplified calculation)
-    const overallRiskScore = Math.min(25, Math.max(1, Math.floor(Math.random() * 25)));
-    
-    // Calculate risk distribution
+    // Calculate risk metrics from actual assessment data
     const riskDistribution = {
-      Low: Math.floor(Math.random() * 10) + 1,
-      Medium: Math.floor(Math.random() * 15) + 5,
-      High: Math.floor(Math.random() * 8) + 2,
-      Critical: Math.floor(Math.random() * 3) + 1
+      Low: 0,
+      Medium: 0,
+      High: 0,
+      Critical: 0
     };
     
-    // Calculate risk categories
     const riskCategories = {
-      technical: { Low: 3, Medium: 5, High: 2, Critical: 1 },
-      business: { Low: 4, Medium: 6, High: 3, Critical: 0 },
-      data: { Low: 2, Medium: 4, High: 3, Critical: 1 },
-      ethical: { Low: 5, Medium: 3, High: 1, Critical: 0 },
-      operational: { Low: 3, Medium: 4, High: 2, Critical: 1 },
-      regulatory: { Low: 2, Medium: 5, High: 3, Critical: 1 }
+      technical: { Low: 0, Medium: 0, High: 0, Critical: 0 },
+      business: { Low: 0, Medium: 0, High: 0, Critical: 0 },
+      data: { Low: 0, Medium: 0, High: 0, Critical: 0 },
+      ethical: { Low: 0, Medium: 0, High: 0, Critical: 0 },
+      operational: { Low: 0, Medium: 0, High: 0, Critical: 0 },
+      regulatory: { Low: 0, Medium: 0, High: 0, Critical: 0 }
     };
+    
+    let totalRiskScore = 0;
+    let assessedUseCases = 0;
     
     // Calculate approval status
     const approvals = useCases.filter(uc => uc.Approval).length;
@@ -95,6 +95,10 @@ export async function GET() {
       lowRisks: riskDistribution.Low
     };
     
+    // Calculate overall risk score as average of assessed use cases
+    const overallRiskScore = assessedUseCases > 0 ? 
+      Math.round(totalRiskScore / assessedUseCases) : 0;
+    
     const riskMetrics = {
       portfolio: {
         totalUseCases,
@@ -106,20 +110,48 @@ export async function GET() {
       riskCategories,
       approvalStatus,
       complianceMetrics,
-      useCaseRiskDetails: useCases.map(uc => ({
-        id: uc.id,
-        title: uc.title,
-        stage: uc.stage || 'draft',
-        businessFunction: uc.businessFunction,
-        priority: uc.priority || 'MEDIUM',
-        overallRiskScore: Math.floor(Math.random() * 25) + 1,
-        overallRiskLevel: ['Low', 'Medium', 'High', 'Critical'][Math.floor(Math.random() * 4)],
-        riskCategories: {},
-        portfolioValue: uc.finopsData?.netValue || 0,
-        hasApproval: !!uc.Approval,
-        approvalStatuses: uc.Approval || {},
-        aiucId: uc.aiucId
-      }))
+      useCaseRiskDetails: useCases.map(uc => {
+        let riskScore = 0;
+        let riskLevel: 'Low' | 'Medium' | 'High' | 'Critical' = 'Low';
+        let categoryScores = {};
+        
+        // Calculate risk if assessment data exists
+        if (uc.assessData?.stepsData) {
+          const stepsData = uc.assessData.stepsData as StepsData;
+          const riskResult = calculateRiskScores(stepsData);
+          riskScore = riskResult.score;
+          riskLevel = getRiskLevel(riskScore);
+          categoryScores = getRiskCategoryScores(stepsData);
+          
+          // Update distributions
+          assessedUseCases++;
+          totalRiskScore += riskScore;
+          riskDistribution[riskLevel]++;
+          
+          // Update category distributions
+          Object.entries(categoryScores).forEach(([category, score]) => {
+            const level = getRiskLevel(score as number);
+            if (riskCategories[category as keyof typeof riskCategories]) {
+              riskCategories[category as keyof typeof riskCategories][level]++;
+            }
+          });
+        }
+        
+        return {
+          id: uc.id,
+          title: uc.title,
+          stage: uc.stage || 'draft',
+          businessFunction: uc.businessFunction,
+          priority: uc.priority || 'MEDIUM',
+          overallRiskScore: riskScore,
+          overallRiskLevel: riskLevel,
+          riskCategories: categoryScores,
+          portfolioValue: uc.finopsData?.netValue || 0,
+          hasApproval: !!uc.Approval,
+          approvalStatuses: uc.Approval || {},
+          aiucId: uc.aiucId
+        };
+      })
     };
     await redis.set(cacheKey, JSON.stringify(riskMetrics), 'EX', 300);
     return NextResponse.json(riskMetrics);

@@ -1,33 +1,37 @@
 'use client'
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, ChevronLeft, Target, TrendingUp, Zap, DollarSign, Download, Plus, Minus } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Target, TrendingUp, Zap, DollarSign, Plus, Minus } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 
 type FormData = {
   title: string;
   problemStatement: string;
   proposedAISolution: string;
+  keyBenefits: string;
   primaryStakeholders: string[];
   secondaryStakeholders: string[];
   currentState: string;
   desiredState: string;
-  successCriteria: string[];
+  successCriteria: string;
   problemValidation: string;
   solutionHypothesis: string;
-  keyAssumptions: string[];
+  keyAssumptions: string;
+  initialCost: string;
   initialROI: string;
   confidenceLevel: number;
   operationalImpactScore: number;
   productivityImpactScore: number;
   revenueImpactScore: number;
   implementationComplexity: number;
-  estimatedTimeline: string;
+  plannedStartDate: string;
+  estimatedTimelineMonths: string;
   requiredResources: string;
   businessFunction: string;
   priority: string;
@@ -37,27 +41,30 @@ const initialFormData: FormData = {
   title: "",
   problemStatement: "",
   proposedAISolution: "",
+  keyBenefits: "",
   primaryStakeholders: [],
   secondaryStakeholders: [],
   currentState: "",
   desiredState: "",
-  successCriteria: [],
+  successCriteria: "",
   problemValidation: "",
   solutionHypothesis: "",
-  keyAssumptions: [],
+  keyAssumptions: "",
+  initialCost: "",
   initialROI: "",
   confidenceLevel: 5,
   operationalImpactScore: 5,
   productivityImpactScore: 5,
   revenueImpactScore: 5,
   implementationComplexity: 5,
-  estimatedTimeline: "",
+  plannedStartDate: "",
+  estimatedTimelineMonths: "",
   requiredResources: "",
   businessFunction: "",
   priority: "MEDIUM",
 };
 
-type ArrayField = 'primaryStakeholders' | 'secondaryStakeholders' | 'successCriteria' | 'keyAssumptions';
+type ArrayField = 'primaryStakeholders' | 'secondaryStakeholders';
 
 const ArrayInput = ({
   label,
@@ -178,32 +185,32 @@ const AIUseCaseTool = () => {
             className={invalidFields.includes('title') ? 'border-red-500' : ''}
           />
           <Label htmlFor="problemStatement">Problem Statement <span className="text-red-500">*</span></Label>
-          <Textarea
-            id="problemStatement"
-            value={formData.problemStatement}
-            onChange={(e) => handleChange("problemStatement", e.target.value)}
+          <RichTextEditor
+            content={formData.problemStatement}
+            onChange={(content) => handleChange("problemStatement", content)}
+            placeholder="Describe the problem this use case will solve..."
             className={invalidFields.includes('problemStatement') ? 'border-red-500' : ''}
           />
           <Label htmlFor="proposedAISolution">Proposed Solution</Label>
-          <Textarea
-            id="proposedAISolution"
-            value={formData.proposedAISolution}
-            onChange={(e) => handleChange("proposedAISolution", e.target.value)}
+          <RichTextEditor
+            content={formData.proposedAISolution}
+            onChange={(content) => handleChange("proposedAISolution", content)}
+            placeholder="Describe your proposed AI solution..."
             className={invalidFields.includes('proposedAISolution') ? 'border-red-500' : ''}
           />
-          <Label htmlFor="currentState">Current State</Label>
-          <Textarea
-            id="currentState"
-            value={formData.currentState}
-            onChange={(e) => handleChange("currentState", e.target.value)}
-            className={invalidFields.includes('currentState') ? 'border-red-500' : ''}
+          <Label htmlFor="keyBenefits">Key Benefits</Label>
+          <RichTextEditor
+            content={formData.keyBenefits}
+            onChange={(content) => handleChange("keyBenefits", content)}
+            placeholder="List the key benefits this solution will provide..."
+            className={invalidFields.includes('keyBenefits') ? 'border-red-500' : ''}
           />
-          <Label htmlFor="desiredState">Desired State</Label>
-          <Textarea
-            id="desiredState"
-            value={formData.desiredState}
-            onChange={(e) => handleChange("desiredState", e.target.value)}
-            className={invalidFields.includes('desiredState') ? 'border-red-500' : ''}
+          <Label htmlFor="successCriteria">Success Criteria</Label>
+          <RichTextEditor
+            content={formData.successCriteria}
+            onChange={(content) => handleChange("successCriteria", content)}
+            placeholder="Define what success looks like for this use case..."
+            className={invalidFields.includes('successCriteria') ? 'border-red-500' : ''}
           />
           {/* <Label htmlFor="primaryStakeholders">Primary Stakeholder</Label>
           <Input
@@ -217,7 +224,7 @@ const AIUseCaseTool = () => {
             id="businessFunction"
             value={formData.businessFunction}
             onChange={e => handleChange("businessFunction", e.target.value)}
-            className={"mb-4 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 " + (invalidFields.includes('businessFunction') ? 'border-red-500' : '')}
+            className={"mb-4 w-full border border-gray-200 rounded-none px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 " + (invalidFields.includes('businessFunction') ? 'border-red-500' : '')}
           >
             <option value="" disabled>Select a business function</option>
             <option value="Sales">Sales</option>
@@ -255,14 +262,6 @@ const AIUseCaseTool = () => {
             onRemove={handleArrayRemove}
             invalid={invalidFields.includes('secondaryStakeholders')}
           />
-          <ArrayInput
-            label="Success Criteria"
-            field="successCriteria"
-            value={formData.successCriteria}
-            onAdd={handleArrayAdd}
-            onRemove={handleArrayRemove}
-            invalid={invalidFields.includes('successCriteria')}
-          />
         </Card>
       </div>
     </div>
@@ -276,35 +275,35 @@ const AIUseCaseTool = () => {
       </div>
       <div className="space-y-6">
         <Card className='p-6'>
-          <Label htmlFor="problemValidation">Problem Validation</Label>
-          <Textarea
-            id="problemValidation"
-            value={formData.problemValidation}
-            onChange={(e) => handleChange("problemValidation", e.target.value)}
-            className={invalidFields.includes('problemValidation') ? 'border-red-500' : ''}
+          <Label htmlFor="keyAssumptions">Key Assumptions</Label>
+          <RichTextEditor
+            content={formData.keyAssumptions}
+            onChange={(content) => handleChange("keyAssumptions", content)}
+            placeholder="List your key assumptions for this use case..."
+            className={invalidFields.includes('keyAssumptions') ? 'border-red-500' : ''}
           />
-          <Label htmlFor="solutionHypothesis">Solution Hypothesis</Label>
-          <Textarea
-            id="solutionHypothesis"
-            value={formData.solutionHypothesis}
-            onChange={(e) => handleChange("solutionHypothesis", e.target.value)}
-            className={invalidFields.includes('solutionHypothesis') ? 'border-red-500' : ''}
-          />
-          <ArrayInput
-            label="Key Assumptions"
-            field="keyAssumptions"
-            value={formData.keyAssumptions}
-            onAdd={handleArrayAdd}
-            onRemove={handleArrayRemove}
-            invalid={invalidFields.includes('keyAssumptions')}
-          />
+          <Label htmlFor="initialCost">Initial Cost</Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+            <Input
+              id="initialCost"
+              value={formData.initialCost}
+              onChange={(e) => handleChange("initialCost", e.target.value)}
+              className={`pl-7 ${invalidFields.includes('initialCost') ? 'border-red-500' : ''}`}
+              placeholder="0"
+            />
+          </div>
           <Label htmlFor="initialROI">Initial ROI</Label>
-          <Input
-            id="initialROI"
-            value={formData.initialROI}
-            onChange={(e) => handleChange("initialROI", e.target.value)}
-            className={invalidFields.includes('initialROI') ? 'border-red-500' : ''}
-          />
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+            <Input
+              id="initialROI"
+              value={formData.initialROI}
+              onChange={(e) => handleChange("initialROI", e.target.value)}
+              className={`pl-7 ${invalidFields.includes('initialROI') ? 'border-red-500' : ''}`}
+              placeholder="0"
+            />
+          </div>
           <div className="flex justify-between items-center mb-1">
             <Label htmlFor="confidenceLevel">Confidence Level</Label>
             <span className="text-blue-600 font-bold">{formData.confidenceLevel}</span>
@@ -322,18 +321,39 @@ const AIUseCaseTool = () => {
             </div>
             <Label htmlFor="confidenceLevel" className='text-sm font-normal text-gray-800'>How confident are you in your estimates?</Label>
           </div>
-          <Label htmlFor="estimatedTimeline">Estimated Timeline</Label>
+          <Label htmlFor="plannedStartDate">Planned Start Date</Label>
           <Input
-            id="estimatedTimeline"
-            value={formData.estimatedTimeline}
-            onChange={(e) => handleChange("estimatedTimeline", e.target.value)}
-            className={invalidFields.includes('estimatedTimeline') ? 'border-red-500' : ''}
+            id="plannedStartDate"
+            type="date"
+            value={formData.plannedStartDate}
+            onChange={(e) => handleChange("plannedStartDate", e.target.value)}
+            className={invalidFields.includes('plannedStartDate') ? 'border-red-500' : ''}
           />
+          <Label htmlFor="estimatedTimelineMonths">Estimated Timeline</Label>
+          <select
+            id="estimatedTimelineMonths"
+            value={formData.estimatedTimelineMonths}
+            onChange={e => handleChange("estimatedTimelineMonths", e.target.value)}
+            className={"mb-4 w-full border border-gray-200 rounded-none px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 " + (invalidFields.includes('estimatedTimelineMonths') ? 'border-red-500' : '')}
+          >
+            <option value="" disabled>Select timeline</option>
+            <option value="1">1 month</option>
+            <option value="2">2 months</option>
+            <option value="3">3 months</option>
+            <option value="4">4 months</option>
+            <option value="5">5 months</option>
+            <option value="6">6 months</option>
+            <option value="9">9 months</option>
+            <option value="12">12 months</option>
+            <option value="18">18 months</option>
+            <option value="24">24 months</option>
+            <option value="36">36 months</option>
+          </select>
           <Label htmlFor="requiredResources">Required Resources</Label>
-          <Input
-            id="requiredResources"
-            value={formData.requiredResources}
-            onChange={(e) => handleChange("requiredResources", e.target.value)}
+          <RichTextEditor
+            content={formData.requiredResources}
+            onChange={(content) => handleChange("requiredResources", content)}
+            placeholder="List the required resources for this use case..."
             className={invalidFields.includes('requiredResources') ? 'border-red-500' : ''}
           />
         </Card>
@@ -425,7 +445,7 @@ const AIUseCaseTool = () => {
             <Label htmlFor="implementationComplexity" className='text-lg font-semibold text-black-800'>Additional Metrics</Label>
           </div>
           <div className="space-y-4">
-            <Label htmlFor="implementationComplexity" className='text-sm font-normal text-gray-800 mb-2'>Implementation implementationComplexity</Label>
+            <Label htmlFor="implementationComplexity" className='text-sm font-normal text-gray-800 mb-2'>Implementation Complexity</Label>
             <div className="flex justify-between items-center mb-1">
               <span></span>
               <span className="text-blue-600 font-bold">{formData.implementationComplexity}</span>
@@ -472,14 +492,63 @@ const AIUseCaseTool = () => {
     </div>
   );
 
-  const exportData = () => {
-    const dataStr = JSON.stringify(formData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    const exportFileDefaultName = `${formData.title || 'ai-use-case'}.json`;
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
+  const handleSave = async () => {
+    // Only require title for saving (more lenient than full validation)
+    if (!formData.title.trim()) {
+      setInvalidFields(['title']);
+      setShowError(true);
+      alert("Please provide a title before saving.");
+      return;
+    }
+    
+    try {
+      // Map form data to match API expectations
+      const apiData = {
+        title: formData.title,
+        problemStatement: formData.problemStatement,
+        proposedAISolution: formData.proposedAISolution,
+        currentState: formData.currentState || '',
+        desiredState: formData.desiredState || '',
+        primaryStakeholders: formData.primaryStakeholders,
+        secondaryStakeholders: formData.secondaryStakeholders,
+        successCriteria: formData.successCriteria ? [formData.successCriteria] : [],
+        problemValidation: formData.problemValidation || '',
+        solutionHypothesis: formData.solutionHypothesis || '',
+        keyAssumptions: formData.keyAssumptions ? [formData.keyAssumptions] : [],
+        initialROI: formData.initialROI,
+        confidenceLevel: formData.confidenceLevel,
+        operationalImpactScore: formData.operationalImpactScore,
+        productivityImpactScore: formData.productivityImpactScore,
+        revenueImpactScore: formData.revenueImpactScore,
+        implementationComplexity: formData.implementationComplexity,
+        estimatedTimeline: formData.estimatedTimelineMonths ? `${formData.estimatedTimelineMonths} months` : '',
+        requiredResources: formData.requiredResources,
+        businessFunction: formData.businessFunction || '',
+        stage: 'discovery',
+        priority: formData.priority,
+      };
+
+      const res = await fetch("/api/write-usecases", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(apiData),
+      });
+      
+      if (res.ok) {
+        alert("Use case saved successfully!");
+        router.push('/dashboard');
+      } else {
+        const errorData = await res.text();
+        console.error("Save failed with status:", res.status);
+        console.error("Error response:", errorData);
+        alert(`Failed to save use case: ${res.status} - ${errorData}`);
+      }
+    } catch (error) {
+      console.error("Unable to save Use Case:", error);
+      alert("Unable to save Use Case. Please try again.");
+    }
   };
 
   const handleGoToPipeline = async () => {
@@ -497,18 +566,39 @@ const AIUseCaseTool = () => {
       });
       const stage = allFilled ? 'business-case' : 'discovery';
       try {
-        const res = await fetch("/api/write-usecases",
-          {
+        // Map form data to match API expectations
+        const apiData = {
+          title: formData.title,
+          problemStatement: formData.problemStatement,
+          proposedAISolution: formData.proposedAISolution,
+          currentState: formData.currentState || '',
+          desiredState: formData.desiredState || '',
+          primaryStakeholders: formData.primaryStakeholders,
+          secondaryStakeholders: formData.secondaryStakeholders,
+          successCriteria: formData.successCriteria ? [formData.successCriteria] : [],
+          problemValidation: formData.problemValidation || '',
+          solutionHypothesis: formData.solutionHypothesis || '',
+          keyAssumptions: formData.keyAssumptions ? [formData.keyAssumptions] : [],
+          initialROI: formData.initialROI,
+          confidenceLevel: formData.confidenceLevel,
+          operationalImpactScore: formData.operationalImpactScore,
+          productivityImpactScore: formData.productivityImpactScore,
+          revenueImpactScore: formData.revenueImpactScore,
+          implementationComplexity: formData.implementationComplexity,
+          estimatedTimeline: formData.estimatedTimelineMonths ? `${formData.estimatedTimelineMonths} months` : '',
+          requiredResources: formData.requiredResources,
+          businessFunction: formData.businessFunction || '',
+          stage,
+          priority: formData.priority,
+        };
+
+        const res = await fetch("/api/write-usecases", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            ...formData,
-            businessFunction: formData.businessFunction,
-            stage,
-          }),
-      });
+          body: JSON.stringify(apiData),
+        });
       if (res.ok) {
         router.push('/dashboard');
       } else {
@@ -582,17 +672,16 @@ const AIUseCaseTool = () => {
               <Button
                 onClick={() => router.push('/dashboard')}
                 variant="outline"
-                className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
+                className="flex items-center gap-2 border-gray-500 text-gray-600 hover:bg-gray-50"
               >
                 Cancel
               </Button>
               <Button
-                onClick={exportData}
+                onClick={handleSave}
                 variant="outline"
-                className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
+                className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
               >
-                <Download className="w-4 h-4" />
-                Export
+                Save Draft
               </Button>
             </div>
             <div className="flex items-center gap-4">

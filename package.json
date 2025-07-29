@@ -34,7 +34,10 @@
     "seed-eu-ai-act-controls": "tsx scripts/seed-eu-ai-act-controls.ts",
     "seed-eu-ai-act-subcontrols-complete": "tsx scripts/seed-eu-ai-act-subcontrols-complete.ts",
     "seed-complete-eu-ai-act-data": "tsx scripts/seed-complete-eu-ai-act-data.ts",
-    "seed-complete-iso-42001-data": "tsx scripts/seed-complete-iso-42001-data.ts"
+    "seed-eu-ai-act-from-csv": "tsx scripts/seed-eu-ai-act-from-csv.ts",
+    "setup-complete-database": "tsx scripts/setup-complete-database.ts",
+    "seed-complete-iso-42001-data": "tsx scripts/seed-complete-iso-42001-data.ts",
+    "seed-users-from-csv": "tsx scripts/seed-users-from-csv.ts"
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^4.13.23",
@@ -52,11 +55,16 @@
     "@radix-ui/react-slider": "^1.3.5",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "^1.2.5",
+    "@supabase/supabase-js": "^2.53.0",
     "@tanstack/react-query": "^5.81.5",
+    "@tiptap/pm": "^3.0.7",
+    "@tiptap/react": "^3.0.7",
+    "@tiptap/starter-kit": "^3.0.7",
     "@types/chart.js": "^2.9.41",
     "chart.js": "^4.5.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
     "ioredis": "^5.6.1",
     "lodash": "^4.17.21",
     "lodash.isequal": "^4.5.0",
