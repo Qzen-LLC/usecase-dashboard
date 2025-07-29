@@ -1,8 +1,9 @@
 {
-  "buildCommand": "rm -rf .next && next build",
+  "buildCommand": "rm -rf .next && DATABASE_URL='postgresql://dummy:dummy@localhost:5432/dummy' npx prisma generate && DATABASE_URL='postgresql://dummy:dummy@localhost:5432/dummy' next build",
   "outputDirectory": ".next",
   "framework": "nextjs",
   "regions": ["iad1"],
+  "installCommand": "npm install",
   "functions": {
     "src/app/api/upload/route.ts": {
       "maxDuration": 30
