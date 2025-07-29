@@ -42,26 +42,49 @@ export async function GET(request: Request) {
     
     // Only include use cases for this user if USER role
     let useCases;
+    
+    // Helper function to get include object with or without risks
+    const getIncludeObject = async () => {
+      try {
+        // Test if risks table exists by doing a simple query
+        await prismaClient.risk.findFirst();
+        return {
+          assessData: true,
+          euAiActAssessments: true,
+          iso42001Assessments: true,
+          risks: {
+            select: {
+              id: true,
+              category: true,
+              riskLevel: true,
+              status: true,
+            },
+          },
+        };
+      } catch (error) {
+        console.log('Risks table not available, using fallback include');
+        return {
+          assessData: true,
+          euAiActAssessments: true,
+          iso42001Assessments: true,
+        };
+      }
+    };
+
+    const includeObject = await getIncludeObject();
+    
     try {
       if (userRecord.role === 'QZEN_ADMIN') {
         useCases = await retryDatabaseOperation(() =>
           prismaClient.useCase.findMany({
-            include: {
-              assessData: true,
-              euAiActAssessments: true,
-              iso42001Assessments: true,
-            },
+            include: includeObject,
           })
         );
       } else if (userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') {
         useCases = await retryDatabaseOperation(() =>
           prismaClient.useCase.findMany({
             where: { organizationId: userRecord.organizationId },
-            include: {
-              assessData: true,
-              euAiActAssessments: true,
-              iso42001Assessments: true,
-            },
+            include: includeObject,
           })
         );
       } else {
@@ -69,11 +92,7 @@ export async function GET(request: Request) {
         useCases = await retryDatabaseOperation(() =>
           prismaClient.useCase.findMany({
             where: { userId: userRecord.id },
-            include: {
-              assessData: true,
-              euAiActAssessments: true,
-              iso42001Assessments: true,
-            },
+            include: includeObject,
           })
         );
       }
@@ -155,6 +174,16 @@ export async function GET(request: Request) {
           return null;
         }
 
+        // Debug log for progress values
+        if (euAiActAssessments.length > 0 || iso42001Assessments.length > 0) {
+          console.log(`🔍 Governance Data - Use Case ${useCase.aiucId}:`, {
+            euProgress: euAiActAssessments[0]?.progress || 0,
+            isoProgress: iso42001Assessments[0]?.progress || 0,
+            euStatus: euAiActAssessments[0]?.status || 'N/A',
+            isoStatus: iso42001Assessments[0]?.status || 'N/A'
+          });
+        }
+
         return {
           useCaseId: useCase.id,
           useCaseNumber: useCase.aiucId,
@@ -166,6 +195,8 @@ export async function GET(request: Request) {
           lastUpdated: useCase.assessData?.updatedAt?.toISOString() || useCase.updatedAt.toISOString(),
           euAiActAssessments,
           iso42001Assessments,
+          assessData: useCase.assessData,
+          risks: useCase.risks || [],
         };
       })
       .filter((item) => item !== null);

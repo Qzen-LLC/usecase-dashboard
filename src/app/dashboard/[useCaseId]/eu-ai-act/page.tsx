@@ -426,6 +426,11 @@ export default function EuAiActAssessmentPage() {
         if (!currentAssessment) return currentAssessment;
         return { ...currentAssessment, progress };
       });
+      
+      // Force refresh governance dashboard if it's open
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('governance-refresh'));
+      }
     } catch (err) {
       console.error('Failed to update progress:', err);
     }
