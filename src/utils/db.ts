@@ -4,17 +4,22 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-export const prismaClient = globalForPrisma.prisma ?? new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error'] : ['error'],
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
+// Lazy initialization to avoid issues during build time
+function createPrismaClient() {
+  return new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error'] : ['error'],
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL || '',
+      },
     },
-  },
-  transactionOptions: {
-    timeout: 10000,
-  },
-});
+    transactionOptions: {
+      timeout: 10000,
+    },
+  });
+}
+
+export const prismaClient = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prismaClient;
 
@@ -24,6 +29,9 @@ if (process.env.NODE_ENV === 'development') {
     await prismaClient.$disconnect();
   });
 }
+
+// Default export for backwards compatibility
+export default prismaClient;
 
 // Utility function to retry database operations for prepared statement conflicts
 export async function retryDatabaseOperation<T>(
