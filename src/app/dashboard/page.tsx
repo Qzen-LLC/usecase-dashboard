@@ -152,35 +152,41 @@ const Dashboard = () => {
       'title': 'Use Case Title',
       'problemStatement': 'Problem Statement',
       'proposedAISolution': 'Proposed AI Solution',
-      'currentState': 'Current State',
-      'desiredState': 'Desired State',
+      'keyBenefits': 'Key Benefits',
       'primaryStakeholders': 'Primary Stakeholders',
       'secondaryStakeholders': 'Secondary Stakeholders',
       'successCriteria': 'Success Criteria',
-      'problemValidation': 'Problem Validation',
-      'solutionHypothesis': 'Solution Hypothesis',
       'keyAssumptions': 'Key Assumptions',
       'initialROI': 'Initial ROI',
+      'initialCost': 'Initial Cost',
+      'plannedStartDate': 'Planned Start Date',
+      'estimatedTimelineMonths': 'Estimated Timeline (Months)',
       'confidenceLevel': 'Confidence Level',
       'operationalImpactScore': 'Operational Impact Score',
       'productivityImpactScore': 'Productivity Impact Score',
       'revenueImpactScore': 'Revenue Impact Score',
       'implementationComplexity': 'Implementation Complexity',
-      'estimatedTimeline': 'Estimated Timeline',
       'requiredResources': 'Required Resources',
       'businessFunction': 'Business Function',
-      'aiucId': 'AI Use Case ID',
-      'organizationId': 'Organization',
-      'userId': 'User'
+      'aiucId': 'AI Use Case ID'
     };
     return fieldMap[fieldName] || fieldName;
   };
 
   const getMissingFields = (useCase: MappedUseCase): string[] => {
-    // List all required fields except id, createdAt, updatedAt, system-managed fields, and frontend-only fields
-    const requiredFields = Object.keys(useCase).filter(
-      k => !['id','createdAt','updatedAt','stage','priority','owner','lastUpdated','scores','description','complexity','roi','timeline','stakeholders','risks','organizationId','userId'].includes(k)
-    );
+    // Only check these essential fields for moving from discovery to business-case
+    const requiredFields = [
+      'title',
+      'problemStatement', 
+      'proposedAISolution',
+      'keyBenefits',
+      'primaryStakeholders',
+      'successCriteria',
+      'initialROI',
+      'initialCost',
+      'plannedStartDate',
+      'estimatedTimelineMonths'
+    ];
     
     const missingFields: string[] = [];
     requiredFields.forEach(k => {
@@ -190,7 +196,7 @@ const Dashboard = () => {
       if (Array.isArray(v)) {
         isEmpty = v.length === 0;
       } else if (typeof v === 'string') {
-        isEmpty = !v.trim();
+        isEmpty = !v || !v.trim();
       } else if (typeof v === 'number') {
         isEmpty = v === null || v === undefined;
       } else {
@@ -207,6 +213,29 @@ const Dashboard = () => {
 
   const isUseCaseComplete = (useCase: MappedUseCase) => {
     return getMissingFields(useCase).length === 0;
+  };
+
+  // Helper function to strip HTML tags and get plain text
+  const stripHtmlTags = (html: string): string => {
+    if (!html) return '';
+    // Remove HTML tags and decode entities
+    const stripped = html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+    return stripped;
+  };
+
+  // Helper function to format AIUC ID
+  const formatAiucId = (aiucId: string | number | undefined, id: string): string => {
+    if (aiucId) {
+      const aiucIdStr = String(aiucId);
+      // If aiucId already has AICU- prefix, return as is
+      if (aiucIdStr.startsWith('AICU-')) {
+        return aiucIdStr;
+      }
+      // Otherwise add AICU- prefix
+      return `AICU-${aiucIdStr}`;
+    }
+    // Fallback to using regular id with AICU- prefix
+    return `AICU-${id}`;
   };
 
   // Fix: Only show use cases in the column matching their current stage
@@ -487,7 +516,7 @@ const Dashboard = () => {
                       <Card key={useCase.id} className="rounded-xl shadow border bg-white p-3 hover:shadow-lg transition-shadow cursor-pointer group" onClick={() => { setModalUseCase(useCase); setIsSheetOpen(true); }}>
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center justify-between">
-                            <div className="font-bold text-[10px] text-gray-500">{useCase.aiucId || useCase.id}</div>
+                            <div className="font-bold text-[10px] text-gray-500">{formatAiucId(useCase.aiucId, useCase.id)}</div>
                             {useCase.priority && (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -507,7 +536,7 @@ const Dashboard = () => {
                             )}
                           </div>
                           <div className="font-semibold text-base text-gray-900 line-clamp-1 group-hover:text-[#5b5be6] transition-colors">{useCase.title}</div>
-                          <div className="text-xs text-gray-500 line-clamp-1">{useCase.description}</div>
+                          <div className="text-xs text-gray-500 line-clamp-1">{stripHtmlTags(useCase.description)}</div>
                           <div className="flex items-center gap-2 mt-1">
                             <div className="flex items-center gap-0.5 text-[11px] text-blue-700"><TrendingUp className="w-3 h-3" />{useCase.scores.operational}</div>
                             <div className="flex items-center gap-0.5 text-[11px] text-purple-700"><Zap className="w-3 h-3" />{useCase.scores.productivity}</div>
@@ -516,7 +545,6 @@ const Dashboard = () => {
                           </div>
                           <div className="flex items-center justify-between text-[10px] text-gray-400 mt-1">
                             <span className="flex items-center gap-0.5"><User className="w-3 h-3" />{useCase.owner}</span>
-                            <span className="flex items-center gap-0.5"><Eye className="w-3 h-3" />4</span>
                           </div>
                           <div className="text-[10px] text-gray-400">Updated {useCase.lastUpdated}</div>
                         </div>
@@ -537,10 +565,10 @@ const Dashboard = () => {
             <>
               <SheetHeader>
                 <SheetTitle>{modalUseCase.title}</SheetTitle>
-                <SheetDescription>{modalUseCase.description}</SheetDescription>
+                <SheetDescription>{stripHtmlTags(modalUseCase.description)}</SheetDescription>
               </SheetHeader>
               <div className="flex flex-col gap-2 p-4">
-                <div className="text-xs text-gray-500 mb-2">ID: {modalUseCase.aiucId || modalUseCase.id}</div>
+                <div className="text-xs text-gray-500 mb-2">ID: {formatAiucId(modalUseCase.aiucId, modalUseCase.id)}</div>
                 <div className="flex items-center gap-4 mb-2">
                   <div className="flex items-center gap-1 text-xs text-blue-700"><TrendingUp className="w-4 h-4" />{modalUseCase.scores.operational}</div>
                   <div className="flex items-center gap-1 text-xs text-purple-700"><Zap className="w-4 h-4" />{modalUseCase.scores.productivity}</div>

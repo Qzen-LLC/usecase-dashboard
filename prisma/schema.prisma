@@ -13,6 +13,7 @@ model UseCase {
   title                    String
   problemStatement         String
   proposedAISolution       String
+  keyBenefits              String?             @default("")
   currentState             String
   desiredState             String
   primaryStakeholders      String[]
@@ -21,6 +22,7 @@ model UseCase {
   problemValidation        String
   solutionHypothesis       String
   keyAssumptions           String[]
+  initialCost              String?             @default("")
   initialROI               String
   confidenceLevel          Int
   operationalImpactScore   Int
@@ -28,6 +30,8 @@ model UseCase {
   revenueImpactScore       Int
   implementationComplexity Int
   estimatedTimeline        String
+  plannedStartDate         String?             @default("")
+  estimatedTimelineMonths  String?             @default("")
   requiredResources        String
   createdAt                DateTime            @default(now())
   updatedAt                DateTime            @updatedAt

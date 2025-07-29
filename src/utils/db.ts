@@ -11,6 +11,9 @@ export const prismaClient = globalForPrisma.prisma ?? new PrismaClient({
       url: process.env.DATABASE_URL,
     },
   },
+  transactionOptions: {
+    timeout: 10000,
+  },
 });
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prismaClient;
