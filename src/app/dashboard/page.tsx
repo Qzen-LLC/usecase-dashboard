@@ -469,92 +469,97 @@ const Dashboard = () => {
       )}
 
       {/* Draggable horizontally scrollable summary cards and Kanban board, aligned by column */}
-      <div
-        ref={scrollRef}
-        className="w-full select-none cursor-grab active:cursor-grabbing mb-8 pb-6 overflow-x-hidden"
-        style={{ userSelect: isDragging ? 'none' : undefined }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div className="flex flex-row gap-4 min-w-[900px] xl:min-w-[1200px] 2xl:min-w-[1600px]">
-          {stages.map((stage, idx) => {
-            const stageUseCases = getUseCasesByStage(stage.id);
-            return (
-              <div key={stage.id} className="flex flex-col items-center w-60">
-                {/* Summary card */}
-                <div className="flex flex-col items-center justify-center w-60 h-20 mb-2 rounded-xl bg-gradient-to-br from-[#e9eafc] to-[#f5f6fa] border border-gray-100 shadow hover:shadow-lg transition-all cursor-pointer group">
-                  <div className="text-2xl mb-1 group-hover:scale-110 transition-transform">
-                    {idx === 0 && <Search className="text-blue-500 w-5 h-5" />}
-                    {idx === 1 && <DollarSign className="text-green-500 w-5 h-5" />}
-                    {idx === 2 && <TrendingUp className="text-purple-500 w-5 h-5" />}
-                    {idx === 3 && <Clock className="text-orange-500 w-5 h-5" />}
-                    {idx === 4 && <Zap className="text-pink-500 w-5 h-5" />}
-                    {idx === 5 && <Users className="text-teal-500 w-5 h-5" />}
-                    {idx === 6 && <User className="text-indigo-500 w-5 h-5" />}
-                    {idx === 7 && <Clock className="text-red-500 w-5 h-5" />}
+      <div className="relative w-full mb-8">
+        <div
+          ref={scrollRef}
+          className="w-full select-none cursor-grab active:cursor-grabbing pb-6 overflow-x-scroll"
+          style={{ 
+            userSelect: isDragging ? 'none' : undefined,
+            scrollbarWidth: 'auto'
+          }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div className="flex flex-row gap-4 min-w-[2000px]">
+            {stages.map((stage, idx) => {
+              const stageUseCases = getUseCasesByStage(stage.id);
+              return (
+                <div key={stage.id} className="flex flex-col items-center w-60">
+                  {/* Summary card */}
+                  <div className="flex flex-col items-center justify-center w-60 h-20 mb-2 rounded-xl bg-gradient-to-br from-[#e9eafc] to-[#f5f6fa] border border-gray-100 shadow hover:shadow-lg transition-all cursor-pointer group">
+                    <div className="text-2xl mb-1 group-hover:scale-110 transition-transform">
+                      {idx === 0 && <Search className="text-blue-500 w-5 h-5" />}
+                      {idx === 1 && <DollarSign className="text-green-500 w-5 h-5" />}
+                      {idx === 2 && <TrendingUp className="text-purple-500 w-5 h-5" />}
+                      {idx === 3 && <Clock className="text-orange-500 w-5 h-5" />}
+                      {idx === 4 && <Zap className="text-pink-500 w-5 h-5" />}
+                      {idx === 5 && <Users className="text-teal-500 w-5 h-5" />}
+                      {idx === 6 && <User className="text-indigo-500 w-5 h-5" />}
+                      {idx === 7 && <Clock className="text-red-500 w-5 h-5" />}
+                    </div>
+                    <div className="font-semibold text-gray-700 text-sm group-hover:text-[#5b5be6] transition-colors">{stage.title}</div>
+                    <div className="text-2xl font-extrabold text-gray-900 group-hover:text-[#5b5be6] transition-colors">{stageUseCases.length}</div>
                   </div>
-                  <div className="font-semibold text-gray-700 text-sm group-hover:text-[#5b5be6] transition-colors">{stage.title}</div>
-                  <div className="text-2xl font-extrabold text-gray-900 group-hover:text-[#5b5be6] transition-colors">{stageUseCases.length}</div>
+                  {/* Use case column */}
+                  <div className="flex-shrink-0 w-60 space-y-4">
+                    <div className="flex items-center justify-between mb-1 px-1">
+                      <h3 className="font-semibold text-sm text-gray-800">{stage.title}</h3>
+                      <span className="text-xs text-gray-500 bg-gray-100 px-1 py-0.5 rounded-full">
+                        {stageUseCases.length}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {stageUseCases.length === 0 ? (
+                        <div className="bg-gray-50 rounded-lg p-3 text-center text-gray-400 border border-dashed border-gray-200 text-xs">No use cases in this stage</div>
+                      ) : stageUseCases.map((useCase) => (
+                        <Card key={useCase.id} className="rounded-xl shadow border bg-white p-3 hover:shadow-lg transition-shadow cursor-pointer group" onClick={() => { setModalUseCase(useCase); setIsSheetOpen(true); }}>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center justify-between">
+                              <div className="font-bold text-[10px] text-gray-500">{formatAiucId(useCase.aiucId, useCase.id)}</div>
+                              {useCase.priority && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <span className={`text-[10px] px-1 py-0.5 rounded-full font-semibold cursor-pointer flex items-center gap-1 ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-gray-100'}`}>
+                                      {_priorities[useCase.priority as keyof typeof _priorities]?.label || useCase.priority}
+                                      {priorityLoadingId === useCase.id && <Loader2 className="w-3 h-3 animate-spin ml-1" />}
+                                    </span>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((priority) => (
+                                      <DropdownMenuItem key={priority} onClick={() => handlePriorityChange(useCase.id, priority)}>
+                                        {_priorities[priority as keyof typeof _priorities]?.label || priority}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
+                            </div>
+                            <div className="font-semibold text-base text-gray-900 line-clamp-1 group-hover:text-[#5b5be6] transition-colors">{useCase.title}</div>
+                            <div className="text-xs text-gray-500 line-clamp-1">{stripHtmlTags(useCase.description)}</div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className="flex items-center gap-0.5 text-[11px] text-blue-700"><TrendingUp className="w-3 h-3" />{useCase.scores.operational}</div>
+                              <div className="flex items-center gap-0.5 text-[11px] text-purple-700"><Zap className="w-3 h-3" />{useCase.scores.productivity}</div>
+                              <div className="flex items-center gap-0.5 text-[11px] text-green-700"><DollarSign className="w-3 h-3" />{useCase.scores.revenue}</div>
+                              <div className="flex items-center gap-0.5 text-[11px] text-blue-500 font-bold">{getOverallScore(useCase.scores)}</div>
+                            </div>
+                            <div className="flex items-center justify-between text-[10px] text-gray-400 mt-1">
+                              <span className="flex items-center gap-0.5"><User className="w-3 h-3" />{useCase.owner}</span>
+                            </div>
+                            <div className="text-[10px] text-gray-400">Updated {useCase.lastUpdated}</div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                {/* Use case column */}
-                <div className="flex-shrink-0 w-60 space-y-4">
-                  <div className="flex items-center justify-between mb-1 px-1">
-                    <h3 className="font-semibold text-sm text-gray-800">{stage.title}</h3>
-                    <span className="text-xs text-gray-500 bg-gray-100 px-1 py-0.5 rounded-full">
-                      {stageUseCases.length}
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {stageUseCases.length === 0 ? (
-                      <div className="bg-gray-50 rounded-lg p-3 text-center text-gray-400 border border-dashed border-gray-200 text-xs">No use cases in this stage</div>
-                    ) : stageUseCases.map((useCase) => (
-                      <Card key={useCase.id} className="rounded-xl shadow border bg-white p-3 hover:shadow-lg transition-shadow cursor-pointer group" onClick={() => { setModalUseCase(useCase); setIsSheetOpen(true); }}>
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center justify-between">
-                            <div className="font-bold text-[10px] text-gray-500">{formatAiucId(useCase.aiucId, useCase.id)}</div>
-                            {useCase.priority && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <span className={`text-[10px] px-1 py-0.5 rounded-full font-semibold cursor-pointer flex items-center gap-1 ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-gray-100'}`}>
-                                    {_priorities[useCase.priority as keyof typeof _priorities]?.label || useCase.priority}
-                                    {priorityLoadingId === useCase.id && <Loader2 className="w-3 h-3 animate-spin ml-1" />}
-                                  </span>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((priority) => (
-                                    <DropdownMenuItem key={priority} onClick={() => handlePriorityChange(useCase.id, priority)}>
-                                      {_priorities[priority as keyof typeof _priorities]?.label || priority}
-                                    </DropdownMenuItem>
-                                  ))}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
-                          </div>
-                          <div className="font-semibold text-base text-gray-900 line-clamp-1 group-hover:text-[#5b5be6] transition-colors">{useCase.title}</div>
-                          <div className="text-xs text-gray-500 line-clamp-1">{stripHtmlTags(useCase.description)}</div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <div className="flex items-center gap-0.5 text-[11px] text-blue-700"><TrendingUp className="w-3 h-3" />{useCase.scores.operational}</div>
-                            <div className="flex items-center gap-0.5 text-[11px] text-purple-700"><Zap className="w-3 h-3" />{useCase.scores.productivity}</div>
-                            <div className="flex items-center gap-0.5 text-[11px] text-green-700"><DollarSign className="w-3 h-3" />{useCase.scores.revenue}</div>
-                            <div className="flex items-center gap-0.5 text-[11px] text-blue-500 font-bold">{getOverallScore(useCase.scores)}</div>
-                          </div>
-                          <div className="flex items-center justify-between text-[10px] text-gray-400 mt-1">
-                            <span className="flex items-center gap-0.5"><User className="w-3 h-3" />{useCase.owner}</span>
-                          </div>
-                          <div className="text-[10px] text-gray-400">Updated {useCase.lastUpdated}</div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 

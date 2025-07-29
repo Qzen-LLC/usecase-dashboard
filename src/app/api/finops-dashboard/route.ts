@@ -24,6 +24,8 @@ export async function GET() {
     let whereClause: any = {
       stage: {
         in: [
+          'business-case',
+          'proof-of-value',
           'backlog',
           'in-progress',
           'solution-validation',
