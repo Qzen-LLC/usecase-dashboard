@@ -1,5 +1,5 @@
 {
-  "buildCommand": "rm -rf .next && DATABASE_URL='postgresql://dummy:dummy@localhost:5432/dummy' npx prisma generate && DATABASE_URL='postgresql://dummy:dummy@localhost:5432/dummy' next build",
+  "buildCommand": "rm -rf .next && npx prisma generate && next build",
   "outputDirectory": ".next",
   "framework": "nextjs",
   "regions": ["iad1"],
