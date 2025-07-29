@@ -34,7 +34,10 @@
     "seed-eu-ai-act-controls": "tsx scripts/seed-eu-ai-act-controls.ts",
     "seed-eu-ai-act-subcontrols-complete": "tsx scripts/seed-eu-ai-act-subcontrols-complete.ts",
     "seed-complete-eu-ai-act-data": "tsx scripts/seed-complete-eu-ai-act-data.ts",
-    "seed-complete-iso-42001-data": "tsx scripts/seed-complete-iso-42001-data.ts"
+    "seed-eu-ai-act-from-csv": "tsx scripts/seed-eu-ai-act-from-csv.ts",
+    "setup-complete-database": "tsx scripts/setup-complete-database.ts",
+    "seed-complete-iso-42001-data": "tsx scripts/seed-complete-iso-42001-data.ts",
+    "seed-users-from-csv": "tsx scripts/seed-users-from-csv.ts"
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^4.13.23",
