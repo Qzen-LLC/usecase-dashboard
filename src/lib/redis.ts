@@ -1,12 +1,15 @@
 import Redis from 'ioredis';
 
-// Support both Upstash and local Redis
+// Fix Redis URL to use SSL for Redis Cloud
 const getRedisUrl = () => {
-  if (process.env.UPSTASH_REDIS_REST_URL && process.env.NODE_ENV === 'production') {
-    // Use Upstash Redis URL format for production
-    return process.env.REDIS_URL || process.env.UPSTASH_REDIS_URL;
+  const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+  
+  // Convert redis:// to rediss:// for Redis Cloud SSL connections
+  if (redisUrl.includes('redis-cloud.com') && redisUrl.startsWith('redis://')) {
+    return redisUrl.replace('redis://', 'rediss://');
   }
-  return process.env.REDIS_URL || 'redis://localhost:6379';
+  
+  return redisUrl;
 };
 
 const redis = new Redis(getRedisUrl(), {
@@ -15,12 +18,10 @@ const redis = new Redis(getRedisUrl(), {
     if (times > 3) return null;
     return Math.min(times * 200, 2000);
   },
-  // Upstash specific settings
-  ...(process.env.NODE_ENV === 'production' && {
-    tls: {
-      rejectUnauthorized: false,
-    },
-  }),
+  // Enable TLS for Redis Cloud
+  tls: process.env.REDIS_URL?.includes('redis-cloud.com') ? {
+    rejectUnauthorized: false,
+  } : undefined,
 });
 
 // Add connection error handling
