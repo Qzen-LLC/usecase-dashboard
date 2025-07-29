@@ -22,7 +22,7 @@ const redis = new Redis(redisUrl, {
     },
   }),
 });
-
+ 
 // Add connection error handling
 redis.on('error', (err) => {
   console.error('Redis connection error:', err);
