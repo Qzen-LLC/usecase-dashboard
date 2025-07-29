@@ -74,3 +74,10 @@ if (!hasRedisUrl || isBuildTime || isDevelopment) {
 }
 
 export default redis;
+// Check if we're in build time// Check if we're in build time// Check if we're in build time// Check if we're in build time// Check if we're in build time
+// Check if we're in build time
+// Check if we're in build time
+// Check if we're in build time
+// Check if we're in build time
+// Check if we're in build time
+// Check if we're in build time
