@@ -37,34 +37,32 @@ if (!hasRedisUrl || isBuildTime || isDevelopment) {
   // Use mock Redis for development and build
   redis = createMockRedis();
   console.log('Using mock Redis client for development/build');
-} else if (process.env.REDIS_URL?.includes('redis-cloud.com')) {
-  // Production: Redis Cloud (without forcing SSL)
-  redis = new Redis(process.env.REDIS_URL, {
-    maxRetriesPerRequest: 3,
-    retryStrategy: (times) => {
-      if (times > 3) return null;
-      return Math.min(times * 200, 2000);
-    },
-    lazyConnect: true,
-  });
-  
-  redis.on('error', (err) => {
-    console.error('Redis connection error:', err);
-  });
-
-  redis.on('connect', () => {
-    console.log('Redis connected successfully');
-  });
 } else {
-  // Other providers
-  redis = new Redis(process.env.REDIS_URL, {
+  // Parse the Redis URL to extract components
+  const url = new URL(process.env.REDIS_URL);
+  const useSSL = url.protocol === 'rediss:';
+  
+  // Create connection options
+  const options = {
+    host: url.hostname,
+    port: parseInt(url.port || '6379'),
+    password: url.password,
+    username: url.username || 'default',
     maxRetriesPerRequest: 3,
-    retryStrategy: (times) => {
+    retryStrategy: (times: number) => {
       if (times > 3) return null;
       return Math.min(times * 200, 2000);
     },
     lazyConnect: true,
-  });
+    // Only enable TLS if URL uses rediss://
+    ...(useSSL && {
+      tls: {
+        rejectUnauthorized: false
+      }
+    })
+  };
+  
+  redis = new Redis(options);
   
   redis.on('error', (err) => {
     console.error('Redis connection error:', err);
