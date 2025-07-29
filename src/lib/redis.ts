@@ -38,16 +38,12 @@ if (!hasRedisUrl || isBuildTime || isDevelopment) {
   redis = createMockRedis();
   console.log('Using mock Redis client for development/build');
 } else if (process.env.REDIS_URL?.includes('redis-cloud.com')) {
-  // Production: Redis Cloud with SSL
-  const redisUrl = process.env.REDIS_URL.replace('redis://', 'rediss://');
-  redis = new Redis(redisUrl, {
+  // Production: Redis Cloud (without forcing SSL)
+  redis = new Redis(process.env.REDIS_URL, {
     maxRetriesPerRequest: 3,
     retryStrategy: (times) => {
       if (times > 3) return null;
       return Math.min(times * 200, 2000);
-    },
-    tls: {
-      rejectUnauthorized: false,
     },
     lazyConnect: true,
   });
