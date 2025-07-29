@@ -20,11 +20,16 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        // Redis cache check
+        // Redis cache check (gracefully handle failures)
         const cacheKey = `usecases:${userRecord.role}:${userRecord.id}`;
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-            return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
+        let cached = null;
+        try {
+            cached = await redis.get(cacheKey);
+            if (cached) {
+                return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
+            }
+        } catch (error) {
+            console.warn('Redis cache read failed, continuing without cache:', error.message);
         }
 
         // Admin: return all use cases
@@ -52,8 +57,13 @@ export async function GET(req: Request) {
             });
         }
 
-        // Add cache header
-        await redis.set(cacheKey, JSON.stringify({ useCases }), 'EX', 300);
+        // Try to cache the result (gracefully handle failures)
+        try {
+            await redis.set(cacheKey, JSON.stringify({ useCases }), 'EX', 300);
+        } catch (error) {
+            console.warn('Redis cache write failed, continuing without cache:', error.message);
+        }
+        
         const response = NextResponse.json({ useCases });
         response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
         return response;

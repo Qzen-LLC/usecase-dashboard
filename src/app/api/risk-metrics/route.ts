@@ -18,11 +18,16 @@ export async function GET() {
     if (!userRecord) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-    // Redis cache check
+    // Redis cache check (gracefully handle failures)
     const cacheKey = `risk-metrics:${userRecord.role}:${userRecord.id}`;
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
+    let cached = null;
+    try {
+      cached = await redis.get(cacheKey);
+      if (cached) {
+        return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
+      }
+    } catch (error) {
+      console.warn('Redis cache read failed, continuing without cache:', error.message);
     }
     // Fetch use cases based on role
     let useCases = [];
@@ -153,7 +158,11 @@ export async function GET() {
         };
       })
     };
-    await redis.set(cacheKey, JSON.stringify(riskMetrics), 'EX', 300);
+    try {
+      await redis.set(cacheKey, JSON.stringify(riskMetrics), 'EX', 300);
+    } catch (error) {
+      console.warn('Redis cache write failed, continuing without cache:', error.message);
+    }
     return NextResponse.json(riskMetrics);
   } catch (error) {
     console.error('Error fetching risk metrics:', error);
