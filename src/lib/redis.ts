@@ -1,36 +1,54 @@
 import Redis from 'ioredis';
 
-// Fix Redis URL to use SSL for Redis Cloud
-const getRedisUrl = () => {
-  const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-  
-  // Convert redis:// to rediss:// for Redis Cloud SSL connections
-  if (redisUrl.includes('redis-cloud.com') && redisUrl.startsWith('redis://')) {
-    return redisUrl.replace('redis://', 'rediss://');
-  }
-  
-  return redisUrl;
-};
+// Check if we're in build time or don't have Redis URL
+const isBuildTime = process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV;
+const hasRedisUrl = !!process.env.REDIS_URL;
 
-const redis = new Redis(getRedisUrl(), {
-  maxRetriesPerRequest: 3,
-  retryStrategy: (times) => {
-    if (times > 3) return null;
-    return Math.min(times * 200, 2000);
-  },
-  // Enable TLS for Redis Cloud
-  tls: process.env.REDIS_URL?.includes('redis-cloud.com') ? {
-    rejectUnauthorized: false,
-  } : undefined,
-});
+let redis: Redis;
 
-// Add connection error handling
-redis.on('error', (err) => {
-  console.error('Redis connection error:', err);
-});
+if (!hasRedisUrl || isBuildTime) {
+  // Create a minimal client that won't actually connect
+  redis = new Redis('redis://localhost:6379', {
+    lazyConnect: true,
+    maxRetriesPerRequest: 0, // Don't retry during build
+    retryStrategy: () => null, // Don't retry
+    enableOfflineQueue: false, // Don't queue commands
+  });
+} else if (process.env.REDIS_URL?.includes('redis-cloud.com')) {
+  // Redis Cloud with SSL
+  const redisUrl = process.env.REDIS_URL.replace('redis://', 'rediss://');
+  redis = new Redis(redisUrl, {
+    maxRetriesPerRequest: 3,
+    retryStrategy: (times) => {
+      if (times > 3) return null;
+      return Math.min(times * 200, 2000);
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+    lazyConnect: true,
+  });
+} else {
+  // Local Redis or other providers
+  redis = new Redis(process.env.REDIS_URL, {
+    maxRetriesPerRequest: 3,
+    retryStrategy: (times) => {
+      if (times > 3) return null;
+      return Math.min(times * 200, 2000);
+    },
+    lazyConnect: true,
+  });
+}
 
-redis.on('connect', () => {
-  console.log('Redis connected successfully');
-});
+// Only add event listeners if we have a real Redis URL
+if (hasRedisUrl && !isBuildTime) {
+  redis.on('error', (err) => {
+    console.error('Redis connection error:', err);
+  });
+
+  redis.on('connect', () => {
+    console.log('Redis connected successfully');
+  });
+}
 
 export default redis;
