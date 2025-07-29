@@ -14,6 +14,11 @@ export default function HomePage() {
   const router = useRouter();
   const { userData, loading } = useUserData();
   const [isCheckingRole, setIsCheckingRole] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!isLoaded || loading) return;
@@ -50,7 +55,7 @@ export default function HomePage() {
           <div className="mb-4">
             <Image 
               src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MjMxMDA0OCwiZXhwIjoxNzYwOTUwMDQ4fQ.OMnrUpd7vPASUkhCrepStmfEq9dbcdbrgrspJaXkpVk" 
-              alt="QUBE Logo" 
+              alt="QZen QUBE Logo" 
               width={64} 
               height={64} 
               className="mx-auto"
@@ -58,14 +63,14 @@ export default function HomePage() {
             />
           </div>
           <h1 className="text-4xl font-extrabold text-gray-900 mb-2 tracking-tight">
-            QUBE
+            QZen QUBE
           </h1>
           <p className="text-gray-600 mb-8 text-lg">
             AI Use Case Management Platform
           </p>
         </div>
 
-        {!isSignedIn && (
+        {!isSignedIn && mounted && (
           <div className="space-y-4">
             <div className="bg-white/90 p-8 rounded-2xl shadow-2xl border border-gray-100 flex flex-col items-center">
               <h2 className="text-2xl font-bold mb-6 text-gray-900 tracking-tight">Get Started</h2>

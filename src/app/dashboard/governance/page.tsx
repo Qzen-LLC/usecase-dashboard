@@ -98,11 +98,26 @@ export default function GovernancePage() {
     
     // Add focus event listener to refresh data when user returns to the page
     const handleFocus = () => {
-      fetchAllData();
+      fetchAllData(true);
+    };
+    
+    // Auto-refresh every 30 seconds to ensure progress updates are shown
+    const interval = setInterval(() => {
+      fetchAllData(true);
+    }, 30000);
+    
+    // Listen for governance refresh events from assessment pages
+    const handleGovernanceRefresh = () => {
+      fetchAllData(true);
     };
     
     window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    window.addEventListener('governance-refresh', handleGovernanceRefresh);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('governance-refresh', handleGovernanceRefresh);
+      clearInterval(interval);
+    };
   }, []);
 
   const fetchAllData = async (isRefresh = false) => {
@@ -495,16 +510,21 @@ export default function GovernancePage() {
               <h1 className="text-2xl font-bold text-gray-900 mb-2">Governance</h1>
               <p className="text-gray-600">Regulatory frameworks and industry standards for AI systems</p>
             </div>
-            <Button 
-              onClick={handleRefresh} 
-              variant="outline" 
-              size="sm" 
-              disabled={refreshing}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Refreshing...' : 'Refresh'}
-            </Button>
+                          <Button 
+                onClick={handleRefresh} 
+                variant="outline" 
+                size="sm" 
+                disabled={refreshing}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </Button>
+              {refreshing && (
+                <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                  Updating progress...
+                </div>
+              )}
           </div>
         </div>
 

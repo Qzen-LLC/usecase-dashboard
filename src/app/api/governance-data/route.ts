@@ -155,6 +155,16 @@ export async function GET(request: Request) {
           return null;
         }
 
+        // Debug log for progress values
+        if (euAiActAssessments.length > 0 || iso42001Assessments.length > 0) {
+          console.log(`🔍 Governance Data - Use Case ${useCase.aiucId}:`, {
+            euProgress: euAiActAssessments[0]?.progress || 0,
+            isoProgress: iso42001Assessments[0]?.progress || 0,
+            euStatus: euAiActAssessments[0]?.status || 'N/A',
+            isoStatus: iso42001Assessments[0]?.status || 'N/A'
+          });
+        }
+
         return {
           useCaseId: useCase.id,
           useCaseNumber: useCase.aiucId,
