@@ -1,4 +1,7 @@
 {
+  "git": {
+    "deploymentEnabled": false
+  },
   "buildCommand": "rm -rf .next && npx prisma generate && next build",
   "outputDirectory": ".next",
   "framework": "nextjs",
