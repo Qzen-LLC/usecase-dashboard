@@ -54,6 +54,9 @@ if (!hasRedisUrl || isBuildTime || isDevelopment) {
       return Math.min(times * 200, 2000);
     },
     lazyConnect: true,
+    keepAlive: 30000,
+    connectTimeout: 10000,
+    commandTimeout: 5000,
     // Only enable TLS if URL uses rediss://
     ...(useSSL && {
       tls: {
@@ -74,10 +77,3 @@ if (!hasRedisUrl || isBuildTime || isDevelopment) {
 }
 
 export default redis;
-// Check if we're in build time// Check if we're in build time// Check if we're in build time// Check if we're in build time// Check if we're in build time
-// Check if we're in build time
-// Check if we're in build time
-// Check if we're in build time
-// Check if we're in build time
-// Check if we're in build time
-// Check if we're in build time
