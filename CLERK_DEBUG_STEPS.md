@@ -1,26 +1,59 @@
-# 🔧 Clerk Authentication Debug & Fix
+# Clerk Authentication Debug Steps
 
-## Current Issues
-- Sign-in page is blank
-- Clerk not authenticating users  
-- Running on port 3002 instead of default 3000
-- `userId: undefined` in all requests
+## Production Migration Checklist
 
-## Debug Steps
-
-### 1. Check Clerk Configuration
+### 1. Environment Variables
+**Development:**
 ```bash
-# Check your environment variables
-grep CLERK .env
-```
-
-Expected output:
-```
 CLERK_SECRET_KEY=sk_test_...
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 ```
 
-### 2. Verify Clerk Domain Settings
+**Production:**
+```bash
+CLERK_SECRET_KEY=sk_live_...
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
+```
+
+### 2. Clerk Dashboard Changes
+
+#### A. Domain Settings
+1. Go to https://dashboard.clerk.com
+2. Navigate to your project
+3. Go to **Settings > Domains**
+4. **Remove development domains:**
+   - `localhost:3000`
+   - `localhost:3002`
+   - `127.0.0.1:3000`
+   - `127.0.0.1:3002`
+5. **Add production domains:**
+   - Your production domain (e.g., `https://your-app.run.app`)
+   - Any custom domains
+
+#### B. Webhook Configuration
+1. Go to **Webhooks** in Clerk Dashboard
+2. **Update webhook endpoint URL** to production URL
+3. **Get new webhook secret** for production
+4. **Update environment variable:**
+   ```bash
+   CLERK_WEBHOOK_SECRET=whsec_production_secret_here
+   ```
+
+### 3. Environment Setup
+
+**Development Environment:**
+```bash
+CLERK_SECRET_KEY=sk_test_...
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+```
+
+**Production Environment:**
+```bash
+CLERK_SECRET_KEY=sk_live_...
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
+```
+
+### 4. Verify Clerk Domain Settings
 1. Go to https://dashboard.clerk.com
 2. Navigate to your project
 3. Go to **Settings > Domains**
@@ -30,20 +63,20 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
    - `127.0.0.1:3000`
    - `127.0.0.1:3002`
 
-### 3. Test Clerk Keys
+### 5. Test Clerk Keys
 ```bash
 # Quick test if keys are valid
 curl -X GET "https://api.clerk.com/v1/users" \
   -H "Authorization: Bearer YOUR_CLERK_SECRET_KEY"
 ```
 
-### 4. Check Console Errors
+### 6. Check Console Errors
 Open browser dev tools (F12) and look for:
 - Network errors in Network tab
 - JavaScript errors in Console tab
 - Any Clerk-related error messages
 
-### 5. Alternative Solutions
+### 7. Alternative Solutions
 
 #### Option A: Use Standard Port
 ```bash
@@ -74,7 +107,7 @@ export default clerkMiddleware((auth, req) => {
 });
 ```
 
-### 6. Create Test User Directly
+### 8. Create Test User Directly
 If Clerk isn't working, create a test API to bypass auth:
 
 ```bash
@@ -112,14 +145,4 @@ curl -b cookies.txt http://localhost:3000/api/governance-data
 ```typescript
 // src/app/api/governance-data/route.ts
 // Add at top of GET function:
-const BYPASS_AUTH = process.env.BYPASS_AUTH === 'true';
-if (BYPASS_AUTH) {
-  // Mock user for testing
-  const mockUser = await prismaClient.user.findFirst({
-    where: { email: 'admin@qzen.com' }
-  });
-  // ... continue with mockUser
-}
 ```
-
-This lets you test governance functionality while fixing Clerk separately.

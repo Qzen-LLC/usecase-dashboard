@@ -90,11 +90,6 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
-
-  // Debug: Log user data
-  console.log('Sidebar - userData:', userData);
-  console.log('Sidebar - userData?.role:', userData?.role);
-  console.log('Sidebar - is ORG_ADMIN:', userData?.role === 'ORG_ADMIN');
   
   // Build sidebar items, add Admin Dashboard for QZEN_ADMIN and Manage Users for ORG_ADMIN
   const sidebarItems = [
@@ -117,8 +112,6 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
       : []),
     ...navigationItems
   ];
-
-  console.log('Sidebar - sidebarItems:', sidebarItems.map(item => ({ title: item.title, href: item.href })));
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -238,7 +231,6 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
                   return isActive;
                 })?.title || 'Dashboard'}
               </h1>
-              {/* Removed Admin Dashboard button from top bar */}
             </div>
             <div className="flex items-center gap-4">
               {isSignedIn ? (

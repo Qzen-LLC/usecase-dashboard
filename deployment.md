@@ -87,6 +87,7 @@ WEBHOOK_SECRET="whsec_..."
 # Application
 NODE_ENV="production"
 NEXT_TELEMETRY_DISABLED="1"
+NEXT_PUBLIC_APP_URL="https://your-production-domain.com"
 
 # GCP Specific
 GCP_PROJECT_ID="your-project-id"

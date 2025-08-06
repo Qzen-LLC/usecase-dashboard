@@ -137,12 +137,18 @@ export async function POST(req: Request) {
 
     // Send email invitation via Clerk
     try {
+      // Get the base URL from environment or request
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+                     `${req.headers.get('x-forwarded-proto') || 'http'}://${req.headers.get('host')}`;
+      
       await clerk.invitations.createInvitation({
         emailAddress: adminEmail.trim(),
         publicMetadata: { 
           role: 'ORG_ADMIN', 
           organizationId: result.org.id 
         },
+        redirectUrl: `${baseUrl}/dashboard`,
       });
       console.log('Email invitation sent to:', adminEmail.trim());
     } catch (error: any) {

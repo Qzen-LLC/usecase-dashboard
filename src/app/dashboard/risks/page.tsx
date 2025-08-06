@@ -1,82 +1,30 @@
-"use client"
-import { useState, useEffect } from 'react';
-import { 
-  Shield, AlertTriangle, AlertCircle, CheckCircle, 
-  TrendingUp,
-  RefreshCw, Info,
-  Eye, Grid, Loader2
-} from 'lucide-react';
+'use client';
+import React, { useState, useEffect } from 'react';
+import { Eye, Grid, RefreshCw, AlertTriangle, TrendingUp, Shield, BarChart3, PieChart, Activity } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
-// --- Types ---
 interface RiskMetrics {
-  portfolio: {
-    totalUseCases: number;
-    portfolioValue: number;
-    activeProjects: number;
-    overallRiskScore: number;
-  };
+  totalRisks: number;
+  highRiskCount: number;
+  mediumRiskCount: number;
+  lowRiskCount: number;
+  averageRiskScore: number;
   riskDistribution: {
-    Low: number;
-    Medium: number;
-    High: number;
-    Critical: number;
+    technical: number;
+    business: number;
+    data: number;
+    ethical: number;
   };
-  riskCategories: {
-    technical: { Low: number; Medium: number; High: number; Critical: number };
-    business: { Low: number; Medium: number; High: number; Critical: number };
-    data: { Low: number; Medium: number; High: number; Critical: number };
-    ethical: { Low: number; Medium: number; High: number; Critical: number };
-    operational: { Low: number; Medium: number; High: number; Critical: number };
-    regulatory: { Low: number; Medium: number; High: number; Critical: number };
-  };
-  approvalStatus: {
-    totalWithApprovals: number;
-    governance: { approved: number; pending: number; rejected: number };
-    risk: { approved: number; pending: number; rejected: number };
-    legal: { approved: number; pending: number; rejected: number };
-    business: { approved: number; pending: number; rejected: number };
-  };
-  complianceMetrics: {
-    overallScore: number;
-    criticalRisks: number;
-    highRisks: number;
-    mediumRisks: number;
-    lowRisks: number;
-  };
-  useCaseRiskDetails: Array<{
-    id: string;
-    title: string;
-    stage: string;
-    businessFunction: string;
-    priority: string;
-    overallRiskScore: number;
-    overallRiskLevel: string;
-    riskCategories: Record<string, any>;
-    portfolioValue: number;
-    hasApproval: boolean;
-    approvalStatuses: any;
-    aiucId: number;
-  }>;
-}
-
-interface KPICardProps {
-  title: string;
-  value: string | number;
-  trend?: string;
-  subtitle?: string;
-  icon: React.ReactNode;
-  color: 'blue' | 'orange' | 'green' | 'red';
+  topRiskCategories: string[];
+  recentIncidents: number;
+  complianceScore: number;
 }
 
 interface ExecutiveViewProps {
   riskData: RiskMetrics;
 }
 
-interface DetailedViewProps {
-  riskData: RiskMetrics;
-}
-
-// Main Risk Dashboard Component
 const HybridRiskDashboard: React.FC = () => {
   const [view, setView] = useState<'executive' | 'detailed'>('executive');
   const [riskData, setRiskData] = useState<RiskMetrics | null>(null);
@@ -89,21 +37,15 @@ const HybridRiskDashboard: React.FC = () => {
 
   const fetchRiskData = async () => {
     try {
-      setError(null);
+      setLoading(true);
       const response = await fetch('/api/risk-metrics');
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
-      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || 'Failed to fetch risk metrics');
+        throw new Error('Failed to fetch risk data');
       }
-      
       const data = await response.json();
       setRiskData(data);
-    } catch (error) {
-      console.error('Error fetching risk metrics:', error);
-      setError(error instanceof Error ? error.message : 'Unknown error occurred');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -111,10 +53,10 @@ const HybridRiskDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="loading-container">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 text-[#5b5be6] animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading risk analysis...</p>
+          <div className="loading-spinner" />
+          <p className="loading-text">Loading risk metrics...</p>
         </div>
       </div>
     );
@@ -122,14 +64,14 @@ const HybridRiskDashboard: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Unable to Load Risk Dashboard</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+      <div className="error-container">
+        <div className="error-card">
+          <AlertTriangle className="error-icon" />
+          <h2 className="error-title">Unable to Load Risk Dashboard</h2>
+          <p className="error-message">{error}</p>
           <button 
             onClick={fetchRiskData}
-            className="px-4 py-2 bg-[#5b5be6] text-white rounded-lg hover:bg-[#4a4ac7] transition-colors"
+            className="btn-primary"
           >
             Try Again
           </button>
@@ -140,20 +82,20 @@ const HybridRiskDashboard: React.FC = () => {
 
   if (!riskData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-gray-600">No risk data available</p>
+      <div className="error-container">
+        <div className="error-card">
+          <AlertTriangle className="error-icon" />
+          <p className="error-message">No risk data available</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Controls */}
-      <div className="max-w-7xl mx-auto px-6 py-4">
-        <div className="flex justify-end items-center gap-3">
+    <div className="page-layout">
+      <div className="page-container">
+        {/* Controls */}
+        <div className="flex justify-end items-center gap-3 mb-6">
           <div className="flex bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setView('executive')}
@@ -180,16 +122,14 @@ const HybridRiskDashboard: React.FC = () => {
           </div>
           <button 
             onClick={fetchRiskData}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
+            className="btn-outline flex items-center gap-2"
           >
             <RefreshCw className="w-4 h-4" />
             Refresh
           </button>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-6">
+        {/* Main Content */}
         {view === 'executive' ? (
           <ExecutiveView riskData={riskData} />
         ) : (
@@ -201,499 +141,206 @@ const HybridRiskDashboard: React.FC = () => {
 };
 
 // Executive View Component
-const ExecutiveView: React.FC<ExecutiveViewProps> = ({ riskData }) => {
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <KPICard
-          title="Portfolio Value"
-          value={formatCurrency(riskData.portfolio.portfolioValue)}
-          icon={<TrendingUp className="w-5 h-5" />}
-          color="blue"
-        />
-        <KPICard
-          title="Risk Score"
-          value={`${riskData.portfolio.overallRiskScore}/25`}
-          subtitle={`${riskData.portfolio.totalUseCases} use cases assessed`}
-          icon={<Shield className="w-5 h-5" />}
-          color="orange"
-        />
-        <KPICard
-          title="Compliance"
-          value={`${riskData.complianceMetrics.overallScore}%`}
-          subtitle={`${riskData.approvalStatus.totalWithApprovals} cases with approvals`}
-          icon={<CheckCircle className="w-5 h-5" />}
-          color="green"
-        />
-        <KPICard
-          title="Critical Risks"
-          value={riskData.complianceMetrics.criticalRisks}
-          subtitle={`${riskData.complianceMetrics.highRisks} high, ${riskData.complianceMetrics.mediumRisks} medium`}
-          icon={<AlertCircle className="w-5 h-5" />}
-          color="red"
-        />
-      </div>
-
-      {/* Risk Distribution and Use Case List */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RiskDistributionChart riskData={riskData} />
-        <TopRiskUseCases useCases={riskData.useCaseRiskDetails.slice(0, 5)} />
-      </div>
-
-      {/* Risk Category Analysis and Approvals */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RiskCategoryChart riskData={riskData} />
-        <ApprovalStatusCard riskData={riskData} />
-      </div>
+const ExecutiveView: React.FC<ExecutiveViewProps> = ({ riskData }) => (
+  <div className="space-y-8">
+    {/* Header */}
+    <div className="page-header">
+      <h1 className="page-title">Risk Management Dashboard</h1>
+      <p className="page-subtitle">Comprehensive risk assessment and monitoring across all AI use cases</p>
     </div>
-  );
-};
+
+    {/* KPI Cards */}
+    <section className="grid-standard">
+      <div className="card-standard p-7 flex flex-col items-start">
+        <span className="text-base font-medium text-gray-500 mb-1">Total Risks</span>
+        <span className="font-extrabold text-gray-900 text-3xl md:text-4xl lg:text-5xl">{riskData.totalRisks}</span>
+      </div>
+      <div className="card-standard p-7 flex flex-col items-start">
+        <span className="text-base font-medium text-gray-500 mb-1">High Risk</span>
+        <span className="font-extrabold text-red-600 text-3xl md:text-4xl lg:text-5xl">{riskData.highRiskCount}</span>
+      </div>
+      <div className="card-standard p-7 flex flex-col items-start">
+        <span className="text-base font-medium text-gray-500 mb-1">Medium Risk</span>
+        <span className="font-extrabold text-yellow-600 text-3xl md:text-4xl lg:text-5xl">{riskData.mediumRiskCount}</span>
+      </div>
+      <div className="card-standard p-7 flex flex-col items-start">
+        <span className="text-base font-medium text-gray-500 mb-1">Low Risk</span>
+        <span className="font-extrabold text-green-600 text-3xl md:text-4xl lg:text-5xl">{riskData.lowRiskCount}</span>
+      </div>
+    </section>
+
+    {/* Risk Distribution */}
+    <section className="section-spacing">
+      <div className="section-header">
+        <div className="section-accent" />
+        <h2 className="section-title">Risk Distribution</h2>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="card-standard p-7">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Risk Categories</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Technical Risks</span>
+              <span className="text-sm font-semibold text-gray-900">{riskData.riskDistribution.technical}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Business Risks</span>
+              <span className="text-sm font-semibold text-gray-900">{riskData.riskDistribution.business}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Data Risks</span>
+              <span className="text-sm font-semibold text-gray-900">{riskData.riskDistribution.data}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Ethical Risks</span>
+              <span className="text-sm font-semibold text-gray-900">{riskData.riskDistribution.ethical}</span>
+            </div>
+          </div>
+        </div>
+        <div className="card-standard p-7">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Risk Metrics</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Average Risk Score</span>
+              <span className="text-sm font-semibold text-gray-900">{riskData.averageRiskScore.toFixed(1)}/10</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Compliance Score</span>
+              <span className="text-sm font-semibold text-gray-900">{riskData.complianceScore}%</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Recent Incidents</span>
+              <span className="text-sm font-semibold text-gray-900">{riskData.recentIncidents}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {/* Top Risk Categories */}
+    <section className="section-spacing">
+      <div className="section-header">
+        <div className="section-accent" />
+        <h2 className="section-title">Top Risk Categories</h2>
+      </div>
+      <div className="card-standard p-7">
+        <div className="space-y-3">
+          {riskData.topRiskCategories.map((category, index) => (
+            <div key={category} className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">{category}</span>
+              <span className="text-sm font-semibold text-gray-900">#{index + 1}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  </div>
+);
 
 // Detailed View Component
-const DetailedView: React.FC<DetailedViewProps> = ({ riskData }) => {
-  return (
-    <div className="space-y-6">
-      {/* Detailed Risk Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RiskCategoryBreakdown riskData={riskData} />
-        <UseCaseRiskTable useCases={riskData.useCaseRiskDetails} />
-      </div>
-
-      {/* Approval and Compliance Analysis */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <DetailedApprovalMatrix riskData={riskData} />
-        <RiskActionItems riskData={riskData} />
-      </div>
+const DetailedView: React.FC<ExecutiveViewProps> = ({ riskData }) => (
+  <div className="space-y-8">
+    {/* Header */}
+    <div className="page-header">
+      <h1 className="page-title">Detailed Risk Analysis</h1>
+      <p className="page-subtitle">Comprehensive risk assessment with detailed metrics and trends</p>
     </div>
-  );
-};
 
-// KPI Card Component
-const KPICard: React.FC<KPICardProps> = ({ title, value, trend, subtitle, icon, color }) => {
-  const colorClasses: Record<string, string> = {
-    blue: 'bg-blue-100 text-blue-600',
-    orange: 'bg-orange-100 text-orange-600',
-    green: 'bg-green-100 text-green-600',
-    red: 'bg-red-100 text-red-600'
-  };
-
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-2">{value}</p>
-          {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
-          {trend && (
-            <p className={`text-sm mt-2 ${
-              trend === 'improving' || String(trend).includes('+') ? 'text-green-600' : 
-              trend === 'worsening' || String(trend).includes('-') ? 'text-red-600' : 
-              'text-gray-600'
-            }`}>
-              {trend}
-            </p>
-          )}
-        </div>
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Risk Distribution Chart
-const RiskDistributionChart: React.FC<{ riskData: RiskMetrics }> = ({ riskData }) => {
-  const total = Object.values(riskData.riskDistribution).reduce((sum, count) => sum + count, 0);
-  
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <h3 className="text-lg font-semibold mb-4">Risk Distribution</h3>
-      <div className="space-y-4">
-        {Object.entries(riskData.riskDistribution).map(([level, count]) => {
-          const percentage = total > 0 ? (count / total) * 100 : 0;
-          const color = level === 'Critical' ? 'bg-red-500' :
-                       level === 'High' ? 'bg-orange-500' :
-                       level === 'Medium' ? 'bg-yellow-500' : 'bg-green-500';
-          
-          return (
-            <div key={level} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`w-4 h-4 rounded-full ${color}`}></div>
-                <span className="font-medium">{level} Risk</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-32 bg-gray-200 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full ${color}`}
-                    style={{ width: `${percentage}%` }}
-                  ></div>
-                </div>
-                <span className="text-sm font-medium w-8">{count}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {total === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          <Shield className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-          <p>No risk assessments available</p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Top Risk Use Cases
-const TopRiskUseCases: React.FC<{ useCases: any[] }> = ({ useCases }) => {
-  return (
-    <div className="bg-white rounded-lg shadow p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Critical Risk Use Cases</h3>
-        <Info className="w-4 h-4 text-gray-400" />
-      </div>
-      {useCases.map(useCase => (
-        <div key={useCase.id} className="flex items-start gap-3 mb-4 last:mb-0">
-          <div className="flex-1">
-            <div className="font-mono text-gray-500 mb-1">AIUC-{useCase.aiucId}</div>
-            <p className="font-medium text-sm">{useCase.title}</p>
-            <p className="text-xs text-gray-500">{useCase.businessFunction}</p>
+    {/* Detailed Metrics */}
+    <section className="grid-standard">
+      <div className="card-standard p-7">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="bg-red-100 p-2 rounded-lg">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
           </div>
-          <div className={`px-2 py-1 rounded text-xs font-medium ${
-            useCase.overallRiskLevel === 'Critical' ? 'bg-red-100 text-red-700' :
-            useCase.overallRiskLevel === 'High' ? 'bg-orange-100 text-orange-700' :
-            'bg-yellow-100 text-yellow-700'
-          }`}>
-            {useCase.overallRiskLevel}
-          </div>
+          <h3 className="text-lg font-semibold text-gray-900">High Priority Risks</h3>
         </div>
-      ))}
-    </div>
-  );
-};
-
-// Risk Category Chart
-const RiskCategoryChart: React.FC<{ riskData: RiskMetrics }> = ({ riskData }) => {
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <h3 className="text-lg font-semibold mb-4">Risk by Category</h3>
-      <div className="grid grid-cols-2 gap-4">
-        {Object.entries(riskData.riskCategories).map(([category, risks]) => {
-          const total = Object.values(risks).reduce((sum, count) => sum + count, 0);
-          const highRisk = risks.High + risks.Critical;
-          
-          return (
-            <div key={category} className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm font-medium text-gray-700 capitalize mb-2">
-                {category.replace(/([A-Z])/g, ' $1').trim()}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">{total}</p>
-              <p className="text-xs text-gray-600">
-                {highRisk > 0 ? `${highRisk} high/critical` : 'All low risk'}
-              </p>
-            </div>
-          );
-        })}
+        <p className="text-gray-600 text-sm mb-4">Critical risks requiring immediate attention</p>
+        <div className="text-2xl font-bold text-red-600">{riskData.highRiskCount}</div>
       </div>
-    </div>
-  );
-};
 
-// Approval Status Card
-const ApprovalStatusCard: React.FC<{ riskData: RiskMetrics }> = ({ riskData }) => {
-  const { approvalStatus } = riskData;
-  
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <h3 className="text-lg font-semibold mb-4">Approval Status Overview</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-600">Governance</span>
-            <div className="flex space-x-2">
-              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
-                ✓ {approvalStatus.governance.approved}
-              </span>
-              <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
-                ⏳ {approvalStatus.governance.pending}
-              </span>
-              <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
-                ✗ {approvalStatus.governance.rejected}
-              </span>
-            </div>
+      <div className="card-standard p-7">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="bg-yellow-100 p-2 rounded-lg">
+            <TrendingUp className="w-5 h-5 text-yellow-600" />
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-600">Risk</span>
-            <div className="flex space-x-2">
-              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
-                ✓ {approvalStatus.risk.approved}
-              </span>
-              <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
-                ⏳ {approvalStatus.risk.pending}
-              </span>
-              <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
-                ✗ {approvalStatus.risk.rejected}
-              </span>
+          <h3 className="text-lg font-semibold text-gray-900">Medium Priority Risks</h3>
+        </div>
+        <p className="text-gray-600 text-sm mb-4">Risks requiring monitoring and mitigation</p>
+        <div className="text-2xl font-bold text-yellow-600">{riskData.mediumRiskCount}</div>
+      </div>
+
+      <div className="card-standard p-7">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="bg-green-100 p-2 rounded-lg">
+            <Shield className="w-5 h-5 text-green-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">Low Priority Risks</h3>
+        </div>
+        <p className="text-gray-600 text-sm mb-4">Risks under control and monitoring</p>
+        <div className="text-2xl font-bold text-green-600">{riskData.lowRiskCount}</div>
+      </div>
+
+      <div className="card-standard p-7">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="bg-blue-100 p-2 rounded-lg">
+            <BarChart3 className="w-5 h-5 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">Average Risk Score</h3>
+        </div>
+        <p className="text-gray-600 text-sm mb-4">Overall risk assessment score</p>
+        <div className="text-2xl font-bold text-blue-600">{riskData.averageRiskScore.toFixed(1)}/10</div>
+      </div>
+    </section>
+
+    {/* Risk Distribution Charts */}
+    <section className="section-spacing">
+      <div className="section-header">
+        <div className="section-accent" />
+        <h2 className="section-title">Risk Distribution Analysis</h2>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="card-standard p-7">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Risk Categories Breakdown</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+              <span className="text-sm font-medium text-red-700">Technical Risks</span>
+              <span className="text-sm font-semibold text-red-800">{riskData.riskDistribution.technical}</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+              <span className="text-sm font-medium text-yellow-700">Business Risks</span>
+              <span className="text-sm font-semibold text-yellow-800">{riskData.riskDistribution.business}</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+              <span className="text-sm font-medium text-blue-700">Data Risks</span>
+              <span className="text-sm font-semibold text-blue-800">{riskData.riskDistribution.data}</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+              <span className="text-sm font-medium text-purple-700">Ethical Risks</span>
+              <span className="text-sm font-semibold text-purple-800">{riskData.riskDistribution.ethical}</span>
             </div>
           </div>
         </div>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-600">Legal</span>
-            <div className="flex space-x-2">
-              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
-                ✓ {approvalStatus.legal.approved}
-              </span>
-              <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
-                ⏳ {approvalStatus.legal.pending}
-              </span>
-              <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
-                ✗ {approvalStatus.legal.rejected}
-              </span>
+        <div className="card-standard p-7">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Metrics</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Compliance Score</span>
+              <span className="text-sm font-semibold text-gray-900">{riskData.complianceScore}%</span>
             </div>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-600">Business</span>
-            <div className="flex space-x-2">
-              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
-                ✓ {approvalStatus.business.approved}
-              </span>
-              <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
-                ⏳ {approvalStatus.business.pending}
-              </span>
-              <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
-                ✗ {approvalStatus.business.rejected}
-              </span>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Recent Incidents</span>
+              <span className="text-sm font-semibold text-gray-900">{riskData.recentIncidents}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Total Risks</span>
+              <span className="text-sm font-semibold text-gray-900">{riskData.totalRisks}</span>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-};
-
-// Risk Category Breakdown for Detailed View
-const RiskCategoryBreakdown: React.FC<{ riskData: RiskMetrics }> = ({ riskData }) => {
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <h3 className="text-lg font-semibold mb-4">Risk Category Breakdown</h3>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b">
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Category</th>
-              <th className="text-center py-3 px-4 text-sm font-medium text-gray-700">Low</th>
-              <th className="text-center py-3 px-4 text-sm font-medium text-gray-700">Medium</th>
-              <th className="text-center py-3 px-4 text-sm font-medium text-gray-700">High</th>
-              <th className="text-center py-3 px-4 text-sm font-medium text-gray-700">Critical</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(riskData.riskCategories).map(([category, risks]) => (
-              <tr key={category} className="border-b hover:bg-gray-50">
-                <td className="py-3 px-4 font-medium capitalize">
-                  {category.replace(/([A-Z])/g, ' $1').trim()}
-                </td>
-                <td className="py-3 px-4 text-center">
-                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-800 text-sm font-medium">
-                    {risks.Low}
-                  </span>
-                </td>
-                <td className="py-3 px-4 text-center">
-                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100 text-yellow-800 text-sm font-medium">
-                    {risks.Medium}
-                  </span>
-                </td>
-                <td className="py-3 px-4 text-center">
-                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-800 text-sm font-medium">
-                    {risks.High}
-                  </span>
-                </td>
-                <td className="py-3 px-4 text-center">
-                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-800 text-sm font-medium">
-                    {risks.Critical}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
-// Use Case Risk Table
-const UseCaseRiskTable: React.FC<{ useCases: any[] }> = ({ useCases }) => {
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <h3 className="text-lg font-semibold mb-4">Use Case Risk Details</h3>
-      <div className="overflow-x-auto max-h-96">
-        <table className="w-full">
-          <thead className="sticky top-0 bg-white">
-            <tr className="border-b">
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Use Case</th>
-              <th className="text-center py-3 px-4 text-sm font-medium text-gray-700">Risk Score</th>
-              <th className="text-center py-3 px-4 text-sm font-medium text-gray-700">Level</th>
-              <th className="text-center py-3 px-4 text-sm font-medium text-gray-700">Stage</th>
-            </tr>
-          </thead>
-          <tbody>
-            {useCases.map((useCase) => (
-              <tr key={useCase.id} className="border-b hover:bg-gray-50">
-                <td className="py-3 px-4">
-                  <div>
-                    <div className="font-mono text-gray-500 mb-1">AIUC-{useCase.aiucId}</div>
-                    <p className="font-medium text-sm">{useCase.title}</p>
-                    <p className="text-xs text-gray-500">{useCase.businessFunction}</p>
-                  </div>
-                </td>
-                <td className="py-3 px-4 text-center">
-                  <span className="font-bold">{useCase.overallRiskScore.toFixed(1)}</span>
-                </td>
-                <td className="py-3 px-4 text-center">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    useCase.overallRiskLevel === 'Critical' ? 'bg-red-100 text-red-700' :
-                    useCase.overallRiskLevel === 'High' ? 'bg-orange-100 text-orange-700' :
-                    useCase.overallRiskLevel === 'Medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'
-                  }`}>
-                    {useCase.overallRiskLevel}
-                  </span>
-                </td>
-                <td className="py-3 px-4 text-center text-sm">
-                  {useCase.stage?.replace('-', ' ')}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {useCases.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <p>No use cases with risk assessments found</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Detailed Approval Matrix
-const DetailedApprovalMatrix: React.FC<{ riskData: RiskMetrics }> = ({ riskData }) => {
-  const approvalTypes = ['governance', 'risk', 'legal', 'business'] as const;
-  
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <h3 className="text-lg font-semibold mb-4">Approval Status Matrix</h3>
-      <div className="space-y-4">
-        {approvalTypes.map(type => {
-          const data = riskData.approvalStatus[type];
-          const total = data.approved + data.pending + data.rejected;
-          
-          return (
-            <div key={type} className="border rounded-lg">
-              <div className="bg-gray-50 px-4 py-3 border-b">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold capitalize">{type}</h4>
-                  <span className="text-sm font-medium">{total} total</span>
-                </div>
-                <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                  <div className="flex h-2 rounded-full overflow-hidden">
-                    <div 
-                      className="bg-green-600 transition-all duration-500"
-                      style={{ width: total > 0 ? `${(data.approved / total) * 100}%` : '0%' }}
-                    />
-                    <div 
-                      className="bg-yellow-500 transition-all duration-500"
-                      style={{ width: total > 0 ? `${(data.pending / total) * 100}%` : '0%' }}
-                    />
-                    <div 
-                      className="bg-red-500 transition-all duration-500"
-                      style={{ width: total > 0 ? `${(data.rejected / total) * 100}%` : '0%' }}
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="p-4">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <div className="text-lg font-bold text-green-600">{data.approved}</div>
-                    <div className="text-xs text-gray-500">Approved</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-yellow-600">{data.pending}</div>
-                    <div className="text-xs text-gray-500">Pending</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-red-600">{data.rejected}</div>
-                    <div className="text-xs text-gray-500">Rejected</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-// Risk Action Items
-const RiskActionItems: React.FC<{ riskData: RiskMetrics }> = ({ riskData }) => {
-  const criticalUseCases = riskData.useCaseRiskDetails.filter(uc => uc.overallRiskLevel === 'Critical');
-  const highRiskUseCases = riskData.useCaseRiskDetails.filter(uc => uc.overallRiskLevel === 'High');
-  
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-        <CheckCircle className="w-5 h-5 text-green-600" />
-        Recommended Actions
-      </h3>
-      <div className="space-y-3">
-        {criticalUseCases.length > 0 && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-            <h4 className="font-medium text-red-800 mb-2">Critical Priority</h4>
-            <p className="text-sm text-red-700">
-              {criticalUseCases.length} use case(s) require immediate risk mitigation
-            </p>
-            <ul className="mt-2 space-y-1">
-              {criticalUseCases.slice(0, 3).map(uc => (
-                <li key={uc.id} className="text-xs text-red-600">
-                  • <span className="font-mono">AIUC-{uc.aiucId}</span> {uc.title}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        
-        {highRiskUseCases.length > 0 && (
-          <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-            <h4 className="font-medium text-orange-800 mb-2">High Priority</h4>
-            <p className="text-sm text-orange-700">
-              {highRiskUseCases.length} use case(s) need risk assessment review
-            </p>
-          </div>
-        )}
-        
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="font-medium text-blue-800 mb-2">Approval Process</h4>
-          <p className="text-sm text-blue-700">
-            {riskData.portfolio.totalUseCases - riskData.approvalStatus.totalWithApprovals} use cases pending approval workflow
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
+    </section>
+  </div>
+);
 
 export default HybridRiskDashboard;

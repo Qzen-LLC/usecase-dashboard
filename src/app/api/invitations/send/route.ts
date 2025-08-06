@@ -31,12 +31,18 @@ export async function POST(req: Request) {
       currentUserRecord.role === 'QZEN_ADMIN' ||
       (currentUserRecord.role === 'ORG_ADMIN' && currentUserRecord.organizationId === organizationId)
     ) {
+      // Get the base URL from environment or request
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+                     `${req.headers.get('x-forwarded-proto') || 'http'}://${req.headers.get('host')}`;
+      
       // 1. Create Clerk invitation (Clerk will send the email)
       let invitation;
       try {
         invitation = await clerk.invitations.createInvitation({
           emailAddress: email,
           publicMetadata: { role, organizationId },
+          redirectUrl: `${baseUrl}/dashboard`,
         });
       } catch (error: any) {
         console.error('Error sending invitation:', error, error?.errors);
