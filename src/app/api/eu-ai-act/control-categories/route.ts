@@ -4,11 +4,16 @@ import redis from '@/lib/redis';
 
 export async function GET() {
   try {
-    // Redis cache check
+    // Redis cache check (gracefully handle failures)
     const cacheKey = 'eu-ai-act:control-categories';
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
+    let cached = null;
+    try {
+      cached = await redis.get(cacheKey);
+      if (cached) {
+        return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
+      }
+    } catch (error) {
+      console.warn('Redis cache read failed, continuing without cache:', error.message);
     }
 
     const controlCategories = await prismaClient.euAiActControlCategory.findMany({
@@ -25,7 +30,11 @@ export async function GET() {
       orderBy: { orderIndex: 'asc' }
     });
 
-    await redis.set(cacheKey, JSON.stringify(controlCategories), 'EX', 300);
+    try {
+      await redis.set(cacheKey, JSON.stringify(controlCategories), 'EX', 300);
+    } catch (error) {
+      console.warn('Redis cache write failed, continuing without cache:', error.message);
+    }
     return NextResponse.json(controlCategories);
   } catch (error) {
     console.error('Error fetching EU AI ACT control categories:', error);

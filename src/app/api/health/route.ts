@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/utils/db';
+import { prismaClient as prisma } from '@/utils/db';
 import redis from '@/lib/redis';
 
 export async function GET() {

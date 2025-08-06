@@ -5,7 +5,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   generateEtags: true,
   reactStrictMode: false, // Disable strict mode to prevent double API calls in development
-  output: 'standalone', // Enable standalone output for Docker
+  // Vercel handles output automatically, no need for standalone mode
+  // output: 'standalone', // Only needed for self-hosting/Docker
 
   // Ignore TypeScript and ESLint errors during build to avoid scanning issues
   typescript: {

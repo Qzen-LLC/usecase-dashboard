@@ -29,10 +29,15 @@ export async function GET(req: Request) {
         }
 
         // Redis cache check
-        const cacheKey = `usecase:${id}`;
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-            return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
+        let cached = null;
+        try {
+            const cacheKey = `usecase:${id}`;
+            cached = await redis.get(cacheKey);
+            if (cached) {
+                return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
+            }
+        } catch (redisError) {
+            console.warn('Redis get failed, continuing without cache:', redisError);
         }
 
         // Check permissions based on role
@@ -102,7 +107,12 @@ export async function GET(req: Request) {
         }
 
         // Cache the result for 5 minutes
-        await redis.set(cacheKey, JSON.stringify(useCase), 'EX', 300);
+        try {
+            const cacheKey = `usecase:${id}`;
+            await redis.set(cacheKey, JSON.stringify(useCase), 'EX', 300);
+        } catch (redisError) {
+            console.warn('Redis set failed, continuing without caching:', redisError);
+        }
 
         // Add cache header
         const response = NextResponse.json(useCase);

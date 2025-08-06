@@ -22,18 +22,23 @@ export async function GET(_req: NextRequest) {
 
 
     const cacheKey = `executive-metrics:${userRecord.role}:${userRecord.id}`;
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      const rtt = Date.now() - startTime;
-      return new NextResponse(cached, {
-        headers: {
-          'Content-Type': 'application/json',
+    let cached = null;
+    try {
+      cached = await redis.get(cacheKey);
+      if (cached) {
+        const rtt = Date.now() - startTime;
+        return new NextResponse(cached, {
+          headers: {
+            'Content-Type': 'application/json',
           'X-Cache': 'HIT',
           'X-API-RTT': rtt.toString(),
           'X-Server-Response-Time': rtt.toString(),
           'X-DB-Query-Time': 'N/A'
         }
       });
+      }
+    } catch (error) {
+      console.warn('Redis cache read failed, continuing without cache:', error.message);
     }
 
 
@@ -265,7 +270,11 @@ approvalFields.forEach((field) => {
     };
 
 
-    await redis.set(cacheKey, JSON.stringify(response), 'EX', 300);
+    try {
+      await redis.set(cacheKey, JSON.stringify(response), 'EX', 300);
+    } catch (error) {
+      console.warn('Redis cache write failed, continuing without cache:', error.message);
+    }
 
 
     const end = Date.now();
