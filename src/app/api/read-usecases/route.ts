@@ -36,23 +36,79 @@ export async function GET(req: Request) {
         let useCases = [];
         if (userRecord.role === 'QZEN_ADMIN') {
             useCases = await prismaClient.useCase.findMany({
+                include: {
+                    user: {
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                            email: true
+                        }
+                    },
+                    organization: {
+                        select: {
+                            name: true
+                        }
+                    }
+                },
                 orderBy: { updatedAt: 'desc' }
             });
         } else if (userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') {
             useCases = await prismaClient.useCase.findMany({
                 where: { organizationId: userRecord.organizationId },
+                include: {
+                    user: {
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                            email: true
+                        }
+                    },
+                    organization: {
+                        select: {
+                            name: true
+                        }
+                    }
+                },
                 orderBy: { updatedAt: 'desc' }
             });
         } else if (userRecord.role === 'USER') {
             // Only return use cases for this user
             useCases = await prismaClient.useCase.findMany({
                 where: { userId: userRecord.id },
+                include: {
+                    user: {
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                            email: true
+                        }
+                    },
+                    organization: {
+                        select: {
+                            name: true
+                        }
+                    }
+                },
                 orderBy: { updatedAt: 'desc' }
             });
         } else {
             // Fallback: restrict to userId
             useCases = await prismaClient.useCase.findMany({
                 where: { userId: userRecord.id },
+                include: {
+                    user: {
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                            email: true
+                        }
+                    },
+                    organization: {
+                        select: {
+                            name: true
+                        }
+                    }
+                },
                 orderBy: { updatedAt: 'desc' }
             });
         }

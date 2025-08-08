@@ -27,6 +27,14 @@ interface UseCase {
   requiredResources?: string[];
   createdAt?: string;
   updatedAt?: string;
+  user?: {
+    firstName?: string;
+    lastName?: string;
+    email: string;
+  };
+  organization?: {
+    name: string;
+  };
 }
 
 // Mapped UseCase type with frontend-specific fields
@@ -46,14 +54,18 @@ export interface MappedUseCase extends UseCase {
   timeline: string;
   stakeholders: string[];
   risks: string[];
+  creator: {
+    name: string;
+    type: 'user' | 'organization';
+  };
 }
 
 // Hook return types
 interface UseUseCasesReturn {
   data: MappedUseCase[];
-  isLoading: boolean;
   error: Error | null;
   refetch: () => void;
+  updateUseCase: (useCaseId: string, updates: Partial<MappedUseCase>) => void;
 }
 
 interface UseUpdateUseCaseStageReturn {
@@ -71,12 +83,10 @@ interface UseDeleteUseCaseReturn {
 // Main hook for fetching use cases
 export function useUseCases(): UseUseCasesReturn {
   const [data, setData] = useState<MappedUseCase[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchUseCases = async () => {
     try {
-      setIsLoading(true);
       setError(null);
       
       const response = await fetch('/api/read-usecases');
@@ -93,32 +103,50 @@ export function useUseCases(): UseUseCasesReturn {
         : Array.isArray(useCases.useCases)
           ? useCases.useCases
           : [];
-      const mappedUseCases: MappedUseCase[] = arr.map((uc: UseCase) => ({
-        ...uc,
-        stage: uc.stage || 'discovery',
-        priority: uc.priority || 'medium',
-        owner: uc.primaryStakeholders?.[0] || 'Unknown',
-        lastUpdated: uc.updatedAt
-          ? new Date(uc.updatedAt).toLocaleDateString()
-          : '',
-        description: uc.problemStatement || '',
-        scores: {
-          operational: uc.operationalImpactScore || 0,
-          productivity: uc.productivityImpactScore || 0,
-          revenue: uc.revenueImpactScore || 0,
-        },
-        complexity: uc.implementationComplexity || 0,
-        roi: uc.initialROI || 0,
-        timeline: uc.estimatedTimeline || '',
-        stakeholders: uc.primaryStakeholders || [],
-        risks: uc.keyAssumptions || [],
-      }));
+      const mappedUseCases: MappedUseCase[] = arr.map((uc: UseCase) => {
+        // Determine creator information
+        let creatorName = 'Unknown';
+        let creatorType: 'user' | 'organization' = 'user';
+        
+        if (uc.user) {
+          const firstName = uc.user.firstName || '';
+          const lastName = uc.user.lastName || '';
+          creatorName = `${firstName} ${lastName}`.trim() || uc.user.email;
+          creatorType = 'user';
+        } else if (uc.organization) {
+          creatorName = uc.organization.name;
+          creatorType = 'organization';
+        }
+
+        return {
+          ...uc,
+          stage: uc.stage || 'discovery',
+          priority: uc.priority || 'medium',
+          owner: uc.primaryStakeholders?.[0] || 'Unknown',
+          lastUpdated: uc.updatedAt
+            ? new Date(uc.updatedAt).toLocaleDateString()
+            : '',
+          description: uc.problemStatement || '',
+          scores: {
+            operational: uc.operationalImpactScore || 0,
+            productivity: uc.productivityImpactScore || 0,
+            revenue: uc.revenueImpactScore || 0,
+          },
+          complexity: uc.implementationComplexity || 0,
+          roi: uc.initialROI || 0,
+          timeline: uc.estimatedTimeline || '',
+          stakeholders: uc.primaryStakeholders || [],
+          risks: uc.keyAssumptions || [],
+          creator: {
+            name: creatorName,
+            type: creatorType,
+          },
+        };
+      });
       
       setData(mappedUseCases);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch use cases'));
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -130,11 +158,20 @@ export function useUseCases(): UseUseCasesReturn {
     fetchUseCases();
   };
 
+  // Function to update a specific use case immediately
+  const updateUseCase = (useCaseId: string, updates: Partial<MappedUseCase>) => {
+    setData(prevData => 
+      prevData.map(uc => 
+        uc.id === useCaseId ? { ...uc, ...updates } : uc
+      )
+    );
+  };
+
   return {
     data,
-    isLoading,
     error,
-    refetch
+    refetch,
+    updateUseCase
   };
 }
 

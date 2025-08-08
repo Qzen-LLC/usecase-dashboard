@@ -6,17 +6,36 @@ import { calculateRiskScores, getRiskLevel, getRiskCategoryScores, type StepsDat
 
 export async function GET() {
   try {
+    console.log('[Risk Metrics] Starting request...');
+    
     // Get current user
     const user = await currentUser();
+    console.log('[Risk Metrics] Clerk user:', user ? { id: user.id, email: user.emailAddresses[0]?.emailAddress } : 'null');
+    
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      console.log('[Risk Metrics] No user found - returning 401');
+      return NextResponse.json({ 
+        error: 'Unauthorized - No user session found',
+        message: 'Please sign in through the browser first'
+      }, { status: 401 });
     }
+    
     // Get user data from database
+    console.log('[Risk Metrics] Looking up user in database...');
     const userRecord = await prismaClient.user.findUnique({
       where: { clerkId: user.id },
     });
+    
+    console.log('[Risk Metrics] Database user record:', userRecord ? { id: userRecord.id, email: userRecord.email, role: userRecord.role } : 'null');
+    
     if (!userRecord) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      console.log('[Risk Metrics] User not found in database - returning 404');
+      return NextResponse.json({ 
+        error: 'User not found in database',
+        clerkId: user.id,
+        email: user.emailAddresses[0]?.emailAddress,
+        message: 'User exists in Clerk but not in database'
+      }, { status: 404 });
     }
     // Redis cache check (gracefully handle failures)
     const cacheKey = `risk-metrics:${userRecord.role}:${userRecord.id}`;
@@ -27,7 +46,7 @@ export async function GET() {
         return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
       }
     } catch (error) {
-      console.warn('Redis cache read failed, continuing without cache:', error.message);
+      console.warn('Redis cache read failed, continuing without cache:', error instanceof Error ? error.message : 'Unknown error');
     }
     // Fetch use cases based on role
     let useCases = [];
@@ -51,15 +70,6 @@ export async function GET() {
         orderBy: { updatedAt: 'desc' }
       });
     }
-    // Compute risk metrics
-    const totalUseCases = useCases.length;
-    const activeProjects = useCases.filter(uc => uc.stage === 'active' || uc.stage === 'in_progress').length;
-    
-    // Calculate portfolio value (sum of all use cases)
-    const portfolioValue = useCases.reduce((sum, uc) => {
-      const finopsValue = uc.finopsData?.netValue || 0;
-      return sum + finopsValue;
-    }, 0);
     
     // Calculate risk metrics from actual assessment data
     const riskDistribution = {
@@ -81,87 +91,69 @@ export async function GET() {
     let totalRiskScore = 0;
     let assessedUseCases = 0;
     
-    // Calculate approval status
-    const approvals = useCases.filter(uc => uc.Approval).length;
-    const approvalStatus = {
-      totalWithApprovals: approvals,
-      governance: { approved: Math.floor(approvals * 0.7), pending: Math.floor(approvals * 0.2), rejected: Math.floor(approvals * 0.1) },
-      risk: { approved: Math.floor(approvals * 0.8), pending: Math.floor(approvals * 0.15), rejected: Math.floor(approvals * 0.05) },
-      legal: { approved: Math.floor(approvals * 0.6), pending: Math.floor(approvals * 0.3), rejected: Math.floor(approvals * 0.1) },
-      business: { approved: Math.floor(approvals * 0.9), pending: Math.floor(approvals * 0.08), rejected: Math.floor(approvals * 0.02) }
-    };
+    // Calculate risk scores for each use case
+    useCases.forEach(uc => {
+      let riskScore = 0;
+      let riskLevel: 'Low' | 'Medium' | 'High' | 'Critical' = 'Low';
+      let categoryScores = {};
+      
+      // Calculate risk if assessment data exists
+      if (uc.assessData?.stepsData) {
+        const stepsData = uc.assessData.stepsData as StepsData;
+        const riskResult = calculateRiskScores(stepsData);
+        riskScore = riskResult.score;
+        riskLevel = getRiskLevel(riskScore);
+        categoryScores = getRiskCategoryScores(stepsData);
+        
+        // Update distributions
+        assessedUseCases++;
+        totalRiskScore += riskScore;
+        riskDistribution[riskLevel]++;
+        
+        // Update category distributions
+        Object.entries(categoryScores).forEach(([category, score]) => {
+          const level = getRiskLevel(score as number);
+          if (riskCategories[category as keyof typeof riskCategories]) {
+            riskCategories[category as keyof typeof riskCategories][level]++;
+          }
+        });
+      }
+    });
     
-    // Calculate compliance metrics
-    const complianceMetrics = {
-      overallScore: Math.floor(Math.random() * 40) + 60, // 60-100%
-      criticalRisks: riskDistribution.Critical,
-      highRisks: riskDistribution.High,
-      mediumRisks: riskDistribution.Medium,
-      lowRisks: riskDistribution.Low
-    };
+    // Calculate average risk score
+    const averageRiskScore = assessedUseCases > 0 ? totalRiskScore / assessedUseCases : 0;
     
-    // Calculate overall risk score as average of assessed use cases
-    const overallRiskScore = assessedUseCases > 0 ? 
-      Math.round(totalRiskScore / assessedUseCases) : 0;
+    // Calculate compliance score (mock data for now)
+    const complianceScore = Math.floor(Math.random() * 40) + 60; // 60-100%
     
+    // Generate top risk categories (mock data for now)
+    const topRiskCategories = ['Data Privacy', 'Cybersecurity', 'Regulatory Compliance', 'Operational Risk', 'Technical Debt'];
+    
+    // Calculate recent incidents (mock data for now)
+    const recentIncidents = Math.floor(Math.random() * 5);
+    
+    // Return the expected RiskMetrics structure
     const riskMetrics = {
-      portfolio: {
-        totalUseCases,
-        portfolioValue,
-        activeProjects,
-        overallRiskScore
+      totalRisks: assessedUseCases,
+      highRiskCount: riskDistribution.High,
+      mediumRiskCount: riskDistribution.Medium,
+      lowRiskCount: riskDistribution.Low,
+      averageRiskScore: averageRiskScore,
+      riskDistribution: {
+        technical: riskCategories.technical.High + riskCategories.technical.Critical,
+        business: riskCategories.business.High + riskCategories.business.Critical,
+        data: riskCategories.data.High + riskCategories.data.Critical,
+        ethical: riskCategories.ethical.High + riskCategories.ethical.Critical,
       },
-      riskDistribution,
-      riskCategories,
-      approvalStatus,
-      complianceMetrics,
-      useCaseRiskDetails: useCases.map(uc => {
-        let riskScore = 0;
-        let riskLevel: 'Low' | 'Medium' | 'High' | 'Critical' = 'Low';
-        let categoryScores = {};
-        
-        // Calculate risk if assessment data exists
-        if (uc.assessData?.stepsData) {
-          const stepsData = uc.assessData.stepsData as StepsData;
-          const riskResult = calculateRiskScores(stepsData);
-          riskScore = riskResult.score;
-          riskLevel = getRiskLevel(riskScore);
-          categoryScores = getRiskCategoryScores(stepsData);
-          
-          // Update distributions
-          assessedUseCases++;
-          totalRiskScore += riskScore;
-          riskDistribution[riskLevel]++;
-          
-          // Update category distributions
-          Object.entries(categoryScores).forEach(([category, score]) => {
-            const level = getRiskLevel(score as number);
-            if (riskCategories[category as keyof typeof riskCategories]) {
-              riskCategories[category as keyof typeof riskCategories][level]++;
-            }
-          });
-        }
-        
-        return {
-          id: uc.id,
-          title: uc.title,
-          stage: uc.stage || 'draft',
-          businessFunction: uc.businessFunction,
-          priority: uc.priority || 'MEDIUM',
-          overallRiskScore: riskScore,
-          overallRiskLevel: riskLevel,
-          riskCategories: categoryScores,
-          portfolioValue: uc.finopsData?.netValue || 0,
-          hasApproval: !!uc.Approval,
-          approvalStatuses: uc.Approval || {},
-          aiucId: uc.aiucId
-        };
-      })
+      topRiskCategories: topRiskCategories,
+      recentIncidents: recentIncidents,
+      complianceScore: complianceScore,
     };
+    
     try {
       await redis.set(cacheKey, JSON.stringify(riskMetrics), 'EX', 300);
     } catch (error) {
-      console.warn('Redis cache write failed, continuing without cache:', error.message);
+      console.warn('Redis cache write failed, continuing without cache:', error instanceof Error ? error.message : 'Unknown error');
     }
     return NextResponse.json(riskMetrics);
   } catch (error) {

@@ -38,16 +38,52 @@ const HybridRiskDashboard: React.FC = () => {
   const fetchRiskData = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      console.log('[Risk Dashboard] Fetching risk metrics...');
       const response = await fetch('/api/risk-metrics');
+      
+      console.log('[Risk Dashboard] Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch risk data');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('[Risk Dashboard] API Error:', errorData);
+        
+        if (response.status === 401) {
+          throw new Error('Authentication required. Please sign in again.');
+        } else if (response.status === 404) {
+          throw new Error('User not found in database. Please contact support.');
+        } else {
+          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
       }
+      
       const data = await response.json();
+      console.log('[Risk Dashboard] Received data:', data);
       setRiskData(data);
     } catch (err) {
+      console.error('[Risk Dashboard] Fetch error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const testAuth = async () => {
+    try {
+      console.log('[Risk Dashboard] Testing authentication...');
+      const response = await fetch('/api/test-auth');
+      const data = await response.json();
+      console.log('[Risk Dashboard] Auth test result:', data);
+      
+      if (response.ok) {
+        alert('Authentication is working! User: ' + data.user.email);
+      } else {
+        alert('Authentication failed: ' + data.error);
+      }
+    } catch (err) {
+      console.error('[Risk Dashboard] Auth test error:', err);
+      alert('Auth test failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
     }
   };
 
@@ -127,6 +163,12 @@ const HybridRiskDashboard: React.FC = () => {
             <RefreshCw className="w-4 h-4" />
             Refresh
           </button>
+          <button 
+            onClick={testAuth}
+            className="btn-outline flex items-center gap-2"
+          >
+            Test Auth
+          </button>
         </div>
 
         {/* Main Content */}
@@ -202,7 +244,7 @@ const ExecutiveView: React.FC<ExecutiveViewProps> = ({ riskData }) => (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-gray-700">Average Risk Score</span>
-              <span className="text-sm font-semibold text-gray-900">{riskData.averageRiskScore.toFixed(1)}/10</span>
+              <span className="text-sm font-semibold text-gray-900">{(riskData.averageRiskScore || 0).toFixed(1)}/10</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-gray-700">Compliance Score</span>
@@ -289,7 +331,7 @@ const DetailedView: React.FC<ExecutiveViewProps> = ({ riskData }) => (
           <h3 className="text-lg font-semibold text-gray-900">Average Risk Score</h3>
         </div>
         <p className="text-gray-600 text-sm mb-4">Overall risk assessment score</p>
-        <div className="text-2xl font-bold text-blue-600">{riskData.averageRiskScore.toFixed(1)}/10</div>
+        <div className="text-2xl font-bold text-blue-600">{(riskData.averageRiskScore || 0).toFixed(1)}/10</div>
       </div>
     </section>
 
