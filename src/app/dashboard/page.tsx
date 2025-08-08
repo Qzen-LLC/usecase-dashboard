@@ -16,6 +16,7 @@ import {
 import { useUseCases, useUpdateUseCaseStage, useDeleteUseCase, type MappedUseCase } from '@/hooks/useUseCases';
 import OrganizationUserManagement from '@/components/OrganizationUserManagement';
 import { useUserData } from '@/contexts/UserContext';
+import ClerkInvitationHandler from '@/components/ClerkInvitationHandler';
 import {
   Sheet,
   SheetContent,
@@ -676,6 +677,7 @@ const Dashboard = () => {
 
   return (
     <div className="page-layout">
+      <ClerkInvitationHandler />
       <div className="page-container">
         {/* Header with role-based tabs */}
         <div className="page-header">
