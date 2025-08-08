@@ -59,6 +59,29 @@ export async function POST(request: Request) {
       },
     });
 
+    // Invalidate Redis cache for /read-usecases for all org users (or just the user if not in org)
+    try {
+      const redis = (await import('@/lib/redis')).default;
+      if (userRecord.organizationId) {
+        const orgUsers = await prismaClient.user.findMany({
+          where: { organizationId: userRecord.organizationId },
+          select: { id: true, role: true }
+        });
+        console.log(`Invalidating cache for ${orgUsers.length} organization users`);
+        for (const u of orgUsers) {
+          const orgCacheKey = `usecases:${u.role}:${u.id}`;
+          await redis.del(orgCacheKey);
+          console.log(`Invalidated cache key: ${orgCacheKey}`);
+        }
+      } else {
+        const cacheKey = `usecases:${userRecord.role}:${userRecord.id}`;
+        await redis.del(cacheKey);
+        console.log(`Invalidated cache key: ${cacheKey}`);
+      }
+    } catch (error) {
+      console.warn('Redis cache invalidation failed, continuing without cache:', error.message);
+    }
+
     return NextResponse.json({ message: 'Use case deleted successfully' });
   } catch (error) {
     console.error('Error deleting use case:', error);

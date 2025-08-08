@@ -89,7 +89,7 @@ export function useUseCases(): UseUseCasesReturn {
     try {
       setError(null);
       
-      const response = await fetch('/api/read-usecases');
+      const response = await fetch(`/api/read-usecases?t=${Date.now()}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

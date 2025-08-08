@@ -67,7 +67,7 @@ export default function AdminDashboard() {
     const fetchUseCases = async () => {
       setUseCasesLoading(true);
       try {
-        const res = await fetch('/api/read-usecases');
+        const res = await fetch(`/api/read-usecases?t=${Date.now()}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to fetch use cases');
         setAllUseCases(data.useCases || []);

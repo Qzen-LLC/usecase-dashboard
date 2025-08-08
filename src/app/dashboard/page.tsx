@@ -289,6 +289,11 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Clear deleted use case IDs on component mount to ensure fresh data
+  useEffect(() => {
+    setDeletedUseCaseIds(new Set());
+  }, []);
+
   const handleEdit = (id: string) => {
     router.push(`/edit-usecase/${id}`);
   }
