@@ -31,10 +31,10 @@ export async function POST(req: Request) {
       currentUserRecord.role === 'QZEN_ADMIN' ||
       (currentUserRecord.role === 'ORG_ADMIN' && currentUserRecord.organizationId === organizationId)
     ) {
-      // Get the base URL from environment or request
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
-                     `${req.headers.get('x-forwarded-proto') || 'http'}://${req.headers.get('host')}`;
+      // Always use production domain for invitations - no fallbacks
+      const baseUrl = 'https://qzen.qube.ai';
+      
+      console.log('[Invitation] Using baseUrl:', baseUrl);
       
       // 1. Create Clerk invitation (Clerk will send the email)
       let invitation;

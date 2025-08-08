@@ -137,10 +137,10 @@ export async function POST(req: Request) {
 
     // Send email invitation via Clerk
     try {
-      // Get the base URL from environment or request
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
-                     `${req.headers.get('x-forwarded-proto') || 'http'}://${req.headers.get('host')}`;
+      // Always use production domain for invitations - no fallbacks
+      const baseUrl = 'https://qzen.qube.ai';
+      
+      console.log('[Organization Creation] Using baseUrl:', baseUrl);
       
       await clerk.invitations.createInvitation({
         emailAddress: adminEmail.trim(),
