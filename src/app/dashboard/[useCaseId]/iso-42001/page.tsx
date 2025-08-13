@@ -243,13 +243,161 @@ export default function Iso42001AssessmentPage() {
   const handleAnnexImplementationChange = (itemId: string, implementation: string) => {
     if (!assessment) return;
 
-    const updatedAnnexes = assessment.annexes.map(ann => 
-      ann.item.itemId === itemId 
-        ? { ...ann, implementation, status: implementation.trim() ? 'implemented' : 'pending' }
-        : ann
-    );
+    // Clear any pending timeout for this annex
+    const existingTimeout = pendingEvidenceChanges.get(`annex-${itemId}`);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
 
-    setAssessment({ ...assessment, annexes: updatedAnnexes });
+    const existingInstance = assessment.annexes.find(ann => ann.item.itemId === itemId);
+    
+    // Update local state immediately with forced re-render - handle case where instance doesn't exist yet
+    setAssessment(prevAssessment => {
+      if (!prevAssessment) return prevAssessment;
+      
+      if (existingInstance) {
+        const updatedAnnexes = prevAssessment.annexes.map(ann => 
+          ann.item.itemId === itemId 
+            ? { ...ann, implementation, status: implementation.trim() ? 'implemented' : 'pending' }
+            : ann
+        );
+        
+        console.log('🔧 ISO State Update - existing annex implementation:', {
+          itemId,
+          implementationLength: implementation.length,
+          updatedInstance: updatedAnnexes.find(ann => ann.item.itemId === itemId)
+        });
+        
+        return {
+          ...prevAssessment,
+          annexes: updatedAnnexes,
+          lastUpdated: Date.now() // Force re-render
+        };
+      } else {
+        // Instance doesn't exist yet, create a temporary one
+        const newInstance: any = {
+          id: `temp-${itemId}`,
+          implementation,
+          evidenceFiles: [],
+          status: implementation.trim() ? 'implemented' : 'pending',
+          item: {
+            itemId,
+            title: '', // Will be filled when saved
+            description: '',
+            guidance: '',
+            categoryId: '',
+            category: { title: '' } // Add required category property
+          }
+        };
+        
+        const updatedAnnexes = [...prevAssessment.annexes, newInstance];
+        
+        console.log('🔧 ISO State Update - new annex implementation:', {
+          itemId,
+          implementationLength: implementation.length,
+          newInstance
+        });
+        
+        return {
+          ...prevAssessment,
+          annexes: updatedAnnexes,
+          lastUpdated: Date.now() // Force re-render
+        };
+      }
+    });
+
+    // Debounce the API call to prevent duplicate requests
+    const timeoutId = setTimeout(async () => {
+      // Auto-save the implementation
+      setSavingFiles(prev => new Set(prev).add(`annex-${itemId}`));
+      
+      try {
+        const requestData = {
+          itemId,
+          implementation,
+          evidenceFiles: existingInstance?.evidenceFiles || []
+        };
+        
+        console.log('🔍 ISO 42001 - Sending annex implementation request:', {
+          itemId,
+          assessmentId: assessment.id,
+          existingInstance: !!existingInstance,
+          implementationLength: implementation.length,
+          evidenceFilesCount: requestData.evidenceFiles.length,
+          requestData
+        });
+        
+        const response = await fetch(`/api/iso-42001/annex/${assessment.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestData)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('ISO 42001 Annex API Error:', {
+            status: response.status,
+            statusText: response.statusText,
+            errorData,
+            itemId,
+            assessmentId: assessment.id
+          });
+          
+          throw new Error(`Failed to save annex implementation: ${errorData.error || 'Unknown error'}`);
+        }
+
+        const savedInstance = await response.json();
+        
+        // Update the local state with the saved instance using functional update
+        setAssessment(currentAssessment => {
+          if (!currentAssessment) return currentAssessment;
+          
+          let finalUpdatedAnnexes;
+          if (existingInstance) {
+            // Update existing instance - merge with current data
+            finalUpdatedAnnexes = currentAssessment.annexes.map(ann => 
+              ann.item.itemId === itemId 
+                ? { ...ann, ...savedInstance, item: ann.item }
+                : ann
+            );
+          } else {
+            // Add new instance to the list
+            finalUpdatedAnnexes = [...currentAssessment.annexes, savedInstance];
+          }
+          
+          console.log('✅ ISO API Annex implementation update - merging with current state:', {
+            itemId,
+            savedInstanceImplementation: savedInstance.implementation,
+            hasExisting: !!existingInstance
+          });
+          
+          return {
+            ...currentAssessment,
+            annexes: finalUpdatedAnnexes,
+            lastUpdated: Date.now()
+          };
+        });
+        
+        await updateAssessmentProgress();
+        
+        // Clear any existing errors on successful save
+        if (error) {
+          setError(null);
+        }
+      } catch (err) {
+        console.error('Error saving annex implementation:', err);
+        setError(err instanceof Error ? err.message : 'Failed to save implementation');
+      } finally {
+        setSavingFiles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(`annex-${itemId}`);
+          return newSet;
+        });
+      }
+    }, 500); // 500ms debounce
+
+    // Store the timeout ID
+    setPendingEvidenceChanges(prev => new Map(prev).set(`annex-${itemId}`, timeoutId));
   };
 
   const handleSubclauseEvidenceChange = async (subclauseId: string, evidenceFiles: string[]) => {
