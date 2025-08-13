@@ -6,6 +6,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ assessmentId: string }> }
 ) {
+  let subclauseId: string = '';
+  let assessmentId: string = '';
+  
   try {
     const user = await currentUser();
     if (!user) {
@@ -20,8 +23,10 @@ export async function POST(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { assessmentId } = await params;
-    const { subclauseId, implementation, evidenceFiles } = await request.json();
+    assessmentId = (await params).assessmentId;
+    const body = await request.json();
+    subclauseId = body.subclauseId;
+    const { implementation, evidenceFiles } = body;
 
     // Get the assessment to check ownership
     const assessment = await prismaClient.iso42001Assessment.findUnique({
@@ -47,6 +52,25 @@ export async function POST(
         }
       }
     }
+
+    // Check if a subclause instance already exists
+    const existingInstance = await prismaClient.iso42001SubclauseInstance.findUnique({
+      where: {
+        subclauseId_assessmentId: {
+          subclauseId,
+          assessmentId
+        }
+      }
+    });
+
+    console.log('ISO 42001 Subclause - Debug info:', {
+      subclauseId,
+      assessmentId,
+      existingInstance: existingInstance ? 'Found' : 'Not found',
+      existingInstanceId: existingInstance?.id,
+      existingImplementation: existingInstance?.implementation,
+      existingEvidenceFiles: existingInstance?.evidenceFiles
+    });
 
     // Upsert the subclause instance (create if doesn't exist, update if it does)
     const updatedInstance = await prismaClient.iso42001SubclauseInstance.upsert({
@@ -74,9 +98,46 @@ export async function POST(
       }
     });
 
+    console.log('ISO 42001 Subclause - Successfully upserted:', {
+      subclauseId,
+      assessmentId,
+      instanceId: updatedInstance.id,
+      status: updatedInstance.status,
+      evidenceFilesCount: updatedInstance.evidenceFiles.length
+    });
+
     return NextResponse.json(updatedInstance);
   } catch (error) {
     console.error('Error saving ISO 42001 subclause:', error);
+    
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('Unique constraint failed')) {
+        console.error('Unique constraint violation details:', {
+          subclauseId,
+          assessmentId,
+          error: error.message
+        });
+        return NextResponse.json(
+          { 
+            error: 'Subclause instance already exists for this assessment',
+            details: 'A record with the same subclause ID and assessment ID already exists',
+            subclauseId,
+            assessmentId
+          },
+          { status: 409 }
+        );
+      }
+      
+      return NextResponse.json(
+        { 
+          error: 'Failed to save implementation',
+          details: error.message
+        },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Failed to save implementation' },
       { status: 500 }

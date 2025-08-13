@@ -99,10 +99,20 @@ export default function Iso42001AssessmentPage() {
   const [expandedClauses, setExpandedClauses] = useState<Set<string>>(new Set());
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [savingFiles, setSavingFiles] = useState<Set<string>>(new Set());
+  
+  // Add debounce mechanism to prevent duplicate API calls
+  const [pendingEvidenceChanges, setPendingEvidenceChanges] = useState<Map<string, NodeJS.Timeout>>(new Map());
 
   useEffect(() => {
     fetchAssessmentData();
   }, [useCaseId]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      pendingEvidenceChanges.forEach(timeoutId => clearTimeout(timeoutId));
+    };
+  }, [pendingEvidenceChanges]);
 
   const fetchAssessmentData = async () => {
     try {
@@ -245,6 +255,12 @@ export default function Iso42001AssessmentPage() {
   const handleSubclauseEvidenceChange = async (subclauseId: string, evidenceFiles: string[]) => {
     if (!assessment) return;
 
+    // Clear any pending timeout for this subclause
+    const existingTimeout = pendingEvidenceChanges.get(subclauseId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
     const existingInstance = assessment.subclauses.find(sc => sc.subclause.subclauseId === subclauseId);
     const currentFiles = existingInstance?.evidenceFiles || [];
     const removedFiles = currentFiles.filter(file => !evidenceFiles.includes(file));
@@ -278,104 +294,115 @@ export default function Iso42001AssessmentPage() {
       }
     });
 
-    // Auto-save the evidence files
-    setSavingFiles(prev => new Set(prev).add(`subclause-${subclauseId}`));
-    
-    try {
-      const response = await fetch(`/api/iso-42001/subclause/${assessment.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+    // Debounce the API call to prevent duplicate requests
+    const timeoutId = setTimeout(async () => {
+      // Auto-save the evidence files
+      setSavingFiles(prev => new Set(prev).add(`subclause-${subclauseId}`));
+      
+      try {
+        const requestBody = {
           subclauseId,
           implementation: existingInstance?.implementation || '',
           evidenceFiles
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('API Error:', response.status, errorData);
-        throw new Error(`Failed to save subclause evidence files: ${errorData.error || 'Unknown error'}`);
-      }
-
-      const savedInstance = await response.json();
-      
-      // Update the local state with the saved instance using functional update
-      setAssessment(currentAssessment => {
-        if (!currentAssessment) return currentAssessment;
+        };
         
-        let finalUpdatedSubclauses;
-        if (existingInstance) {
-          // Update existing instance - merge with current data
-          finalUpdatedSubclauses = currentAssessment.subclauses.map(sc => 
-            sc.subclause.subclauseId === subclauseId 
-              ? { ...sc, ...savedInstance, subclause: sc.subclause }
-              : sc
-          );
-        } else {
-          // Add new instance to the list
-          finalUpdatedSubclauses = [...currentAssessment.subclauses, savedInstance];
-        }
-        
-        console.log('✅ ISO API Subclause update - merging with current state:', {
+        console.log('🔍 ISO 42001 - Sending subclause evidence request:', {
           subclauseId,
-          savedInstanceFiles: savedInstance.evidenceFiles,
-          hasExisting: !!existingInstance
+          assessmentId: assessment.id,
+          existingInstance: !!existingInstance,
+          implementation: requestBody.implementation,
+          evidenceFilesCount: evidenceFiles.length,
+          requestBody
+        });
+
+        const response = await fetch(`/api/iso-42001/subclause/${assessment.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('ISO 42001 API Error:', {
+            status: response.status,
+            statusText: response.statusText,
+            errorData,
+            subclauseId,
+            assessmentId: assessment.id
+          });
+          
+          if (response.status === 409) {
+            throw new Error(`Subclause instance already exists: ${errorData.details || 'Duplicate record detected'}`);
+          }
+          
+          throw new Error(`Failed to save subclause evidence files: ${errorData.error || 'Unknown error'}`);
+        }
+
+        const savedInstance = await response.json();
+        
+        // Update the local state with the saved instance using functional update
+        setAssessment(currentAssessment => {
+          if (!currentAssessment) return currentAssessment;
+          
+          let finalUpdatedSubclauses;
+          if (existingInstance) {
+            // Update existing instance - merge with current data
+            finalUpdatedSubclauses = currentAssessment.subclauses.map(sc => 
+              sc.subclause.subclauseId === subclauseId 
+                ? { ...sc, ...savedInstance, subclause: sc.subclause }
+                : sc
+            );
+          } else {
+            // Add new instance to the list
+            finalUpdatedSubclauses = [...currentAssessment.subclauses, savedInstance];
+          }
+          
+          console.log('✅ ISO API Subclause update - merging with current state:', {
+            subclauseId,
+            savedInstanceFiles: savedInstance.evidenceFiles,
+            hasExisting: !!existingInstance
+          });
+          
+          return {
+            ...currentAssessment,
+            subclauses: finalUpdatedSubclauses,
+            lastUpdated: Date.now()
+          };
         });
         
-        return {
-          ...currentAssessment,
-          subclauses: finalUpdatedSubclauses,
-          lastUpdated: Date.now()
-        };
-      });
-      
-      await updateAssessmentProgress();
-      
-      // Delete removed files from server
-      for (const removedFile of removedFiles) {
-        try {
-          await fetch('/api/upload/delete', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fileUrl: removedFile })
-          });
-        } catch (fileDeleteErr) {
-          console.error('Failed to delete file from server:', removedFile, fileDeleteErr);
+        await updateAssessmentProgress();
+        
+        // Delete removed files from server
+        for (const removedFile of removedFiles) {
+          try {
+            await fetch('/api/upload/delete', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fileUrl: removedFile })
+            });
+          } catch (fileDeleteErr) {
+            console.error('Failed to delete file from server:', removedFile, fileDeleteErr);
+          }
         }
-      }
-      
-      // Clear any existing errors on successful save
-      if (error) {
-        setError(null);
-      }
-    } catch (err) {
-      console.error('Failed to auto-save subclause evidence:', err);
-      setError('Failed to save evidence files. Please try saving manually.');
-      
-      // Revert local state on API failure
-      setAssessment(prevAssessment => {
-        if (!prevAssessment || !existingInstance) return prevAssessment;
         
-        const revertedSubclauses = prevAssessment.subclauses.map(sc => 
-          sc.subclause.subclauseId === subclauseId 
-            ? { ...sc, evidenceFiles: [...currentFiles] }
-            : sc
-        );
-        
-        return {
-          ...prevAssessment,
-          subclauses: revertedSubclauses,
-          lastUpdated: Date.now()
-        };
-      });
-    } finally {
-      setSavingFiles(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(`subclause-${subclauseId}`);
-        return newSet;
-      });
-    }
+        // Clear any existing errors on successful save
+        if (error) {
+          setError(null);
+        }
+      } catch (err) {
+        console.error('Error saving subclause evidence:', err);
+        setError(err instanceof Error ? err.message : 'Failed to save evidence files');
+      } finally {
+        setSavingFiles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(`subclause-${subclauseId}`);
+          return newSet;
+        });
+      }
+    }, 500); // 500ms debounce
+
+    // Store the timeout ID
+    setPendingEvidenceChanges(prev => new Map(prev).set(subclauseId, timeoutId));
   };
 
   const handleAnnexEvidenceChange = async (itemId: string, evidenceFiles: string[]) => {
