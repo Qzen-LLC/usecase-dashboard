@@ -1,5 +1,7 @@
 'use client'
-import React, { useState } from 'react';
+
+import { useParams, useSearchParams } from "next/navigation";
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, ChevronLeft, Target, TrendingUp, Zap, DollarSign, Plus, Minus } from 'lucide-react';
 import { Input } from "@/components/ui/input";
@@ -11,17 +13,15 @@ import { Card } from "@/components/ui/card";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 
 type FormData = {
+  id?: string;
+  aiucId?: number;
   title: string;
   problemStatement: string;
   proposedAISolution: string;
   keyBenefits: string;
   primaryStakeholders: string[];
   secondaryStakeholders: string[];
-  currentState: string;
-  desiredState: string;
   successCriteria: string;
-  problemValidation: string;
-  solutionHypothesis: string;
   keyAssumptions: string;
   initialCost: string;
   initialROI: string;
@@ -35,6 +35,7 @@ type FormData = {
   requiredResources: string;
   businessFunction: string;
   priority: string;
+  stage?: string;
 };
 
 const initialFormData: FormData = {
@@ -44,11 +45,7 @@ const initialFormData: FormData = {
   keyBenefits: "",
   primaryStakeholders: [],
   secondaryStakeholders: [],
-  currentState: "",
-  desiredState: "",
   successCriteria: "",
-  problemValidation: "",
-  solutionHypothesis: "",
   keyAssumptions: "",
   initialCost: "",
   initialROI: "",
@@ -125,12 +122,77 @@ const ArrayInput = ({
   );
 };
 
+const getUseCase = async(params: string) => {
+    try {
+        const res = await fetch(`/api/get-usecase?id=${params}`);
+        if (!res.ok) {
+            throw new Error('Failed to fetch use case');
+        }
+        const useCaseData = await res.json();
+        return useCaseData;
+    } catch (_error) {
+        console.error('Error fetching use case:', _error);
+        throw _error;
+    }
+};
+
 const AIUseCaseTool = () => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [invalidFields, setInvalidFields] = useState<string[]>([]);
   const [showError, setShowError] = useState(false);
+  const [_saving, setSaving] = useState(false);
   const router = useRouter();
+
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const completeForBusinessCase = searchParams.get('completeForBusinessCase') === '1';
+
+  useEffect(() => {
+    const fetchAndFill = async () => {
+      try {
+        const id = params["usecase-id"] as string;
+        if (!id) return;
+        const data = await getUseCase(id);
+        if (data) {
+          setFormData(prev => ({
+            ...prev,
+            // Map existing fields
+            id: data.id,
+            aiucId: data.aiucId,
+            title: data.title || '',
+            problemStatement: data.problemStatement || '',
+            proposedAISolution: data.proposedAISolution || '',
+            primaryStakeholders: data.primaryStakeholders || [],
+            secondaryStakeholders: data.secondaryStakeholders || [],
+            businessFunction: data.businessFunction || '',
+            confidenceLevel: data.confidenceLevel || 5,
+            operationalImpactScore: data.operationalImpactScore || 5,
+            productivityImpactScore: data.productivityImpactScore || 5,
+            revenueImpactScore: data.revenueImpactScore || 5,
+            implementationComplexity: data.implementationComplexity || 5,
+            requiredResources: data.requiredResources || '',
+            initialROI: data.initialROI || '',
+            priority: data.priority || 'MEDIUM',
+            stage: data.stage,
+            // Convert arrays to strings for rich text fields
+            successCriteria: data.successCriteria || '',
+            keyAssumptions: data.keyAssumptions || '',
+            // Handle timeline conversion from "X months" to just "X"
+            estimatedTimelineMonths: data.estimatedTimeline ? data.estimatedTimeline.replace(' months', '') : '',
+            // New fields (will be empty string for old use cases due to schema defaults)
+            keyBenefits: data.keyBenefits || '',
+            initialCost: data.initialCost || '',  
+            plannedStartDate: data.plannedStartDate || '',
+          }));
+        }
+      } catch (_error) {
+        console.error('Error fetching use case:', _error);
+        setShowError(true);
+      }
+    };
+    fetchAndFill();
+  }, [params]);
 
   const steps = [
     { id: 1, title: 'Use Case Documentation', icon: Target },
@@ -155,24 +217,10 @@ const AIUseCaseTool = () => {
   };
 
   const handleChange = (field: keyof FormData, val: string | number | string[]) => {
-    console.log(`handleChange called for ${field}:`, val, 'Type:', typeof val, 'IsArray:', Array.isArray(val));
-    
-    // Special handling for successCriteria and keyAssumptions to ensure they're strings
-    if (field === 'successCriteria' || field === 'keyAssumptions') {
-      if (Array.isArray(val)) {
-        console.warn(`${field} received array, converting to string:`, val);
-        val = val.join(' ');
-      }
-      if (typeof val !== 'string') {
-        console.warn(`${field} received non-string, converting to string:`, val);
-        val = String(val);
-      }
-    }
-    
     setFormData((prev) => ({ ...prev, [field]: val }));
   };
 
-  // Only require title and problemStatement for initial add
+  // Only require title and problemStatement for validation
   const validateForm = () => {
     const invalid: string[] = [];
     if (!formData.title.trim()) invalid.push('title');
@@ -184,9 +232,9 @@ const AIUseCaseTool = () => {
 
   const renderStep1 = () => (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-[#f5eaff] via-[#fbeaff] to-[#ffeafd] p-4 rounded-lg">
-        <h3 className="text-lg font-semibold mb-2 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] bg-clip-text text-transparent">Use Case Documentation</h3>
-        <p className="text-[#8f4fff]">Define and structure your AI use case with clear problem statements and success criteria.</p>
+      <div className="bg-blue-50 p-4 rounded-lg">
+        <h3 className="text-lg font-semibold text-blue-800 mb-2">Use Case Documentation</h3>
+        <p className="text-blue-700">Define and structure your AI use case with clear problem statements and success criteria.</p>
       </div>
       <div className="grid grid-cols-1">
         <Card className="p-6">
@@ -225,33 +273,12 @@ const AIUseCaseTool = () => {
             placeholder="Define what success looks like for this use case..."
             className={invalidFields.includes('successCriteria') ? 'border-red-500' : ''}
           />
-          <Label htmlFor="problemValidation">Problem Validation</Label>
-          <RichTextEditor
-            content={formData.problemValidation}
-            onChange={(content) => handleChange("problemValidation", content)}
-            placeholder="Describe how you've validated this problem exists..."
-            className={invalidFields.includes('problemValidation') ? 'border-red-500' : ''}
-          />
-          <Label htmlFor="solutionHypothesis">Solution Hypothesis</Label>
-          <RichTextEditor
-            content={formData.solutionHypothesis}
-            onChange={(content) => handleChange("solutionHypothesis", content)}
-            placeholder="Describe your hypothesis for how this solution will work..."
-            className={invalidFields.includes('solutionHypothesis') ? 'border-red-500' : ''}
-          />
-          {/* <Label htmlFor="primaryStakeholders">Primary Stakeholder</Label>
-          <Input
-            id="primaryStakeholders"
-            value={formData.primaryStakeholders}
-            onChange={(e) => handleChange("primaryStakeholders", e.target.value)}
-            className={invalidFields.includes('primaryStakeholders') ? 'border-red-500' : ''}
-          /> */}
           <Label htmlFor="businessFunction">Business Function</Label>
           <select
             id="businessFunction"
             value={formData.businessFunction}
             onChange={e => handleChange("businessFunction", e.target.value)}
-            className={"mb-4 w-full border border-gray-200 rounded-none px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 " + (invalidFields.includes('businessFunction') ? 'border-red-500' : '')}
+            className={"mb-4 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 " + (invalidFields.includes('businessFunction') ? 'border-red-500' : '')}
           >
             <option value="" disabled>Select a business function</option>
             <option value="Sales">Sales</option>
@@ -273,6 +300,13 @@ const AIUseCaseTool = () => {
             <option value="Data Office">Data Office</option>
             <option value="PMO">PMO</option>
           </select>
+          {/* <Label htmlFor="primaryStakeholders">Primary Stakeholder</Label>
+          <Input
+            id="primaryStakeholders"
+            value={formData.primaryStakeholders}
+            onChange={(e) => handleChange("primaryStakeholders", e.target.value)}
+            className={invalidFields.includes('primaryStakeholders') ? 'border-red-500' : ''}
+          /> */}
           <ArrayInput
             label="Primary Stakeholders"
             field="primaryStakeholders"
@@ -296,9 +330,9 @@ const AIUseCaseTool = () => {
 
   const renderStep2 = () => (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-[#f5eaff] via-[#fbeaff] to-[#ffeafd] p-4 rounded-lg">
-        <h3 className="text-lg font-semibold mb-2 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] bg-clip-text text-transparent">Lean Business Case</h3>
-        <p className="text-[#b84fff]">Build a lightweight business case focusing on problem-solution fit and key assumptions.</p>
+      <div className="bg-green-50 p-4 rounded-lg">
+        <h3 className="text-lg font-semibold text-green-800 mb-2">Lean Business Case</h3>
+        <p className="text-green-700">Build a lightweight business case focusing on problem-solution fit and key assumptions.</p>
       </div>
       <div className="space-y-6">
         <Card className='p-6'>
@@ -361,7 +395,7 @@ const AIUseCaseTool = () => {
             id="estimatedTimelineMonths"
             value={formData.estimatedTimelineMonths}
             onChange={e => handleChange("estimatedTimelineMonths", e.target.value)}
-            className={"mb-4 w-full border border-gray-200 rounded-none px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 " + (invalidFields.includes('estimatedTimelineMonths') ? 'border-red-500' : '')}
+            className={`mb-4 w-full border border-gray-200 rounded-none px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 ${invalidFields.includes('estimatedTimelineMonths') ? 'border-red-500' : ''}`}
           >
             <option value="" disabled>Select timeline</option>
             <option value="1">1 month</option>
@@ -390,9 +424,9 @@ const AIUseCaseTool = () => {
 
   const renderStep3 = () => (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-[#f5eaff] via-[#fbeaff] to-[#ffeafd] p-4 rounded-lg">
-        <h3 className="text-lg font-semibold mb-2 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] bg-clip-text text-transparent">Multi-Dimensional Scoring</h3>
-        <p className="text-[#8f4fff]">Quantify your use case across the three strategic dimensions.</p>
+      <div className="bg-purple-50 p-4 rounded-lg">
+        <h3 className="text-lg font-semibold text-purple-800 mb-2">Multi-Dimensional Scoring</h3>
+        <p className="text-purple-700">Quantify your use case across the three strategic dimensions.</p>
       </div>
       <div className="space-y-8">
         <div className="bg-white p-6 rounded-lg border-2 border-orange-200">
@@ -511,7 +545,7 @@ const AIUseCaseTool = () => {
               Overall Score: {((formData.operationalImpactScore + formData.productivityImpactScore + formData.revenueImpactScore) / 3).toFixed(1)}
             </div>
             <div className="text-sm text-gray-600">
-              implementationComplexity: {formData.implementationComplexity}/10
+              Complexity: {formData.implementationComplexity}/10
             </div>
           </div>
         </div>
@@ -520,7 +554,6 @@ const AIUseCaseTool = () => {
   );
 
   const handleSave = async () => {
-    // Only require title for saving (more lenient than full validation)
     if (!formData.title.trim()) {
       setInvalidFields(['title']);
       setShowError(true);
@@ -529,50 +562,20 @@ const AIUseCaseTool = () => {
     }
     
     try {
-      // Debug: Log the form data to see what's being sent
-      console.log('Form data being sent:', {
-        successCriteria: formData.successCriteria,
-        keyAssumptions: formData.keyAssumptions,
-        successCriteriaType: typeof formData.successCriteria,
-        keyAssumptionsType: typeof formData.keyAssumptions,
-        isSuccessCriteriaArray: Array.isArray(formData.successCriteria),
-        isKeyAssumptionsArray: Array.isArray(formData.keyAssumptions)
-      });
-      
-      // Map form data to match API expectations
-      const apiData = {
-        title: formData.title,
-        problemStatement: formData.problemStatement,
-        proposedAISolution: formData.proposedAISolution,
-        currentState: formData.currentState || '',
-        desiredState: formData.desiredState || '',
-        primaryStakeholders: formData.primaryStakeholders,
-        secondaryStakeholders: formData.secondaryStakeholders,
-        successCriteria: formData.successCriteria,
-        problemValidation: formData.problemValidation || '',
-        solutionHypothesis: formData.solutionHypothesis || '',
-        keyAssumptions: formData.keyAssumptions,
-        initialROI: formData.initialROI,
-        confidenceLevel: formData.confidenceLevel,
-        operationalImpactScore: formData.operationalImpactScore,
-        productivityImpactScore: formData.productivityImpactScore,
-        revenueImpactScore: formData.revenueImpactScore,
-        implementationComplexity: formData.implementationComplexity,
+      setSaving(true);
+      const body = {
+        ...formData,
+        // Convert timeline back to full format
         estimatedTimeline: formData.estimatedTimelineMonths ? `${formData.estimatedTimelineMonths} months` : '',
-        requiredResources: formData.requiredResources,
-        businessFunction: formData.businessFunction || '',
         stage: 'discovery',
-        priority: formData.priority,
       };
-
-      console.log('API data being sent:', apiData);
-
+      
       const res = await fetch("/api/write-usecases", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify(apiData),
+        body: JSON.stringify(body),
       });
       
       if (res.ok) {
@@ -580,72 +583,45 @@ const AIUseCaseTool = () => {
         router.push('/dashboard');
       } else {
         const errorData = await res.text();
-        console.error("Save failed with status:", res.status);
-        console.error("Error response:", errorData);
-        alert(`Failed to save use case: ${res.status} - ${errorData}`);
+        console.error("Save failed:", errorData);
+        alert("Failed to save use case. Please try again.");
       }
     } catch (error) {
-      console.error("Unable to save Use Case:", error);
+      console.error("Error saving use case:", error);
       alert("Unable to save Use Case. Please try again.");
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleGoToPipeline = async () => {
     if (validateForm()) {
-      // Check if all fields (except id, createdAt, updatedAt) are filled
-      const requiredFields = Object.keys(formData).filter(
-        k => !['id','createdAt','updatedAt'].includes(k)
-      );
-      const allFilled = requiredFields.every(k => {
-        const v = formData[k as keyof typeof formData];
-        if (Array.isArray(v)) return v.length > 0;
-        if (typeof v === 'string') return !!v.trim();
-        if (typeof v === 'number') return v !== null && v !== undefined;
-        return true;
-      });
-      const stage = allFilled ? 'business-case' : 'discovery';
       try {
-        // Map form data to match API expectations
-        const apiData = {
-          title: formData.title,
-          problemStatement: formData.problemStatement,
-          proposedAISolution: formData.proposedAISolution,
-          currentState: formData.currentState || '',
-          desiredState: formData.desiredState || '',
-          primaryStakeholders: formData.primaryStakeholders,
-          secondaryStakeholders: formData.secondaryStakeholders,
-          successCriteria: formData.successCriteria,
-          problemValidation: formData.problemValidation || '',
-          solutionHypothesis: formData.solutionHypothesis || '',
-          keyAssumptions: formData.keyAssumptions,
-          initialROI: formData.initialROI,
-          confidenceLevel: formData.confidenceLevel,
-          operationalImpactScore: formData.operationalImpactScore,
-          productivityImpactScore: formData.productivityImpactScore,
-          revenueImpactScore: formData.revenueImpactScore,
-          implementationComplexity: formData.implementationComplexity,
+        setSaving(true);
+        const body = {
+          ...formData,
+          // Convert timeline back to full format
           estimatedTimeline: formData.estimatedTimelineMonths ? `${formData.estimatedTimelineMonths} months` : '',
-          requiredResources: formData.requiredResources,
-          businessFunction: formData.businessFunction || '',
-          stage,
-          priority: formData.priority,
+          stage: completeForBusinessCase ? 'business-case' : formData.stage,
         };
-
         const res = await fetch("/api/write-usecases", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/json"
           },
-          body: JSON.stringify(apiData),
-        });
-      if (res.ok) {
+          body: JSON.stringify(body),
+        });   
+        
+        if (!res.ok) {
+          throw new Error('Failed to save use case');
+        }
+
         router.push('/dashboard');
-      } else {
-        alert("Failed to save use case. Please try again.");
-      }
-      } catch {
-        console.error("Unable to submit Use Case")
-        alert("Unable to submit Use Case. Please try again.");
+      } catch(error) {
+        console.error("Error saving use case:", error);
+        setShowError(true);
+      } finally {
+        setSaving(false);
       }
     }
   };
@@ -687,6 +663,12 @@ const AIUseCaseTool = () => {
         </div>
         <div className="bg-white border-t border-gray-200">
           <div className="p-6">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {formData.aiucId ? `AIUC-${formData.aiucId} ${formData.title}` : formData.title}
+              </h1>
+              <p className="text-gray-600">Edit Use Case</p>
+            </div>
             {showError && (
               <div className="mb-4 text-red-600 font-semibold">
                 Please fill all required fields before proceeding.

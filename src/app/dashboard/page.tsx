@@ -778,18 +778,20 @@ const Dashboard = () => {
                   ))}
                 </ul>
                 <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    onClick={() => {
-                      const useCase = filteredUseCases.find(uc => uc.title === validationError.useCaseTitle);
-                      if (useCase) {
-                        router.push(`/edit-usecase/${useCase.id}`);
-                      }
-                      setValidationError({ show: false, fields: [], useCaseTitle: '' });
-                    }}
-                  >
-                    Edit Use Case
-                  </Button>
+                  {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && (
+                    <Button 
+                      size="sm" 
+                      onClick={() => {
+                        const useCase = filteredUseCases.find(uc => uc.title === validationError.useCaseTitle);
+                        if (useCase) {
+                          router.push(`/edit-usecase/${useCase.id}`);
+                        }
+                        setValidationError({ show: false, fields: [], useCaseTitle: '' });
+                      }}
+                    >
+                      Edit Use Case
+                    </Button>
+                  )}
                   <Button 
                     size="sm" 
                     variant="outline" 
@@ -950,7 +952,7 @@ const Dashboard = () => {
                   <Button size="sm" variant="outline" onClick={() => { handleView(modalUseCase.id); setIsSheetOpen(false); }}>
                     <Eye className="w-4 h-4 mr-1" /> View
                   </Button>
-                  {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER' || userData?.role === 'QZEN_ADMIN') && (
+                  {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && (
                     <Button size="sm" variant="outline" onClick={() => { handleEdit(modalUseCase.id); setIsSheetOpen(false); }}>
                       <EditIcon className="w-4 h-4 mr-1" /> Edit
                     </Button>

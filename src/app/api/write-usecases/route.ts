@@ -100,7 +100,8 @@ export async function POST(req: Request) {
 
             // Check permissions based on role
             if (userRecord.role === 'QZEN_ADMIN') {
-                // QZen admin can update any use case
+                // QZEN_ADMIN cannot edit use cases - they can only view and manage
+                return NextResponse.json({ error: 'QZEN_ADMIN users cannot edit use cases' }, { status: 403 });
             } else if (userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') {
                 // Org admin and org user can update use cases in their organization
                 if (existingUseCase.organizationId !== userRecord.organizationId) {
