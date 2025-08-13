@@ -78,7 +78,7 @@ model FinOps {
   valueBase       Float
   valueGrowthRate Float
   budgetRange     String?
-  useCase         UseCase @relation(fields: [useCaseId], references: [id])
+  useCase         UseCase @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
 }
 
 model Assess {
@@ -86,7 +86,7 @@ model Assess {
   createdAt DateTime @default(now())
   stepsData Json
   updatedAt DateTime
-  UseCase   UseCase  @relation(fields: [useCaseId], references: [id])
+  UseCase   UseCase  @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
 }
 
 model Approval {
@@ -108,7 +108,7 @@ model Approval {
   finalQualification String?
   updatedAt          DateTime @updatedAt
   createdAt          DateTime @default(now())
-  useCase            UseCase  @relation(fields: [useCaseId], references: [id])
+  useCase            UseCase  @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
 
   @@index([governanceStatus])
   @@index([riskStatus])
@@ -222,7 +222,7 @@ model EuAiActAnswer {
   updatedAt     DateTime          @updatedAt
   questionId    String
   assessmentId  String
-  assessment    EuAiActAssessment @relation(fields: [assessmentId], references: [id])
+  assessment    EuAiActAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
   question      EuAiActQuestion   @relation(fields: [questionId], references: [questionId])
 
   @@unique([questionId, assessmentId])
@@ -237,7 +237,7 @@ model EuAiActAssessment {
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
   answers   EuAiActAnswer[]
-  useCase   UseCase          @relation(fields: [useCaseId], references: [id])
+  useCase   UseCase          @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
   controls  EuAiActControl[]
 
   @@index([status])
@@ -290,7 +290,7 @@ model EuAiActControl {
   updatedAt     DateTime             @updatedAt
   controlId     String
   assessmentId  String
-  assessment    EuAiActAssessment    @relation(fields: [assessmentId], references: [id])
+  assessment    EuAiActAssessment    @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
   controlStruct EuAiActControlStruct @relation(fields: [controlId], references: [controlId])
   subcontrols   EuAiActSubcontrol[]
 
@@ -307,7 +307,7 @@ model EuAiActSubcontrol {
   updatedAt        DateTime                @updatedAt
   subcontrolId     String
   controlId        String
-  control          EuAiActControl          @relation(fields: [controlId], references: [id])
+  control          EuAiActControl          @relation(fields: [controlId], references: [id], onDelete: Cascade)
   subcontrolStruct EuAiActSubcontrolStruct @relation(fields: [subcontrolId], references: [subcontrolId])
 
   @@unique([subcontrolId, controlId])
@@ -349,7 +349,7 @@ model Iso42001SubclauseInstance {
   updatedAt      DateTime           @updatedAt
   subclauseId    String
   assessmentId   String
-  assessment     Iso42001Assessment @relation(fields: [assessmentId], references: [id])
+  assessment     Iso42001Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
   subclause      Iso42001Subclause  @relation(fields: [subclauseId], references: [subclauseId])
 
   @@unique([subclauseId, assessmentId])
@@ -364,7 +364,7 @@ model Iso42001Assessment {
   createdAt  DateTime                    @default(now())
   updatedAt  DateTime                    @updatedAt
   annexes    Iso42001AnnexInstance[]
-  useCase    UseCase                     @relation(fields: [useCaseId], references: [id])
+  useCase    UseCase                     @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
   subclauses Iso42001SubclauseInstance[]
 
   @@index([status])
@@ -501,7 +501,7 @@ model Risk {
   closedByName     String?
   closedByEmail    String?
   closureReason    String?
-  useCase          UseCase    @relation(fields: [useCaseId], references: [id])
+  useCase          UseCase    @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
 
   @@index([useCaseId])
   @@index([status])
