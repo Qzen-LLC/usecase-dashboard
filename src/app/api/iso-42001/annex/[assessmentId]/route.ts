@@ -6,6 +6,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ assessmentId: string }> }
 ) {
+  let assessmentId: string = '';
+  let itemId: string = '';
+  
   try {
     const user = await currentUser();
     if (!user) {
@@ -20,8 +23,10 @@ export async function POST(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { assessmentId } = await params;
-    const { itemId, implementation, evidenceFiles } = await request.json();
+    assessmentId = (await params).assessmentId;
+    const body = await request.json();
+    itemId = body.itemId;
+    const { implementation, evidenceFiles } = body;
     
     console.log('🔄 ISO 42001 Annex API - Received data:', {
       assessmentId,
@@ -30,6 +35,14 @@ export async function POST(
       evidenceFilesCount: evidenceFiles?.length || 0,
       evidenceFiles
     });
+
+    // Validate itemId format - should be a string like "A.1.1", not a UUID
+    if (!itemId || typeof itemId !== 'string' || itemId.length < 3) {
+      return NextResponse.json(
+        { error: 'Invalid itemId format', details: 'itemId should be a string identifier like "A.1.1"' },
+        { status: 400 }
+      );
+    }
 
     // Get the assessment to check ownership
     const assessment = await prismaClient.iso42001Assessment.findUnique({
@@ -67,9 +80,45 @@ export async function POST(
 
     console.log('🔄 Found annex item:', { itemId, annexItemUuid: annexItem.id });
 
+    // Check if an annex instance already exists
+    const existingInstance = await prismaClient.iso42001AnnexInstance.findUnique({
+      where: {
+        assessmentId_itemId: {
+          assessmentId,
+          itemId
+        }
+      }
+    });
+
+    // Also check if there are any instances with the wrong itemId structure (UUID instead of string)
+    const wrongStructureInstances = await prismaClient.iso42001AnnexInstance.findMany({
+      where: {
+        assessmentId,
+        itemId: {
+          not: itemId
+        }
+      },
+      include: {
+        item: true
+      }
+    });
+
+    console.log('🔄 Existing annex instance check:', {
+      assessmentId,
+      itemId,
+      existingInstance: existingInstance ? 'Found' : 'Not found',
+      existingInstanceId: existingInstance?.id,
+      existingImplementation: existingInstance?.implementation,
+      wrongStructureInstances: wrongStructureInstances.map(inst => ({
+        id: inst.id,
+        itemId: inst.itemId,
+        itemItemId: inst.item?.itemId
+      }))
+    });
+
     // Upsert the annex instance (create if doesn't exist, update if it does)
     console.log('🔄 About to upsert annex instance with:', {
-      where: { assessmentId_itemId: { assessmentId, itemId: annexItem.id } },
+      where: { assessmentId_itemId: { assessmentId, itemId } }, 
       evidenceFilesType: typeof evidenceFiles,
       evidenceFiles
     });
@@ -78,7 +127,7 @@ export async function POST(
       where: {
         assessmentId_itemId: {
           assessmentId,
-          itemId: annexItem.id
+          itemId
         }
       },
       update: {
@@ -88,7 +137,7 @@ export async function POST(
         updatedAt: new Date()
       },
       create: {
-        itemId: annexItem.id,
+        itemId,
         assessmentId,
         implementation,
         evidenceFiles,
@@ -106,6 +155,35 @@ export async function POST(
     return NextResponse.json(updatedInstance);
   } catch (error) {
     console.error('Error saving ISO 42001 annex:', error);
+    
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('Unique constraint failed')) {
+        console.error('Unique constraint violation details:', {
+          assessmentId,
+          itemId,
+          error: error.message
+        });
+        return NextResponse.json(
+          { 
+            error: 'Annex instance already exists for this assessment',
+            details: 'A record with the same assessment ID and item ID already exists',
+            assessmentId,
+            itemId
+          },
+          { status: 409 }
+        );
+      }
+      
+      return NextResponse.json(
+        { 
+          error: 'Failed to save implementation',
+          details: error.message
+        },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Failed to save implementation' },
       { status: 500 }

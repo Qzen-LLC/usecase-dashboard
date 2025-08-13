@@ -404,7 +404,7 @@ model Iso42001AnnexInstance {
   itemId         String
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
-  item           Iso42001AnnexItem  @relation(fields: [itemId], references: [id], map: "Iso42001AnnexInstance_annexItemId_fkey")
+  item           Iso42001AnnexItem  @relation(fields: [itemId], references: [itemId], map: "Iso42001AnnexInstance_annexItemId_fkey")
   assessment     Iso42001Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
   @@unique([assessmentId, itemId], map: "Iso42001AnnexInstance_assessmentId_annexItemId_key")

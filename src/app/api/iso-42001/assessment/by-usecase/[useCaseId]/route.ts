@@ -12,7 +12,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { useCaseId } = params;
+    const { useCaseId } = await params;
 
     // Check if use case exists and user has access
     const userRecord = await prismaClient.user.findUnique({

@@ -249,6 +249,12 @@ export default function Iso42001AssessmentPage() {
       clearTimeout(existingTimeout);
     }
 
+    // Check if this item is already being saved
+    if (savingFiles.has(`annex-${itemId}`)) {
+      console.log('🔍 Annex item already being saved, skipping:', itemId);
+      return;
+    }
+
     const existingInstance = assessment.annexes.find(ann => ann.item.itemId === itemId);
     
     // Update local state immediately with forced re-render - handle case where instance doesn't exist yet
@@ -324,7 +330,12 @@ export default function Iso42001AssessmentPage() {
           existingInstance: !!existingInstance,
           implementationLength: implementation.length,
           evidenceFilesCount: requestData.evidenceFiles.length,
-          requestData
+          requestData,
+          existingInstanceDetails: existingInstance ? {
+            id: existingInstance.id,
+            itemId: existingInstance.item.itemId,
+            implementation: existingInstance.implementation
+          } : null
         });
         
         const response = await fetch(`/api/iso-42001/annex/${assessment.id}`, {
@@ -751,11 +762,28 @@ export default function Iso42001AssessmentPage() {
   const updateAssessmentProgress = async () => {
     if (!assessment) return;
 
-    const totalItems = assessment.subclauses.length + assessment.annexes.length;
-    const implementedItems = assessment.subclauses.filter(sc => sc.implementation?.trim()).length + 
-                            assessment.annexes.filter(ann => ann.implementation?.trim()).length;
+    // Calculate total requirements from the framework data, not just current instances
+    const totalSubclauseRequirements = clauses.reduce((total, clause) => total + clause.subclauses.length, 0);
+    const totalAnnexRequirements = annexCategories.reduce((total, category) => total + category.items.length, 0);
+    const totalRequirements = totalSubclauseRequirements + totalAnnexRequirements;
 
-    const progress = totalItems > 0 ? (implementedItems / totalItems) * 100 : 0;
+    // Count implemented items (those with non-empty implementation text)
+    const implementedSubclauses = assessment.subclauses.filter(sc => sc.implementation?.trim()).length;
+    const implementedAnnexes = assessment.annexes.filter(ann => ann.implementation?.trim()).length;
+    const implementedItems = implementedSubclauses + implementedAnnexes;
+
+    // Calculate progress based on total framework requirements
+    const progress = totalRequirements > 0 ? (implementedItems / totalRequirements) * 100 : 0;
+
+    console.log('🔍 ISO 42001 Progress Calculation:', {
+      totalSubclauseRequirements,
+      totalAnnexRequirements,
+      totalRequirements,
+      implementedSubclauses,
+      implementedAnnexes,
+      implementedItems,
+      progress: Math.round(progress * 100) / 100
+    });
 
     try {
       await fetch(`/api/iso-42001/assessment/${assessment.id}/progress`, {
@@ -884,6 +912,14 @@ export default function Iso42001AssessmentPage() {
                   <span>{Math.round(assessment.progress)}% Complete</span>
                 </div>
                 <Progress value={assessment.progress} className="h-2" />
+                {/* Debug progress info */}
+                <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                  <div>📊 Progress Details:</div>
+                  <div>• Main Clauses: {clauses.reduce((total, clause) => total + clause.subclauses.length, 0)} requirements</div>
+                  <div>• Annex A: {annexCategories.reduce((total, category) => total + category.items.length, 0)} controls</div>
+                  <div>• Total: {clauses.reduce((total, clause) => total + clause.subclauses.length, 0) + annexCategories.reduce((total, category) => total + category.items.length, 0)} items</div>
+                  <div>• Completed: {assessment.subclauses.filter(sc => sc.implementation?.trim()).length + assessment.annexes.filter(ann => ann.implementation?.trim()).length} items</div>
+                </div>
               </div>
             </div>
           )}
