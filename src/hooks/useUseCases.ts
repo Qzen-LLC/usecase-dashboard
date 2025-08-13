@@ -62,6 +62,7 @@ export interface MappedUseCase extends UseCase {
 interface UseUseCasesReturn {
   data: MappedUseCase[];
   error: Error | null;
+  isLoading: boolean;
   refetch: () => void;
   updateUseCase: (useCaseId: string, updates: Partial<MappedUseCase>) => void;
 }
@@ -82,9 +83,11 @@ interface UseDeleteUseCaseReturn {
 export function useUseCases(): UseUseCasesReturn {
   const [data, setData] = useState<MappedUseCase[]>([]);
   const [error, setError] = useState<Error | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchUseCases = async () => {
     try {
+      setIsLoading(true);
       setError(null);
       
       const response = await fetch(`/api/read-usecases`);
@@ -128,7 +131,7 @@ export function useUseCases(): UseUseCasesReturn {
           scores: {
             operational: uc.operationalImpactScore || 0,
             productivity: uc.productivityImpactScore || 0,
-            revenue: uc.revenueImpactScore || 0,
+            revenue: uc.initialROI || 0,
           },
           complexity: uc.implementationComplexity || 0,
           roi: uc.initialROI || 0,
@@ -145,6 +148,8 @@ export function useUseCases(): UseUseCasesReturn {
       setData(mappedUseCases);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch use cases'));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -168,6 +173,7 @@ export function useUseCases(): UseUseCasesReturn {
   return {
     data,
     error,
+    isLoading,
     refetch,
     updateUseCase
   };

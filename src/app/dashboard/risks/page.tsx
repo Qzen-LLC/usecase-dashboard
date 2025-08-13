@@ -69,24 +69,6 @@ const HybridRiskDashboard: React.FC = () => {
     }
   };
 
-  const testAuth = async () => {
-    try {
-      console.log('[Risk Dashboard] Testing authentication...');
-      const response = await fetch('/api/test-auth');
-      const data = await response.json();
-      console.log('[Risk Dashboard] Auth test result:', data);
-      
-      if (response.ok) {
-        alert('Authentication is working! User: ' + data.user.email);
-      } else {
-        alert('Authentication failed: ' + data.error);
-      }
-    } catch (err) {
-      console.error('[Risk Dashboard] Auth test error:', err);
-      alert('Auth test failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
-    }
-  };
-
   if (loading) {
     return (
       <div className="loading-container">
@@ -162,12 +144,6 @@ const HybridRiskDashboard: React.FC = () => {
           >
             <RefreshCw className="w-4 h-4" />
             Refresh
-          </button>
-          <button 
-            onClick={testAuth}
-            className="btn-outline flex items-center gap-2"
-          >
-            Test Auth
           </button>
         </div>
 

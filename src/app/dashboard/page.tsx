@@ -228,7 +228,7 @@ const Dashboard = () => {
   const [filterBy, setFilterBy] = useState('all');
   const [selectedUseCase, setSelectedUseCase] = useState<MappedUseCase | null>(null);
   const router = useRouter();
-  const { user, isSignedIn } = useUser();
+  const { user, isSignedIn, isLoaded } = useUser();
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>(''); // '' means All Organizations
   const [modalUseCase, setModalUseCase] = useState<MappedUseCase | null>(null);
@@ -239,12 +239,34 @@ const Dashboard = () => {
   const [deletedUseCaseIds, setDeletedUseCaseIds] = useState<Set<string>>(new Set());
 
   // Get user data from context
-  const { userData } = useUserData();
+  const { userData, loading: userLoading, error: userError, refetch: refetchUser } = useUserData();
 
   // React Query hooks for optimized data fetching
-  const { data: useCases = [], error, refetch, updateUseCase } = useUseCases();
+  const { data: useCases = [], error, isLoading, refetch, updateUseCase } = useUseCases();
   const updateStageMutation = useUpdateUseCaseStage();
   const deleteUseCaseMutation = useDeleteUseCase();
+
+  // Check if user is authenticated
+  if (!isLoaded) {
+    return (
+      <div className="loading-container">
+        <div className="text-center max-w-md bg-white/90 rounded-2xl shadow-2xl border border-gray-100 p-8">
+          <div className="loading-spinner" />
+          <p className="loading-text">Initializing...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isSignedIn) {
+    return (
+      <div className="loading-container">
+        <div className="text-center max-w-md bg-white/90 rounded-2xl shadow-2xl border border-gray-100 p-8">
+          <p className="text-gray-600">Please sign in to access the dashboard.</p>
+        </div>
+      </div>
+    );
+  }
 
   // DnD sensors
   const sensors = useSensors(
@@ -671,6 +693,24 @@ const Dashboard = () => {
 
 
 
+  if (userError) {
+    return (
+      <div className="error-container">
+        <div className="error-card">
+          <AlertTriangle className="error-icon" />
+          <h2 className="error-title">Unable to Load User Data</h2>
+          <p className="error-message">{userError}</p>
+          <button 
+            onClick={() => refetchUser()}
+            className="btn-primary"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="error-container">
@@ -684,6 +724,19 @@ const Dashboard = () => {
           >
             Try Again
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading || userLoading) {
+    return (
+      <div className="loading-container">
+        <div className="text-center max-w-md bg-white/90 rounded-2xl shadow-2xl border border-gray-100 p-8">
+          <div className="loading-spinner" />
+          <p className="loading-text">
+            {isLoading ? 'Loading use cases...' : 'Loading user data...'}
+          </p>
         </div>
       </div>
     );
