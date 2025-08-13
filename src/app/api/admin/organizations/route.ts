@@ -226,47 +226,15 @@ export async function DELETE(req: Request) {
         where: { organizationId: organizationId },
       });
 
-      // Delete vendors
-      await tx.vendor.deleteMany({
-        where: { organizationId: organizationId },
-      });
-
-      // Delete use cases and related data
-      const useCaseIds = organization.useCases.map(uc => uc.id);
-      
-      // Delete use case related data
-      await tx.approval.deleteMany({
-        where: { useCaseId: { in: useCaseIds } },
-      });
-      
-      await tx.finOps.deleteMany({
-        where: { useCaseId: { in: useCaseIds } },
-      });
-      
-      await tx.assess.deleteMany({
-        where: { useCaseId: { in: useCaseIds } },
-      });
-      
-      await tx.euAiActAssessment.deleteMany({
-        where: { useCaseId: { in: useCaseIds } },
-      });
-      
-      await tx.iso42001Assessment.deleteMany({
-        where: { useCaseId: { in: useCaseIds } },
-      });
-      
-      // Delete use cases
-      await tx.useCase.deleteMany({
-        where: { organizationId: organizationId },
-      });
-
       // Update users to remove organization association
       await tx.user.updateMany({
         where: { organizationId: organizationId },
         data: { organizationId: null },
       });
 
-      // Finally delete the organization
+      // Delete the organization - all related data will cascade automatically:
+      // - UseCases (and all their nested data: FinOps, Assess, Approval, etc.)
+      // - Vendors (and all their nested data: AssessmentScore, ApprovalArea)
       await tx.organization.delete({
         where: { id: organizationId },
       });
