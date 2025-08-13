@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     domains: [
-      "blfsawovozyywndoiicu.supabase.co"
+      // Add any Neon-related domains here if needed for image hosting
     ],
   },
 

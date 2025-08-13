@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { prismaClient } from '@/utils/db';
-import redis from '@/lib/redis';
+
 
 // In-memory cache for development
 const userCache = new Map<string, { data: any; timestamp: number }>();
@@ -13,17 +13,11 @@ const getCacheKey = (clerkId: string) => `user:${clerkId}`;
 // Get cached data
 async function getCachedUser(clerkId: string) {
   try {
-    if (process.env.NODE_ENV === 'development') {
-      const cached = userCache.get(clerkId);
-      if (cached && Date.now() - cached.timestamp < CACHE_TTL * 1000) {
-        return cached.data;
-      }
-      return null;
-    } else {
-      // Production: Use Redis
-      const cached = await redis.get(getCacheKey(clerkId));
-      return cached ? JSON.parse(cached) : null;
+    const cached = userCache.get(clerkId);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL * 1000) {
+      return cached.data;
     }
+    return null;
   } catch (error) {
     console.error('Cache read error:', error);
     return null;
@@ -33,15 +27,10 @@ async function getCachedUser(clerkId: string) {
 // Set cached data
 async function setCachedUser(clerkId: string, data: any) {
   try {
-    if (process.env.NODE_ENV === 'development') {
-      userCache.set(clerkId, {
-        data,
-        timestamp: Date.now(),
-      });
-    } else {
-      // Production: Use Redis
-      await redis.setex(getCacheKey(clerkId), CACHE_TTL, JSON.stringify(data));
-    }
+    userCache.set(clerkId, {
+      data,
+      timestamp: Date.now(),
+    });
   } catch (error) {
     console.error('Cache write error:', error);
   }
@@ -50,12 +39,7 @@ async function setCachedUser(clerkId: string, data: any) {
 // Invalidate cache
 async function invalidateUserCache(clerkId: string) {
   try {
-    if (process.env.NODE_ENV === 'development') {
-      userCache.delete(clerkId);
-    } else {
-      // Production: Use Redis
-      await redis.del(getCacheKey(clerkId));
-    }
+    userCache.delete(clerkId);
   } catch (error) {
     console.error('Cache invalidation error:', error);
   }

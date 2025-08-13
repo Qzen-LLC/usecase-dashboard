@@ -6,7 +6,7 @@ import { PrismaClient } from './src/generated/prisma/index.js';
 const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL || "postgresql://postgres.blfsawovozyywndoiicu:qzen_dudes@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+      url: process.env.DATABASE_URL
     }
   }
 });

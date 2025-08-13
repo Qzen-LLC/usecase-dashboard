@@ -127,13 +127,22 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
              {useCase.priority && (
                <DropdownMenu>
                  <DropdownMenuTrigger asChild>
-                                    <span className={`text-[10px] px-1 py-0.5 rounded-full font-semibold cursor-pointer flex items-center gap-1 ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-gray-100'}`}>
-                      {_priorities[useCase.priority as keyof typeof _priorities]?.label || useCase.priority}
-                    </span>
+                   <span 
+                     className={`text-[10px] px-1 py-0.5 rounded-full font-semibold cursor-pointer flex items-center gap-1 ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-gray-100'}`}
+                     onClick={(e) => e.stopPropagation()}
+                   >
+                     {_priorities[useCase.priority as keyof typeof _priorities]?.label || useCase.priority}
+                   </span>
                  </DropdownMenuTrigger>
                  <DropdownMenuContent align="end">
                    {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((priority) => (
-                     <DropdownMenuItem key={priority} onClick={() => handlePriorityChange(useCase.id, priority)}>
+                     <DropdownMenuItem 
+                       key={priority} 
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         handlePriorityChange(useCase.id, priority);
+                       }}
+                     >
                        {_priorities[priority as keyof typeof _priorities]?.label || priority}
                      </DropdownMenuItem>
                    ))}

@@ -1,22 +1,20 @@
 import { useState, useEffect } from 'react';
 
 // Base UseCase type from the API
-interface UseCase {
+export interface UseCase {
   id: string;
   title: string;
-  stage?: string;
-  priority?: string;
-  primaryStakeholders?: string[];
   aiucId?: string;
   problemStatement?: string;
   proposedAISolution?: string;
-  currentState?: string;
-  desiredState?: string;
+  stage?: string;
+  priority?: string;
+  primaryStakeholders?: string[];
   secondaryStakeholders?: string[];
-  successCriteria?: string[];
+  successCriteria?: string;
   problemValidation?: string;
   solutionHypothesis?: string;
-  keyAssumptions?: string[];
+  keyAssumptions?: string;
   initialROI?: number;
   confidenceLevel?: number;
   operationalImpactScore?: number;
@@ -89,7 +87,7 @@ export function useUseCases(): UseUseCasesReturn {
     try {
       setError(null);
       
-      const response = await fetch(`/api/read-usecases?t=${Date.now()}`);
+      const response = await fetch(`/api/read-usecases`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

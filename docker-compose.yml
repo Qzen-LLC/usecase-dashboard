@@ -18,11 +18,10 @@ services:
       - NEXT_PUBLIC_CLERK_SIGN_UP_URL=${NEXT_PUBLIC_CLERK_SIGN_UP_URL:-/sign-up}
       - NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=${NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL:-/dashboard}
       - NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=${NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL:-/dashboard}
-      - REDIS_URL=${REDIS_URL}
+
       - WEBHOOK_SECRET=${WEBHOOK_SECRET}
     depends_on:
       - postgres
-      - redis
     restart: unless-stopped
     networks:
       - app-network
@@ -47,21 +46,7 @@ services:
       timeout: 10s
       retries: 3
 
-  redis:
-    image: redis:7-alpine
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-    ports:
-      - "6379:6379"
-    restart: unless-stopped
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+
 
   # Optional: Database migration service
   migrate:
@@ -81,7 +66,6 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:
 
 networks:
   app-network:

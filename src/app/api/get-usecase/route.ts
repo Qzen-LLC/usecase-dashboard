@@ -1,7 +1,7 @@
 import { prismaClient } from "@/utils/db";
 import { NextResponse } from "next/server";
 import { currentUser } from '@clerk/nextjs/server';
-import redis from '@/lib/redis';
+
 
 export async function GET(req: Request) {
     try {
@@ -28,17 +28,7 @@ export async function GET(req: Request) {
             );
         }
 
-        // Redis cache check
-        let cached = null;
-        try {
-            const cacheKey = `usecase:${id}`;
-            cached = await redis.get(cacheKey);
-            if (cached) {
-                return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
-            }
-        } catch (redisError) {
-            console.warn('Redis get failed, continuing without cache:', redisError);
-        }
+
 
         // Check permissions based on role
         if (userRecord.role !== 'QZEN_ADMIN') {
@@ -72,8 +62,6 @@ export async function GET(req: Request) {
                 problemStatement: true,
                 proposedAISolution: true,
                 keyBenefits: true,
-                currentState: true,
-                desiredState: true,
                 primaryStakeholders: true,
                 secondaryStakeholders: true,
                 successCriteria: true,
@@ -106,13 +94,7 @@ export async function GET(req: Request) {
             );
         }
 
-        // Cache the result for 5 minutes
-        try {
-            const cacheKey = `usecase:${id}`;
-            await redis.set(cacheKey, JSON.stringify(useCase), 'EX', 300);
-        } catch (redisError) {
-            console.warn('Redis set failed, continuing without caching:', redisError);
-        }
+
 
         // Add cache header
         const response = NextResponse.json(useCase);

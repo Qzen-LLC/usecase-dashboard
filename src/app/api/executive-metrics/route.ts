@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { prismaClient } from '@/utils/db';
-import redis from '@/lib/redis';
+
 
 
 export async function GET(_req: NextRequest) {
@@ -21,25 +21,7 @@ export async function GET(_req: NextRequest) {
     if (!userRecord) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
 
-    const cacheKey = `executive-metrics:${userRecord.role}:${userRecord.id}`;
-    let cached = null;
-    try {
-      cached = await redis.get(cacheKey);
-      if (cached) {
-        const rtt = Date.now() - startTime;
-        return new NextResponse(cached, {
-          headers: {
-            'Content-Type': 'application/json',
-          'X-Cache': 'HIT',
-          'X-API-RTT': rtt.toString(),
-          'X-Server-Response-Time': rtt.toString(),
-          'X-DB-Query-Time': 'N/A'
-        }
-      });
-      }
-    } catch (error) {
-      console.warn('Redis cache read failed, continuing without cache:', error.message);
-    }
+
 
 
     // Build base query based on role
@@ -270,11 +252,7 @@ approvalFields.forEach((field) => {
     };
 
 
-    try {
-      await redis.set(cacheKey, JSON.stringify(response), 'EX', 300);
-    } catch (error) {
-      console.warn('Redis cache write failed, continuing without cache:', error.message);
-    }
+
 
 
     const end = Date.now();

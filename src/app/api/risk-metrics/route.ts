@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { prismaClient } from '@/utils/db';
-import redis from '@/lib/redis';
+
 import { calculateRiskScores, getRiskLevel, getRiskCategoryScores, type StepsData } from '@/lib/risk-calculations';
 
 export async function GET() {
@@ -37,17 +37,7 @@ export async function GET() {
         message: 'User exists in Clerk but not in database'
       }, { status: 404 });
     }
-    // Redis cache check (gracefully handle failures)
-    const cacheKey = `risk-metrics:${userRecord.role}:${userRecord.id}`;
-    let cached = null;
-    try {
-      cached = await redis.get(cacheKey);
-      if (cached) {
-        return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
-      }
-    } catch (error) {
-      console.warn('Redis cache read failed, continuing without cache:', error instanceof Error ? error.message : 'Unknown error');
-    }
+
     // Fetch use cases based on role
     let useCases = [];
     if (userRecord.role === 'QZEN_ADMIN') {
@@ -150,11 +140,7 @@ export async function GET() {
       complianceScore: complianceScore,
     };
     
-    try {
-      await redis.set(cacheKey, JSON.stringify(riskMetrics), 'EX', 300);
-    } catch (error) {
-      console.warn('Redis cache write failed, continuing without cache:', error instanceof Error ? error.message : 'Unknown error');
-    }
+
     return NextResponse.json(riskMetrics);
   } catch (error) {
     console.error('Error fetching risk metrics:', error);

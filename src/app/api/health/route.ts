@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prismaClient as prisma } from '@/utils/db';
-import redis from '@/lib/redis';
+
 
 export async function GET() {
   const startTime = Date.now();
@@ -16,14 +16,7 @@ export async function GET() {
     errors.push(`Database: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 
-  // Check Redis connection
-  try {
-    const pong = await redis.ping();
-    services.redis = pong === 'PONG' ? 'connected' : 'error';
-  } catch (error) {
-    services.redis = 'disconnected';
-    errors.push(`Redis: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
+
 
   // Check environment variables
   const requiredEnvVars = [

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -83,9 +83,15 @@ interface SidebarLayoutProps {
 
 function SidebarLayoutContent({ children }: SidebarLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const { user, isSignedIn } = useUser();
   const { userData } = useUserData();
+
+  // Prevent hydration mismatch by only rendering after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
@@ -113,6 +119,15 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
     ...navigationItems
   ];
 
+  // Don't render until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
@@ -122,7 +137,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
           {isCollapsed ? (
             <div className="flex flex-col items-center p-4 gap-3">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md bg-white">
-                <Image src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MjA3ODUxMCwiZXhwIjo0OTA1Njc4NTEwfQ.ra2NZ9Flg45aZ-OLYnzc_xotXbyfOw3wOY3JgXWq9qw" alt="Logo" width={32} height={32} className="object-contain" />
+                <Image src="/images/logo.svg" alt="Logo" width={32} height={32} className="object-contain" />
               </div>
               <Button
                 variant="ghost"
@@ -136,7 +151,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
           ) : (
             <div className="flex items-center gap-3 p-4">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-white">
-                <Image src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MjA3ODUxMCwiZXhwIjo0OTA1Njc4NTEwfQ.ra2NZ9Flg45aZ-OLYnzc_xotXbyfOw3wOY3JgXWq9qw" alt="Logo" width={40} height={40} className="object-contain" />
+                <Image src="/images/logo.svg" alt="Logo" width={40} height={40} className="object-contain" />
               </div>
               <div className="flex flex-col">
                 <span className="text-xl font-extrabold text-gray-900 leading-tight">QUBE</span>

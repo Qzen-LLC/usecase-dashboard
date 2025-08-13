@@ -57,28 +57,37 @@ export default function AdminDashboard() {
   const [useCasesError, setUseCasesError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    fetchOrganizations();
+    setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      fetchOrganizations();
+    }
+  }, [mounted]);
 
   // Fetch all use cases on mount
   useEffect(() => {
-    const fetchUseCases = async () => {
-      setUseCasesLoading(true);
-      try {
-        const res = await fetch(`/api/read-usecases?t=${Date.now()}`);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to fetch use cases');
-        setAllUseCases(data.useCases || []);
-      } catch (err: any) {
-        setUseCasesError(err.message || 'Unknown error');
-      } finally {
-        setUseCasesLoading(false);
-      }
-    };
-    fetchUseCases();
-  }, []);
+    if (mounted) {
+      const fetchUseCases = async () => {
+        setUseCasesLoading(true);
+        try {
+          const res = await fetch(`/api/read-usecases`);
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Failed to fetch use cases');
+          setAllUseCases(data.useCases || []);
+        } catch (err: any) {
+          setUseCasesError(err.message || 'Unknown error');
+        } finally {
+          setUseCasesLoading(false);
+        }
+      };
+      fetchUseCases();
+    }
+  }, [mounted]);
 
   // Helper: orgId -> orgName
   const orgIdToName = (id: string) => {
@@ -90,6 +99,18 @@ export default function AdminDashboard() {
   const filteredUseCases = selectedOrgId
     ? allUseCases.filter(uc => uc.organizationId === selectedOrgId)
     : allUseCases;
+
+  // Don't render until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading admin dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   const fetchOrganizations = async () => {
     setLoading(true);

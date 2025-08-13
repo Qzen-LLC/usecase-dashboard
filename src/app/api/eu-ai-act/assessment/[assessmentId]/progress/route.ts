@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prismaClient } from '@/utils/db';
 import { currentUser } from '@clerk/nextjs/server';
-import redis from '@/lib/redis';
+
 
 export async function PATCH(
   request: NextRequest,
@@ -58,17 +58,7 @@ export async function PATCH(
       }
     });
 
-    // Clear Redis cache for governance data to ensure fresh data is shown
-    try {
-      const cachePattern = `governance-data:*`;
-      const keys = await redis.keys(cachePattern);
-      if (keys.length > 0) {
-        await redis.del(...keys);
-        console.log(`Cleared ${keys.length} governance cache keys`);
-      }
-    } catch (cacheError) {
-      console.error('Error clearing governance cache:', cacheError);
-    }
+
 
     return NextResponse.json(updatedAssessment);
   } catch (error) {

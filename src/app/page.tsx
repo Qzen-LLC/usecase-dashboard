@@ -54,7 +54,7 @@ export default function HomePage() {
           {/* Logo placeholder - replace src with your logo if available */}
           <div className="mb-4">
             <Image 
-              src="https://blfsawovozyywndoiicu.supabase.co/storage/v1/object/sign/company/sharpened_logo_transparent.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MjUwODc5My03NTY4LTQ5ZWYtOTJlMS1lYmU4MmM1YTUwYzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjb21wYW55L3NoYXJwZW5lZF9sb2dvX3RyYW5zcGFyZW50LnBuZyIsImlhdCI6MTc1MjMxMDA0OCwiZXhwIjoxNzYwOTUwMDQ4fQ.OMnrUpd7vPASUkhCrepStmfEq9dbcdbrgrspJaXkpVk" 
+              src="/images/logo.svg" 
               alt="QZen QUBE Logo" 
               width={64} 
               height={64} 

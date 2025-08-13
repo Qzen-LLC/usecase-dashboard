@@ -12,14 +12,12 @@ interface UseCaseDetails {
   aiucId: number;
   problemStatement: string;
   proposedAISolution: string;
-  currentState: string;
-  desiredState: string;
   primaryStakeholders: string[];
   secondaryStakeholders: string[];
-  successCriteria: string[];
+  successCriteria: string;
   problemValidation: string;
   solutionHypothesis: string;
-  keyAssumptions: string[];
+  keyAssumptions: string;
   initialROI: string;
   confidenceLevel: number;
   operationalImpactScore: number;
@@ -235,11 +233,9 @@ const ViewUseCasePage = () => {
               <div className="space-y-4">
                 <div><span className="font-medium text-gray-700">Problem Statement:</span> <span>{useCase.problemStatement}</span></div>
                 <div><span className="font-medium text-gray-700">Proposed AI Solution:</span> <span>{useCase.proposedAISolution}</span></div>
-                <div><span className="font-medium text-gray-700">Current State:</span> <span>{useCase.currentState}</span></div>
-                <div><span className="font-medium text-gray-700">Desired State:</span> <span>{useCase.desiredState}</span></div>
                 <div><span className="font-medium text-gray-700">Primary Stakeholders:</span> {renderArray(useCase.primaryStakeholders, 'stakeholder')}</div>
                 <div><span className="font-medium text-gray-700">Secondary Stakeholders:</span> {renderArray(useCase.secondaryStakeholders, 'stakeholder')}</div>
-                <div><span className="font-medium text-gray-700">Success Criteria:</span> {renderArray(useCase.successCriteria, 'success criterion')}</div>
+                <div><span className="font-medium text-gray-700">Success Criteria:</span> <span>{useCase.successCriteria}</span></div>
               </div>
             )}
 
@@ -250,7 +246,7 @@ const ViewUseCasePage = () => {
               <div className="space-y-4">
                 <div><span className="font-medium text-gray-700">Problem Validation:</span> <span>{useCase.problemValidation}</span></div>
                 <div><span className="font-medium text-gray-700">Solution Hypothesis:</span> <span>{useCase.solutionHypothesis}</span></div>
-                <div><span className="font-medium text-gray-700">Key Assumptions:</span> {renderArray(useCase.keyAssumptions, 'assumption')}</div>
+                <div><span className="font-medium text-gray-700">Key Assumptions:</span> <span>{useCase.keyAssumptions}</span></div>
                 <div><span className="font-medium text-gray-700">Initial ROI:</span> <span>{useCase.initialROI}</span></div>
                 <div><span className="font-medium text-gray-700">Confidence Level:</span> <span>{useCase.confidenceLevel}</span></div>
               </div>

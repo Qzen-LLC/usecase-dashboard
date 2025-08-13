@@ -25,10 +25,10 @@ export async function POST(req: Request) {
             problemStatement,
             proposedAISolution,
             keyBenefits,
-            currentState,
-            desiredState,
             primaryStakeholders,
             secondaryStakeholders,
+            currentState,
+            desiredState,
             successCriteria,
             problemValidation,
             solutionHypothesis,
@@ -49,33 +49,40 @@ export async function POST(req: Request) {
             priority,
         } = await req.json();
 
+        // Validate mandatory fields
+        if (!title || !problemStatement) {
+            return NextResponse.json({ 
+                error: 'Title and Problem Statement are required fields' 
+            }, { status: 400 });
+        }
+
         const data = {
             title,
             problemStatement,
-            proposedAISolution,
-            keyBenefits: keyBenefits || '',
+            proposedAISolution: proposedAISolution || '',
             currentState: currentState || '',
             desiredState: desiredState || '',
-            primaryStakeholders,
-            secondaryStakeholders,
-            successCriteria,
+            keyBenefits: keyBenefits || '',
+            primaryStakeholders: primaryStakeholders || [],
+            secondaryStakeholders: secondaryStakeholders || [],
+            successCriteria: successCriteria || '',
             problemValidation: problemValidation || '',
             solutionHypothesis: solutionHypothesis || '',
-            keyAssumptions,
+            keyAssumptions: keyAssumptions || '',
             initialCost: initialCost || '',
-            initialROI,
-            confidenceLevel,
-            operationalImpactScore,
-            productivityImpactScore,
-            revenueImpactScore,
-            implementationComplexity,
-            estimatedTimeline,
+            initialROI: initialROI || '',
+            confidenceLevel: confidenceLevel || 5,
+            operationalImpactScore: operationalImpactScore || 5,
+            productivityImpactScore: productivityImpactScore || 5,
+            revenueImpactScore: revenueImpactScore || 5,
+            implementationComplexity: implementationComplexity || 5,
+            estimatedTimeline: estimatedTimeline || '',
             plannedStartDate: plannedStartDate || '',
             estimatedTimelineMonths: estimatedTimelineMonths || '',
-            requiredResources,
-            businessFunction,
-            stage,
-            priority,
+            requiredResources: requiredResources || '',
+            businessFunction: businessFunction || '',
+            stage: stage || 'discovery',
+            priority: priority || 'MEDIUM',
             updatedAt: new Date(),
         };
 
@@ -139,27 +146,6 @@ export async function POST(req: Request) {
                     createdAt: new Date(),
                 },
             });
-        }
-
-        // Invalidate Redis cache for /read-usecases for this user
-        try {
-            const redis = (await import('@/lib/redis')).default;
-            const cacheKey = `usecases:${userRecord.role}:${userRecord.id}`;
-            await redis.del(cacheKey);
-
-            // If user belongs to an organization, invalidate for all org users (regardless of role)
-            if (userRecord.organizationId) {
-                const orgUsers = await prismaClient.user.findMany({
-                    where: { organizationId: userRecord.organizationId },
-                    select: { id: true, role: true }
-                });
-                for (const u of orgUsers) {
-                    const orgCacheKey = `usecases:${u.role}:${u.id}`;
-                    await redis.del(orgCacheKey);
-                }
-            }
-        } catch (redisError) {
-            console.warn('Redis cache invalidation failed, continuing without cache invalidation:', redisError);
         }
 
         return NextResponse.json({ success: true, useCase });

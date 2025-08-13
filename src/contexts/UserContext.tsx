@@ -31,6 +31,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   const fetchUserData = async () => {
     if (!isSignedIn) {
@@ -61,13 +62,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     // Only fetch data after Clerk has loaded and user is signed in
-    if (isLoaded && isSignedIn) {
+    if (mounted && isLoaded && isSignedIn) {
       fetchUserData();
-    } else if (isLoaded && !isSignedIn) {
+    } else if (mounted && isLoaded && !isSignedIn) {
       setLoading(false);
     }
-  }, [isLoaded, isSignedIn]);
+  }, [mounted, isLoaded, isSignedIn]);
+
+  // Don't provide context until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return <>{children}</>;
+  }
 
   return (
     <UserContext.Provider value={{ userData, loading, error, refetch }}>

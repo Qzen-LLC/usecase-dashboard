@@ -1,7 +1,7 @@
 import { prismaClient } from "@/utils/db";
 import { NextResponse } from "next/server";
 import { currentUser } from '@clerk/nextjs/server';
-import redis from '@/lib/redis';
+
 
 export async function POST(req: Request) {
     try {
@@ -91,9 +91,7 @@ export async function POST(req: Request) {
             },
         });
 
-        // Invalidate Redis cache for this use case
-        const cacheKey = `finops:${useCaseId}`;
-        await redis.del(cacheKey);
+
 
         return NextResponse.json({ success: true });
     } catch (error) {

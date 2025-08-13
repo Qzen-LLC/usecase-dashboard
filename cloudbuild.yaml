@@ -64,7 +64,7 @@ steps:
       - '--set-env-vars'
       - 'NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,GCP_PROJECT_ID=$PROJECT_ID,GCP_STORAGE_BUCKET=${_STORAGE_BUCKET}'
       - '--set-secrets'
-      - 'DATABASE_URL=database-url:latest,CLERK_SECRET_KEY=clerk-secret-key:latest,NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=clerk-publishable-key:latest,UPSTASH_REDIS_REST_URL=upstash-redis-url:latest,UPSTASH_REDIS_REST_TOKEN=upstash-redis-token:latest,REDIS_URL=redis-url:latest,WEBHOOK_SECRET=webhook-secret:latest'
+      - 'DATABASE_URL=database-url:latest,CLERK_SECRET_KEY=clerk-secret-key:latest,NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=clerk-publishable-key:latest,WEBHOOK_SECRET=webhook-secret:latest'
     id: 'deploy-service'
     waitFor: ['push-image']
 

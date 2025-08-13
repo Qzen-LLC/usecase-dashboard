@@ -5,7 +5,7 @@ import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import AdminDashboard from '@/components/AdminDashboard';
 import { useUserData } from '@/contexts/UserContext';
-console.log("Admin page loaded");
+
 export default function AdminPage() {
   const { user, isSignedIn, isLoaded } = useUser();
   const router = useRouter();

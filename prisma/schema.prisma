@@ -13,16 +13,14 @@ model UseCase {
   title                    String
   problemStatement         String
   proposedAISolution       String
-  keyBenefits              String?             @default("")
   currentState             String
   desiredState             String
   primaryStakeholders      String[]
   secondaryStakeholders    String[]
-  successCriteria          String[]
+  successCriteria          String
   problemValidation        String
   solutionHypothesis       String
-  keyAssumptions           String[]
-  initialCost              String?             @default("")
+  keyAssumptions           String
   initialROI               String
   confidenceLevel          Int
   operationalImpactScore   Int
@@ -30,8 +28,6 @@ model UseCase {
   revenueImpactScore       Int
   implementationComplexity Int
   estimatedTimeline        String
-  plannedStartDate         String?             @default("")
-  estimatedTimelineMonths  String?             @default("")
   requiredResources        String
   createdAt                DateTime            @default(now())
   updatedAt                DateTime            @updatedAt
@@ -39,6 +35,10 @@ model UseCase {
   stage                    String?
   businessFunction         String
   aiucId                   Int
+  estimatedTimelineMonths  String?             @default("")
+  initialCost              String?             @default("")
+  keyBenefits              String?             @default("")
+  plannedStartDate         String?             @default("")
   organizationId           String?
   userId                   String?
   Approval                 Approval?
@@ -46,9 +46,9 @@ model UseCase {
   euAiActAssessments       EuAiActAssessment?
   finopsData               FinOps?
   iso42001Assessments      Iso42001Assessment?
+  risks                    Risk[]
   organization             Organization?       @relation(fields: [organizationId], references: [id])
   user                     User?               @relation(fields: [userId], references: [id])
-  risks                    Risk[]
 
   @@unique([aiucId, organizationId])
   @@unique([aiucId, userId])
@@ -130,8 +130,8 @@ model Vendor {
   notes            String?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
-  userId           String?
   organizationId   String?
+  userId           String?
   approvalAreas    ApprovalArea[]
   assessmentScores AssessmentScore[]
   organization     Organization?     @relation(fields: [organizationId], references: [id])
@@ -398,10 +398,10 @@ model Iso42001AnnexItem {
 model Iso42001AnnexInstance {
   id             String             @id @default(uuid())
   assessmentId   String
-  itemId         String
   status         String             @default("NOT_STARTED")
-  implementation String?
   evidenceFiles  String[]
+  implementation String?
+  itemId         String
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   item           Iso42001AnnexItem  @relation(fields: [itemId], references: [id], map: "Iso42001AnnexInstance_annexItemId_fkey")
@@ -470,38 +470,38 @@ model Invitation {
 }
 
 model Risk {
-  id                String       @id @default(uuid())
-  useCaseId         String
-  category          String       // technical, business, data, ethical, operational, regulatory
-  riskLevel         String       // Low, Medium, High, Critical
-  riskScore         Float
-  title             String
-  description       String
-  impact            String
-  likelihood        String
-  status            RiskStatus   @default(OPEN)
-  assignedTo        String?
-  assignedToName    String?
-  assignedToEmail   String?
-  mitigationPlan    String?
-  mitigationStatus  String?      // planned, in_progress, completed
-  targetDate        DateTime?
-  actualDate        DateTime?
-  notes             String?
-  createdAt         DateTime     @default(now())
-  createdBy         String
-  createdByName     String
-  createdByEmail    String
-  updatedAt         DateTime     @updatedAt
-  updatedBy         String?
-  updatedByName     String?
-  updatedByEmail    String?
-  closedAt          DateTime?
-  closedBy          String?
-  closedByName      String?
-  closedByEmail     String?
-  closureReason     String?
-  useCase           UseCase      @relation(fields: [useCaseId], references: [id])
+  id               String     @id @default(uuid())
+  useCaseId        String
+  category         String
+  riskLevel        String
+  riskScore        Float
+  title            String
+  description      String
+  impact           String
+  likelihood       String
+  status           RiskStatus @default(OPEN)
+  assignedTo       String?
+  assignedToName   String?
+  assignedToEmail  String?
+  mitigationPlan   String?
+  mitigationStatus String?
+  targetDate       DateTime?
+  actualDate       DateTime?
+  notes            String?
+  createdAt        DateTime   @default(now())
+  createdBy        String
+  createdByName    String
+  createdByEmail   String
+  updatedAt        DateTime   @updatedAt
+  updatedBy        String?
+  updatedByName    String?
+  updatedByEmail   String?
+  closedAt         DateTime?
+  closedBy         String?
+  closedByName     String?
+  closedByEmail    String?
+  closureReason    String?
+  useCase          UseCase    @relation(fields: [useCaseId], references: [id])
 
   @@index([useCaseId])
   @@index([status])

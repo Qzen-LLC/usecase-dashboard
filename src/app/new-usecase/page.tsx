@@ -155,7 +155,20 @@ const AIUseCaseTool = () => {
   };
 
   const handleChange = (field: keyof FormData, val: string | number | string[]) => {
-    console.log(val);
+    console.log(`handleChange called for ${field}:`, val, 'Type:', typeof val, 'IsArray:', Array.isArray(val));
+    
+    // Special handling for successCriteria and keyAssumptions to ensure they're strings
+    if (field === 'successCriteria' || field === 'keyAssumptions') {
+      if (Array.isArray(val)) {
+        console.warn(`${field} received array, converting to string:`, val);
+        val = val.join(' ');
+      }
+      if (typeof val !== 'string') {
+        console.warn(`${field} received non-string, converting to string:`, val);
+        val = String(val);
+      }
+    }
+    
     setFormData((prev) => ({ ...prev, [field]: val }));
   };
 
@@ -211,6 +224,20 @@ const AIUseCaseTool = () => {
             onChange={(content) => handleChange("successCriteria", content)}
             placeholder="Define what success looks like for this use case..."
             className={invalidFields.includes('successCriteria') ? 'border-red-500' : ''}
+          />
+          <Label htmlFor="problemValidation">Problem Validation</Label>
+          <RichTextEditor
+            content={formData.problemValidation}
+            onChange={(content) => handleChange("problemValidation", content)}
+            placeholder="Describe how you've validated this problem exists..."
+            className={invalidFields.includes('problemValidation') ? 'border-red-500' : ''}
+          />
+          <Label htmlFor="solutionHypothesis">Solution Hypothesis</Label>
+          <RichTextEditor
+            content={formData.solutionHypothesis}
+            onChange={(content) => handleChange("solutionHypothesis", content)}
+            placeholder="Describe your hypothesis for how this solution will work..."
+            className={invalidFields.includes('solutionHypothesis') ? 'border-red-500' : ''}
           />
           {/* <Label htmlFor="primaryStakeholders">Primary Stakeholder</Label>
           <Input
@@ -502,6 +529,16 @@ const AIUseCaseTool = () => {
     }
     
     try {
+      // Debug: Log the form data to see what's being sent
+      console.log('Form data being sent:', {
+        successCriteria: formData.successCriteria,
+        keyAssumptions: formData.keyAssumptions,
+        successCriteriaType: typeof formData.successCriteria,
+        keyAssumptionsType: typeof formData.keyAssumptions,
+        isSuccessCriteriaArray: Array.isArray(formData.successCriteria),
+        isKeyAssumptionsArray: Array.isArray(formData.keyAssumptions)
+      });
+      
       // Map form data to match API expectations
       const apiData = {
         title: formData.title,
@@ -511,10 +548,10 @@ const AIUseCaseTool = () => {
         desiredState: formData.desiredState || '',
         primaryStakeholders: formData.primaryStakeholders,
         secondaryStakeholders: formData.secondaryStakeholders,
-        successCriteria: formData.successCriteria ? [formData.successCriteria] : [],
+        successCriteria: formData.successCriteria,
         problemValidation: formData.problemValidation || '',
         solutionHypothesis: formData.solutionHypothesis || '',
-        keyAssumptions: formData.keyAssumptions ? [formData.keyAssumptions] : [],
+        keyAssumptions: formData.keyAssumptions,
         initialROI: formData.initialROI,
         confidenceLevel: formData.confidenceLevel,
         operationalImpactScore: formData.operationalImpactScore,
@@ -527,6 +564,8 @@ const AIUseCaseTool = () => {
         stage: 'discovery',
         priority: formData.priority,
       };
+
+      console.log('API data being sent:', apiData);
 
       const res = await fetch("/api/write-usecases", {
         method: "POST",
@@ -575,10 +614,10 @@ const AIUseCaseTool = () => {
           desiredState: formData.desiredState || '',
           primaryStakeholders: formData.primaryStakeholders,
           secondaryStakeholders: formData.secondaryStakeholders,
-          successCriteria: formData.successCriteria ? [formData.successCriteria] : [],
+          successCriteria: formData.successCriteria,
           problemValidation: formData.problemValidation || '',
           solutionHypothesis: formData.solutionHypothesis || '',
-          keyAssumptions: formData.keyAssumptions ? [formData.keyAssumptions] : [],
+          keyAssumptions: formData.keyAssumptions,
           initialROI: formData.initialROI,
           confidenceLevel: formData.confidenceLevel,
           operationalImpactScore: formData.operationalImpactScore,

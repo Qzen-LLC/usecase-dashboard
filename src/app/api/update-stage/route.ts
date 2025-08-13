@@ -55,21 +55,7 @@ export async function POST(req: Request) {
             }
         });
 
-        // Invalidate Redis cache for /read-usecases for all org users (or just the user if not in org)
-        const redis = (await import('@/lib/redis')).default;
-        if (userRecord.organizationId) {
-            const orgUsers = await prismaClient.user.findMany({
-                where: { organizationId: userRecord.organizationId },
-                select: { id: true, role: true }
-            });
-            for (const u of orgUsers) {
-                const orgCacheKey = `usecases:${u.role}:${u.id}`;
-                await redis.del(orgCacheKey);
-            }
-        } else {
-            const cacheKey = `usecases:${userRecord.role}:${userRecord.id}`;
-            await redis.del(cacheKey);
-        }
+
 
         return NextResponse.json({ success: true });
     } catch (error) {

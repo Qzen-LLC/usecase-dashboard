@@ -1,7 +1,7 @@
 import { currentUser } from '@clerk/nextjs/server';
 import { prismaClient } from '@/utils/db';
 import { NextResponse } from "next/server";
-import redis from '@/lib/redis';
+
 
 export async function GET(req: Request) {
     try {
@@ -20,20 +20,7 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        // Redis cache check (gracefully handle failures)
-        const cacheKey = `usecases:${userRecord.role}:${userRecord.id}`;
-        let cached = null;
-        try {
-            cached = await redis.get(cacheKey);
-            if (cached) {
-                console.log(`Cache HIT for key: ${cacheKey}`);
-                return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
-            } else {
-                console.log(`Cache MISS for key: ${cacheKey}`);
-            }
-        } catch (error) {
-            console.warn('Redis cache read failed, continuing without cache:', error.message);
-        }
+
 
         // Admin: return all use cases
         let useCases = [];
@@ -116,13 +103,7 @@ export async function GET(req: Request) {
             });
         }
 
-        // Try to cache the result (gracefully handle failures)
-        try {
-            await redis.set(cacheKey, JSON.stringify({ useCases }), 'EX', 300);
-            console.log(`Cached ${useCases.length} use cases for key: ${cacheKey}`);
-        } catch (error) {
-            console.warn('Redis cache write failed, continuing without cache:', error.message);
-        }
+
         
         const response = NextResponse.json({ useCases });
         response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');

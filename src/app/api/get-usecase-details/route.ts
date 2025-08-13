@@ -56,8 +56,6 @@ export async function GET(req: Request) {
         aiucId: true,
         problemStatement: true,
         proposedAISolution: true,
-        currentState: true,
-        desiredState: true,
         primaryStakeholders: true,
         secondaryStakeholders: true,
         successCriteria: true,

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prismaClient, retryDatabaseOperation } from '@/utils/db';
 import { currentUser } from '@clerk/nextjs/server';
-import redis from '@/lib/redis';
+
 
 export async function GET(request: Request) {
   try {
@@ -31,14 +31,7 @@ export async function GET(request: Request) {
       }
     }
     
-    // Redis cache check (skip cache if cache-busting is requested)
-    const cacheKey = `governance-data:${userRecord.role}:${userRecord.id}`;
-    if (!cacheBust) {
-      const cached = await redis.get(cacheKey);
-      if (cached) {
-        return new NextResponse(cached, { headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' } });
-      }
-    }
+
     
     // Only include use cases for this user if USER role
     let useCases;
@@ -201,10 +194,7 @@ export async function GET(request: Request) {
       })
       .filter((item) => item !== null);
 
-    // Only cache if not cache-busting
-    if (!cacheBust) {
-      await redis.set(cacheKey, JSON.stringify(governanceData), 'EX', 300);
-    }
+
     
     return NextResponse.json(governanceData);
   } catch (error) {

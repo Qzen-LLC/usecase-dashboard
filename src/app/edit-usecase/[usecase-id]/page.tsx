@@ -176,8 +176,8 @@ const AIUseCaseTool = () => {
             priority: data.priority || 'MEDIUM',
             stage: data.stage,
             // Convert arrays to strings for rich text fields
-            successCriteria: Array.isArray(data.successCriteria) ? data.successCriteria.join('') : data.successCriteria || '',
-            keyAssumptions: Array.isArray(data.keyAssumptions) ? data.keyAssumptions.join('') : data.keyAssumptions || '',
+            successCriteria: data.successCriteria || '',
+            keyAssumptions: data.keyAssumptions || '',
             // Handle timeline conversion from "X months" to just "X"
             estimatedTimelineMonths: data.estimatedTimeline ? data.estimatedTimeline.replace(' months', '') : '',
             // New fields (will be empty string for old use cases due to schema defaults)
@@ -565,9 +565,6 @@ const AIUseCaseTool = () => {
       setSaving(true);
       const body = {
         ...formData,
-        // Convert rich text strings back to arrays for API compatibility
-        successCriteria: formData.successCriteria ? [formData.successCriteria] : [],
-        keyAssumptions: formData.keyAssumptions ? [formData.keyAssumptions] : [],
         // Convert timeline back to full format
         estimatedTimeline: formData.estimatedTimelineMonths ? `${formData.estimatedTimelineMonths} months` : '',
         stage: 'discovery',
@@ -583,6 +580,7 @@ const AIUseCaseTool = () => {
       
       if (res.ok) {
         alert("Use case saved successfully!");
+        router.push('/dashboard');
       } else {
         const errorData = await res.text();
         console.error("Save failed:", errorData);
@@ -602,9 +600,6 @@ const AIUseCaseTool = () => {
         setSaving(true);
         const body = {
           ...formData,
-          // Convert rich text strings back to arrays for API compatibility
-          successCriteria: formData.successCriteria ? [formData.successCriteria] : [],
-          keyAssumptions: formData.keyAssumptions ? [formData.keyAssumptions] : [],
           // Convert timeline back to full format
           estimatedTimeline: formData.estimatedTimelineMonths ? `${formData.estimatedTimelineMonths} months` : '',
           stage: completeForBusinessCase ? 'business-case' : formData.stage,
