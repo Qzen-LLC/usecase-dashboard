@@ -5,7 +5,7 @@ import { prismaClient } from '@/utils/db';
 
 // In-memory cache for development
 const userCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 5 * 60; // 5 minutes in seconds
+const CACHE_TTL = 5; // 5 seconds for faster role updates
 
 // Cache key generator
 const getCacheKey = (clerkId: string) => `user:${clerkId}`;
