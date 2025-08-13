@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-export default function InvitePage() {
+function InvitePageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, isSignedIn } = useUser();
@@ -161,5 +161,13 @@ export default function InvitePage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function InvitePage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <InvitePageContent />
+    </Suspense>
   );
 } 
