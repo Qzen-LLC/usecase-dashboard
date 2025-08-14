@@ -7,7 +7,12 @@ declare global {
 export const prismaClient = 
   global.prisma ||
   new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error'] : ['error'],
+    log: ['error'],
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
   });
 
 if (process.env.NODE_ENV !== 'production') global.prisma = prismaClient;
@@ -16,6 +21,16 @@ if (process.env.NODE_ENV !== 'production') global.prisma = prismaClient;
 if (process.env.NODE_ENV === 'development') {
   process.on('beforeExit', async () => {
     await prismaClient.$disconnect();
+  });
+  
+  process.on('SIGINT', async () => {
+    await prismaClient.$disconnect();
+    process.exit(0);
+  });
+  
+  process.on('SIGTERM', async () => {
+    await prismaClient.$disconnect();
+    process.exit(0);
   });
 }
 

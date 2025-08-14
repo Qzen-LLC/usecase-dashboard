@@ -45,6 +45,7 @@ export async function GET(request: Request) {
           assessData: true,
           euAiActAssessments: true,
           iso42001Assessments: true,
+          uaeAiAssessments: true,
           risks: {
             select: {
               id: true,
@@ -60,6 +61,7 @@ export async function GET(request: Request) {
           assessData: true,
           euAiActAssessments: true,
           iso42001Assessments: true,
+          uaeAiAssessments: true,
         };
       }
     };
@@ -123,7 +125,8 @@ export async function GET(request: Request) {
       useCases = useCases.map(uc => ({
         ...uc,
         euAiActAssessments: [],
-        iso42001Assessments: []
+        iso42001Assessments: [],
+        uaeAiAssessments: []
       }));
     }
 
@@ -160,7 +163,8 @@ export async function GET(request: Request) {
         const hasFrameworks = regulatoryFrameworks.length > 0 || industryStandards.length > 0;
         const euAiActAssessments = Array.isArray(useCase.euAiActAssessments) ? useCase.euAiActAssessments : [];
         const iso42001Assessments = Array.isArray(useCase.iso42001Assessments) ? useCase.iso42001Assessments : [];
-        const hasAssessments = euAiActAssessments.length > 0 || iso42001Assessments.length > 0;
+        const uaeAiAssessments = Array.isArray(useCase.uaeAiAssessments) ? useCase.uaeAiAssessments : [];
+        const hasAssessments = euAiActAssessments.length > 0 || iso42001Assessments.length > 0 || uaeAiAssessments.length > 0;
         
         // Filter: only show use cases with frameworks selected OR active assessments
         if (!hasFrameworks && !hasAssessments) {
@@ -168,12 +172,14 @@ export async function GET(request: Request) {
         }
 
         // Debug log for progress values
-        if (euAiActAssessments.length > 0 || iso42001Assessments.length > 0) {
+        if (euAiActAssessments.length > 0 || iso42001Assessments.length > 0 || uaeAiAssessments.length > 0) {
           console.log(`🔍 Governance Data - Use Case ${useCase.aiucId}:`, {
             euProgress: euAiActAssessments[0]?.progress || 0,
             isoProgress: iso42001Assessments[0]?.progress || 0,
+            uaeProgress: uaeAiAssessments[0]?.progress || 0,
             euStatus: euAiActAssessments[0]?.status || 'N/A',
-            isoStatus: iso42001Assessments[0]?.status || 'N/A'
+            isoStatus: iso42001Assessments[0]?.status || 'N/A',
+            uaeStatus: uaeAiAssessments[0]?.status || 'N/A'
           });
         }
 
@@ -188,6 +194,7 @@ export async function GET(request: Request) {
           lastUpdated: useCase.assessData?.updatedAt?.toISOString() || useCase.updatedAt.toISOString(),
           euAiActAssessments,
           iso42001Assessments,
+          uaeAiAssessments,
           assessData: useCase.assessData,
           risks: useCase.risks || [],
         };

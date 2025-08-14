@@ -27,6 +27,13 @@ interface GovernanceData {
     status: string;
     progress: number;
   }[];
+  uaeAiAssessments: {
+    id: string;
+    status: string;
+    progress: number;
+    maturityLevel: string;
+    weightedScore: number;
+  }[];
   assessData?: {
     stepsData: any;
   };
@@ -205,7 +212,25 @@ export default function GovernancePage() {
             </div>
           ) : (
             <div className="grid gap-4">
-              {governanceData.map((item) => (
+              {governanceData.map((item) => {
+                // Determine which sections should be shown based on selected frameworks
+                const showEuAiAct = item.regulatoryFrameworks.includes('EU AI Act');
+                const showIso42001 = item.industryStandards.some(std => std.includes('ISO/IEC 42001'));
+                const showUaeAi = item.regulatoryFrameworks.includes('UAE AI/GenAI Controls');
+                
+                // Calculate grid columns based on active sections
+                const activeSections = [
+                  true, // Risk Management always shown
+                  showEuAiAct,
+                  showIso42001,
+                  showUaeAi
+                ].filter(Boolean).length;
+                
+                const gridCols = activeSections === 1 ? 'grid-cols-1' :
+                                activeSections === 2 ? 'grid-cols-2' :
+                                activeSections === 3 ? 'grid-cols-3' : 'grid-cols-4';
+
+                return (
                 <Card key={item.useCaseId} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
                   <CardContent className="p-3">
                     {/* Header */}
@@ -242,8 +267,8 @@ export default function GovernancePage() {
                       </Link>
                     </div>
 
-                    {/* All Sections on Same Line - Less Blocky */}
-                    <div className="grid grid-cols-3 gap-3">
+                    {/* Dynamic Sections Grid */}
+                    <div className={`grid ${gridCols} gap-3`}>
                       {/* Risk Management Section */}
                       <div className="border-l-4 border-red-400 bg-gradient-to-r from-red-50 to-red-25 pl-3 pr-2 py-2.5 rounded-r">
                         <div className="flex items-center justify-between mb-1.5">
@@ -292,6 +317,7 @@ export default function GovernancePage() {
                       </div>
 
                       {/* EU AI ACT Section */}
+                      {showEuAiAct && (
                       <div className="border-l-4 border-blue-400 bg-gradient-to-r from-blue-50 to-blue-25 pl-3 pr-2 py-2.5 rounded-r">
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-xs font-medium text-blue-900">EU AI ACT</span>
@@ -309,8 +335,10 @@ export default function GovernancePage() {
                           </Link>
                         </div>
                       </div>
+                      )}
 
                       {/* ISO 42001 Section */}
+                      {showIso42001 && (
                       <div className="border-l-4 border-purple-400 bg-gradient-to-r from-purple-50 to-purple-25 pl-3 pr-2 py-2.5 rounded-r">
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-xs font-medium text-purple-900">ISO 42001</span>
@@ -328,10 +356,45 @@ export default function GovernancePage() {
                           </Link>
                         </div>
                       </div>
+                      )}
+
+                      {/* UAE AI Controls Section */}
+                      {showUaeAi && (
+                      <div className="border-l-4 border-emerald-400 bg-gradient-to-r from-emerald-50 to-emerald-25 pl-3 pr-2 py-2.5 rounded-r">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-medium text-emerald-900">UAE AI Controls</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-emerald-700 font-semibold">{item.uaeAiAssessments[0] ? `${Math.round(item.uaeAiAssessments[0].progress)}%` : '0%'}</span>
+                            {item.uaeAiAssessments[0] && (
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                item.uaeAiAssessments[0].maturityLevel === 'mature' ? 'bg-green-100 text-green-700' :
+                                item.uaeAiAssessments[0].maturityLevel === 'moderate' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {item.uaeAiAssessments[0].maturityLevel === 'mature' ? 'Mature' :
+                                 item.uaeAiAssessments[0].maturityLevel === 'moderate' ? 'Moderate' : 'High Risk'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="w-full bg-emerald-200/60 rounded-full h-1.5 mb-2">
+                          <div className="bg-emerald-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${item.uaeAiAssessments[0]?.progress || 0}%` }}></div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${item.uaeAiAssessments[0]?.status === 'completed' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
+                            {item.uaeAiAssessments[0]?.status === 'completed' ? 'Completed' : 'In Progress'}
+                          </Badge>
+                          <Link href={`/dashboard/${item.useCaseId}/uae-ai`}>
+                            <Button variant="ghost" size="sm" className="text-xs h-6 px-2 text-emerald-700 hover:bg-emerald-100">Start</Button>
+                          </Link>
+                        </div>
+                      </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
