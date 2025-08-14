@@ -100,6 +100,7 @@ const SECTOR_SPECIFIC_OPTIONS = [
 ];
 const AI_SPECIFIC_OPTIONS = [
   'EU AI Act',
+  'UAE AI/GenAI Controls',
   'US AI Bill of Rights',
   'China AI Regulations',
   'UK AI Framework',

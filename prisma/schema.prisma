@@ -46,6 +46,7 @@ model UseCase {
   euAiActAssessments       EuAiActAssessment?
   finopsData               FinOps?
   iso42001Assessments      Iso42001Assessment?
+  uaeAiAssessments         UaeAiAssessment?
   risks                    Risk[]
   organization             Organization?       @relation(fields: [organizationId], references: [id])
   user                     User?               @relation(fields: [userId], references: [id])
@@ -409,6 +410,56 @@ model Iso42001AnnexInstance {
 
   @@unique([assessmentId, itemId], map: "Iso42001AnnexInstance_assessmentId_annexItemId_key")
   @@index([assessmentId])
+}
+
+model UaeAiControl {
+  id              String                @id @default(uuid())
+  controlId       String                @unique
+  title           String
+  description     String
+  legalBasis      String
+  evidenceTypes   String[]
+  orderIndex      Int
+  instances       UaeAiControlInstance[]
+
+  @@index([orderIndex])
+}
+
+model UaeAiControlInstance {
+  id               String         @id @default(uuid())
+  assessmentId     String
+  controlId        String
+  implementation   String?
+  evidenceFiles    String[]
+  score            Int            @default(0) @db.SmallInt
+  notes            String?
+  status           String         @default("pending")
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  assessment       UaeAiAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  control          UaeAiControl    @relation(fields: [controlId], references: [controlId])
+
+  @@unique([assessmentId, controlId])
+  @@index([assessmentId])
+}
+
+model UaeAiAssessment {
+  id               String                 @id @default(uuid())
+  useCaseId        String                 @unique
+  status           String                 @default("in_progress")
+  progress         Float                  @default(0)
+  totalScore       Float                  @default(0)
+  weightedScore    Float                  @default(0)
+  maturityLevel    String                 @default("not_assessed")
+  riskImpactLevel  String                 @default("low")
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  useCase          UseCase                @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  controls         UaeAiControlInstance[]
+
+  @@index([status])
+  @@index([maturityLevel])
+  @@index([riskImpactLevel])
 }
 
 model User {

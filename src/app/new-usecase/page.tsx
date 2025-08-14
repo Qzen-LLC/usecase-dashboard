@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams, useSearchParams } from "next/navigation";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, ChevronLeft, Target, TrendingUp, Zap, DollarSign, Plus, Minus } from 'lucide-react';
 import { Input } from "@/components/ui/input";
@@ -136,7 +136,7 @@ const getUseCase = async(params: string) => {
     }
 };
 
-const AIUseCaseTool = () => {
+const AIUseCaseToolContent = () => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [invalidFields, setInvalidFields] = useState<string[]>([]);
@@ -731,6 +731,14 @@ const AIUseCaseTool = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const AIUseCaseTool = () => {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <AIUseCaseToolContent />
+    </Suspense>
   );
 };
 

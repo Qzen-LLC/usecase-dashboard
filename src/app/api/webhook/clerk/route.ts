@@ -97,6 +97,14 @@ export async function POST(req: Request) {
 
   // If there are no headers, error out
   if (!svix_id || !svix_timestamp || !svix_signature) {
+    logWebhookEvent('error', '🔒 Missing required svix headers', {
+      correlationId,
+      headers: {
+        'svix-id': !!svix_id,
+        'svix-timestamp': !!svix_timestamp,
+        'svix-signature': !!svix_signature
+      }
+    });
     return new Response('Error occured -- no svix headers', {
       status: 400
     });
@@ -119,7 +127,12 @@ export async function POST(req: Request) {
       "svix-signature": svix_signature,
     }) as WebhookEvent;
   } catch (err) {
-    console.error('Error verifying webhook:', err);
+    const duration = Date.now() - startTime;
+    logWebhookEvent('error', '🔒 Webhook verification failed', {
+      correlationId,
+      error: err instanceof Error ? err.message : String(err),
+      duration: `${duration}ms`
+    });
     return new Response('Error occured', {
       status: 400
     });
@@ -200,5 +213,12 @@ export async function POST(req: Request) {
       break;
   }
 
-  return NextResponse.json({ success: true });
+  const duration = Date.now() - startTime;
+  logWebhookEvent('info', '✅ Verified webhook processed successfully', {
+    correlationId,
+    duration: `${duration}ms`,
+    eventType
+  });
+  
+  return NextResponse.json({ success: true, correlationId });
 } 

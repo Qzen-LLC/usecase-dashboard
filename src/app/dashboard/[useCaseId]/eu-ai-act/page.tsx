@@ -415,6 +415,16 @@ export default function EuAiActAssessmentPage() {
     
     const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
 
+    console.log('📊 Progress Calculation:', {
+      totalQuestions,
+      answeredQuestions,
+      totalControls,
+      implementedControls,
+      totalItems,
+      completedItems,
+      progress: Math.round(progress)
+    });
+
     try {
       await fetch(`/api/eu-ai-act/assessment/${assessment?.id}/progress`, {
         method: 'PATCH',
@@ -1308,7 +1318,9 @@ export default function EuAiActAssessmentPage() {
                     <Shield className="w-4 h-4" />
                     Compliance Controls
                     <span className="text-xs bg-white px-2 py-1 rounded-full">
-                      {controlCategories.reduce((total, category) => total + category.controls.length, 0)}
+                      {controlCategories.reduce((total, category) => 
+                        total + category.controls.reduce((controlTotal, control) => 
+                          controlTotal + 1 + control.subcontrols.length, 0), 0)}
                     </span>
                   </button>
                 </nav>
