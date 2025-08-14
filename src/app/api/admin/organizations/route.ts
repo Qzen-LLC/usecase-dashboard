@@ -138,7 +138,7 @@ export async function POST(req: Request) {
     // Send email invitation via Clerk
     try {
       // Always use production domain for invitations - no fallbacks
-      const baseUrl = 'https://qzen.qube.ai';
+      const baseUrl = 'https://qube.qzen.ai';
       
       console.log('[Organization Creation] Using baseUrl:', baseUrl);
       

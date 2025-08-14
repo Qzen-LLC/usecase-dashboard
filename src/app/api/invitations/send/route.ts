@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       (currentUserRecord.role === 'ORG_ADMIN' && currentUserRecord.organizationId === organizationId)
     ) {
       // Always use production domain for invitations - no fallbacks
-      const baseUrl = 'https://qzen.qube.ai';
+      const baseUrl = 'https://qube.qzen.ai';
       
       console.log('[Invitation] Using baseUrl:', baseUrl);
       
