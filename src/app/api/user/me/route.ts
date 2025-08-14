@@ -80,60 +80,11 @@ export async function GET() {
     });
 
     if (!userRecord) {
-      // Auto-create user if they exist in Clerk but not in database
-      const email = user.emailAddresses[0]?.emailAddress;
-      
-      if (email) {
-        console.log('🔧 Auto-creating missing user:', {
-          clerkId: user.id,
-          email,
-          firstName: user.firstName,
-          lastName: user.lastName
-        });
-        
-        try {
-          userRecord = await prismaClient.user.create({
-            data: {
-              clerkId: user.id,
-              email,
-              firstName: user.firstName || null,
-              lastName: user.lastName || null,
-              role: 'USER', // Default role for auto-created users
-              organizationId: null
-            },
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-              role: true,
-              organizationId: true,
-              organization: {
-                select: {
-                  id: true,
-                  name: true,
-                  domain: true,
-                }
-              },
-            },
-          });
-          
-          console.log('✅ Auto-created user successfully:', email);
-        } catch (createError) {
-          console.error('❌ Error auto-creating user:', createError);
-          return NextResponse.json({ 
-            error: 'User not found in database and auto-creation failed',
-            clerkId: user.id,
-            email,
-            details: createError instanceof Error ? createError.message : 'Unknown error'
-          }, { status: 404 });
-        }
-      } else {
-        return NextResponse.json({ 
-          error: 'User not found in database and no email available for auto-creation',
-          clerkId: user.id
-        }, { status: 404 });
-      }
+      return NextResponse.json({ 
+        error: 'User not found in database',
+        clerkId: user.id,
+        email: user.emailAddresses[0]?.emailAddress 
+      }, { status: 404 });
     }
 
     const responseData = {
