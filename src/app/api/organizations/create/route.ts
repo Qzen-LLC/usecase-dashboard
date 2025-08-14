@@ -38,6 +38,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invitation has already been accepted' }, { status: 400 });
     }
 
+    // Extract organizationId from the invitation
+    const organizationId = invitation.organizationId;
+    
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Invalid invitation: missing organization ID' }, { status: 400 });
+    }
+
+    console.log('[Invitation Accept] Processing invitation:', {
+      invitationId: invitation.id,
+      organizationId,
+      role: invitation.role,
+      email: invitation.email
+    });
+
     // Check if user already exists
     let userRecord = await prisma.user.findUnique({
       where: { clerkId: user.id },
@@ -45,6 +59,7 @@ export async function POST(req: Request) {
 
     if (!userRecord) {
       // Create user record if it doesn't exist
+      console.log('[Invitation Accept] Creating new user with organizationId:', organizationId);
       userRecord = await prisma.user.create({
         data: {
           clerkId: user.id,
@@ -52,18 +67,21 @@ export async function POST(req: Request) {
           firstName: user.firstName || null,
           lastName: user.lastName || null,
           role: invitation.role,
-          organizationId: invitation.organizationId,
+          organizationId: organizationId,
         },
       });
+      console.log('[Invitation Accept] Created new user:', userRecord.id, 'with organizationId:', userRecord.organizationId);
     } else {
       // Update existing user with organization and role
+      console.log('[Invitation Accept] Updating existing user:', userRecord.id, 'with organizationId:', organizationId);
       userRecord = await prisma.user.update({
         where: { id: userRecord.id },
         data: {
           role: invitation.role,
-          organizationId: invitation.organizationId,
+          organizationId: organizationId,
         },
       });
+      console.log('[Invitation Accept] Updated user:', userRecord.id, 'with organizationId:', userRecord.organizationId);
     }
 
     // Mark invitation as accepted

@@ -27,7 +27,7 @@ export default function OrganizationUserManagement() {
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserFirstName, setNewUserFirstName] = useState('');
   const [newUserLastName, setNewUserLastName] = useState('');
-  const [newUserRole, setNewUserRole] = useState('ORG_USER');
+  const [newUserRole, setNewUserRole] = useState('USER');
   const [addUserLoading, setAddUserLoading] = useState(false);
   const [removeUserLoading, setRemoveUserLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +85,7 @@ export default function OrganizationUserManagement() {
         setNewUserEmail('');
         setNewUserFirstName('');
         setNewUserLastName('');
-        setNewUserRole('ORG_USER');
+        setNewUserRole('USER');
         setShowAddUser(false);
         setSuccess('Invitation sent successfully!');
         fetchUsers();
@@ -234,7 +234,7 @@ export default function OrganizationUserManagement() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ORG_ADMIN">Organization Admin</SelectItem>
-                      <SelectItem value="ORG_USER">Organization User</SelectItem>
+                      <SelectItem value="USER">Organization User</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

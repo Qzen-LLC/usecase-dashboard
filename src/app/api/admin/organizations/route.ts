@@ -137,8 +137,10 @@ export async function POST(req: Request) {
 
     // Send email invitation via Clerk
     try {
-      // Always use production domain for invitations - no fallbacks
-      const baseUrl = 'https://qube.qzen.ai';
+      // Automatically detect current environment's URL for invitations
+      const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+      const host = process.env.NEXT_PUBLIC_APP_URL || 'localhost:3000';
+      const baseUrl = `${protocol}://${host}`;
       
       console.log('[Organization Creation] Using baseUrl:', baseUrl);
       

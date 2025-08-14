@@ -97,14 +97,6 @@ export async function POST(req: Request) {
 
   // If there are no headers, error out
   if (!svix_id || !svix_timestamp || !svix_signature) {
-    logWebhookEvent('error', '🔒 Missing required svix headers', {
-      correlationId,
-      headers: {
-        'svix-id': !!svix_id,
-        'svix-timestamp': !!svix_timestamp,
-        'svix-signature': !!svix_signature
-      }
-    });
     return new Response('Error occured -- no svix headers', {
       status: 400
     });
@@ -127,12 +119,6 @@ export async function POST(req: Request) {
       "svix-signature": svix_signature,
     }) as WebhookEvent;
   } catch (err) {
-    const duration = Date.now() - startTime;
-    logWebhookEvent('error', '🔒 Webhook verification failed', {
-      correlationId,
-      error: err instanceof Error ? err.message : String(err),
-      duration: `${duration}ms`
-    });
     return new Response('Error occured', {
       status: 400
     });
@@ -159,7 +145,7 @@ export async function POST(req: Request) {
         // Type assertion for Prisma UserRole
         const userRole = role as 'QZEN_ADMIN' | 'ORG_ADMIN' | 'ORG_USER' | 'USER';
         
-        console.log('🔧 Webhook - Creating new user:', {
+        console.log('🔧 Webhook - Processing user.created event:', {
           email,
           role: userRole,
           organizationId: organizationId || 'No organization',
@@ -167,6 +153,42 @@ export async function POST(req: Request) {
         });
         
         if (email) {
+          // Check if user already exists (by email or clerkId)
+          const existingUser = await prisma.user.findFirst({
+            where: {
+              OR: [
+                { email },
+                { clerkId }
+              ]
+            }
+          });
+          
+          if (existingUser) {
+            console.log('ℹ️ Webhook - User already exists, updating instead:', {
+              email,
+              existingUserId: existingUser.id,
+              existingClerkId: existingUser.clerkId
+            });
+            
+            // Update existing user with new clerkId if needed
+            if (existingUser.clerkId !== clerkId) {
+              await prisma.user.update({
+                where: { id: existingUser.id },
+                data: {
+                  clerkId,
+                  email,
+                  firstName: first_name || null,
+                  lastName: last_name || null,
+                  role: userRole,
+                  organizationId,
+                },
+              });
+              console.log('✅ Webhook - User updated successfully:', email);
+            } else {
+              console.log('ℹ️ Webhook - User already exists with same clerkId, skipping');
+            }
+          } else {
+            // Create new user
           await prisma.user.create({
             data: {
               clerkId,
@@ -178,9 +200,10 @@ export async function POST(req: Request) {
             },
           });
           console.log('✅ Webhook - User created successfully:', email, userRole, organizationId || 'No organization');
+          }
         }
       } catch (error) {
-        console.error('Error creating user:', error);
+        console.error('Error processing user.created webhook:', error);
       }
       break;
     case 'user.updated':
@@ -213,12 +236,5 @@ export async function POST(req: Request) {
       break;
   }
 
-  const duration = Date.now() - startTime;
-  logWebhookEvent('info', '✅ Verified webhook processed successfully', {
-    correlationId,
-    duration: `${duration}ms`,
-    eventType
-  });
-  
-  return NextResponse.json({ success: true, correlationId });
+  return NextResponse.json({ success: true });
 } 

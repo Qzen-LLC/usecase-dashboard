@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { PrismaClient } from '@/generated/prisma';
+import { Clerk } from '@clerk/clerk-sdk-node';
 
 const prisma = new PrismaClient();
+const clerk = new Clerk({ secretKey: process.env.CLERK_SECRET_KEY });
 
 export async function POST(req: Request) {
   try {
@@ -75,9 +77,21 @@ export async function POST(req: Request) {
       }, { status: 404 });
     }
 
-    // Clear the public metadata to prevent re-processing
-    // Note: This would require Clerk API call, but we'll handle it differently
-    // by checking if the user is already assigned to the organization
+    // Clear the Clerk public metadata to prevent re-processing
+    try {
+      console.log('[Clerk Invitation] Clearing public metadata for user:', user.id);
+      await clerk.users.updateUser(user.id, {
+        publicMetadata: {
+          // Remove the invitation metadata
+          role: undefined,
+          organizationId: undefined,
+        },
+      });
+      console.log('[Clerk Invitation] Successfully cleared public metadata');
+    } catch (metadataError) {
+      console.error('[Clerk Invitation] Error clearing public metadata:', metadataError);
+      // Don't fail the whole process if metadata clearing fails
+    }
 
     return NextResponse.json({
       success: true,

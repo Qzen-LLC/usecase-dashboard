@@ -40,6 +40,7 @@ export async function POST(req: Request) {
         id: invitation.id,
         email: invitation.email,
         role: invitation.role,
+        organizationId: invitation.organizationId,
         organization: {
           id: invitation.organization.id,
           name: invitation.organization.name,

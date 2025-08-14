@@ -60,11 +60,17 @@ export async function DELETE(
       }
     }
 
-    // Deactivate the user instead of deleting
+    // Remove the user from the organization by setting organizationId to null
+    // This keeps the user record for audit purposes but removes them from the org
     await prisma.user.update({
       where: { id: userId },
-      data: { isActive: false },
+      data: { 
+        organizationId: null,
+        isActive: false, // Also mark as inactive
+      },
     });
+
+    console.log(`[User Removal] User ${userId} removed from organization ${currentUserRecord.organizationId}`);
 
     return NextResponse.json({
       success: true,

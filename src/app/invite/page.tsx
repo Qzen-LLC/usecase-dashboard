@@ -15,9 +15,16 @@ function InvitePageContent() {
   const [invitation, setInvitation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [accepting, setAccepting] = useState(false);
 
-  const token = searchParams.get('token');
+  // Check for both token and invitation_token parameters
+  const token = searchParams.get('token') || searchParams.get('invitation_token');
+  
+  console.log('[InvitePage] URL parameters:', {
+    token: searchParams.get('token'),
+    invitation_token: searchParams.get('invitation_token'),
+    resolvedToken: token,
+    searchParams: Object.fromEntries(searchParams.entries())
+  });
 
   useEffect(() => {
     if (!token) {
@@ -52,36 +59,13 @@ function InvitePageContent() {
 
   const handleAcceptInvitation = async () => {
     if (!isSignedIn) {
-      // Redirect to sign in with return URL
-      router.push(`/sign-in?redirect_url=${encodeURIComponent(window.location.href)}`);
+      // Redirect to sign up with invitation token so new users can create an account and join the organization
+      router.push(`/sign-up?invitation_token=${token}&redirect_url=${encodeURIComponent(window.location.href)}`);
       return;
     }
 
-    setAccepting(true);
-    try {
-      const response = await fetch('/api/organizations/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          invitationToken: token,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Redirect to dashboard
-        router.push('/dashboard');
-      } else {
-        setError(data.error || 'Failed to accept invitation');
-      }
-    } catch (err) {
-      setError('Failed to accept invitation');
-    } finally {
-      setAccepting(false);
-    }
+    // If user is already signed in, redirect them to signup anyway to ensure proper organization assignment
+    router.push(`/sign-up?invitation_token=${token}&redirect_url=${encodeURIComponent(window.location.href)}`);
   };
 
   if (loading) {
@@ -143,20 +127,24 @@ function InvitePageContent() {
           {!isSignedIn ? (
             <div className="space-y-2">
               <p className="text-sm text-gray-600">
-                Please sign in to accept this invitation
+                Please sign up to accept this invitation and join the organization
               </p>
               <Button onClick={handleAcceptInvitation} className="w-full">
-                Sign In to Accept
+                Sign Up to Accept Invitation
               </Button>
             </div>
           ) : (
-            <Button 
-              onClick={handleAcceptInvitation} 
-              disabled={accepting}
-              className="w-full"
-            >
-              {accepting ? 'Accepting...' : 'Accept Invitation'}
-            </Button>
+            <div className="space-y-2">
+              <p className="text-sm text-gray-600">
+                Click below to complete your organization setup
+              </p>
+              <Button 
+                onClick={handleAcceptInvitation} 
+                className="w-full"
+              >
+                Complete Organization Setup
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
