@@ -14,6 +14,8 @@ interface FileUploadProps {
   disabled?: boolean;
   disableRemove?: boolean;
   className?: string;
+  useCaseId?: string;
+  frameworkType?: string; // 'eu-ai-act', 'iso-42001', 'uae-ai'
 }
 
 interface UploadedFile {
@@ -32,7 +34,9 @@ export function FileUpload({
   maxSize = 10, // 10MB default
   disabled = false,
   disableRemove = false,
-  className = ""
+  className = "",
+  useCaseId,
+  frameworkType
 }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -40,6 +44,17 @@ export function FileUpload({
 
   const handleFileSelect = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    
+    // Validate required props
+    if (!useCaseId) {
+      alert('Use case ID is required for file upload');
+      return;
+    }
+    
+    if (!frameworkType) {
+      alert('Framework type is required for file upload');
+      return;
+    }
     
     const newFiles: File[] = [];
     
@@ -70,6 +85,8 @@ export function FileUpload({
       const uploadPromises = newFiles.map(async (file) => {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('useCaseId', useCaseId);
+        formData.append('frameworkType', frameworkType);
         
         const response = await fetch('/api/upload', {
           method: 'POST',

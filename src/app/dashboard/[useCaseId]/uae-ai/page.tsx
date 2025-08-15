@@ -561,6 +561,8 @@ export default function UaeAiAssessmentPage() {
                             onChange={(files) => handleEvidenceChange(control.controlId, files)}
                             maxFiles={5}
                             maxSize={10}
+                            useCaseId={params.useCaseId as string}
+                            frameworkType="uae-ai"
                           />
                         </div>
 

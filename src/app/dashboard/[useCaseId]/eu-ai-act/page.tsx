@@ -1453,6 +1453,8 @@ export default function EuAiActAssessmentPage() {
                                               maxFiles={5}
                                               maxSize={10}
                                               disabled={savingFiles.has(`question-${question.questionId}`)}
+                                              useCaseId={params.useCaseId as string}
+                                              frameworkType="eu-ai-act"
                                             />
                                             {savingFiles.has(`question-${question.questionId}`) && (
                                               <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
@@ -1611,6 +1613,8 @@ export default function EuAiActAssessmentPage() {
                                           maxFiles={5}
                                           maxSize={10}
                                           disabled={savingFiles.has(`control-${control.controlId}`)}
+                                          useCaseId={params.useCaseId as string}
+                                          frameworkType="eu-ai-act"
                                         />
                                         {savingFiles.has(`control-${control.controlId}`) && (
                                           <div className="absolute top-0 right-0 bg-green-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
@@ -1693,6 +1697,8 @@ export default function EuAiActAssessmentPage() {
                                                         maxFiles={5}
                                                         maxSize={10}
                                                         disabled={savingFiles.has(`subcontrol-${subcontrol.subcontrolId}`)}
+                                                        useCaseId={params.useCaseId as string}
+                                                        frameworkType="eu-ai-act"
                                                       />
                                                       {savingFiles.has(`subcontrol-${subcontrol.subcontrolId}`) && (
                                                         <div className="absolute top-0 right-0 bg-purple-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">

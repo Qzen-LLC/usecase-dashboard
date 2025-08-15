@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
+import { put } from '@vercel/blob';
+import { prismaClient } from '@/utils/db';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: NextRequest) {
@@ -15,9 +14,19 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    const useCaseId = formData.get('useCaseId') as string;
+    const frameworkType = formData.get('frameworkType') as string; // 'eu-ai-act', 'iso-42001', 'uae-ai'
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
+
+    if (!useCaseId) {
+      return NextResponse.json({ error: 'Use case ID is required' }, { status: 400 });
+    }
+
+    if (!frameworkType) {
+      return NextResponse.json({ error: 'Framework type is required' }, { status: 400 });
     }
 
     // Validate file size (10MB limit)
@@ -45,31 +54,57 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Create upload directory if it doesn't exist
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'evidence');
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
+    // Get user data from database
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId: user.id },
+      include: { organization: true }
+    });
+
+    if (!userRecord) {
+      return NextResponse.json({ error: 'User not found in database' }, { status: 404 });
+    }
+
+    // Get use case data
+    const useCase = await prismaClient.useCase.findUnique({
+      where: { id: useCaseId }
+    });
+
+    if (!useCase) {
+      return NextResponse.json({ error: 'Use case not found' }, { status: 404 });
+    }
+
+    // Build directory path based on user type and organization
+    let directoryPath: string;
+    
+    if (userRecord.organizationId) {
+      // Organization user
+      directoryPath = `evidence/${userRecord.organizationId}/${useCaseId}/${frameworkType}`;
+    } else {
+      // Individual user
+      directoryPath = `evidence/individual/${userRecord.id}/${useCaseId}/${frameworkType}`;
     }
 
     // Generate unique filename
-    const fileExtension = path.extname(file.name);
-    const fileName = `${uuidv4()}${fileExtension}`;
-    const filePath = path.join(uploadDir, fileName);
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `${uuidv4()}.${fileExtension}`;
+    const fullPath = `${directoryPath}/${fileName}`;
 
-    // Convert file to buffer and save
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
+    // Upload to Vercel Blob
+    const blob = await put(fullPath, file, {
+      access: 'public',
+      addRandomSuffix: false,
+    });
 
     // Return the URL that can be used to access the file
-    const fileUrl = `/uploads/evidence/${fileName}`;
+    const fileUrl = blob.url;
 
     return NextResponse.json({
       success: true,
       url: fileUrl,
       filename: file.name,
       size: file.size,
-      type: file.type
+      type: file.type,
+      path: fullPath
     });
 
   } catch (error) {

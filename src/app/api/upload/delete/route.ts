@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
-import { unlink } from 'fs/promises';
-import path from 'path';
-import { existsSync } from 'fs';
+import { del } from '@vercel/blob';
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -15,25 +13,11 @@ export async function DELETE(request: NextRequest) {
     const { fileUrl } = await request.json();
 
     if (!fileUrl) {
-      return NextResponse.json({ error: 'No file URL provided' }, { status: 400 });
+      return NextResponse.json({ error: 'File URL is required' }, { status: 400 });
     }
 
-    // Extract filename from URL (e.g., /uploads/evidence/filename.ext)
-    const fileName = fileUrl.split('/').pop();
-    if (!fileName) {
-      return NextResponse.json({ error: 'Invalid file URL' }, { status: 400 });
-    }
-
-    // Construct file path
-    const filePath = path.join(process.cwd(), 'public', 'uploads', 'evidence', fileName);
-
-    // Check if file exists before trying to delete
-    if (existsSync(filePath)) {
-      await unlink(filePath);
-      console.log(`Deleted file: ${filePath}`);
-    } else {
-      console.log(`File not found (already deleted?): ${filePath}`);
-    }
+    // Delete from Vercel Blob
+    await del(fileUrl);
 
     return NextResponse.json({
       success: true,

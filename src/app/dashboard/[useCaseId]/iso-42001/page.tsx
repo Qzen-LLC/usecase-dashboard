@@ -1167,6 +1167,8 @@ export default function Iso42001AssessmentPage() {
                                           maxFiles={5}
                                           maxSize={10}
                                           disabled={savingFiles.has(`subclause-${subclause.subclauseId}`)}
+                                          useCaseId={params.useCaseId as string}
+                                          frameworkType="iso-42001"
                                         />
                                         {savingFiles.has(`subclause-${subclause.subclauseId}`) && (
                                           <div className="absolute top-0 right-0 bg-green-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
@@ -1334,6 +1336,8 @@ export default function Iso42001AssessmentPage() {
                                           maxFiles={5}
                                           maxSize={10}
                                           disabled={savingFiles.has(`annex-${item.itemId}`)}
+                                          useCaseId={params.useCaseId as string}
+                                          frameworkType="iso-42001"
                                         />
                                         {savingFiles.has(`annex-${item.itemId}`) && (
                                           <div className="absolute top-0 right-0 bg-green-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">

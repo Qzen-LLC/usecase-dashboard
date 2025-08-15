@@ -38,7 +38,8 @@
     "seed-eu-ai-act-from-csv": "tsx scripts/seed-eu-ai-act-from-csv.ts",
     "setup-complete-database": "tsx scripts/setup-complete-database.ts",
     "seed-complete-iso-42001-data": "tsx scripts/seed-complete-iso-42001-data.ts",
-    "seed-users-from-csv": "tsx scripts/seed-users-from-csv.ts"
+    "seed-users-from-csv": "tsx scripts/seed-users-from-csv.ts",
+    "test-vercel-blob": "tsx scripts/test-vercel-blob.ts"
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^4.13.23",
@@ -66,6 +67,7 @@
     "@tiptap/react": "^3.0.7",
     "@tiptap/starter-kit": "^3.0.7",
     "@types/chart.js": "^2.9.41",
+    "@vercel/blob": "^1.1.1",
     "autoprefixer": "^10.4.21",
     "chart.js": "^4.5.0",
     "class-variance-authority": "^0.7.1",
