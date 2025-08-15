@@ -620,21 +620,21 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
   };
 
   const renderVendorList = () => (
-    <div className="card-elevated">
+    <div className="bg-white rounded-lg shadow-lg border border-gray-200">
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-gray-900">Vendor Assessment List</h2>
           <div className="flex gap-2">
             <button
               onClick={addVendor}
-              className="flex items-center gap-2 bg-gradient-primary text-white px-6 py-2.5 rounded-full hover:shadow-glow interactive font-medium"
+              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 hover:shadow-lg transition-all duration-200 font-medium"
             >
               <Plus size={16} />
               Add Vendor
             </button>
             <button
               onClick={() => setViewMode('dashboard')}
-              className="flex items-center gap-2 bg-gradient-secondary text-white px-6 py-2.5 rounded-full hover:shadow-glow interactive font-medium"
+              className="flex items-center gap-2 bg-gray-600 text-white px-6 py-2.5 rounded-lg hover:bg-gray-700 hover:shadow-lg transition-all duration-200 font-medium"
             >
               <BarChart3 size={16} />
               Dashboard
