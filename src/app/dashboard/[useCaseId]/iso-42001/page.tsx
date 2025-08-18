@@ -100,7 +100,7 @@ export default function Iso42001AssessmentPage() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [savingFiles, setSavingFiles] = useState<Set<string>>(new Set());
   
-  // Add debounce mechanism to prevent duplicate API calls
+  // Add debounce mechanism to prevent duplicate API calls (only for subclauses now)
   const [pendingEvidenceChanges, setPendingEvidenceChanges] = useState<Map<string, NodeJS.Timeout>>(new Map());
 
   useEffect(() => {
@@ -243,21 +243,9 @@ export default function Iso42001AssessmentPage() {
   const handleAnnexImplementationChange = (itemId: string, implementation: string) => {
     if (!assessment) return;
 
-    // Clear any pending timeout for this annex
-    const existingTimeout = pendingEvidenceChanges.get(`annex-${itemId}`);
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
-    }
-
-    // Check if this item is already being saved
-    if (savingFiles.has(`annex-${itemId}`)) {
-      console.log('🔍 Annex item already being saved, skipping:', itemId);
-      return;
-    }
-
     const existingInstance = assessment.annexes.find(ann => ann.item.itemId === itemId);
     
-    // Update local state immediately with forced re-render - handle case where instance doesn't exist yet
+    // Update local state only - no auto-save
     setAssessment(prevAssessment => {
       if (!prevAssessment) return prevAssessment;
       
@@ -311,104 +299,6 @@ export default function Iso42001AssessmentPage() {
         };
       }
     });
-
-    // Debounce the API call to prevent duplicate requests
-    const timeoutId = setTimeout(async () => {
-      // Auto-save the implementation
-      setSavingFiles(prev => new Set(prev).add(`annex-${itemId}`));
-      
-      try {
-        const requestData = {
-          itemId,
-          implementation,
-          evidenceFiles: existingInstance?.evidenceFiles || []
-        };
-        
-        console.log('🔍 ISO 42001 - Sending annex implementation request:', {
-          itemId,
-          assessmentId: assessment.id,
-          existingInstance: !!existingInstance,
-          implementationLength: implementation.length,
-          evidenceFilesCount: requestData.evidenceFiles.length,
-          requestData,
-          existingInstanceDetails: existingInstance ? {
-            id: existingInstance.id,
-            itemId: existingInstance.item.itemId,
-            implementation: existingInstance.implementation
-          } : null
-        });
-        
-        const response = await fetch(`/api/iso-42001/annex/${assessment.id}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestData)
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error('ISO 42001 Annex API Error:', {
-            status: response.status,
-            statusText: response.statusText,
-            errorData,
-            itemId,
-            assessmentId: assessment.id
-          });
-          
-          throw new Error(`Failed to save annex implementation: ${errorData.error || 'Unknown error'}`);
-        }
-
-        const savedInstance = await response.json();
-        
-        // Update the local state with the saved instance using functional update
-        setAssessment(currentAssessment => {
-          if (!currentAssessment) return currentAssessment;
-          
-          let finalUpdatedAnnexes;
-          if (existingInstance) {
-            // Update existing instance - merge with current data
-            finalUpdatedAnnexes = currentAssessment.annexes.map(ann => 
-              ann.item.itemId === itemId 
-                ? { ...ann, ...savedInstance, item: ann.item }
-                : ann
-            );
-          } else {
-            // Add new instance to the list
-            finalUpdatedAnnexes = [...currentAssessment.annexes, savedInstance];
-          }
-          
-          console.log('✅ ISO API Annex implementation update - merging with current state:', {
-            itemId,
-            savedInstanceImplementation: savedInstance.implementation,
-            hasExisting: !!existingInstance
-          });
-          
-          return {
-            ...currentAssessment,
-            annexes: finalUpdatedAnnexes,
-            lastUpdated: Date.now()
-          };
-        });
-        
-        await updateAssessmentProgress();
-        
-        // Clear any existing errors on successful save
-        if (error) {
-          setError(null);
-        }
-      } catch (err) {
-        console.error('Error saving annex implementation:', err);
-        setError(err instanceof Error ? err.message : 'Failed to save implementation');
-      } finally {
-        setSavingFiles(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(`annex-${itemId}`);
-          return newSet;
-        });
-      }
-    }, 500); // 500ms debounce
-
-    // Store the timeout ID
-    setPendingEvidenceChanges(prev => new Map(prev).set(`annex-${itemId}`, timeoutId));
   };
 
   const handleSubclauseEvidenceChange = async (subclauseId: string, evidenceFiles: string[]) => {
@@ -564,14 +454,12 @@ export default function Iso42001AssessmentPage() {
     setPendingEvidenceChanges(prev => new Map(prev).set(subclauseId, timeoutId));
   };
 
-  const handleAnnexEvidenceChange = async (itemId: string, evidenceFiles: string[]) => {
+  const handleAnnexEvidenceChange = (itemId: string, evidenceFiles: string[]) => {
     if (!assessment) return;
 
     const existingInstance = assessment.annexes.find(ann => ann.item.itemId === itemId);
-    const currentFiles = existingInstance?.evidenceFiles || [];
-    const removedFiles = currentFiles.filter(file => !evidenceFiles.includes(file));
-
-    // Update local state immediately with forced re-render - handle case where instance doesn't exist yet
+    
+    // Update local state only - no auto-save
     setAssessment(prevAssessment => {
       if (!prevAssessment) return prevAssessment;
       
@@ -599,108 +487,6 @@ export default function Iso42001AssessmentPage() {
         return prevAssessment;
       }
     });
-
-    // Auto-save the evidence files
-    setSavingFiles(prev => new Set(prev).add(`annex-${itemId}`));
-    
-    try {
-      const requestData = {
-        itemId,
-        implementation: existingInstance?.implementation || '',
-        evidenceFiles
-      };
-      console.log('🔄 Sending annex API request:', requestData);
-      
-      const response = await fetch(`/api/iso-42001/annex/${assessment.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('API Error:', response.status, errorData);
-        throw new Error(`Failed to save annex evidence files: ${errorData.error || 'Unknown error'}`);
-      }
-
-      const savedInstance = await response.json();
-      
-      // Update the local state with the saved instance using functional update
-      setAssessment(currentAssessment => {
-        if (!currentAssessment) return currentAssessment;
-        
-        let finalUpdatedAnnexes;
-        if (existingInstance) {
-          // Update existing instance - merge with current data
-          finalUpdatedAnnexes = currentAssessment.annexes.map(ann => 
-            ann.item.itemId === itemId 
-              ? { ...ann, ...savedInstance, item: ann.item }
-              : ann
-          );
-        } else {
-          // Add new instance to the list
-          finalUpdatedAnnexes = [...currentAssessment.annexes, savedInstance];
-        }
-        
-        console.log('✅ ISO API Annex update - merging with current state:', {
-          itemId,
-          savedInstanceFiles: savedInstance.evidenceFiles,
-          hasExisting: !!existingInstance
-        });
-        
-        return {
-          ...currentAssessment,
-          annexes: finalUpdatedAnnexes,
-          lastUpdated: Date.now()
-        };
-      });
-      
-      await updateAssessmentProgress();
-      
-      // Delete removed files from server
-      for (const removedFile of removedFiles) {
-        try {
-          await fetch('/api/upload/delete', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fileUrl: removedFile })
-          });
-        } catch (fileDeleteErr) {
-          console.error('Failed to delete file from server:', removedFile, fileDeleteErr);
-        }
-      }
-      
-      // Clear any existing errors on successful save
-      if (error) {
-        setError(null);
-      }
-    } catch (err) {
-      console.error('Failed to auto-save annex evidence:', err);
-      setError('Failed to save evidence files. Please try saving manually.');
-      
-      // Revert local state on API failure
-      setAssessment(prevAssessment => {
-        if (!prevAssessment || !existingInstance) return prevAssessment;
-        
-        const revertedAnnexes = prevAssessment.annexes.map(ann => 
-          ann.item.itemId === itemId 
-            ? { ...ann, evidenceFiles: [...currentFiles] }
-            : ann
-        );
-        
-        return {
-          ...prevAssessment,
-          annexes: revertedAnnexes,
-          lastUpdated: Date.now()
-        };
-      });
-    } finally {
-      setSavingFiles(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(`annex-${itemId}`);
-        return newSet;
-      });
-    }
   };
 
   const handleSaveSubclause = async (subclauseId: string) => {
@@ -748,12 +534,37 @@ export default function Iso42001AssessmentPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save implementation');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Failed to save annex: ${errorData.error || 'Unknown error'}`);
       }
 
+      const savedInstance = await response.json();
+      
+      // Update local state with the saved instance
+      setAssessment(currentAssessment => {
+        if (!currentAssessment) return currentAssessment;
+        
+        const updatedAnnexes = currentAssessment.annexes.map(ann => 
+          ann.item.itemId === itemId 
+            ? { ...ann, ...savedInstance, item: ann.item }
+            : ann
+        );
+        
+        return {
+          ...currentAssessment,
+          annexes: updatedAnnexes,
+          lastUpdated: Date.now()
+        };
+      });
+
       await updateAssessmentProgress();
+      
+      // Clear any existing errors on successful save
+      if (error) {
+        setError(null);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save implementation');
+      setError(err instanceof Error ? err.message : 'Failed to save annex');
     } finally {
       setSaving(false);
     }
@@ -1309,6 +1120,11 @@ export default function Iso42001AssessmentPage() {
                                   </div>
 
                                   <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
+                                    <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                      <p className="text-sm text-yellow-800">
+                                        💡 <strong>Note:</strong> Changes are saved locally and will only be submitted to the server when you click the "Save Implementation & Evidence" button below.
+                                      </p>
+                                    </div>
                                     <div>
                                       <label className="block text-sm font-semibold text-gray-700 mb-2">
                                         📝 Implementation Details
@@ -1335,16 +1151,9 @@ export default function Iso42001AssessmentPage() {
                                           onChange={(files) => handleAnnexEvidenceChange(item.itemId, files)}
                                           maxFiles={5}
                                           maxSize={10}
-                                          disabled={savingFiles.has(`annex-${item.itemId}`)}
                                           useCaseId={params.useCaseId as string}
                                           frameworkType="iso-42001"
                                         />
-                                        {savingFiles.has(`annex-${item.itemId}`) && (
-                                          <div className="absolute top-0 right-0 bg-green-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
-                                            <Loader2 className="w-3 h-3 animate-spin" />
-                                            Saving...
-                                          </div>
-                                        )}
                                       </div>
                                     </div>
 
