@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { put } from '@vercel/blob';
+import { getSignedUrl } from '@vercel/blob';
 import { prismaClient } from '@/utils/db';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
     // Upload to Vercel Blob
     const blob = await put(fullPath, file, {
       access: 'public',
-      addRandomSuffix: false,
+      addRandomSuffix: true,
     });
 
     // Return the URL that can be used to access the file
