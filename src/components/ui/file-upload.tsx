@@ -140,12 +140,18 @@ export function FileUpload({
   };
 
   const downloadFile = (url: string) => {
+    // Step 1: Start download
     const link = document.createElement('a');
     link.href = url;
     link.download = getFileName(url);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    
+    // Step 2: After 500ms, open file in new browser tab
+    setTimeout(() => {
+      window.open(url, '_blank');
+    }, 500);
   };
 
   return (
