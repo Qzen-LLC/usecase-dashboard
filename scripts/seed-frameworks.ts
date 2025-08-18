@@ -1,8 +1,9 @@
 #!/usr/bin/env tsx
 
-import { PrismaClient } from '@/generated/prisma';
+import { prismaClient } from '../src/utils/db';
+import { uaeAiControls } from '../src/lib/framework-data/uae-ai-controls';
 
-const prisma = new PrismaClient();
+const prisma = prismaClient;
 
 // EU AI Act Topics Data
 const euAiActTopicsData = [
@@ -381,6 +382,41 @@ async function seedIso42001Framework() {
   console.log('✅ ISO 42001 framework seeded successfully!');
 }
 
+async function seedUaeAiControlsFramework() {
+  console.log('🌱 Seeding UAE AI Controls framework...');
+
+  // Clear existing UAE AI control data
+  console.log('  🧹 Clearing existing UAE AI control data...');
+  await prisma.uaeAiControlInstance.deleteMany({});
+  await prisma.uaeAiControl.deleteMany({});
+
+  // Seed UAE AI Controls
+  console.log('  📋 Creating UAE AI controls...');
+  for (const control of uaeAiControls) {
+    await prisma.uaeAiControl.upsert({
+      where: { controlId: control.controlId },
+      update: {
+        title: control.title,
+        description: control.description,
+        legalBasis: control.legalBasis,
+        evidenceTypes: control.evidenceTypes,
+        orderIndex: control.orderIndex
+      },
+      create: {
+        controlId: control.controlId,
+        title: control.title,
+        description: control.description,
+        legalBasis: control.legalBasis,
+        evidenceTypes: control.evidenceTypes,
+        orderIndex: control.orderIndex
+      }
+    });
+    console.log(`    ✅ Created control: ${control.controlId} - ${control.title}`);
+  }
+
+  console.log('✅ UAE AI Controls framework seeded successfully!');
+}
+
 async function main() {
   try {
     console.log('🚀 Starting framework data seeding...\n');
@@ -388,6 +424,8 @@ async function main() {
     await seedEuAiActFramework();
     console.log('');
     await seedIso42001Framework();
+    console.log('');
+    await seedUaeAiControlsFramework();
 
     console.log('\n🎉 All framework data seeded successfully!');
     console.log(`
@@ -402,6 +440,7 @@ async function main() {
   - ISO 42001 Subclauses: ${iso42001SubclausesData.length}
   - ISO 42001 Annex Categories: ${iso42001AnnexCategoriesData.length}
   - ISO 42001 Annex Items: ${iso42001AnnexItemsData.length}
+  - UAE AI Controls: ${uaeAiControls.length}
     `);
 
   } catch (error) {
