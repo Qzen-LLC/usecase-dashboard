@@ -204,34 +204,6 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
             );
           })}
         </nav>
-
-        {/* Bottom Section */}
-        <div className={`p-2 border-t border-gray-200 ${isCollapsed ? 'space-y-2' : 'space-y-1'}`}>
-          <div className={`
-            ${isCollapsed ? 'flex flex-col items-center justify-center p-2' : 'flex items-center gap-3 px-3 py-2'} 
-            rounded-lg text-gray-700 hover:bg-gray-100 cursor-pointer transition-all duration-200
-          `}>
-            <Settings className="w-5 h-5 flex-shrink-0" />
-            {!isCollapsed && (
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">Settings</span>
-                <span className="text-xs text-gray-500">System Config</span>
-              </div>
-            )}
-          </div>
-          <div className={`
-            ${isCollapsed ? 'flex flex-col items-center justify-center p-2' : 'flex items-center gap-3 px-3 py-2'} 
-            rounded-lg text-gray-700 hover:bg-gray-100 cursor-pointer transition-all duration-200
-          `}>
-            <HelpCircle className="w-5 h-5 flex-shrink-0" />
-            {!isCollapsed && (
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">Help</span>
-                <span className="text-xs text-gray-500">Support & Docs</span>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Main Content */}
