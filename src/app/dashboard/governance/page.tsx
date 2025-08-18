@@ -8,7 +8,7 @@ import { Loader2, Shield, Users, Building, RefreshCw, AlertTriangle } from "luci
 import Link from 'next/link';
 import { calculateRiskScores, getRiskLevel, type StepsData } from '@/lib/risk-calculations';
 
-interface GovernanceData {
+interface UseCase {
   useCaseId: string;
   useCaseNumber: number;
   useCaseName: string;
@@ -17,23 +17,6 @@ interface GovernanceData {
   regulatoryFrameworks: string[];
   industryStandards: string[];
   lastUpdated: string;
-  euAiActAssessments: {
-    id: string;
-    status: string;
-    progress: number;
-  }[];
-  iso42001Assessments: {
-    id: string;
-    status: string;
-    progress: number;
-  }[];
-  uaeAiAssessments: {
-    id: string;
-    status: string;
-    progress: number;
-    maturityLevel: string;
-    weightedScore: number;
-  }[];
   assessData?: {
     stepsData: any;
   };
@@ -45,8 +28,18 @@ interface GovernanceData {
   }[];
 }
 
+interface AssessmentProgress {
+  id: string | null;
+  status: string;
+  progress: number;
+  updatedAt: string | null;
+  maturityLevel?: string | null;
+  weightedScore?: number;
+}
+
 export default function GovernancePage() {
-  const [governanceData, setGovernanceData] = useState<GovernanceData[]>([]);
+  const [useCases, setUseCases] = useState<UseCase[]>([]);
+  const [assessmentProgress, setAssessmentProgress] = useState<{ [useCaseId: string]: { euAiAct?: AssessmentProgress; iso42001?: AssessmentProgress; uaeAi?: AssessmentProgress } }>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +82,7 @@ export default function GovernancePage() {
       // Add cache-busting parameter to force fresh data
       const timestamp = Date.now();
       
-      // Fetch governance data
+      // Fetch governance data (use cases without assessment data)
       const governanceResponse = await fetch(`/api/governance-data?t=${timestamp}`);
 
       // Check if response is ok
@@ -102,8 +95,57 @@ export default function GovernancePage() {
       // Parse response
       const governanceData = await governanceResponse.json();
 
-      // Set state
-      setGovernanceData(governanceData);
+      // Set use cases
+      setUseCases(governanceData);
+
+      // Fetch assessment progress for each use case
+      const progressData: { [useCaseId: string]: { euAiAct?: AssessmentProgress; iso42001?: AssessmentProgress; uaeAi?: AssessmentProgress } } = {};
+
+      for (const useCase of governanceData) {
+        const useCaseId = useCase.useCaseId;
+        progressData[useCaseId] = {};
+
+        // Check which frameworks are selected for this use case
+        const hasEuAiAct = useCase.regulatoryFrameworks.includes('EU AI Act');
+        const hasIso42001 = useCase.industryStandards.some((std: string) => std.includes('ISO/IEC 42001'));
+        const hasUaeAi = useCase.regulatoryFrameworks.includes('UAE AI/GenAI Controls');
+
+        // Fetch progress for selected frameworks
+        const promises = [];
+
+        if (hasEuAiAct) {
+          promises.push(
+            fetch(`/api/eu-ai-act/progress/${useCaseId}`)
+              .then(res => res.json())
+              .then(data => { progressData[useCaseId].euAiAct = data; })
+              .catch(err => console.error(`Error fetching EU AI Act progress for ${useCaseId}:`, err))
+          );
+        }
+
+        if (hasIso42001) {
+          promises.push(
+            fetch(`/api/iso-42001/progress/${useCaseId}`)
+              .then(res => res.json())
+              .then(data => { progressData[useCaseId].iso42001 = data; })
+              .catch(err => console.error(`Error fetching ISO 42001 progress for ${useCaseId}:`, err))
+          );
+        }
+
+        if (hasUaeAi) {
+          promises.push(
+            fetch(`/api/uae-ai/progress/${useCaseId}`)
+              .then(res => res.json())
+              .then(data => { progressData[useCaseId].uaeAi = data; })
+              .catch(err => console.error(`Error fetching UAE AI progress for ${useCaseId}:`, err))
+          );
+        }
+
+        // Wait for all progress requests to complete
+        await Promise.all(promises);
+      }
+
+      // Set assessment progress
+      setAssessmentProgress(progressData);
       
     } catch (err) {
       console.error('Error fetching governance data:', err);
@@ -203,7 +245,7 @@ export default function GovernancePage() {
 
         {/* Use Case Cards */}
         <div className="space-y-4">
-          {governanceData.length === 0 ? (
+          {useCases.length === 0 ? (
             <div className="text-center py-12">
               <Shield className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h2 className="text-2xl font-semibold text-gray-600 mb-2">No Applied Governance Found</h2>
@@ -212,10 +254,10 @@ export default function GovernancePage() {
             </div>
           ) : (
             <div className="grid gap-4">
-              {governanceData.map((item) => {
+              {useCases.map((item: UseCase) => {
                 // Determine which sections should be shown based on selected frameworks
                 const showEuAiAct = item.regulatoryFrameworks.includes('EU AI Act');
-                const showIso42001 = item.industryStandards.some(std => std.includes('ISO/IEC 42001'));
+                const showIso42001 = item.industryStandards.some((std: string) => std.includes('ISO/IEC 42001'));
                 const showUaeAi = item.regulatoryFrameworks.includes('UAE AI/GenAI Controls');
                 
                 // Calculate grid columns based on active sections
@@ -246,12 +288,12 @@ export default function GovernancePage() {
                           <span className="text-xs">{item.useCaseType}</span>
                         </div>
                         <div className="flex items-center gap-1 flex-wrap">
-                          {item.regulatoryFrameworks.slice(0, 2).map((framework, index) => (
+                          {item.regulatoryFrameworks.slice(0, 2).map((framework: string, index: number) => (
                             <Badge key={index} variant="outline" className="text-xs px-1.5 py-0.5 h-5 bg-blue-50 text-blue-700 border-blue-200">
                               {framework}
                             </Badge>
                           ))}
-                          {item.industryStandards.slice(0, 2).map((standard, index) => (
+                          {item.industryStandards.slice(0, 2).map((standard: string, index: number) => (
                             <Badge key={index} variant="outline" className="text-xs px-1.5 py-0.5 h-5 bg-purple-50 text-purple-700 border-purple-200">
                               {standard.includes('FedRAMP') ? 'FedRAMP' : 
                                standard.includes('AICPA') ? 'AICPA AI Auditing' :
@@ -287,7 +329,7 @@ export default function GovernancePage() {
                             if (item.assessData?.stepsData) {
                               const riskResult = calculateRiskScores(item.assessData.stepsData as StepsData);
                               const riskLevel = getRiskLevel(riskResult.score);
-                              const openRisks = (item.risks || []).filter(r => r.status === 'OPEN').length;
+                              const openRisks = (item.risks || []).filter((r: any) => r.status === 'OPEN').length;
                               return (
                                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                                   riskLevel === 'Critical' ? 'bg-red-100 text-red-800' :
@@ -321,14 +363,14 @@ export default function GovernancePage() {
                       <div className="border-l-4 border-blue-400 bg-gradient-to-r from-blue-50 to-blue-25 pl-3 pr-2 py-2.5 rounded-r">
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-xs font-medium text-blue-900">EU AI ACT</span>
-                          <span className="text-xs text-blue-700 font-semibold">{item.euAiActAssessments[0] ? `${Math.round(item.euAiActAssessments[0].progress)}%` : '0%'}</span>
+                          <span className="text-xs text-blue-700 font-semibold">{assessmentProgress[item.useCaseId]?.euAiAct ? `${Math.round(assessmentProgress[item.useCaseId].euAiAct!.progress)}%` : '0%'}</span>
                         </div>
                         <div className="w-full bg-blue-200/60 rounded-full h-1.5 mb-2">
-                          <div className="bg-blue-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${item.euAiActAssessments[0]?.progress || 0}%` }}></div>
+                          <div className="bg-blue-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${assessmentProgress[item.useCaseId]?.euAiAct?.progress || 0}%` }}></div>
                         </div>
                         <div className="flex justify-between items-center">
-                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${item.euAiActAssessments[0]?.status === 'completed' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
-                            {item.euAiActAssessments[0]?.status === 'completed' ? 'Completed' : 'In Progress'}
+                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${assessmentProgress[item.useCaseId]?.euAiAct?.status === 'completed' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
+                            {assessmentProgress[item.useCaseId]?.euAiAct?.status === 'completed' ? 'Completed' : 'In Progress'}
                           </Badge>
                           <Link href={`/dashboard/${item.useCaseId}/eu-ai-act`}>
                             <Button variant="ghost" size="sm" className="text-xs h-6 px-2 text-blue-700 hover:bg-blue-100">Start</Button>
@@ -342,14 +384,14 @@ export default function GovernancePage() {
                       <div className="border-l-4 border-purple-400 bg-gradient-to-r from-purple-50 to-purple-25 pl-3 pr-2 py-2.5 rounded-r">
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-xs font-medium text-purple-900">ISO 42001</span>
-                          <span className="text-xs text-purple-700 font-semibold">{item.iso42001Assessments[0] ? `${Math.round(item.iso42001Assessments[0].progress)}%` : '0%'}</span>
+                          <span className="text-xs text-purple-700 font-semibold">{assessmentProgress[item.useCaseId]?.iso42001 ? `${Math.round(assessmentProgress[item.useCaseId].iso42001!.progress)}%` : '0%'}</span>
                         </div>
                         <div className="w-full bg-purple-200/60 rounded-full h-1.5 mb-2">
-                          <div className="bg-purple-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${item.iso42001Assessments[0]?.progress || 0}%` }}></div>
+                          <div className="bg-purple-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${assessmentProgress[item.useCaseId]?.iso42001?.progress || 0}%` }}></div>
                         </div>
                         <div className="flex justify-between items-center">
-                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${item.iso42001Assessments[0]?.status === 'completed' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
-                            {item.iso42001Assessments[0]?.status === 'completed' ? 'Completed' : 'In Progress'}
+                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${assessmentProgress[item.useCaseId]?.iso42001?.status === 'completed' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
+                            {assessmentProgress[item.useCaseId]?.iso42001?.status === 'completed' ? 'Completed' : 'In Progress'}
                           </Badge>
                           <Link href={`/dashboard/${item.useCaseId}/iso-42001`}>
                             <Button variant="ghost" size="sm" className="text-xs h-6 px-2 text-purple-700 hover:bg-purple-100">Start</Button>
@@ -364,25 +406,25 @@ export default function GovernancePage() {
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-xs font-medium text-emerald-900">UAE AI Controls</span>
                           <div className="flex items-center gap-1">
-                            <span className="text-xs text-emerald-700 font-semibold">{item.uaeAiAssessments[0] ? `${Math.round(item.uaeAiAssessments[0].progress)}%` : '0%'}</span>
-                            {item.uaeAiAssessments[0] && (
+                            <span className="text-xs text-emerald-700 font-semibold">{assessmentProgress[item.useCaseId]?.uaeAi ? `${Math.round(assessmentProgress[item.useCaseId].uaeAi!.progress)}%` : '0%'}</span>
+                            {assessmentProgress[item.useCaseId]?.uaeAi && (
                               <span className={`text-xs px-1.5 py-0.5 rounded ${
-                                item.uaeAiAssessments[0].maturityLevel === 'mature' ? 'bg-green-100 text-green-700' :
-                                item.uaeAiAssessments[0].maturityLevel === 'moderate' ? 'bg-yellow-100 text-yellow-700' :
+                                assessmentProgress[item.useCaseId].uaeAi!.maturityLevel === 'mature' ? 'bg-green-100 text-green-700' :
+                                assessmentProgress[item.useCaseId].uaeAi!.maturityLevel === 'moderate' ? 'bg-yellow-100 text-yellow-700' :
                                 'bg-red-100 text-red-700'
                               }`}>
-                                {item.uaeAiAssessments[0].maturityLevel === 'mature' ? 'Mature' :
-                                 item.uaeAiAssessments[0].maturityLevel === 'moderate' ? 'Moderate' : 'High Risk'}
+                                {assessmentProgress[item.useCaseId].uaeAi!.maturityLevel === 'mature' ? 'Mature' :
+                                 assessmentProgress[item.useCaseId].uaeAi!.maturityLevel === 'moderate' ? 'Moderate' : 'High Risk'}
                               </span>
                             )}
                           </div>
                         </div>
                         <div className="w-full bg-emerald-200/60 rounded-full h-1.5 mb-2">
-                          <div className="bg-emerald-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${item.uaeAiAssessments[0]?.progress || 0}%` }}></div>
+                          <div className="bg-emerald-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${assessmentProgress[item.useCaseId]?.uaeAi?.progress || 0}%` }}></div>
                         </div>
                         <div className="flex justify-between items-center">
-                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${item.uaeAiAssessments[0]?.status === 'completed' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
-                            {item.uaeAiAssessments[0]?.status === 'completed' ? 'Completed' : 'In Progress'}
+                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${assessmentProgress[item.useCaseId]?.uaeAi?.status === 'completed' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
+                            {assessmentProgress[item.useCaseId]?.uaeAi?.status === 'completed' ? 'Completed' : 'In Progress'}
                           </Badge>
                           <Link href={`/dashboard/${item.useCaseId}/uae-ai`}>
                             <Button variant="ghost" size="sm" className="text-xs h-6 px-2 text-emerald-700 hover:bg-emerald-100">Start</Button>
