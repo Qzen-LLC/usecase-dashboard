@@ -794,10 +794,12 @@ const Dashboard = () => {
                 <option key={org.id} value={org.id}>{org.name}</option>
               ))}
             </select>
-            <Button onClick={() => router.push('/new-usecase')} className="btn-primary flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              New Use Case
-            </Button>
+            {userData?.role !== 'QZEN_ADMIN' && (
+              <Button onClick={() => router.push('/new-usecase')} className="btn-primary flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                New Use Case
+              </Button>
+            )}
                          <Button onClick={refetch} variant="outline" className="btn-outline flex items-center gap-2">
                <RefreshCw className="w-4 h-4" />
                Refresh
