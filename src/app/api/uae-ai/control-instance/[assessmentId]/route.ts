@@ -8,14 +8,27 @@ export async function POST(
   { params }: { params: { assessmentId: string } }
 ) {
   try {
+    console.log('🔄 UAE AI Control Instance API - POST request received');
+    
     const user = await currentUser();
     if (!user) {
+      console.log('❌ Unauthorized - no user found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { assessmentId } = await params;
     const body = await request.json();
     const { controlId, implementation, evidenceFiles, score, notes } = body;
+    
+    console.log('📊 Request data:', {
+      assessmentId,
+      controlId,
+      evidenceFilesCount: evidenceFiles?.length || 0,
+      evidenceFiles: evidenceFiles || [],
+      implementationLength: implementation?.length || 0,
+      score,
+      notesLength: notes?.length || 0
+    });
 
     // Verify assessment exists and user has access
     const assessment = await prismaClient.uaeAiAssessment.findUnique({
@@ -47,6 +60,8 @@ export async function POST(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
+    console.log('🔧 Creating/updating control instance...');
+    
     // Create or update control instance
     const controlInstance = await prismaClient.uaeAiControlInstance.upsert({
       where: {
@@ -76,12 +91,23 @@ export async function POST(
       }
     });
 
+    console.log('✅ Control instance saved successfully:', {
+      id: controlInstance.id,
+      controlId: controlInstance.controlId,
+      evidenceFilesCount: controlInstance.evidenceFiles?.length || 0,
+      evidenceFiles: controlInstance.evidenceFiles || []
+    });
+
     // Recalculate overall assessment scores
     await updateAssessmentScores(assessmentId);
 
     return NextResponse.json(controlInstance);
   } catch (error) {
-    console.error('Error saving UAE AI control instance:', error);
+    console.error('❌ Error saving UAE AI control instance:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return NextResponse.json(
       { error: 'Failed to save control instance' },
       { status: 500 }
