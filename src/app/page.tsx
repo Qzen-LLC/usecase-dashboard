@@ -55,7 +55,7 @@ export default function HomePage() {
           <div className="mb-4">
             <Image 
               src="https://vgwacd4qotpurdv6.public.blob.vercel-storage.com/logo/logo.png" 
-              alt="QZen QUBE Logo" 
+              alt="QZen QUBE Logo"  
               width={64} 
               height={64} 
               className="mx-auto"
