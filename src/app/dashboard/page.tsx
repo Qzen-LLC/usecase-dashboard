@@ -750,7 +750,7 @@ const Dashboard = () => {
         <div className="page-header">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="page-title">Dashboard</h1>
+              
               {userData?.organization && (
                 <p className="page-subtitle">
                   {userData.organization.name} • <span className="text-primary font-medium">{userData.role === 'ORG_ADMIN' ? 'Organization Admin' : 'User'}</span>
@@ -794,10 +794,12 @@ const Dashboard = () => {
                 <option key={org.id} value={org.id}>{org.name}</option>
               ))}
             </select>
-            <Button onClick={() => router.push('/new-usecase')} className="btn-primary flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              New Use Case
-            </Button>
+            {userData?.role !== 'QZEN_ADMIN' && (
+              <Button onClick={() => router.push('/new-usecase')} className="btn-primary flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                New Use Case
+              </Button>
+            )}
                          <Button onClick={refetch} variant="outline" className="btn-outline flex items-center gap-2">
                <RefreshCw className="w-4 h-4" />
                Refresh
@@ -898,12 +900,6 @@ const Dashboard = () => {
                       </div>
                       {/* Use case column */}
                       <div className="flex-shrink-0 w-60 space-y-4">
-                        <div className="flex items-center justify-between mb-1 px-1">
-                          <h3 className="font-semibold text-sm text-gray-800">{stage.title}</h3>
-                          <span className="text-xs text-gray-500 bg-gray-100 px-1 py-0.5 rounded-full">
-                            {stageUseCases.length}
-                          </span>
-                        </div>
                                                  <DroppableStageColumn stage={stage} stageUseCases={stageUseCases}>
                            <SortableContext items={stageUseCases.map(uc => uc.id)} strategy={verticalListSortingStrategy}>
                              {stageUseCases.length === 0 ? (

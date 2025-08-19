@@ -271,7 +271,7 @@ export default function PolicyCenterPage() {
       <div className="page-container">
         {/* Header */}
         <div className="page-header">
-          <h1 className="page-title">AI Policy Center</h1>
+          
           <p className="page-description">
             Our AI Policy Center serves as the central hub for understanding and implementing responsible artificial intelligence practices within our organization. 
             This comprehensive resource provides guidance on ethical AI development, responsible use policies, and compliance with global AI governance frameworks.

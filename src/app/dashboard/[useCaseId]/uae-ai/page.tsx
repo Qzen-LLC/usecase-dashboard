@@ -61,6 +61,7 @@ export default function UaeAiAssessmentPage() {
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingFiles, setSavingFiles] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'controls' | 'maturity'>('controls');
   const [expandedControls, setExpandedControls] = useState<Set<string>>(new Set());
@@ -189,41 +190,210 @@ export default function UaeAiAssessmentPage() {
   };
 
   const handleEvidenceChange = async (controlId: string, evidenceFiles: string[]) => {
+    console.log('🔄 handleEvidenceChange START:', { controlId, evidenceFiles });
     if (!assessment) return;
 
     const existingInstance = assessment.controls.find(c => c.control.controlId === controlId);
+    const currentFiles = existingInstance?.evidenceFiles || [];
+    const removedFiles = currentFiles.filter(file => !evidenceFiles.includes(file));
+    
+    console.log('📊 Control state before update:', {
+      existingInstance: existingInstance ? {
+        id: existingInstance.id,
+        controlId: existingInstance.control?.controlId,
+        evidenceFiles: existingInstance.evidenceFiles
+      } : null,
+      currentFiles,
+      newFiles: evidenceFiles,
+      removedFiles
+    });
+    
+    // Update local state immediately for better UX with forced re-render
+    setAssessment(prevAssessment => {
+      if (!prevAssessment) return prevAssessment;
+      
+      const controlIndex = prevAssessment.controls.findIndex(c => c.control?.controlId === controlId);
+      if (controlIndex < 0) {
+        // Create new control instance if it doesn't exist
+        const control = controls.find(c => c.controlId === controlId);
+        if (control) {
+          const newInstance = {
+            id: `temp-${controlId}`,
+            implementation: '',
+            evidenceFiles: [...evidenceFiles], // Ensure new array reference
+            score: 0,
+            notes: '',
+            status: 'pending',
+            control: {
+              controlId: control.controlId,
+              title: control.title,
+              description: control.description,
+              legalBasis: control.legalBasis,
+              evidenceTypes: control.evidenceTypes
+            }
+          };
+          
+          console.log('🔧 State Update - new control instance:', {
+            controlId,
+            newInstance,
+            evidenceFiles
+          });
+          
+          return {
+            ...prevAssessment,
+            controls: [...prevAssessment.controls, newInstance],
+            lastUpdated: Date.now()
+          };
+        }
+        return prevAssessment;
+      }
+      
+      // Update existing control
+      const updatedControls = [...prevAssessment.controls];
+      updatedControls[controlIndex] = {
+        ...updatedControls[controlIndex],
+        evidenceFiles: [...evidenceFiles] // Ensure new array reference
+      };
+      
+      console.log('🔧 State Update - existing control:', {
+        controlId,
+        controlIndex,
+        newFiles: evidenceFiles
+      });
+      
+      return {
+        ...prevAssessment,
+        controls: updatedControls,
+        lastUpdated: Date.now()
+      };
+    });
+
+    // Auto-save the evidence files
+    setSavingFiles(prev => new Set(prev).add(`control-${controlId}`));
     
     try {
-      const response = await fetch(`/api/uae-ai/control-instance/${assessment.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          controlId,
-          implementation: existingInstance?.implementation || '',
-          evidenceFiles,
-          score: existingInstance?.score || 0,
-          notes: existingInstance?.notes || ''
-        })
-      });
+      // First ensure the control exists and is saved
+      if (!existingInstance || existingInstance.id.startsWith('temp-')) {
+        // Save the control first if it doesn't exist
+        const controlResponse = await fetch(`/api/uae-ai/control-instance/${assessment.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            controlId,
+            implementation: existingInstance?.implementation || '',
+            evidenceFiles,
+            score: existingInstance?.score || 0,
+            notes: existingInstance?.notes || ''
+          })
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to save evidence files');
+        if (!controlResponse.ok) {
+          throw new Error('Failed to save control evidence files');
+        }
+
+        const savedInstance = await controlResponse.json();
+
+        // Update the control with the saved instance using functional update
+        setAssessment(currentAssessment => {
+          if (!currentAssessment) return currentAssessment;
+          
+          const updatedControls = currentAssessment.controls.map(control => 
+            control.control?.controlId === controlId 
+              ? { ...control, ...savedInstance, control: control.control }
+              : control
+          );
+          
+          console.log('✅ API Control update - merging with current state:', {
+            controlId,
+            savedInstanceFiles: savedInstance.evidenceFiles
+          });
+          
+          return {
+            ...currentAssessment,
+            controls: updatedControls,
+            lastUpdated: Date.now()
+          };
+        });
+      } else {
+        // Update existing control
+        const response = await fetch(`/api/uae-ai/control-instance/${assessment.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            controlId,
+            implementation: existingInstance.implementation || '',
+            evidenceFiles,
+            score: existingInstance.score || 0,
+            notes: existingInstance.notes || ''
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save evidence files');
+        }
+
+        const savedInstance = await response.json();
+        
+        // Update local state
+        setAssessment(currentAssessment => {
+          if (!currentAssessment) return currentAssessment;
+          
+          const updatedControls = currentAssessment.controls.map(c => 
+            c.control?.controlId === controlId ? { ...c, ...savedInstance, control: c.control } : c
+          );
+          
+          return { ...currentAssessment, controls: updatedControls };
+        });
       }
-
-      const savedInstance = await response.json();
       
-      // Update local state
-      setAssessment(currentAssessment => {
-        if (!currentAssessment) return currentAssessment;
-        
-        const updatedControls = currentAssessment.controls.map(c => 
-          c.control.controlId === controlId ? { ...c, ...savedInstance, control: c.control } : c
-        );
-        
-        return { ...currentAssessment, controls: updatedControls };
-      });
+      // Delete removed files from server
+      for (const removedFile of removedFiles) {
+        try {
+          await fetch('/api/upload/delete', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileUrl: removedFile })
+          });
+        } catch (fileDeleteErr) {
+          console.error('Failed to delete file from server:', removedFile, fileDeleteErr);
+          // Don't fail the whole operation if file deletion fails
+        }
+      }
+      
+      // Clear any existing errors on successful save
+      if (error) {
+        setError(null);
+      }
     } catch (err) {
+      console.error('Error saving evidence files:', err);
+      
+      // Revert local state on error
+      setAssessment(prevAssessment => {
+        if (!prevAssessment) return prevAssessment;
+        
+        if (existingInstance) {
+          const revertedControls = prevAssessment.controls.map(control => 
+            control.control?.controlId === controlId 
+              ? { ...control, evidenceFiles: [...currentFiles] }
+              : control
+          );
+          return { ...prevAssessment, controls: revertedControls, lastUpdated: Date.now() };
+        } else {
+          // Remove the temporary control we added
+          const revertedControls = prevAssessment.controls.filter(c => 
+            !(c.id === `temp-${controlId}` && c.control?.controlId === controlId)
+          );
+          return { ...prevAssessment, controls: revertedControls, lastUpdated: Date.now() };
+        }
+      });
+      
       setError(err instanceof Error ? err.message : 'Failed to save evidence');
+    } finally {
+      setSavingFiles(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(`control-${controlId}`);
+        return newSet;
+      });
     }
   };
 
@@ -555,15 +725,24 @@ export default function UaeAiAssessmentPage() {
                         />
                         
                         <div className="mt-4">
-                          <FileUpload
-                            label="Evidence Files"
-                            value={instance?.evidenceFiles || []}
-                            onChange={(files) => handleEvidenceChange(control.controlId, files)}
-                            maxFiles={5}
-                            maxSize={10}
-                            useCaseId={params.useCaseId as string}
-                            frameworkType="uae-ai"
-                          />
+                          <div className="relative">
+                            <FileUpload
+                              label="Evidence Files"
+                              value={instance?.evidenceFiles || []}
+                              onChange={(files) => handleEvidenceChange(control.controlId, files)}
+                              maxFiles={5}
+                              maxSize={10}
+                              disabled={savingFiles.has(`control-${control.controlId}`)}
+                              useCaseId={params.useCaseId as string}
+                              frameworkType="uae-ai"
+                            />
+                            {savingFiles.has(`control-${control.controlId}`) && (
+                              <div className="absolute top-0 right-0 bg-green-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                Saving...
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         <div className="flex items-center justify-between pt-2 border-t border-gray-100">

@@ -163,7 +163,7 @@ const ExecutiveView: React.FC<ExecutiveViewProps> = ({ riskData }) => (
   <div className="space-y-8">
     {/* Header */}
     <div className="page-header">
-      <h1 className="page-title">Risk Management Dashboard</h1>
+      
       <p className="page-subtitle">Comprehensive risk assessment and monitoring across all AI use cases</p>
     </div>
 
