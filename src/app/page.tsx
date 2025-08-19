@@ -54,7 +54,7 @@ export default function HomePage() {
           {/* Logo placeholder - replace src with your logo if available */}
           <div className="mb-4">
             <Image 
-              src="/images/logo.svg" 
+              src="https://vgwacd4qotpurdv6.public.blob.vercel-storage.com/logo/logo.png" 
               alt="QZen QUBE Logo" 
               width={64} 
               height={64} 

@@ -19,10 +19,14 @@ const nextConfig: NextConfig = {
   images: {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    domains: [
-      // Add any Neon-related domains here if needed for image hosting
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'vgwacd4qotpurdv6.public.blob.vercel-storage.com',
+      },
     ],
   },
+  
 
   pageExtensions: ["ts", "tsx", "js", "jsx"],
 

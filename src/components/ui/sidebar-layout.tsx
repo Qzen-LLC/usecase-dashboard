@@ -137,7 +137,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
           {isCollapsed ? (
             <div className="flex flex-col items-center p-4 gap-3">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md bg-white">
-                <Image src="/images/logo.svg" alt="Logo" width={32} height={32} className="object-contain" />
+                <Image src="https://vgwacd4qotpurdv6.public.blob.vercel-storage.com/logo/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
               </div>
               <Button
                 variant="ghost"
@@ -151,7 +151,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
           ) : (
             <div className="flex items-center gap-3 p-4">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-white">
-                <Image src="/images/logo.svg" alt="Logo" width={40} height={40} className="object-contain" />
+                <Image src="https://vgwacd4qotpurdv6.public.blob.vercel-storage.com/logo/logo.png" alt="Logo" width={40} height={40} className="object-contain" />
               </div>
               <div className="flex flex-col">
                 <span className="text-xl font-extrabold text-gray-900 leading-tight">QUBE</span>
