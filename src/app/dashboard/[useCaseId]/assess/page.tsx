@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import TechnicalFeasibility from '@/components/TechnicalFeasibility';
 import EthicalImpact from '@/components/EthicalImpact';
@@ -15,18 +15,7 @@ import DataReadiness from "@/components/DataReadiness";
 import FinancialDashboard from './financial-dashboard/page';
 import ApprovalsPage from '@/components/ApprovalsPage';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
-
-const assessmentSteps = [
-  { id: 1, title: "Technical Feasibility" },
-  { id: 2, title: "Business Feasibility" },
-  { id: 3, title: "Ethical Impact" },
-  { id: 4, title: "Risk Assessment" },
-  { id: 5, title: "Data Readiness" },
-  { id: 6, title: "Roadmap Position" },
-  { id: 7, title: "Budget Planning" },
-  { id: 8, title: "Financial Dashboard" },
-  { id: 9, title: "Approvals" },
-];
+import { useStableRender } from '@/hooks/useStableRender';
 
 interface UseCase {
   title: string;
@@ -36,125 +25,159 @@ interface UseCase {
   stage: string; // Added stage to the interface
 }
 
-const defaultAssessmentData = {
-  technicalFeasibility: {
-    modelTypes: [],
-    modelSizes: [],
-    deploymentModels: [],
-    cloudProviders: [],
-    computeRequirements: [],
-    integrationPoints: [],
-    apiSpecs: [],
-    authMethods: [],
-    encryptionStandards: [],
-    technicalComplexity: 0,
-    outputTypes: [],
-    confidenceScore: '',
-  },
-  businessFeasibility: {
-    strategicAlignment: 8,
-    marketOpportunity: 'large',
-    stakeholder: { exec: true, endUser: false, it: true },
-    annualSavings: '2.4M',
-    efficiencyGain: 35,
-    paybackPeriod: 8,
-    availabilityRequirement: '',
-    responseTimeRequirement: '',
-    concurrentUsers: '',
-    revenueImpactType: '',
-    estimatedFinancialImpact: '',
-    userCategories: [],
-    systemCriticality: '',
-    failureImpact: '',
-    executiveSponsorLevel: '',
-    stakeholderGroups: [],
-  },
-  ethicalImpact: {
-    biasFairness: {
-      historicalBias: false,
-      demographicGaps: false,
-      geographicBias: false,
-      selectionBias: false,
-      confirmationBias: false,
-      temporalBias: false,
-    },
-    privacySecurity: {
-      dataMinimization: false,
-      consentManagement: false,
-      dataAnonymization: false,
-    },
-    decisionMaking: {
-      automationLevel: '',
-      decisionTypes: [],
-    },
-    modelCharacteristics: {
-      explainabilityLevel: '',
-      biasTesting: '',
-    },
-    aiGovernance: {
-      humanOversightLevel: '',
-      performanceMonitoring: [],
-    },
-    ethicalConsiderations: {
-      potentialHarmAreas: [],
-      vulnerablePopulations: [],
-    },
-  },
-  riskAssessment: {
-    technicalRisks: [
-      { risk: 'Model accuracy degradation', probability: 'None', impact: 'None' },
-      { risk: 'Data quality issues', probability: 'None', impact: 'None' },
-      { risk: 'Integration failures', probability: 'None', impact: 'None' },
-    ],
-    businessRisks: [
-      { risk: 'User adoption resistance', probability: 'None', impact: 'None' },
-      { risk: 'Regulatory changes', probability: 'None', impact: 'None' },
-      { risk: 'Competitive response', probability: 'None', impact: 'None' },
-    ],
-  },
-  dataReadiness: {
-    dataTypes: [],
-    dataVolume: '',
-    growthRate: '',
-    numRecords: '',
-    primarySources: [],
-    dataQualityScore: 5,
-    dataCompleteness: 0,
-    dataAccuracyConfidence: 0,
-    dataFreshness: '',
-    dataSubjectLocations: '',
-    dataStorageLocations: '',
-    dataProcessingLocations: '',
-    crossBorderTransfer: false,
-    dataLocalization: '',
-    dataRetention: '',
-  },
-  roadmapPosition: {
-    priority: 'high',
-    projectStage: '',
-    timelineConstraints: [],
-    timeline: 'q2',
-    dependencies: {
-      dataPlatform: false,
-      security: false,
-      hiring: false,
-    },
-    metrics: '',
-  },
-  budgetPlanning: {
-    initialDevCost: 0,
-    baseApiCost: 0,
-    baseInfraCost: 0,
-    baseOpCost: 0,
-    baseMonthlyValue: 0,
-    valueGrowthRate: 0,
-    budgetRange: '',
-    error: '',
-    loading: false,
-  },
-};
+export default function AssessmentPage() {
+  const router = useRouter();
+  const params = useParams();
+  const useCaseId = params.useCaseId as string;
+  const [currentStep, setCurrentStep] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [useCase, setUseCase] = useState<UseCase | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const budgetPlanningRef = useRef<any>(null);
+  const approvalsPageRef = useRef<any>(null);
+  const pageTopRef = useRef<HTMLDivElement>(null);
 
-const validateAssessmentData = (data: any) => {
+  // Use global stable render hook
+  const { isReady } = useStableRender();
+
+  // Memoize assessment steps to prevent unnecessary re-renders
+  const assessmentSteps = useMemo(() => [
+    { id: 1, title: "Technical Feasibility" },
+    { id: 2, title: "Business Feasibility" },
+    { id: 3, title: "Ethical Impact" },
+    { id: 4, title: "Risk Assessment" },
+    { id: 5, title: "Data Readiness" },
+    { id: 6, title: "Roadmap Position" },
+    { id: 7, title: "Budget Planning" },
+    { id: 8, title: "Financial Dashboard" },
+    { id: 9, title: "Approvals" },
+  ], []);
+
+  // Memoize default assessment data to prevent unnecessary re-renders
+  const defaultAssessmentData = useMemo(() => ({
+    technicalFeasibility: {
+      modelTypes: [],
+      modelSizes: [],
+      deploymentModels: [],
+      cloudProviders: [],
+      computeRequirements: [],
+      integrationPoints: [],
+      apiSpecs: [],
+      authMethods: [],
+      encryptionStandards: [],
+      technicalComplexity: 0,
+      outputTypes: [],
+      confidenceScore: '',
+      modelUpdateFrequency: '',
+    },
+    businessFeasibility: {
+      strategicAlignment: 8,
+      marketOpportunity: 'large',
+      stakeholder: { exec: true, endUser: false, it: true },
+      annualSavings: '2.4M',
+      efficiencyGain: 35,
+      paybackPeriod: 8,
+      availabilityRequirement: '',
+      responseTimeRequirement: '',
+      concurrentUsers: '',
+      revenueImpactType: '',
+      estimatedFinancialImpact: '',
+      userCategories: [],
+      systemCriticality: '',
+      failureImpact: '',
+      executiveSponsorLevel: '',
+      stakeholderGroups: [],
+    },
+    ethicalImpact: {
+      biasFairness: {
+        historicalBias: false,
+        demographicGaps: false,
+        geographicBias: false,
+        selectionBias: false,
+        confirmationBias: false,
+        temporalBias: false,
+      },
+      privacySecurity: {
+        dataMinimization: false,
+        consentManagement: false,
+        dataAnonymization: false,
+      },
+      decisionMaking: {
+        automationLevel: '',
+        decisionTypes: [],
+      },
+      modelCharacteristics: {
+        explainabilityLevel: '',
+        biasTesting: '',
+      },
+      aiGovernance: {
+        humanOversightLevel: '',
+        performanceMonitoring: [],
+      },
+      ethicalConsiderations: {
+        potentialHarmAreas: [],
+        vulnerablePopulations: [],
+      },
+    },
+    riskAssessment: {
+      technicalRisks: [
+        { risk: 'Model accuracy degradation', probability: 'None', impact: 'None' },
+        { risk: 'Data quality issues', probability: 'None', impact: 'None' },
+        { risk: 'Integration failures', probability: 'None', impact: 'None' },
+      ],
+      businessRisks: [
+        { risk: 'User adoption resistance', probability: 'None', impact: 'None' },
+        { risk: 'Regulatory changes', probability: 'None', impact: 'None' },
+        { risk: 'Competitive response', probability: 'None', impact: 'None' },
+      ],
+    },
+    dataReadiness: {
+      dataTypes: [],
+      dataVolume: '',
+      growthRate: '',
+      numRecords: '',
+      primarySources: [],
+      dataQualityScore: 5,
+      dataCompleteness: 0,
+      dataAccuracyConfidence: 0,
+      dataFreshness: '',
+      dataSubjectLocations: '',
+      dataStorageLocations: '',
+      dataProcessingLocations: '',
+      crossBorderTransfer: false,
+      dataLocalization: '',
+      dataRetention: '',
+    },
+    roadmapPosition: {
+      priority: 'high',
+      projectStage: '',
+      timelineConstraints: [],
+      timeline: 'q2',
+      dependencies: {
+        dataPlatform: false,
+        security: false,
+        hiring: false,
+      },
+      metrics: '',
+    },
+    budgetPlanning: {
+      initialDevCost: 0,
+      baseApiCost: 0,
+      baseInfraCost: 0,
+      baseOpCost: 0,
+      baseMonthlyValue: 0,
+      valueGrowthRate: 0,
+      budgetRange: '',
+      error: '',
+      loading: false,
+    },
+  }), []);
+
+  const [assessmentData, setAssessmentData] = useState(defaultAssessmentData);
+
+const validateAssessmentData = useMemo(() => (data: any) => {
   if (!data) return false;
   // List all required assessment sections
   const requiredSections = [
@@ -176,34 +199,19 @@ const validateAssessmentData = (data: any) => {
     }
     return val !== '' && val !== null && val !== undefined;
   });
-};
+}, []);
 
-export default function AssessmentPage() {
-  const router = useRouter();
-  const params = useParams();
-  const useCaseId = params.useCaseId as string;
-  const [useCase, setUseCase] = useState<UseCase | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [currentStep, setCurrentStep] = useState(1);
-  const [assessmentData, setAssessmentData] = useState<{ [key: string]: any }>(defaultAssessmentData);
-  const budgetPlanningRef = useRef<{ saveFinops: () => Promise<void> }>(null);
-  const [saveSuccess, setSaveSuccess] = useState(false); // State to show success message
-  const approvalsPageRef = useRef<{ handleComplete: () => Promise<void> }>(null);
-  const pageTopRef = useRef<HTMLDivElement>(null);
-
-  const handleAssessmentChange = (section: string, data: any) => {
+  const handleAssessmentChange = useMemo(() => (section: string, data: any) => {
     setAssessmentData((prevData: any) => {
       return {
         ...prevData,
         [section]: data,
       };
     });
-  };
+  }, []);
 
   useEffect(() => {
-    if (!useCaseId) return;
+    if (!useCaseId || !isReady) return;
     setLoading(true);
     fetch(`/api/get-usecase-details?useCaseId=${useCaseId}`)
       .then((res) => res.json())
@@ -233,9 +241,10 @@ export default function AssessmentPage() {
         setError("Failed to load use case");
         setLoading(false);
       });
-  }, [useCaseId]);
+  }, [useCaseId, isReady]);
 
   useEffect(() => {
+    if (!isReady) return;
     setAssessmentData((prev: any) => {
       const next = { ...defaultAssessmentData, ...prev };
       for (const key in defaultAssessmentData) {
@@ -274,7 +283,7 @@ export default function AssessmentPage() {
 
   // Add this useEffect for auto-move to next stage
   useEffect(() => {
-    if (!useCaseId || !useCase) return;
+    if (!useCaseId || !useCase || !assessmentData) return;
     // Only auto-move if currently in discovery
     if (useCase.stage === 'discovery' && validateAssessmentData(assessmentData)) {
       // Move to business-case
@@ -289,12 +298,12 @@ export default function AssessmentPage() {
         setUseCase((prev: any) => prev ? { ...prev, stage: 'business-case' } : prev);
       });
     }
-  }, [assessmentData, useCaseId, useCase]);
+  }, [useCaseId, useCase, assessmentData]);
 
   const isFirstStep = currentStep === 1;
   // const isLastStep = currentStep === assessmentSteps.length;
 
-  const handleSave = async () => {
+  const handleSave = useMemo(() => async () => {
     try {
       setSaving(true);
       setError(""); // Clear previous errors
@@ -317,51 +326,58 @@ export default function AssessmentPage() {
     } finally {
       setSaving(false);
     }
-  };
+  }, [useCaseId, assessmentData]);
 
-  const handleNext = async () => {
+  const handleNext = useMemo(() => async () => {
     if (currentStep === 7 && budgetPlanningRef.current) {
       await budgetPlanningRef.current.saveFinops();
     }
     if (currentStep < assessmentSteps.length) {
       setCurrentStep((prev) => prev + 1);
     }
-  };
+  }, [currentStep]);
 
-  const handlePrev = () => {
+  const handlePrev = useMemo(() => () => {
     if (!isFirstStep) {
       setCurrentStep((prev) => prev - 1);
     }
-  };
+  }, [isFirstStep]);
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center text-lg text-gray-500">Loading...</div>;
+  if (loading || !isReady) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-foreground font-medium">Loading Assessment Dashboard...</p>
+        </div>
+      </div>
+    );
   }
   if (error || !useCase) {
-    return <div className="min-h-screen flex items-center justify-center text-lg text-red-500">{error || "Use case not found"}</div>;
+    return <div className="min-h-screen flex items-center justify-center text-lg text-destructive">{error || "Use case not found"}</div>;
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col overflow-auto">
+    <div className="min-h-screen bg-background text-foreground flex flex-col overflow-auto">
 
       {/* Use Case Title Section */}
-      <div ref={pageTopRef} className="px-8 py-6 border-b bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div ref={pageTopRef} className="px-8 py-6 border-b border-border bg-card flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="font-mono text-gray-500 mb-1">AIUC-{useCase.aiucId}</div>
-          <div className="text-2xl font-semibold text-gray-900">{useCase.title}</div>
-          <div className="text-gray-600">{useCase.department} {useCase.owner}</div>
+          <div className="font-mono text-muted-foreground mb-1">AIUC-{useCase.aiucId}</div>
+          <div className="text-2xl font-semibold text-foreground">{useCase.title}</div>
+          <div className="text-muted-foreground">{useCase.department} {useCase.owner}</div>
         </div>
         {/* Removed 'Back to Pipeline' button */}
       </div>
 
       {/* Assessment Steps Navigation */}
-      <div className="px-8 py-4 border-b bg-gray-50 overflow-x-auto">
+      <div className="px-8 py-4 border-b border-border bg-muted overflow-x-auto">
         <div className="flex items-center space-x-4">
           {assessmentSteps.map((step, idx) => (
             <div key={step.id} className="flex items-center">
               <button
                 type="button"
-                className={`flex items-center justify-center w-10 h-10 rounded-full focus:outline-none transition-colors duration-150 ${currentStep === step.id ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-600 hover:bg-blue-100"}`}
+                className={`flex items-center justify-center w-10 h-10 rounded-full focus:outline-none transition-colors duration-150 ${currentStep === step.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}
                 style={{ cursor: 'pointer' }}
                 onClick={() => setCurrentStep(step.id)}
                 aria-current={currentStep === step.id ? 'step' : undefined}
@@ -370,7 +386,7 @@ export default function AssessmentPage() {
               </button>
               <button
                 type="button"
-                className={`ml-2 whitespace-nowrap text-sm font-medium bg-transparent border-none p-0 m-0 focus:outline-none transition-colors duration-150 ${currentStep === step.id ? "text-blue-600" : "text-gray-500 hover:text-blue-600"}`}
+                className={`ml-2 whitespace-nowrap text-sm font-medium bg-transparent border-none p-0 m-0 focus:outline-none transition-colors duration-150 ${currentStep === step.id ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
                 style={{ cursor: 'pointer' }}
                 onClick={() => setCurrentStep(step.id)}
                 aria-current={currentStep === step.id ? 'step' : undefined}
@@ -378,7 +394,7 @@ export default function AssessmentPage() {
                 {step.title}
               </button>
               {idx < assessmentSteps.length - 1 && (
-                <ChevronRight className="w-5 h-5 text-gray-400 mx-2" />
+                <ChevronRight className="w-5 h-5 text-muted-foreground mx-2" />
               )}
             </div>
           ))}
@@ -386,7 +402,7 @@ export default function AssessmentPage() {
       </div>
 
       {/* Main Content Area */}
-      <Card className="flex-1 px-8 py-10 bg-white">
+      <Card className="flex-1 px-8 py-10 bg-card border-border">
         {currentStep === 1 ? (
           <CardHeader>
             <CardTitle>Technical Feasibility</CardTitle>
@@ -425,7 +441,7 @@ export default function AssessmentPage() {
           </CardHeader>
         ) :
           (
-            <div className="text-gray-600 text-lg font-medium">
+            <div className="text-muted-foreground text-lg font-medium">
               You are on <strong>{assessmentSteps[currentStep - 1]?.title || 'Unknown'}</strong> step.
             </div>
           )}
@@ -472,7 +488,7 @@ export default function AssessmentPage() {
             <ApprovalsPage ref={approvalsPageRef} />
           ) :
             (
-              <div className="text-gray-600 text-lg font-medium">
+              <div className="text-muted-foreground text-lg font-medium">
                 You are on <strong>{assessmentSteps[currentStep - 1].title}</strong> step.
               </div>
             )}
@@ -480,9 +496,9 @@ export default function AssessmentPage() {
       </Card>
 
       {/* Bottom Navigation Buttons */}
-      <div className="px-8 py-6 border-t bg-white flex justify-between items-center">
+      <div className="px-8 py-6 border-t border-border bg-card flex justify-between items-center">
         <button
-          className={`flex items-center px-4 py-2 rounded-md ${isFirstStep ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-700"}`}
+          className={`flex items-center px-4 py-2 rounded-md ${isFirstStep ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
           disabled={isFirstStep}
           onClick={handlePrev}
         >
@@ -491,14 +507,14 @@ export default function AssessmentPage() {
         </button>
         <button
           onClick={() => router.push('/dashboard')}
-          className={`flex items-center px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700`}
+          className={`flex items-center px-4 py-2 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90`}
         >
           Cancel
         </button>
         {currentStep < 8 && (
           <>
             <button
-              className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold flex items-center gap-2 ${saving ? 'opacity-75 cursor-not-allowed' : ''}`}
+              className={`px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold flex items-center gap-2 ${saving ? 'opacity-75 cursor-not-allowed' : ''}`}
               onClick={handleSave}
               disabled={saving}
             >
@@ -511,17 +527,17 @@ export default function AssessmentPage() {
                 'Save Progress'
               )}
             </button>
-            {saveSuccess && ( // Display success message
-              <div className="ml-4 text-green-600 font-semibold">Progress saved!</div>
+            {saveSuccess && (
+              <div className="ml-4 text-green-600 dark:text-green-400 font-semibold">Progress saved!</div>
             )}
-            {error && ( // Display error message
-              <div className="ml-4 text-red-600 font-semibold">{error}</div>
+            {error && (
+              <div className="ml-4 text-red-600 dark:text-red-400 font-semibold">{error}</div>
             )}
           </>
         )}
         {currentStep < 9 ? (
           <button
-            className={`flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700`}
+            className={`flex items-center px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90`}
             onClick={handleNext}
           >
             Next

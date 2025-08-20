@@ -113,39 +113,41 @@ const HybridRiskDashboard: React.FC = () => {
     <div className="page-layout">
       <div className="page-container">
         {/* Controls */}
-        <div className="flex justify-end items-center gap-3 mb-6">
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setView('executive')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                view === 'executive' 
-                  ? 'bg-white text-blue-600 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+        <Card className="p-4 mb-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex bg-muted rounded-lg p-1">
+              <button
+                onClick={() => setView('executive')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  view === 'executive' 
+                    ? 'bg-background text-primary shadow-sm' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Eye className="w-4 h-4 inline mr-2" />
+                Executive View
+              </button>
+              <button
+                onClick={() => setView('detailed')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  view === 'detailed' 
+                    ? 'bg-background text-primary shadow-sm' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Grid className="w-4 h-4 inline mr-2" />
+                Detailed Analysis
+              </button>
+            </div>
+            <button 
+              onClick={fetchRiskData}
+              className="btn-outline flex items-center gap-2"
             >
-              <Eye className="w-4 h-4 inline mr-2" />
-              Executive View
-            </button>
-            <button
-              onClick={() => setView('detailed')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                view === 'detailed' 
-                  ? 'bg-white text-blue-600 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Grid className="w-4 h-4 inline mr-2" />
-              Detailed Analysis
+              <RefreshCw className="w-4 h-4" />
+              Refresh
             </button>
           </div>
-          <button 
-            onClick={fetchRiskData}
-            className="btn-outline flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </button>
-        </div>
+        </Card>
 
         {/* Main Content */}
         {view === 'executive' ? (
@@ -168,67 +170,67 @@ const ExecutiveView: React.FC<ExecutiveViewProps> = ({ riskData }) => (
     </div>
 
     {/* KPI Cards */}
-    <section className="grid-standard">
-      <div className="card-standard p-7 flex flex-col items-start">
-        <span className="text-base font-medium text-gray-500 mb-1">Total Risks</span>
-        <span className="font-extrabold text-gray-900 text-3xl md:text-4xl lg:text-5xl">{riskData.totalRisks}</span>
+    <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="card-standard p-6 flex flex-col items-start">
+        <span className="text-sm font-medium text-muted-foreground mb-2">Total Risks</span>
+        <span className="font-extrabold text-foreground text-3xl md:text-4xl lg:text-5xl leading-none">{riskData.totalRisks}</span>
       </div>
-      <div className="card-standard p-7 flex flex-col items-start">
-        <span className="text-base font-medium text-gray-500 mb-1">High Risk</span>
-        <span className="font-extrabold text-red-600 text-3xl md:text-4xl lg:text-5xl">{riskData.highRiskCount}</span>
+      <div className="card-standard p-6 flex flex-col items-start">
+        <span className="text-sm font-medium text-muted-foreground mb-2">High Risk</span>
+        <span className="font-extrabold text-destructive text-3xl md:text-4xl lg:text-5xl leading-none">{riskData.highRiskCount}</span>
       </div>
-      <div className="card-standard p-7 flex flex-col items-start">
-        <span className="text-base font-medium text-gray-500 mb-1">Medium Risk</span>
-        <span className="font-extrabold text-yellow-600 text-3xl md:text-4xl lg:text-5xl">{riskData.mediumRiskCount}</span>
+      <div className="card-standard p-6 flex flex-col items-start">
+        <span className="text-sm font-medium text-muted-foreground mb-2">Medium Risk</span>
+        <span className="font-extrabold text-warning text-3xl md:text-4xl lg:text-5xl leading-none">{riskData.mediumRiskCount}</span>
       </div>
-      <div className="card-standard p-7 flex flex-col items-start">
-        <span className="text-base font-medium text-gray-500 mb-1">Low Risk</span>
-        <span className="font-extrabold text-green-600 text-3xl md:text-4xl lg:text-5xl">{riskData.lowRiskCount}</span>
+      <div className="card-standard p-6 flex flex-col items-start">
+        <span className="text-sm font-medium text-muted-foreground mb-2">Low Risk</span>
+        <span className="font-extrabold text-success text-3xl md:text-4xl lg:text-5xl leading-none">{riskData.lowRiskCount}</span>
       </div>
     </section>
 
     {/* Risk Distribution */}
-    <section className="section-spacing">
-      <div className="section-header">
-        <div className="section-accent" />
-        <h2 className="section-title">Risk Distribution</h2>
+    <section className="mb-8">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-1 h-6 bg-primary rounded-full" />
+        <h2 className="text-xl font-semibold text-foreground">Risk Distribution</h2>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="card-standard p-7">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Risk Categories</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="card-standard p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">Risk Categories</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Technical Risks</span>
-              <span className="text-sm font-semibold text-gray-900">{riskData.riskDistribution.technical}</span>
+              <span className="text-sm font-medium text-foreground">Technical Risks</span>
+              <span className="text-sm font-semibold text-foreground">{riskData.riskDistribution.technical}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Business Risks</span>
-              <span className="text-sm font-semibold text-gray-900">{riskData.riskDistribution.business}</span>
+              <span className="text-sm font-medium text-foreground">Business Risks</span>
+              <span className="text-sm font-semibold text-foreground">{riskData.riskDistribution.business}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Data Risks</span>
-              <span className="text-sm font-semibold text-gray-900">{riskData.riskDistribution.data}</span>
+              <span className="text-sm font-medium text-foreground">Data Risks</span>
+              <span className="text-sm font-semibold text-foreground">{riskData.riskDistribution.data}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Ethical Risks</span>
-              <span className="text-sm font-semibold text-gray-900">{riskData.riskDistribution.ethical}</span>
+              <span className="text-sm font-medium text-foreground">Ethical Risks</span>
+              <span className="text-sm font-semibold text-foreground">{riskData.riskDistribution.ethical}</span>
             </div>
           </div>
         </div>
-        <div className="card-standard p-7">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Risk Metrics</h3>
+        <div className="card-standard p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">Risk Metrics</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Average Risk Score</span>
-              <span className="text-sm font-semibold text-gray-900">{(riskData.averageRiskScore || 0).toFixed(1)}/10</span>
+              <span className="text-sm font-medium text-foreground">Average Risk Score</span>
+              <span className="text-sm font-semibold text-foreground">{(riskData.averageRiskScore || 0).toFixed(1)}/10</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Compliance Score</span>
-              <span className="text-sm font-semibold text-gray-900">{riskData.complianceScore}%</span>
+              <span className="text-sm font-medium text-foreground">Compliance Score</span>
+              <span className="text-sm font-semibold text-foreground">{riskData.complianceScore}%</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Recent Incidents</span>
-              <span className="text-sm font-semibold text-gray-900">{riskData.recentIncidents}</span>
+              <span className="text-sm font-medium text-foreground">Recent Incidents</span>
+              <span className="text-sm font-semibold text-foreground">{riskData.recentIncidents}</span>
             </div>
           </div>
         </div>
@@ -236,17 +238,17 @@ const ExecutiveView: React.FC<ExecutiveViewProps> = ({ riskData }) => (
     </section>
 
     {/* Top Risk Categories */}
-    <section className="section-spacing">
-      <div className="section-header">
-        <div className="section-accent" />
-        <h2 className="section-title">Top Risk Categories</h2>
+    <section className="mb-8">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-1 h-6 bg-blue-500 rounded-full" />
+        <h2 className="text-xl font-semibold text-foreground">Top Risk Categories</h2>
       </div>
-      <div className="card-standard p-7">
+      <div className="card-standard p-6">
         <div className="space-y-3">
           {riskData.topRiskCategories.map((category, index) => (
-            <div key={category} className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">{category}</span>
-              <span className="text-sm font-semibold text-gray-900">#{index + 1}</span>
+            <div key={category} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <span className="text-sm font-medium text-foreground">{category}</span>
+              <span className="text-sm font-semibold text-primary bg-primary/10 px-2 py-1 rounded-full">#{index + 1}</span>
             </div>
           ))}
         </div>
@@ -265,62 +267,62 @@ const DetailedView: React.FC<ExecutiveViewProps> = ({ riskData }) => (
     </div>
 
     {/* Detailed Metrics */}
-    <section className="grid-standard">
-      <div className="card-standard p-7">
+    <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="card-standard p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="bg-red-100 p-2 rounded-lg">
             <AlertTriangle className="w-5 h-5 text-red-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">High Priority Risks</h3>
+          <h3 className="text-lg font-semibold text-foreground">High Priority Risks</h3>
         </div>
-        <p className="text-gray-600 text-sm mb-4">Critical risks requiring immediate attention</p>
-        <div className="text-2xl font-bold text-red-600">{riskData.highRiskCount}</div>
+        <p className="text-muted-foreground text-sm mb-4">Critical risks requiring immediate attention</p>
+        <div className="text-2xl font-bold text-red-500 leading-none">{riskData.highRiskCount}</div>
       </div>
 
-      <div className="card-standard p-7">
+      <div className="card-standard p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="bg-yellow-100 p-2 rounded-lg">
             <TrendingUp className="w-5 h-5 text-yellow-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">Medium Priority Risks</h3>
+          <h3 className="text-lg font-semibold text-foreground">Medium Priority Risks</h3>
         </div>
-        <p className="text-gray-600 text-sm mb-4">Risks requiring monitoring and mitigation</p>
-        <div className="text-2xl font-bold text-yellow-600">{riskData.mediumRiskCount}</div>
+        <p className="text-muted-foreground text-sm mb-4">Risks requiring monitoring and mitigation</p>
+        <div className="text-2xl font-bold text-yellow-500 leading-none">{riskData.mediumRiskCount}</div>
       </div>
 
-      <div className="card-standard p-7">
+      <div className="card-standard p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="bg-green-100 p-2 rounded-lg">
             <Shield className="w-5 h-5 text-green-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">Low Priority Risks</h3>
+          <h3 className="text-lg font-semibold text-foreground">Low Priority Risks</h3>
         </div>
-        <p className="text-gray-600 text-sm mb-4">Risks under control and monitoring</p>
-        <div className="text-2xl font-bold text-green-600">{riskData.lowRiskCount}</div>
+        <p className="text-muted-foreground text-sm mb-4">Risks under control and monitoring</p>
+        <div className="text-2xl font-bold text-green-500 leading-none">{riskData.lowRiskCount}</div>
       </div>
 
-      <div className="card-standard p-7">
+      <div className="card-standard p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="bg-blue-100 p-2 rounded-lg">
             <BarChart3 className="w-5 h-5 text-blue-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">Average Risk Score</h3>
+          <h3 className="text-lg font-semibold text-foreground">Average Risk Score</h3>
         </div>
-        <p className="text-gray-600 text-sm mb-4">Overall risk assessment score</p>
-        <div className="text-2xl font-bold text-blue-600">{(riskData.averageRiskScore || 0).toFixed(1)}/10</div>
+        <p className="text-muted-foreground text-sm mb-4">Overall risk assessment score</p>
+        <div className="text-2xl font-bold text-blue-500 leading-none">{(riskData.averageRiskScore || 0).toFixed(1)}/10</div>
       </div>
     </section>
 
     {/* Risk Distribution Charts */}
-    <section className="section-spacing">
-      <div className="section-header">
-        <div className="section-accent" />
-        <h2 className="section-title">Risk Distribution Analysis</h2>
+    <section className="mb-8">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-1 h-6 bg-blue-500 rounded-full" />
+        <h2 className="text-xl font-semibold text-foreground">Risk Distribution Analysis</h2>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="card-standard p-7">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Risk Categories Breakdown</h3>
-          <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="card-standard p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">Risk Categories Breakdown</h3>
+          <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
               <span className="text-sm font-medium text-red-700">Technical Risks</span>
               <span className="text-sm font-semibold text-red-800">{riskData.riskDistribution.technical}</span>
@@ -339,20 +341,20 @@ const DetailedView: React.FC<ExecutiveViewProps> = ({ riskData }) => (
             </div>
           </div>
         </div>
-        <div className="card-standard p-7">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Metrics</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Compliance Score</span>
-              <span className="text-sm font-semibold text-gray-900">{riskData.complianceScore}%</span>
+        <div className="card-standard p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">Performance Metrics</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <span className="text-sm font-medium text-foreground">Compliance Score</span>
+              <span className="text-sm font-semibold text-foreground">{riskData.complianceScore}%</span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Recent Incidents</span>
-              <span className="text-sm font-semibold text-gray-900">{riskData.recentIncidents}</span>
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <span className="text-sm font-medium text-foreground">Recent Incidents</span>
+              <span className="text-sm font-semibold text-foreground">{riskData.recentIncidents}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Total Risks</span>
-              <span className="text-sm font-semibold text-gray-900">{riskData.totalRisks}</span>
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <span className="text-sm font-medium text-foreground">Total Risks</span>
+              <span className="text-sm font-semibold text-foreground">{riskData.totalRisks}</span>
             </div>
           </div>
         </div>

@@ -99,288 +99,246 @@ export default function AIInsightsPage({ useCaseId }: AIInsightsProps) {
   const getInsightColor = (type: string) => {
     switch (type) {
       case 'cost_optimization':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-primary/20 text-primary border-primary/30 dark:bg-primary/30 dark:text-primary-foreground dark:border-primary/40';
       case 'roi_improvement':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-success/20 text-success border-success/30 dark:bg-success/30 dark:text-success-foreground dark:border-success/40';
       case 'risk_alert':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-destructive/20 text-destructive border-destructive/30 dark:bg-destructive/30 dark:text-destructive-foreground dark:border-destructive/40';
       case 'opportunity':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
+        return 'bg-warning/20 text-warning border-warning/30 dark:bg-warning/30 dark:text-warning-foreground dark:border-warning/40';
       case 'trend_analysis':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        return 'bg-accent/20 text-accent-foreground border-accent/30 dark:bg-accent/30 dark:text-accent-foreground dark:border-accent/40';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-muted text-muted-foreground border-border dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600';
     }
   };
 
-  const getImpactColor = (impact: string) => {
-    switch (impact) {
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
       case 'high':
-        return 'bg-red-100 text-red-800';
+        return 'bg-destructive/20 text-destructive border-destructive/30 dark:bg-destructive/30 dark:text-destructive-foreground dark:border-destructive/40';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning/20 text-warning border-warning/30 dark:bg-warning/30 dark:text-warning-foreground dark:border-warning/40';
       case 'low':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success/20 text-success border-success/30 dark:bg-success/30 dark:text-success-foreground dark:border-success/40';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-muted-foreground border-border dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600';
     }
+  };
+
+  const getConfidenceColor = (confidence: number) => {
+    if (confidence >= 80) return 'bg-success/20 text-success dark:bg-success/30 dark:text-success-foreground';
+    if (confidence >= 60) return 'bg-warning/20 text-warning dark:bg-warning/30 dark:text-warning-foreground';
+    return 'bg-destructive/20 text-destructive dark:bg-destructive/30 dark:text-destructive-foreground';
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Analyzing financial data with AI...</p>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background dark:bg-gray-900">
+        <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary dark:text-primary-foreground" />
+        <p className="text-muted-foreground dark:text-gray-400">Analyzing financial data with AI...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <Alert className="max-w-2xl mx-auto mt-8">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-        <Button onClick={handleRefresh} className="mt-4">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Try Again
-        </Button>
-      </Alert>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background dark:bg-gray-900">
+        <AlertTriangle className="h-8 w-8 text-destructive dark:text-red-400 mx-auto mb-4" />
+        <p className="text-destructive dark:text-red-400 text-lg">{error}</p>
+      </div>
     );
   }
 
   if (!analysis) {
     return (
-      <div className="text-center py-8">
-        <p className="text-gray-600">No analysis data available</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background dark:bg-gray-900">
+        <p className="text-muted-foreground dark:text-gray-400">No analysis data available</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-background dark:bg-gray-900 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                {portfolioMode ? 'Portfolio AI Insights' : 'AI Financial Analysis'}
-              </h1>
-              <p className="text-gray-600 mt-2">
-                Intelligent analysis and recommendations powered by AI
-              </p>
-            </div>
-            <Button onClick={handleRefresh} variant="outline">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh Analysis
-            </Button>
-          </div>
+          <h1 className="text-3xl font-bold text-foreground dark:text-white">
+            {useCaseId ? `AI Insights - ${analysis.useCaseTitle || 'Use Case'}` : 'Portfolio AI Insights'}
+          </h1>
+          <p className="text-muted-foreground dark:text-gray-400 mt-2">
+            AI-powered financial analysis and recommendations
+          </p>
         </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Risk Score</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground dark:text-gray-400">Risk Score</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{analysis.riskScore.toFixed(0)}%</div>
-              <Progress value={analysis.riskScore} className="mt-2" />
-              <p className="text-xs text-gray-500 mt-1">
-                {analysis.riskScore > 70 ? 'High Risk' : analysis.riskScore > 40 ? 'Medium Risk' : 'Low Risk'}
-              </p>
+              <div className="text-2xl font-bold text-destructive dark:text-red-400">{analysis.riskScore.toFixed(0)}%</div>
+              <p className="text-xs text-muted-foreground dark:text-gray-500 mt-1">Risk Level</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Opportunity Score</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground dark:text-gray-400">Opportunity Score</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{analysis.opportunityScore.toFixed(0)}%</div>
-              <Progress value={analysis.opportunityScore} className="mt-2" />
-              <p className="text-xs text-gray-500 mt-1">
-                {analysis.opportunityScore > 70 ? 'High Opportunity' : analysis.opportunityScore > 40 ? 'Medium Opportunity' : 'Low Opportunity'}
-              </p>
+              <div className="text-2xl font-bold text-success dark:text-green-400">{analysis.opportunityScore.toFixed(0)}%</div>
+              <p className="text-xs text-muted-foreground dark:text-gray-500 mt-1">Growth Potential</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Cost Optimization</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground dark:text-gray-400">Cost Optimization</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{analysis.costOptimizationPotential.toFixed(0)}%</div>
-              <Progress value={analysis.costOptimizationPotential} className="mt-2" />
-              <p className="text-xs text-gray-500 mt-1">Potential Savings</p>
+              <div className="text-2xl font-bold text-primary dark:text-primary-foreground">{analysis.costOptimizationPotential.toFixed(0)}%</div>
+              <p className="text-xs text-muted-foreground dark:text-gray-500 mt-1">Potential Savings</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Insights</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground dark:text-gray-400">Insights</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-purple-600">{analysis.insights.length}</div>
-              <p className="text-xs text-gray-500 mt-1">AI Generated</p>
+              <div className="text-2xl font-bold text-accent-foreground dark:text-accent-foreground">{analysis.insights.length}</div>
+              <p className="text-xs text-muted-foreground dark:text-gray-500 mt-1">AI Generated</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* AI Summary */}
+        {/* Summary */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Zap className="h-5 w-5 mr-2 text-yellow-600" />
-              AI Analysis Summary
-            </CardTitle>
+            <CardTitle className="text-lg font-semibold text-foreground dark:text-white">Executive Summary</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-700">{analysis.summary}</p>
+            <p className="text-foreground dark:text-gray-300">{analysis.summary}</p>
           </CardContent>
         </Card>
 
         {/* Insights Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div>
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
-              <Lightbulb className="h-5 w-5 mr-2 text-yellow-600" />
-              AI Insights
-            </h2>
-            <div className="space-y-4">
-              {analysis.insights.map((insight, index) => (
-                <Card 
-                  key={index} 
-                  className={`cursor-pointer transition-all hover:shadow-md ${
-                    selectedInsight?.id === insight.id ? 'ring-2 ring-blue-500' : ''
-                  }`}
-                  onClick={() => setSelectedInsight(insight)}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className={`p-2 rounded-lg ${getInsightColor(insight.type)}`}>
-                          {getInsightIcon(insight.type)}
-                        </div>
-                        <div>
-                          <CardTitle className="text-sm">{insight.title}</CardTitle>
-                          <CardDescription className="text-xs">
-                            Confidence: {(insight.confidence * 100).toFixed(0)}%
-                          </CardDescription>
-                        </div>
-                      </div>
-                      <Badge className={getImpactColor(insight.impact)}>
-                        {insight.impact.toUpperCase()}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <p className="text-sm text-gray-600 mb-3">{insight.description}</p>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>Priority: {insight.priority}</span>
-                      <span>Type: {insight.type.replace('_', ' ')}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
-              <Target className="h-5 w-5 mr-2 text-green-600" />
-              Recommendations
-            </h2>
-            <div className="space-y-4">
-              {analysis.recommendations.map((recommendation, index) => (
-                <Card key={index}>
-                  <CardContent className="pt-4">
-                    <div className="flex items-start space-x-3">
-                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                      <p className="text-sm text-gray-700">{recommendation}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
+          {analysis.insights.map((insight, index) => (
+            <Card 
+              key={index} 
+              className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
+              onClick={() => setSelectedInsight(insight)}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${getInsightColor(insight.type)}`}>
+                    {getInsightIcon(insight.type)}
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-base font-medium text-foreground dark:text-white">{insight.title}</CardTitle>
+                    <CardDescription className="text-sm text-muted-foreground dark:text-gray-400">
+                      {insight.type.replace('_', ' ').toUpperCase()}
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground dark:text-gray-400 mb-3">{insight.description}</p>
+                <div className="flex items-center justify-between text-xs text-muted-foreground dark:text-gray-500">
+                  <span>Priority: {insight.priority}</span>
+                  <span>Confidence: {insight.confidence}%</span>
+                </div>
+                <div className="mt-2">
+                  <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getPriorityColor(insight.priority)}`}>
+                    {insight.priority}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
-        {/* Detailed Insight View */}
-        {selectedInsight && (
+        {/* Recommendations */}
+        {analysis.recommendations.length > 0 && (
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span className="flex items-center">
-                  {getInsightIcon(selectedInsight.type)}
-                  <span className="ml-2">{selectedInsight.title}</span>
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedInsight(null)}
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-              </CardTitle>
+              <CardTitle className="text-lg font-semibold text-foreground dark:text-white">Key Recommendations</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold mb-2">Description</h4>
-                  <p className="text-gray-700 mb-4">{selectedInsight.description}</p>
-                  
-                  <h4 className="font-semibold mb-2">Recommendations</h4>
-                  <ul className="space-y-2">
-                    {selectedInsight.recommendations.map((rec, index) => (
-                      <li key={index} className="flex items-start space-x-2">
-                        <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm text-gray-700">{rec}</span>
-                      </li>
-                    ))}
-                  </ul>
+              <div className="space-y-4">
+                {analysis.recommendations.map((recommendation, index) => (
+                  <div key={index} className="flex items-start gap-3 p-3 bg-muted dark:bg-gray-800 rounded-lg">
+                    <CheckCircle className="h-5 w-5 text-success dark:text-green-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-foreground dark:text-gray-300">{recommendation}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Insight Detail Modal */}
+        {selectedInsight && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-card dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-foreground dark:text-white">{selectedInsight.title}</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedInsight(null)}
+                    className="text-muted-foreground dark:text-gray-400 hover:text-foreground dark:hover:text-white"
+                  >
+                    ×
+                  </Button>
                 </div>
                 
-                <div>
-                  <h4 className="font-semibold mb-2">Metrics</h4>
-                  <div className="space-y-3">
-                    {Object.entries(selectedInsight.metrics).map(([key, value]) => (
-                      <div key={key} className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-gray-600 capitalize">
-                          {key.replace(/([A-Z])/g, ' $1').trim()}:
-                        </span>
-                        <span className="text-sm font-semibold">
-                          {typeof value === 'number' ? value.toFixed(2) : value}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                <div className="space-y-4">
+                  <p className="text-sm text-foreground dark:text-gray-300">{selectedInsight.description}</p>
                   
-                  <div className="mt-6 space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-600">Impact:</span>
-                      <Badge className={getImpactColor(selectedInsight.impact)}>
-                        {selectedInsight.impact.toUpperCase()}
-                      </Badge>
+                  {selectedInsight.recommendations && selectedInsight.recommendations.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-foreground dark:text-white mb-2">Recommendations:</h4>
+                      <ul className="space-y-2">
+                        {selectedInsight.recommendations.map((rec, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <span className="text-sm text-foreground dark:text-gray-300">• {rec}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-600">Confidence:</span>
-                      <span className="text-sm font-semibold">
-                        {(selectedInsight.confidence * 100).toFixed(0)}%
+                  )}
+                  
+                  <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border dark:border-gray-700">
+                    <div>
+                      <span className="text-sm font-medium text-muted-foreground dark:text-gray-400 capitalize">
+                        Type:
                       </span>
+                      <div className={`inline-block px-2 py-1 rounded text-xs font-medium ml-2 ${getInsightColor(selectedInsight.type)}`}>
+                        {selectedInsight.type.replace('_', ' ')}
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-600">Priority:</span>
-                      <span className="text-sm font-semibold">{selectedInsight.priority}</span>
+                    <div>
+                      <span className="text-sm font-medium text-muted-foreground dark:text-gray-400">Impact:</span>
+                      <div className={`inline-block px-2 py-1 rounded text-xs font-medium ml-2 ${getPriorityColor(selectedInsight.priority)}`}>
+                        {selectedInsight.priority}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-muted-foreground dark:text-gray-400">Confidence:</span>
+                      <div className={`inline-block px-2 py-1 rounded text-xs font-medium ml-2 ${getConfidenceColor(selectedInsight.confidence)}`}>
+                        {selectedInsight.confidence}%
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
       </div>
     </div>

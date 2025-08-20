@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useParams } from 'next/navigation';
@@ -136,9 +136,11 @@ const BudgetPlanning = forwardRef<{ saveFinops: () => Promise<void> }, BudgetPla
   }), [useCaseId, value]);
 
   return (
-    <Card className="mb-8 p-6 bg-white border border-gray-200 shadow-md rounded-xl">
-      {value.error && <div className="text-red-500 mb-2">{value.error}</div>}
-      {value.loading && <div className="text-gray-500 mb-4">Loading saved data...</div>}
+    <Card className="mb-8 p-6 bg-card border border-border shadow-md rounded-xl">
+      <CardHeader>
+        {value.error && <div className="text-red-500 mb-2">{value.error}</div>}
+        {value.loading && <div className="text-muted-foreground mb-4">Loading saved data...</div>}
+      </CardHeader>
       <div className="mb-6">
         <Label className="mb-2">Budget Range</Label>
         <RadioGroup value={value.budgetRange} onValueChange={val => { onChange({ ...value, budgetRange: val }); }} className="space-y-2 mt-2">
@@ -152,27 +154,27 @@ const BudgetPlanning = forwardRef<{ saveFinops: () => Promise<void> }, BudgetPla
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className="font-semibold text-[#23235b]">Initial Dev Cost</label>
+                          <label className="font-semibold text-[#23235b] dark:text-blue-200">Initial Dev Cost</label>
           <Input type="number" value={value.initialDevCost} min={0} onChange={e => onChange({ ...value, initialDevCost: Number(e.target.value) })} className="w-full" />
         </div>
         <div>
-          <label className="font-semibold text-[#23235b]">Monthly API Cost</label>
+                          <label className="font-semibold text-[#23235b] dark:text-blue-200">Monthly API Cost</label>
           <Input type="number" value={value.baseApiCost} min={0} onChange={e => onChange({ ...value, baseApiCost: Number(e.target.value) })} className="w-full" />
         </div>
         <div>
-          <label className="font-semibold text-[#23235b]">Monthly Infrastructure</label>
+                          <label className="font-semibold text-[#23235b] dark:text-blue-200">Monthly Infrastructure</label>
           <Input type="number" value={value.baseInfraCost} min={0} onChange={e => onChange({ ...value, baseInfraCost: Number(e.target.value) })} className="w-full" />
         </div>
         <div>
-          <label className="font-semibold text-[#23235b]">Monthly Operations</label>
+                          <label className="font-semibold text-[#23235b] dark:text-blue-200">Monthly Operations</label>
           <Input type="number" value={value.baseOpCost} min={0} onChange={e => onChange({ ...value, baseOpCost: Number(e.target.value) })} className="w-full" />
         </div>
         <div>
-          <label className="font-semibold text-[#23235b]">Monthly Value Generated</label>
+                          <label className="font-semibold text-[#23235b] dark:text-blue-200">Monthly Value Generated</label>
           <Input type="number" value={value.baseMonthlyValue} min={0} onChange={e => onChange({ ...value, baseMonthlyValue: Number(e.target.value) })} className="w-full" />
         </div>
         <div>
-          <label className="font-semibold text-[#23235b]">Value Growth Rate (%)</label>
+                          <label className="font-semibold text-[#23235b] dark:text-blue-200">Value Growth Rate (%)</label>
           <Input type="number" value={value.valueGrowthRate * 100} min={0} max={100} onChange={e => onChange({ ...value, valueGrowthRate: Number(e.target.value) / 100 })} className="w-full" />
         </div>
       </div>

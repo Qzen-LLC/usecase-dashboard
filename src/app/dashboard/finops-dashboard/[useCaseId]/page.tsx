@@ -452,198 +452,176 @@ export default function FinancialDashboard() {
   } as const;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-8">
-      <div className="w-full max-w-7xl bg-white rounded-2xl shadow-2xl border border-gray-200 mt-6 mb-6 p-0 relative">
+    <div className="min-h-screen bg-background dark:bg-gray-900 flex flex-col items-center py-8">
+      <div className="w-full max-w-7xl bg-card dark:bg-gray-800 rounded-2xl shadow-2xl border border-border dark:border-gray-700 mt-6 mb-6 p-0 relative">
         {/* Back Button */}
         <button
-          onClick={() => router.push('/dashboard/finops-dashboard')}
-          className="absolute top-4 left-4 px-4 py-2 text-sm bg-white text-blue-700 border border-blue-200 rounded-lg shadow hover:bg-blue-50 transition-all duration-200 flex items-center gap-2 font-medium z-10"
+          onClick={() => router.back()}
+          className="absolute top-4 left-4 px-4 py-2 text-sm bg-card dark:bg-gray-800 text-primary dark:text-primary-foreground border border-border dark:border-gray-600 rounded-lg shadow hover:bg-muted dark:hover:bg-gray-700 transition-all duration-200 flex items-center gap-2 font-medium z-10"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
+          <ArrowLeft className="h-4 w-4" />
+          Back
         </button>
 
-        {/* Show Formulae Button */}
+        {/* Edit Button */}
         <button
-          className="absolute top-4 right-4 px-3 py-1 text-xs bg-white text-blue-700 border border-blue-200 rounded-lg shadow hover:bg-blue-50 transition-all duration-200 z-10 font-medium"
-          onClick={() => setShowFormulae(true)}
+          onClick={() => setShowFormulae(!showFormulae)}
+          className="absolute top-4 right-4 px-3 py-1 text-xs bg-card dark:bg-gray-800 text-primary dark:text-primary-foreground border border-border dark:border-gray-600 rounded-lg shadow hover:bg-muted dark:hover:bg-gray-700 transition-all duration-200 z-10 font-medium"
         >
-          Formula
+          {showFormulae ? 'Hide' : 'Edit'} Formulae
         </button>
-        {/* Formulae Modal */}
+
+        {/* Form */}
         {showFormulae && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full relative">
-              <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl" onClick={() => setShowFormulae(false)}>&times;</button>
-              <h2 className="text-xl font-bold mb-4 text-gray-700">Financial Formula Used</h2>
-              <ul className="text-sm text-gray-700 space-y-2">
-                <li><b>API Cost Growth:</b> <code>monthlyApiCost(month) = baseApiCost × 1.12<sup>month/12</sup></code></li>
-                <li><b>Infrastructure Cost Growth:</b> <code>monthlyInfraCost(month) = baseInfraCost × 1.05<sup>month/12</sup></code></li>
-                <li><b>Operations Cost Growth:</b> <code>monthlyOpCost(month) = baseOpCost × 1.08<sup>month/12</sup></code></li>
-                <li><b>Total Monthly Operating Cost:</b> <code>totalMonthlyCost(month) = monthlyApiCost + monthlyInfraCost + monthlyOpCost</code></li>
-                <li><b>Monthly Value Growth:</b> <code>monthlyValue(month) = baseMonthlyValue × (1 + valueGrowthRate)<sup>month/12</sup></code></li>
-                <li><b>Cumulative Value:</b> <code>cumulativeValue(month) = Σ monthlyValue(i) for i = 1 to month</code></li>
-                <li><b>Cumulative Operating Costs:</b> <code>cumulativeOpCosts(month) = Σ totalMonthlyCost(i) for i = 1 to month</code></li>
-                <li><b>Total Investment:</b> <code>totalInvestment(month) = initialDevCost + cumulativeOpCosts(month)</code></li>
-                <li><b>Monthly Profit/Loss:</b> <code>monthlyProfit(month) = monthlyValue(month) - totalMonthlyCost(month)</code></li>
-                <li><b>Net Value (Cumulative Profit):</b> <code>netValue(month) = cumulativeValue(month) - totalInvestment(month)</code></li>
-                <li><b>Return on Investment:</b> <code>ROI(month) = (netValue(month) / totalInvestment(month)) × 100</code></li>
-                <li><b>Break-even Detection:</b> <code>breakEven = first month where netValue(month) ≥ 0</code></li>
-              </ul>
-            </div>
+          <div className="bg-card dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-lg w-full relative">
+            <h2 className="text-2xl font-bold mb-6 text-foreground dark:text-white">Edit Financial Parameters</h2>
+            <form onSubmit={handleSave} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground dark:text-white mb-2">Initial Development Cost</label>
+                <Input
+                  type="number"
+                  value={initialDevCost}
+                  onChange={(e) => setInitialDevCost(Number(e.target.value))}
+                  className="bg-background dark:bg-gray-700 border-border dark:border-gray-600 text-foreground dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground dark:text-white mb-2">Base API Cost</label>
+                <Input
+                  type="number"
+                  value={baseApiCost}
+                  onChange={(e) => setBaseApiCost(Number(e.target.value))}
+                  className="bg-background dark:bg-gray-700 border-border dark:border-gray-600 text-foreground dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground dark:text-white mb-2">Base Infrastructure Cost</label>
+                <Input
+                  type="number"
+                  value={baseInfraCost}
+                  onChange={(e) => setBaseInfraCost(Number(e.target.value))}
+                  className="bg-background dark:bg-gray-700 border-border dark:border-gray-600 text-foreground dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground dark:text-white mb-2">Base Operational Cost</label>
+                <Input
+                  type="number"
+                  value={baseOpCost}
+                  onChange={(e) => setBaseOpCost(Number(e.target.value))}
+                  className="bg-background dark:bg-gray-700 border-border dark:border-gray-600 text-foreground dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground dark:text-white mb-2">Base Monthly Value</label>
+                <Input
+                  type="number"
+                  value={baseMonthlyValue}
+                  onChange={(e) => setBaseMonthlyValue(Number(e.target.value))}
+                  className="bg-background dark:bg-gray-700 border-border dark:border-gray-600 text-foreground dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground dark:text-white mb-2">Value Growth Rate</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={valueGrowthRate}
+                  onChange={(e) => setValueGrowthRate(Number(e.target.value))}
+                  className="bg-background dark:bg-gray-700 border-border dark:border-gray-600 text-foreground dark:text-white"
+                />
+              </div>
+              <Button type="submit" disabled={saving} className="w-full">
+                {saving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </form>
           </div>
         )}
-        {/* Header */}
-        <div className="flex flex-col items-center bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 rounded-t-2xl border-b border-blue-100 shadow-lg">
-          <div className="flex items-center gap-3 justify-center py-6">
-            <div className="bg-white rounded-2xl shadow-lg flex items-center gap-3 px-6 py-3">
-              <span className="text-3xl font-extrabold text-blue-900 font-sans tracking-tight">
-                {useCaseDetails ? (
-                  <>
-                    <span className="font-mono text-gray-600 mr-3">AIUC-{useCaseDetails.aiucId}</span>
-                    {useCaseDetails.title}
-                  </>
-                ) : (
-                  'FinOps Dashboard'
-                )}
-              </span>
-            </div>
-          </div>
-          <div className="w-full flex justify-center pb-6">
-            <p className="text-blue-900 text-lg text-center font-medium tracking-wide whitespace-nowrap overflow-x-auto">Enter your base values and growth rate to forecast financials</p>
-          </div>
-        </div>
-        {/* Main Content */}
-        <div className="p-8">
-          {error && <div className="text-red-500 mb-2">{error}</div>}
-          {loading && <div className="text-blue-500 mb-4">Loading saved data...</div>}
-          <Card className="mb-8 p-6 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border border-blue-100 shadow-md rounded-xl">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="font-semibold text-blue-900">Initial Dev Cost</label>
-                <Input type="number" value={initialDevCost} min={0} onChange={e => setInitialDevCost(Number(e.target.value))} className="w-full" />
-              </div>
-              <div>
-                <label className="font-semibold text-blue-900">Monthly API Cost</label>
-                <Input type="number" value={baseApiCost} min={0} onChange={e => setBaseApiCost(Number(e.target.value))} className="w-full" />
-              </div>
-              <div>
-                <label className="font-semibold text-blue-900">Monthly Infrastructure</label>
-                <Input type="number" value={baseInfraCost} min={0} onChange={e => setBaseInfraCost(Number(e.target.value))} className="w-full" />
-              </div>
-              <div>
-                <label className="font-semibold text-blue-900">Monthly Operations</label>
-                <Input type="number" value={baseOpCost} min={0} onChange={e => setBaseOpCost(Number(e.target.value))} className="w-full" />
-              </div>
-              <div>
-                <label className="font-semibold text-blue-900">Monthly Value Generated</label>
-                <Input type="number" value={baseMonthlyValue} min={0} onChange={e => setBaseMonthlyValue(Number(e.target.value))} className="w-full" />
-              </div>
-              <div>
-                <label className="font-semibold text-blue-900">Value Growth Rate (%)</label>
-                <Input type="number" value={valueGrowthRate * 100} min={0} max={100} onChange={e => setValueGrowthRate(Number(e.target.value) / 100)} className="w-full" />
+
+        {/* Dashboard */}
+        {!showFormulae && (
+          <>
+            {/* Header */}
+            <div className="bg-card dark:bg-gray-800 rounded-2xl shadow-lg flex items-center gap-3 px-6 py-3">
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold text-foreground dark:text-white">{useCaseDetails?.title || 'Financial Dashboard'}</h1>
+                <span className="font-mono text-muted-foreground dark:text-gray-400 mr-3">AIUC-{useCaseDetails?.aiucId}</span>
               </div>
             </div>
-            <div className="mt-6 flex justify-center">
-              <Button 
-                className="bg-gradient-to-r from-green-400 via-green-500 to-green-600 hover:from-green-500 hover:via-green-600 hover:to-green-700 text-white px-8 py-3 rounded-xl shadow-lg font-semibold text-lg transition-all duration-200 border border-green-500 hover:border-green-600" 
-                onClick={handleSave} 
-                disabled={saving}
-              >
-                Save Forecast
-              </Button>
-            </div>
-          </Card>
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 justify-center">
-            {[{
-              value: formatCurrency(summary.totalInvestment),
-              label: 'Total Investment'
-            }, {
-              value: formatCurrency(summary.totalValue),
-              label: 'Total Value Generated'
-            }, {
-              value: formatPercent(summary.netROI),
-              label: 'Net ROI'
-            }, {
-              value: `${summary.breakEvenMonth} months`,
-              label: 'Break-even Month'
-            }, {
-              value: formatCurrency(summary.netValue),
-              label: 'Net Value (Forecast)'
-            }].map((item, idx) => (
-              <div key={idx} className="bg-white rounded-xl shadow border border-gray-100 p-6 flex flex-col items-center">
-                <div className="text-3xl font-extrabold mb-1 text-gray-700">{item.value}</div>
-                <div className="font-medium text-base text-gray-600">{item.label}</div>
+
+            {/* Charts */}
+            <div className="p-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                {/* Cost vs Value Chart */}
+                <div className="bg-card dark:bg-gray-800 rounded-xl shadow border border-border dark:border-gray-700 p-6">
+                  <h3 className="text-lg font-semibold mb-4 text-foreground dark:text-white">Cost vs Value Over Time</h3>
+                  <Line data={cumulativeChartData} options={cumulativeChartOptions} />
+                </div>
+
+                {/* ROI Chart */}
+                <div className="bg-card dark:bg-gray-800 rounded-xl shadow border border-border dark:border-gray-700 p-6">
+                  <h3 className="text-lg font-semibold mb-4 text-foreground dark:text-white">ROI Over Time</h3>
+                  <Line data={roiChart} options={roiOptions} />
+                </div>
               </div>
-            ))}
-          </div>
-          {/* Graphs */}
-          <div className="flex flex-col gap-10 w-full justify-center items-center">
-            <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border border-gray-200 shadow-md rounded-xl">
-              <h2 className="font-semibold mb-6 text-[#23235b] text-2xl">Cumulative Financial View</h2>
-              <div className="flex justify-center" style={{ height: 420 }}>
-                <Line data={cumulativeChartData} options={cumulativeChartOptions} />
+
+              {/* Metrics Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                {metrics.map((item, idx) => (
+                  <div key={idx} className="bg-card dark:bg-gray-800 rounded-xl shadow border border-border dark:border-gray-700 p-6 flex flex-col items-center">
+                    <div className="text-2xl font-bold text-primary dark:text-primary-foreground mb-2">{item.value}</div>
+                    <div className="font-medium text-base text-muted-foreground dark:text-gray-400">{item.label}</div>
+                  </div>
+                ))}
               </div>
-            </Card>
-            <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border border-gray-200 shadow-md rounded-xl">
-              <h2 className="font-semibold mb-6 text-[#23235b] text-2xl">ROI Trend</h2>
-              <div className="flex justify-center" style={{ height: 420 }}>
-                <Line data={roiChart} options={roiOptions} />
-              </div>
-            </Card>
-            <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border border-gray-200 shadow-md rounded-xl">
-              <h2 className="font-semibold mb-6 text-[#23235b] text-2xl">Monthly Cost Breakdown</h2>
-              <div className="flex justify-center" style={{ height: 420 }}>
-                <Line data={costBreakdownChart} options={costBreakdownOptions} />
-              </div>
-            </Card>
-            <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border border-gray-200 shadow-md rounded-xl">
-              <h2 className="font-semibold mb-6 text-[#23235b] text-2xl">Monthly Profit/Loss</h2>
-              <div className="flex justify-center" style={{ height: 420 }}>
-                <Bar data={profitLossChart} options={profitLossOptions} />
-              </div>
-            </Card>
-          </div>
-          {/* Cost Structure Verification (Month 12) */}
-          <div className="mt-10">
-            <Card className="p-8 bg-white border border-gray-200 shadow-md rounded-xl">
-              <h2 className="font-semibold text-xl text-[#23235b] mb-6">Cost Structure Verification (Month 12)</h2>
-              {(() => {
-                const m12 = rows[11];
-                if (!m12) return null;
-                const total = m12.totalMonthlyCost;
-                const apiPct = total ? (m12.apiCost / total) * 100 : 0;
-                const infraPct = total ? (m12.infraCost / total) * 100 : 0;
-                const opPct = total ? (m12.opCost / total) * 100 : 0;
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
-                    <div>
-                      <div className="text-3xl font-extrabold text-red-500">{formatCurrency(m12.apiCost)}</div>
-                      <div className="font-semibold text-gray-700 mt-1">API Costs</div>
-                      <div className="text-sm text-red-400 mt-1">{apiPct.toFixed(1)}%</div>
-                    </div>
-                    <div>
-                      <div className="text-3xl font-extrabold text-orange-500">{formatCurrency(m12.infraCost)}</div>
-                      <div className="font-semibold text-gray-700 mt-1">Infrastructure</div>
-                      <div className="text-sm text-orange-400 mt-1">{infraPct.toFixed(1)}%</div>
-                    </div>
-                    <div>
-                      <div className="text-3xl font-extrabold text-yellow-700">{formatCurrency(m12.opCost)}</div>
-                      <div className="font-semibold text-gray-700 mt-1">Operations</div>
-                      <div className="text-sm text-yellow-600 mt-1">{opPct.toFixed(1)}%</div>
-                    </div>
-                    <div>
-                      <div className="text-3xl font-extrabold text-gray-800">{formatCurrency(total)}</div>
-                      <div className="font-semibold text-gray-700 mt-1">Total Monthly</div>
-                      <div className="text-sm text-gray-500 mt-1">100%</div>
+
+              {/* Detailed Analysis */}
+              <Card className="p-8 bg-card dark:bg-gray-800 border border-border dark:border-gray-700 shadow-md rounded-xl">
+                <h3 className="text-xl font-semibold mb-4 text-foreground dark:text-white">Financial Analysis</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold mb-2 text-foreground dark:text-white">Cost Breakdown</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground dark:text-gray-400">Development:</span>
+                        <span className="font-medium text-foreground dark:text-white">{formatCurrency(initialDevCost)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground dark:text-gray-400">API:</span>
+                        <span className="font-medium text-foreground dark:text-white">{formatCurrency(baseApiCost)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground dark:text-gray-400">Infrastructure:</span>
+                        <span className="font-medium text-foreground dark:text-white">{formatCurrency(baseInfraCost)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground dark:text-gray-400">Operations:</span>
+                        <span className="font-medium text-foreground dark:text-white">{formatCurrency(baseOpCost)}</span>
+                      </div>
                     </div>
                   </div>
-                );
-              })()}
-            </Card>
-          </div>
-        </div>
+                  <div>
+                    <h4 className="font-semibold mb-2 text-foreground dark:text-white">Value Projections</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground dark:text-gray-400">Base Monthly Value:</span>
+                        <span className="font-medium text-foreground dark:text-white">{formatCurrency(baseMonthlyValue)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground dark:text-gray-400">Growth Rate:</span>
+                        <span className="font-medium text-foreground dark:text-white">{formatPercent(valueGrowthRate * 100)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground dark:text-gray-400">3-Year Projection:</span>
+                        <span className="font-medium text-success dark:text-green-400">{formatCurrency(projectedValue)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

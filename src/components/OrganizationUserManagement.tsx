@@ -145,18 +145,18 @@ export default function OrganizationUserManagement() {
       <div className="max-w-7xl mx-auto p-6 space-y-8">
         {/* Modern Header */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight">
                 User Management
               </h1>
-              <p className="text-gray-600 mt-2 text-lg">Manage users within your organization</p>
+              <p className="text-gray-600 mt-3 text-lg">Manage users within your organization</p>
             </div>
             <Button 
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200" 
+              className="flex items-center gap-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex-shrink-0" 
               onClick={() => setShowAddUser(true)}
             >
-              <UserPlus className="w-5 h-5" />
+              <UserPlus className="w-6 h-6" />
               Add User
             </Button>
           </div>
@@ -193,43 +193,43 @@ export default function OrganizationUserManagement() {
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="userFirstName" className="text-sm font-medium text-gray-700 mb-2 block">First Name</Label>
+                    <Label htmlFor="userFirstName" className="text-sm font-medium text-foreground mb-2 block">First Name</Label>
                     <Input
                       id="userFirstName"
                       value={newUserFirstName}
                       onChange={(e) => setNewUserFirstName(e.target.value)}
                       placeholder="First Name"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="userLastName" className="text-sm font-medium text-gray-700 mb-2 block">Last Name</Label>
+                    <Label htmlFor="userLastName" className="text-sm font-medium text-foreground mb-2 block">Last Name</Label>
                     <Input
                       id="userLastName"
                       value={newUserLastName}
                       onChange={(e) => setNewUserLastName(e.target.value)}
                       placeholder="Last Name"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
                     />
                   </div>
                 </div>
                 
                 <div>
-                  <Label htmlFor="userEmail" className="text-sm font-medium text-gray-700 mb-2 block">Email *</Label>
+                  <Label htmlFor="userEmail" className="text-sm font-medium text-foreground mb-2 block">Email *</Label>
                   <Input
                     id="userEmail"
                     type="email"
                     value={newUserEmail}
                     onChange={(e) => setNewUserEmail(e.target.value)}
                     placeholder="user@example.com"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="userRole" className="text-sm font-medium text-gray-700 mb-2 block">Role</Label>
+                  <Label htmlFor="userRole" className="text-sm font-medium text-foreground mb-2 block">Role</Label>
                   <Select value={newUserRole} onValueChange={setNewUserRole}>
-                    <SelectTrigger className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <SelectTrigger className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -243,11 +243,11 @@ export default function OrganizationUserManagement() {
                   <Button 
                     onClick={handleAddUser} 
                     disabled={!newUserEmail || addUserLoading}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl"
+                    className="flex-1 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-primary-foreground px-6 py-3 rounded-xl"
                   >
                     {addUserLoading ? (
                       <div className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b border-white"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b border-primary-foreground"></div>
                         Sending Invite...
                       </div>
                     ) : (
@@ -257,7 +257,7 @@ export default function OrganizationUserManagement() {
                   <Button 
                     variant="outline" 
                     onClick={() => setShowAddUser(false)}
-                    className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50 px-6 py-3 rounded-xl"
+                    className="flex-1 border-border text-foreground hover:bg-muted px-6 py-3 rounded-xl"
                   >
                     Cancel
                   </Button>
@@ -269,29 +269,29 @@ export default function OrganizationUserManagement() {
 
         {/* Analytics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl">
+          <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <Users className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <Users className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Users</p>
-                  <p className="text-3xl font-bold text-gray-900">{users.length}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Total Users</p>
+                  <p className="text-3xl font-bold text-foreground">{users.length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl">
+          <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                  <UserCheck className="w-6 h-6 text-green-600" />
+                <div className="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center">
+                  <UserCheck className="w-6 h-6 text-success" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Active Users</p>
-                  <p className="text-3xl font-bold text-gray-900">{users.filter(u => u.isActive).length}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Active Users</p>
+                  <p className="text-3xl font-bold text-foreground">{users.filter(u => u.isActive).length}</p>
                 </div>
               </div>
             </CardContent>
@@ -345,39 +345,39 @@ export default function OrganizationUserManagement() {
               {users.map((user) => (
                 <Card key={user.id} className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl overflow-hidden">
                   <CardContent className="p-6">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-start gap-4 min-w-0">
+                        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
                           <span className="text-lg font-medium text-gray-700">
                             {user.firstName?.[0]}{user.lastName?.[0]}
                           </span>
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-1">
-                            <h3 className="text-lg font-semibold text-gray-900">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-3 mb-2 flex-wrap">
+                            <h3 className="text-lg font-semibold text-gray-900 truncate">
                               {user.firstName} {user.lastName}
                             </h3>
                             <Badge 
                               variant={user.role === 'ORG_ADMIN' ? 'default' : 'secondary'}
-                              className="px-3 py-1 rounded-full"
+                              className="px-3 py-1 rounded-full flex-shrink-0"
                             >
                               {user.role === 'ORG_ADMIN' ? 'Admin' : 'User'}
                             </Badge>
                             <Badge 
                               variant={user.isActive ? 'default' : 'secondary'}
-                              className="px-3 py-1 rounded-full"
+                              className="px-3 py-1 rounded-full flex-shrink-0"
                             >
                               {user.isActive ? 'Active' : 'Inactive'}
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-gray-600">
-                            <div className="flex items-center gap-1">
-                              <Mail className="w-4 h-4" />
-                              {user.email}
+                          <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Mail className="w-4 h-4 flex-shrink-0" />
+                              <span className="truncate">{user.email}</span>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4" />
-                              Joined {new Date(user.createdAt).toLocaleDateString()}
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Calendar className="w-4 h-4 flex-shrink-0" />
+                              <span>Joined {new Date(user.createdAt).toLocaleDateString()}</span>
                             </div>
                           </div>
                         </div>

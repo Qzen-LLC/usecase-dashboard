@@ -4,17 +4,15 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import isEqual from 'lodash.isequal';
+import { AlertTriangle, Globe, Shield, Award, ClipboardCheck, TrendingUp } from 'lucide-react';
 
 
-const riskLevels = ['None', 'Low', 'Medium', 'High'];
-
-
-// Optional: Color classes for each risk level
-const riskLevelColors: Record<string, string> = {
-  None: 'bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-full px-3 py-1 font-medium border border-gray-100',
-  Low: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-500 rounded-full px-3 py-1 font-medium border border-emerald-100',
-  Medium: 'bg-amber-50 hover:bg-amber-100 text-amber-500 rounded-full px-3 py-1 font-medium border border-amber-100',
-  High: 'bg-rose-50 hover:bg-rose-100 text-rose-500 rounded-full px-3 py-1 font-medium border border-rose-100',
+const RISK_LEVELS = {
+  None: 'bg-muted hover:bg-accent text-muted-foreground rounded-full px-3 py-1 font-medium border border-border',
+  Low: 'bg-green-100 hover:bg-green-200 text-green-800 rounded-full px-3 py-1 font-medium border border-green-300',
+  Medium: 'bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-full px-3 py-1 font-medium border border-yellow-300',
+  High: 'bg-red-100 hover:bg-red-200 text-red-800 rounded-full px-3 py-1 font-medium border border-red-300',
+  Critical: 'bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-full px-3 py-1 font-medium border border-purple-300',
 };
 
 
@@ -305,13 +303,13 @@ export default function RiskAssessment({ value, onChange }: Props) {
           value={item.probability}
           onValueChange={(val) => handleSelectChange(type, index, 'probability', val)}
         >
-          <SelectTrigger className={riskLevelColors[item.probability]}>
+          <SelectTrigger className={RISK_LEVELS[item.probability as keyof typeof RISK_LEVELS]}>
             <SelectValue placeholder="Probability" />
           </SelectTrigger>
           <SelectContent>
-            {riskLevels.map((level) => (
+            {Object.entries(RISK_LEVELS).map(([level, className]) => (
               <SelectItem key={level} value={level}>
-                {level}
+                <span className={className}>{level}</span>
               </SelectItem>
             ))}
           </SelectContent>
@@ -320,13 +318,13 @@ export default function RiskAssessment({ value, onChange }: Props) {
           value={item.impact}
           onValueChange={(val) => handleSelectChange(type, index, 'impact', val)}
         >
-          <SelectTrigger className={riskLevelColors[item.impact]}>
+          <SelectTrigger className={RISK_LEVELS[item.impact as keyof typeof RISK_LEVELS]}>
             <SelectValue placeholder="Impact" />
           </SelectTrigger>
           <SelectContent>
-            {riskLevels.map((level) => (
+            {Object.entries(RISK_LEVELS).map(([level, className]) => (
               <SelectItem key={level} value={level}>
-                {level}
+                <span className={className}>{level}</span>
               </SelectItem>
             ))}
           </SelectContent>
@@ -338,64 +336,141 @@ export default function RiskAssessment({ value, onChange }: Props) {
 
   return (
     <div className="space-y-10">
-      <div className="bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] border-l-4 border-red-400 p-4 mb-8 rounded-2xl flex items-center gap-3 shadow-md">
-        <div className="font-semibold text-red-800 text-lg mb-1">Risk Assessment</div>
-        <div className="text-red-700">Identify, evaluate, and plan mitigation strategies for potential risks.</div>
+      <div className="bg-gradient-to-r from-red-100 via-orange-100 to-yellow-100 dark:from-red-900/20 dark:via-orange-900/20 dark:to-yellow-900/20 border-l-4 border-red-400 dark:border-red-300 p-4 mb-8 rounded-2xl flex items-center gap-3 shadow-md">
+        <div className="font-semibold text-red-800 dark:text-red-200 text-lg mb-1">Risk Assessment</div>
+        <div className="text-red-700 dark:text-red-300">Identify, evaluate, and plan mitigation strategies for potential risks.</div>
       </div>
 
       {/* Risk Identification Section */}
-      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-        <div className="border-b border-gray-100 pb-4 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Risk Identification</h3>
-          <p className="text-sm text-gray-600">Assess technical and business risks with probability and impact ratings</p>
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-6 h-6 text-warning" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Risk Identification</h3>
+              <p className="text-sm text-muted-foreground">Assess technical and business risks with probability and impact ratings</p>
+            </div>
+          </div>
         </div>
         
         <div className="space-y-8">
-          <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800 mb-2">Technical Risks</h4>
-            {/* Header Row */}
-            <div className="flex items-center justify-between px-4">
-              <div className="flex-1"></div>
-              <div className="flex gap-2 w-52 justify-end">
-                <span className="text-xs text-gray-500 w-24 text-center">Probability</span>
-                <span className="text-xs text-gray-500 w-24 text-center">Impact</span>
-              </div>
+          <div>
+            <h4 className="font-semibold text-foreground mb-2">Technical Risks</h4>
+            <div className="space-y-3">
+              {value.technicalRisks.map((item, index) => (
+                <div key={index} className="flex items-center gap-4 p-3 border border-border rounded-lg">
+                  <span className="flex-1 text-sm text-foreground">{item.risk}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-24 text-center">Probability</span>
+                    <Select
+                      value={item.probability}
+                      onValueChange={(val) => handleSelectChange('technicalRisks', index, 'probability', val)}
+                    >
+                      <SelectTrigger className={RISK_LEVELS[item.probability as keyof typeof RISK_LEVELS]}>
+                        <SelectValue placeholder="Probability" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(RISK_LEVELS).map((level) => (
+                          <SelectItem key={level} value={level}>
+                            {level}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-24 text-center">Impact</span>
+                    <Select
+                      value={item.impact}
+                      onValueChange={(val) => handleSelectChange('technicalRisks', index, 'impact', val)}
+                    >
+                      <SelectTrigger className={RISK_LEVELS[item.impact as keyof typeof RISK_LEVELS]}>
+                        <SelectValue placeholder="Impact" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(RISK_LEVELS).map((level) => (
+                          <SelectItem key={level} value={level}>
+                            {level}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              ))}
             </div>
-            {technicalRisks.map((item, index) => renderRiskRow(item, index, 'technical'))}
           </div>
-
-          <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800 mb-2">Business Risks</h4>
-            {/* Header Row */}
-            <div className="flex items-center justify-between px-4">
-              <div className="flex-1"></div>
-              <div className="flex gap-2 w-52 justify-end">
-                <span className="text-xs text-gray-500 w-24 text-center">Probability</span>
-                <span className="text-xs text-gray-500 w-24 text-center">Impact</span>
-              </div>
+          
+          <div>
+            <h4 className="font-semibold text-foreground mb-2">Business Risks</h4>
+            <div className="space-y-3">
+              {value.businessRisks.map((item, index) => (
+                <div key={index} className="flex items-center gap-4 p-3 border border-border rounded-lg">
+                  <span className="flex-1 text-sm text-foreground">{item.risk}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-24 text-center">Probability</span>
+                    <Select
+                      value={item.probability}
+                      onValueChange={(val) => handleSelectChange('businessRisks', index, 'probability', val)}
+                    >
+                      <SelectTrigger className={RISK_LEVELS[item.probability as keyof typeof RISK_LEVELS]}>
+                        <SelectValue placeholder="Probability" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(RISK_LEVELS).map((level) => (
+                          <SelectItem key={level} value={level}>
+                            {level}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-24 text-center">Impact</span>
+                    <Select
+                      value={item.impact}
+                      onValueChange={(val) => handleSelectChange('businessRisks', index, 'impact', val)}
+                    >
+                      <SelectTrigger className={RISK_LEVELS[item.impact as keyof typeof RISK_LEVELS]}>
+                        <SelectValue placeholder="Impact" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(RISK_LEVELS).map((level) => (
+                          <SelectItem key={level} value={level}>
+                            {level}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              ))}
             </div>
-            {businessRisks.map((item, index) => renderRiskRow(item, index, 'business'))}
           </div>
         </div>
       </div>
 
-
       {/* Jurisdictional Requirements Section */}
-      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-        <div className="border-b border-gray-100 pb-4 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Jurisdictional Requirements</h3>
-          <p className="text-sm text-gray-600">Select operating jurisdictions to identify applicable legal requirements</p>
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Globe className="w-6 h-6 text-primary" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Jurisdictional Requirements</h3>
+              <p className="text-sm text-muted-foreground">Select operating jurisdictions to identify applicable legal requirements</p>
+            </div>
+          </div>
         </div>
         
         <div>
-          <h4 className="font-semibold text-gray-800 mb-4">Operating Jurisdictions</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <h4 className="font-semibold text-foreground mb-4">Operating Jurisdictions</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.entries(OPERATING_JURISDICTIONS).map(([region, countries]) => (
-              <div key={region} className="border border-gray-200 rounded-lg p-4">
-                <div className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">{region}</div>
-                <div className="flex flex-col gap-2">
+              <div key={region} className="border border-border rounded-lg p-4">
+                <div className="font-semibold text-foreground mb-3 text-sm uppercase tracking-wide">{region}</div>
+                <div className="space-y-1">
                   {countries.map((country) => (
-                    <label key={country} className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded">
+                    <label key={country} className="flex items-center gap-2 hover:bg-accent p-1 rounded">
                       <Checkbox
                         checked={operatingJurisdictions[region][country]}
                         onCheckedChange={(checked) =>
@@ -408,7 +483,7 @@ export default function RiskAssessment({ value, onChange }: Props) {
                           }))
                         }
                       />
-                      <span className="text-sm">{country}</span>
+                      <span className="text-sm text-foreground">{country}</span>
                     </label>
                   ))}
                 </div>
@@ -418,58 +493,59 @@ export default function RiskAssessment({ value, onChange }: Props) {
         </div>
       </div>
 
-
       {/* Regulatory Frameworks Section */}
-      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-        <div className="border-b border-gray-100 pb-4 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Regulatory Frameworks</h3>
-          <p className="text-sm text-gray-600">Identify applicable regulatory requirements for your AI system</p>
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Shield className="w-6 h-6 text-warning" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Regulatory Frameworks</h3>
+              <p className="text-sm text-muted-foreground">Identify applicable regulatory requirements for your AI system</p>
+            </div>
+          </div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Data Protection */}
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-800 mb-3 text-sm uppercase tracking-wide">Data Protection</h4>
-            <div className="flex flex-col gap-2">
+        <div className="space-y-6">
+          <div className="border border-border rounded-lg p-4">
+            <h4 className="font-semibold text-foreground mb-3 text-sm uppercase tracking-wide">Data Protection</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {DATA_PROTECTION_OPTIONS.map(option => (
-                <label key={option} className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded">
+                <label key={option} className="flex items-center gap-2 hover:bg-accent p-1 rounded">
                   <Checkbox
                     checked={dataProtection[option]}
                     onCheckedChange={checked => setDataProtection(prev => ({ ...prev, [option]: !!checked }))}
                   />
-                  <span className="text-sm">{option}</span>
+                  <span className="text-sm text-foreground">{option}</span>
                 </label>
               ))}
             </div>
           </div>
           
-          {/* Sector-Specific */}
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-800 mb-3 text-sm uppercase tracking-wide">Sector-Specific</h4>
-            <div className="flex flex-col gap-2">
+          <div className="border border-border rounded-lg p-4">
+            <h4 className="font-semibold text-foreground mb-3 text-sm uppercase tracking-wide">Sector-Specific</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {SECTOR_SPECIFIC_OPTIONS.map(option => (
-                <label key={option} className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded">
+                <label key={option} className="flex items-center gap-2 hover:bg-accent p-1 rounded">
                   <Checkbox
                     checked={sectorSpecific[option]}
                     onCheckedChange={checked => setSectorSpecific(prev => ({ ...prev, [option]: !!checked }))}
                   />
-                  <span className="text-sm">{option}</span>
+                  <span className="text-sm text-foreground">{option}</span>
                 </label>
               ))}
             </div>
           </div>
           
-          {/* AI-Specific Regulations */}
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-800 mb-3 text-sm uppercase tracking-wide">AI-Specific Regulations</h4>
-            <div className="flex flex-col gap-2">
+          <div className="border border-border rounded-lg p-4">
+            <h4 className="font-semibold text-foreground mb-3 text-sm uppercase tracking-wide">AI-Specific Regulations</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {AI_SPECIFIC_OPTIONS.map(option => (
-                <label key={option} className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded">
+                <label key={option} className="flex items-center gap-2 hover:bg-accent p-1 rounded">
                   <Checkbox
                     checked={aiSpecific[option]}
                     onCheckedChange={checked => setAiSpecific(prev => ({ ...prev, [option]: !!checked }))}
                   />
-                  <span className="text-sm">{option}</span>
+                  <span className="text-sm text-foreground">{option}</span>
                 </label>
               ))}
             </div>
@@ -477,60 +553,66 @@ export default function RiskAssessment({ value, onChange }: Props) {
         </div>
       </div>
 
-
       {/* Industry Standards Section */}
-      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-        <div className="border-b border-gray-100 pb-4 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Industry Standards</h3>
-          <p className="text-sm text-gray-600">Select applicable certifications and standards for your AI system</p>
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Award className="w-6 h-6 text-success" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Industry Standards</h3>
+              <p className="text-sm text-muted-foreground">Select applicable certifications and standards for your AI system</p>
+            </div>
+          </div>
         </div>
         
         <div>
-          <h4 className="font-semibold text-gray-800 mb-4">Certifications/Standards</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <h4 className="font-semibold text-foreground mb-4">Certifications/Standards</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {CERTIFICATIONS_OPTIONS.map(option => (
-              <label key={option} className="flex items-center gap-2 hover:bg-gray-50 p-2 rounded border border-gray-100">
+              <label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border">
                 <Checkbox
                   checked={certifications[option]}
                   onCheckedChange={checked => setCertifications(prev => ({ ...prev, [option]: !!checked }))}
                 />
-                <span className="text-sm">{option}</span>
+                <span className="text-sm text-foreground">{option}</span>
               </label>
             ))}
           </div>
         </div>
       </div>
 
-
       {/* Audit & Compliance Section */}
-      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-        <div className="border-b border-gray-100 pb-4 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Audit & Compliance</h3>
-          <p className="text-sm text-gray-600">Define audit requirements and compliance reporting needs</p>
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <ClipboardCheck className="w-6 h-6 text-primary" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Audit & Compliance</h3>
+              <p className="text-sm text-muted-foreground">Define audit requirements and compliance reporting needs</p>
+            </div>
+          </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Audit Requirements */}
+        <div className="space-y-6">
           <div>
-            <h4 className="font-semibold text-gray-800 mb-4">Audit Requirements</h4>
-            <RadioGroup value={auditRequirements} onValueChange={setAuditRequirements} className="flex flex-col gap-2">
+            <h4 className="font-semibold text-foreground mb-4">Audit Requirements</h4>
+            <RadioGroup value={auditRequirements} onValueChange={setAuditRequirements} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {AUDIT_REQUIREMENTS_OPTIONS.map(option => (
-                <label key={option} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                <label key={option} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-2 rounded">
                   <RadioGroupItem value={option} id={option} className="mr-2" />
-                  <span className="text-sm">{option}</span>
+                  <span className="text-sm text-foreground">{option}</span>
                 </label>
               ))}
             </RadioGroup>
           </div>
           
-          {/* Compliance Reporting */}
           <div>
-            <h4 className="font-semibold text-gray-800 mb-4">Compliance Reporting</h4>
-            <RadioGroup value={complianceReporting} onValueChange={setComplianceReporting} className="flex flex-col gap-2">
+            <h4 className="font-semibold text-foreground mb-4">Compliance Reporting</h4>
+            <RadioGroup value={complianceReporting} onValueChange={setComplianceReporting} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {COMPLIANCE_REPORTING_OPTIONS.map(option => (
-                <label key={option} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                <label key={option} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-2 rounded">
                   <RadioGroupItem value={option} id={option} className="mr-2" />
-                  <span className="text-sm">{option}</span>
+                  <span className="text-sm text-foreground">{option}</span>
                 </label>
               ))}
             </RadioGroup>
@@ -538,36 +620,46 @@ export default function RiskAssessment({ value, onChange }: Props) {
         </div>
       </div>
 
-
       {/* Risk Appetite Section */}
-      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-        <div className="border-b border-gray-100 pb-4 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Risk Appetite</h3>
-          <p className="text-sm text-gray-600">Define your organization's risk tolerance and AI experience level</p>
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <TrendingUp className="w-6 h-6 text-warning" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Risk Appetite</h3>
+              <p className="text-sm text-muted-foreground">Define your organization's risk tolerance and AI experience level</p>
+            </div>
+          </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Organization Risk Tolerance */}
+        <div className="space-y-6">
           <div>
-            <h4 className="font-semibold text-gray-800 mb-4">Organization Risk Tolerance</h4>
-            <RadioGroup value={riskTolerance} onValueChange={setRiskTolerance} className="flex flex-col gap-2">
+            <h4 className="font-semibold text-foreground mb-4">Organization Risk Tolerance</h4>
+            <RadioGroup
+              value={riskTolerance}
+              onValueChange={setRiskTolerance}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
+            >
               {RISK_TOLERANCE_OPTIONS.map(option => (
-                <label key={option} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                <label key={option} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-2 rounded">
                   <RadioGroupItem value={option} id={option} className="mr-2" />
-                  <span className="text-sm">{option}</span>
+                  <span className="text-sm text-foreground">{option}</span>
                 </label>
               ))}
             </RadioGroup>
           </div>
           
-          {/* Previous AI Experience */}
           <div>
-            <h4 className="font-semibold text-gray-800 mb-4">Previous AI Experience</h4>
-            <RadioGroup value={aiExperience} onValueChange={setAiExperience} className="flex flex-col gap-2">
+            <h4 className="font-semibold text-foreground mb-4">Previous AI Experience</h4>
+            <RadioGroup
+              value={aiExperience}
+              onValueChange={setAiExperience}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
+            >
               {AI_EXPERIENCE_OPTIONS.map(option => (
-                <label key={option} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                <label key={option} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-2 rounded">
                   <RadioGroupItem value={option} id={option} className="mr-2" />
-                  <span className="text-sm">{option}</span>
+                  <span className="text-sm text-foreground">{option}</span>
                 </label>
               ))}
             </RadioGroup>

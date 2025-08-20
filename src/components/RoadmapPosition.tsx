@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Target, Calendar, Link } from "lucide-react";
 
 const PROJECT_STAGES = [
   "Ideation/Planning",
@@ -22,6 +23,8 @@ const TIMELINE_CONSTRAINTS = [
   "12-24 months",
   "> 24 months",
 ];
+const PRIORITY_LEVELS = ["high", "medium", "low"];
+const TIMELINE_OPTIONS = ["Q1 2025 - Immediate start", "Q2 2025 - After infrastructure setup", "Q3 2025 - Phase 2 implementation"];
 
 type Props = {
   value: {
@@ -57,123 +60,165 @@ export default function RoadmapPosition({ value, onChange }: Props) {
     }
   }, [value.priority, value.projectStage, value.timelineConstraints, value.timeline, value.dependencies, value.metrics, onChange]);
 
+  const handleMultiSelectChange = (key: string, value: string) => {
+    const currentValue = value as any;
+    if (key === 'timelineConstraints') {
+      const newConstraints = currentValue.timelineConstraints.includes(value) 
+        ? currentValue.timelineConstraints.filter((c: string) => c !== value)
+        : [...currentValue.timelineConstraints, value];
+      
+      onChange({
+        ...currentValue,
+        timelineConstraints: newConstraints,
+      });
+    }
+  };
+
+  const handleDependencyChange = (key: string, checked: boolean) => {
+    onChange({
+      ...value,
+      dependencies: {
+        ...value.dependencies,
+        [key]: checked,
+      },
+    });
+  };
+
   return (
     <div className="space-y-10">
-      <div className="bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] border-l-4 border-indigo-400 p-4 mb-8 rounded-2xl flex items-center gap-3 shadow-md">
-        <div className="font-semibold text-indigo-800 text-lg mb-1">Roadmap Position</div>
-        <div className="text-indigo-700">Define timeline, dependencies, and strategic positioning in the AI roadmap.</div>
+      <div className="bg-gradient-to-r from-indigo-100 via-purple-100 to-pink-100 dark:from-indigo-900/20 dark:via-purple-900/20 dark:to-pink-900/20 border-l-4 border-indigo-400 dark:border-indigo-300 p-4 mb-8 rounded-2xl flex items-center gap-3 shadow-md">
+        <div className="font-semibold text-indigo-800 dark:text-indigo-200 text-lg mb-1">Roadmap Position</div>
+        <div className="text-indigo-700 dark:text-indigo-300">Define timeline, dependencies, and strategic positioning in the AI roadmap.</div>
       </div>
 
       {/* Strategic Positioning Section */}
-      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-        <div className="border-b border-gray-100 pb-4 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Strategic Positioning</h3>
-          <p className="text-sm text-gray-600">Define priority level and current project stage</p>
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Target className="w-6 h-6 text-primary" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Strategic Positioning</h3>
+              <p className="text-sm text-muted-foreground">Define priority level and current project stage</p>
+            </div>
+          </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-6">
           <div>
-            <Label className="block font-medium mb-3">Priority Level</Label>
-            <Select value={value.priority} onValueChange={(newValue) => onChange({ ...value, priority: newValue })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="high">High - Strategic imperative</SelectItem>
-                <SelectItem value="medium">Medium - Important but not urgent</SelectItem>
-                <SelectItem value="low">Low - Nice to have</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label className="block font-medium mb-4 text-foreground">Project Priority</Label>
+            <RadioGroup value={value.priority} onValueChange={(newValue) => onChange({ ...value, priority: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {PRIORITY_LEVELS.map((priority) => (
+                <Label key={priority} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <RadioGroupItem value={priority} />
+                  <span className="text-sm text-foreground capitalize">{priority}</span>
+                </Label>
+              ))}
+            </RadioGroup>
           </div>
           
           <div>
-            <Label className="block font-medium mb-3">Project Stage</Label>
-            <RadioGroup value={value.projectStage} onValueChange={(newValue) => onChange({ ...value, projectStage: newValue })} className="space-y-2">
+            <Label className="block font-medium mb-4 text-foreground">Current Project Stage</Label>
+            <RadioGroup value={value.projectStage} onValueChange={(newValue) => onChange({ ...value, projectStage: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {PROJECT_STAGES.map((stage) => (
-                <div key={stage} className="flex items-center hover:bg-gray-50 p-2 rounded">
-                  <RadioGroupItem value={stage} id={`stage-${stage}`} className="mr-2" />
-                  <Label htmlFor={`stage-${stage}`} className="text-sm cursor-pointer">{stage}</Label>
+                <div key={stage} className="flex items-center hover:bg-accent p-2 rounded">
+                  <RadioGroupItem value={stage} id={`stage-${stage}`} />
+                  <Label htmlFor={`stage-${stage}`} className="text-sm text-foreground cursor-pointer">{stage}</Label>
                 </div>
               ))}
             </RadioGroup>
           </div>
         </div>
       </div>
-      
+
       {/* Timeline Planning Section */}
-      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-        <div className="border-b border-gray-100 pb-4 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Timeline Planning</h3>
-          <p className="text-sm text-gray-600">Set constraints and recommended implementation timeline</p>
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Calendar className="w-6 h-6 text-success" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Timeline Planning</h3>
+              <p className="text-sm text-muted-foreground">Set constraints and recommended implementation timeline</p>
+            </div>
+          </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-6">
           <div>
-            <Label className="block font-medium mb-3">Timeline Constraints</Label>
-            <div className="grid grid-cols-1 gap-2">
+            <Label className="block font-medium mb-4 text-foreground">Timeline Constraints</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {TIMELINE_CONSTRAINTS.map((constraint) => (
-                <label key={constraint} className="flex items-center gap-2 hover:bg-gray-50 p-2 rounded border border-gray-100 cursor-pointer">
-                  <Checkbox checked={value.timelineConstraints.includes(constraint)} onCheckedChange={() => onChange({ ...value, timelineConstraints: value.timelineConstraints.includes(constraint) ? value.timelineConstraints.filter(c => c !== constraint) : [...value.timelineConstraints, constraint] })} />
-                  <span className="text-sm">{constraint}</span>
+                <label key={constraint} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <Checkbox
+                    checked={value.timelineConstraints.includes(constraint)}
+                    onCheckedChange={(checked) => handleMultiSelectChange('timelineConstraints', constraint)}
+                  />
+                  <span className="text-sm text-foreground">{constraint}</span>
                 </label>
               ))}
             </div>
           </div>
           
           <div>
-            <Label className="block font-medium mb-3">Recommended Timeline</Label>
-            <RadioGroup value={value.timeline} onValueChange={(newValue) => onChange({ ...value, timeline: newValue })} className="space-y-2">
-              <div className="flex items-center hover:bg-gray-50 p-2 rounded">
-                <RadioGroupItem value="q1" id="q1" className="mr-2" />
-                <Label htmlFor="q1" className="text-sm cursor-pointer">Q1 2025 - Immediate start</Label>
-              </div>
-              <div className="flex items-center hover:bg-gray-50 p-2 rounded">
-                <RadioGroupItem value="q2" id="q2" className="mr-2" />
-                <Label htmlFor="q2" className="text-sm cursor-pointer">Q2 2025 - After infrastructure setup</Label>
-              </div>
-              <div className="flex items-center hover:bg-gray-50 p-2 rounded">
-                <RadioGroupItem value="q3" id="q3" className="mr-2" />
-                <Label htmlFor="q3" className="text-sm cursor-pointer">Q3 2025 - Phase 2 implementation</Label>
-              </div>
+            <Label className="block font-medium mb-4 text-foreground">Recommended Timeline</Label>
+            <RadioGroup value={value.timeline} onValueChange={(newValue) => onChange({ ...value, timeline: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {TIMELINE_OPTIONS.map((timeline) => (
+                <div key={timeline} className="flex items-center hover:bg-accent p-2 rounded">
+                  <RadioGroupItem value={timeline} id={`timeline-${timeline}`} />
+                  <Label htmlFor={`timeline-${timeline}`} className="text-sm text-foreground cursor-pointer">{timeline}</Label>
+                </div>
+              ))}
             </RadioGroup>
           </div>
         </div>
       </div>
-      
+
       {/* Dependencies & Success Metrics Section */}
-      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-        <div className="border-b border-gray-100 pb-4 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Dependencies & Success Metrics</h3>
-          <p className="text-sm text-gray-600">Define project dependencies and key performance indicators</p>
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Link className="w-6 h-6 text-warning" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Dependencies & Success Metrics</h3>
+              <p className="text-sm text-muted-foreground">Define project dependencies and key performance indicators</p>
+            </div>
+          </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-6">
           <div>
-            <Label className="block font-medium mb-3">Dependencies</Label>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 hover:bg-gray-50 p-2 rounded border border-gray-100 cursor-pointer">
-                <Checkbox checked={value.dependencies.dataPlatform} onCheckedChange={(newValue) => onChange({ ...value, dependencies: { ...value.dependencies, dataPlatform: !!newValue } })} />
-                <span className="text-sm">Data platform upgrade</span>
+            <Label className="block font-medium mb-4 text-foreground">Project Dependencies</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <label className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                <Checkbox
+                  checked={value.dependencies.dataPlatform}
+                  onCheckedChange={(checked) => handleDependencyChange('dataPlatform', !!checked)}
+                />
+                <span className="text-sm text-foreground">Data Platform Ready</span>
               </label>
-              <label className="flex items-center gap-2 hover:bg-gray-50 p-2 rounded border border-gray-100 cursor-pointer">
-                <Checkbox checked={value.dependencies.security} onCheckedChange={(newValue) => onChange({ ...value, dependencies: { ...value.dependencies, security: !!newValue } })} />
-                <span className="text-sm">Security framework implementation</span>
+              <label className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                <Checkbox
+                  checked={value.dependencies.security}
+                  onCheckedChange={(checked) => handleDependencyChange('security', !!checked)}
+                />
+                <span className="text-sm text-foreground">Security Framework</span>
               </label>
-              <label className="flex items-center gap-2 hover:bg-gray-50 p-2 rounded border border-gray-100 cursor-pointer">
-                <Checkbox checked={value.dependencies.hiring} onCheckedChange={(newValue) => onChange({ ...value, dependencies: { ...value.dependencies, hiring: !!newValue } })} />
-                <span className="text-sm">Team hiring and training</span>
+              <label className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                <Checkbox
+                  checked={value.dependencies.hiring}
+                  onCheckedChange={(checked) => handleDependencyChange('hiring', !!checked)}
+                />
+                <span className="text-sm text-foreground">Team Hiring</span>
               </label>
             </div>
           </div>
           
           <div>
-            <Label className="block font-medium mb-3">Success Metrics</Label>
+            <Label className="block font-medium mb-4 text-foreground">Success Metrics</Label>
             <Textarea
+              placeholder="Define key performance indicators and success criteria for your AI project..."
               value={value.metrics}
               onChange={(e) => onChange({ ...value, metrics: e.target.value })}
-              // placeholder="Define key performance indicators..."
-              className="w-full min-w-0 min-h-[120px]"
-              style={{ maxWidth: '100vw' }}
+              className="min-h-[100px] resize-none"
             />
           </div>
         </div>
@@ -188,8 +233,8 @@ export default function RoadmapPosition({ value, onChange }: Props) {
             </svg>
           </div>
           <div>
-            <div className="font-semibold text-blue-900 mb-2">Roadmap Recommendation</div>
-            <div className="text-blue-800 text-sm leading-relaxed">Based on your selections, we recommend starting after infrastructure setup and prioritizing data platform upgrades for maximum impact.</div>
+                    <div className="font-semibold text-blue-900 dark:text-blue-200 mb-2">Roadmap Recommendation</div>
+        <div className="text-blue-800 dark:text-blue-300 text-sm leading-relaxed">Based on your selections, we recommend starting after infrastructure setup and prioritizing data platform upgrades for maximum impact.</div>
           </div>
         </div>
       </div>

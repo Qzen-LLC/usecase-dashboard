@@ -1,5 +1,11 @@
 'use client';
 
+// UAE AI Act Assessment Page with Full Dark Mode Support
+// Features:
+// - Dynamic dark mode detection and theme switching
+// - Responsive color schemes for all UI elements
+// - Proper contrast and readability in both light and dark themes
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,6 +62,24 @@ export default function UaeAiAssessmentPage() {
   const params = useParams();
   const router = useRouter();
   const useCaseId = params.useCaseId as string;
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Check for dark mode
+  useEffect(() => {
+    const checkDarkMode = () => {
+      const isDark = document.documentElement.classList.contains('dark') || 
+                    document.body.classList.contains('dark');
+      setIsDarkMode(isDark);
+    };
+
+    checkDarkMode();
+    
+    // Listen for theme changes
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    
+    return () => observer.disconnect();
+  }, []);
 
   const [controls, setControls] = useState<Control[]>([]);
   const [assessment, setAssessment] = useState<Assessment | null>(null);
@@ -464,9 +488,9 @@ export default function UaeAiAssessmentPage() {
 
   const getStatusIcon = (status: string, hasImplementation: boolean) => {
     if (hasImplementation) {
-      return <CheckCircle className="w-5 h-5 text-green-600" />;
+      return <CheckCircle className="w-5 h-5 text-success" />;
     }
-    return <Clock className="w-5 h-5 text-gray-400" />;
+    return <Clock className="w-5 h-5 text-muted-foreground" />;
   };
 
   const maturityDetails = assessment ? getMaturityLevelDetails(assessment.maturityLevel) : null;
@@ -474,10 +498,10 @@ export default function UaeAiAssessmentPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading UAE AI Assessment...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading UAE AI Assessment...</p>
         </div>
       </div>
     );
@@ -485,13 +509,13 @@ export default function UaeAiAssessmentPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center">
         <Card className="max-w-md w-full">
           <CardHeader>
-            <CardTitle className="text-red-600">Error</CardTitle>
+            <CardTitle className="text-destructive">Error</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-600 mb-4">{error}</p>
+            <p className="text-muted-foreground mb-4">{error}</p>
             <Button onClick={fetchAssessmentData}>Try Again</Button>
           </CardContent>
         </Card>
@@ -500,14 +524,14 @@ export default function UaeAiAssessmentPage() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-full">
+    <div className="bg-background min-h-full">
       <div className="px-6 py-6">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-6">
             <div className="flex items-center gap-4 mb-4">
               <Link href="/dashboard/governance">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="text-black">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Governance
                 </Button>
@@ -515,11 +539,11 @@ export default function UaeAiAssessmentPage() {
             </div>
           
           {assessment && (
-            <div className="bg-white rounded-lg p-6 shadow-sm border">
+            <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">UAE AI/GenAI Controls Assessment</h2>
-                  <p className="text-sm text-gray-600">Compliance with UAE AI regulations and guidelines</p>
+                  <h2 className="text-lg font-semibold text-foreground">UAE AI/GenAI Controls Assessment</h2>
+                  <p className="text-sm text-muted-foreground">Compliance with UAE AI regulations and guidelines</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge 
@@ -540,17 +564,17 @@ export default function UaeAiAssessmentPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <div className="text-sm text-gray-600 mb-1">Progress</div>
-                    <div className="text-2xl font-bold text-gray-900">{Math.round(assessment.progress)}%</div>
+                    <div className="text-sm text-muted-foreground mb-1">Progress</div>
+                    <div className="text-2xl font-bold text-foreground">{Math.round(assessment.progress)}%</div>
                     <Progress value={assessment.progress} className="h-2 mt-1" />
                   </div>
                   <div>
-                    <div className="text-sm text-gray-600 mb-1">Weighted Score</div>
-                    <div className="text-2xl font-bold text-gray-900">{assessment.weightedScore}</div>
-                    <div className="text-xs text-gray-500">out of {riskDetails?.weight ? riskDetails.weight * 3 : 3}</div>
+                    <div className="text-sm text-muted-foreground mb-1">Weighted Score</div>
+                    <div className="text-2xl font-bold text-foreground">{assessment.weightedScore}</div>
+                    <div className="text-xs text-muted-foreground">out of {riskDetails?.weight ? riskDetails.weight * 3 : 3}</div>
                   </div>
                   <div>
-                    <div className="text-sm text-gray-600 mb-1">Risk Impact Level</div>
+                    <div className="text-sm text-muted-foreground mb-1">Risk Impact Level</div>
                     <Select value={assessment.riskImpactLevel} onValueChange={handleRiskImpactLevelChange}>
                       <SelectTrigger className="w-full">
                         <SelectValue />
@@ -576,15 +600,15 @@ export default function UaeAiAssessmentPage() {
 
         {/* Tabs */}
         <div className="mb-8">
-          <div className="bg-white rounded-lg shadow-sm border">
-            <div className="px-6 py-4 border-b border-gray-200">
+          <div className="bg-card rounded-lg shadow-sm border border-border">
+            <div className="px-6 py-4 border-b border-border">
               <nav className="flex space-x-8">
                 <button
                   onClick={() => setActiveTab('controls')}
                   className={`${
                     activeTab === 'controls'
-                      ? 'bg-purple-100 text-purple-700 border-purple-300'
-                      : 'bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100'
+                      ? 'bg-primary/20 text-primary border-primary/30'
+                      : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
                   } px-4 py-2 rounded-lg border font-medium text-sm transition-colors flex items-center gap-2`}
                 >
                   <Shield className="w-4 h-4" />
@@ -595,8 +619,8 @@ export default function UaeAiAssessmentPage() {
                   onClick={() => setActiveTab('maturity')}
                   className={`${
                     activeTab === 'maturity'
-                      ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
-                      : 'bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100'
+                      ? 'bg-accent/20 text-accent-foreground border-accent/30'
+                      : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
                   } px-4 py-2 rounded-lg border font-medium text-sm transition-colors flex items-center gap-2`}
                 >
                   <Star className="w-4 h-4" />
@@ -616,41 +640,41 @@ export default function UaeAiAssessmentPage() {
             return (
               <Card key={control.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader 
-                  className="cursor-pointer bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all duration-200"
+                  className="cursor-pointer bg-gradient-to-r from-primary/10 to-primary/20 hover:from-primary/20 hover:to-primary/30 transition-all duration-200"
                   onClick={() => toggleControl(control.controlId)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="bg-gradient-to-br from-purple-600 to-purple-700 text-white rounded-xl w-12 h-12 flex items-center justify-center text-sm font-bold shadow-lg">
+                      <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-xl w-12 h-12 flex items-center justify-center text-sm font-bold shadow-lg">
                         {control.controlId.split('-')[2]}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-1">
-                          <CardTitle className="text-lg text-gray-900">{control.title}</CardTitle>
+                          <CardTitle className="text-lg text-foreground">{control.title}</CardTitle>
                           <Badge variant="outline" className="text-xs">
                             {control.controlId}
                           </Badge>
                           {isCompleted && (
-                            <Badge className="bg-green-100 text-green-700 text-xs">
+                            <Badge className="bg-success/20 text-success text-xs">
                               Implemented
                             </Badge>
                           )}
                           {instance && (
                             <div className="flex items-center gap-1">
-                              <Star className="w-4 h-4 text-yellow-500" />
+                              <Star className="w-4 h-4 text-warning" />
                               <span className="text-sm font-medium">{instance.score}/3</span>
                             </div>
                           )}
                         </div>
-                        <CardDescription className="text-sm text-gray-600">{control.description}</CardDescription>
+                        <CardDescription className="text-sm text-muted-foreground">{control.description}</CardDescription>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {getStatusIcon(instance?.status || 'pending', isCompleted)}
                       {expandedControls.has(control.controlId) ? (
-                        <ChevronDown className="w-5 h-5 text-gray-500" />
+                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
                       ) : (
-                        <ChevronRight className="w-5 h-5 text-gray-500" />
+                        <ChevronRight className="w-5 h-5 text-muted-foreground" />
                       )}
                     </div>
                   </div>
@@ -660,18 +684,18 @@ export default function UaeAiAssessmentPage() {
                   <CardContent className="p-6">
                     <div className="space-y-6">
                       {/* Legal Basis */}
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <h5 className="text-sm font-semibold text-blue-900 mb-2">Legal/Regulatory Basis:</h5>
-                        <p className="text-sm text-blue-800">{control.legalBasis}</p>
+                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                        <h5 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">Legal/Regulatory Basis:</h5>
+                        <p className="text-sm text-blue-800 dark:text-blue-300">{control.legalBasis}</p>
                       </div>
 
                       {/* Evidence Types */}
-                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                        <h5 className="text-sm font-semibold text-amber-900 mb-2">Required Evidence Types:</h5>
-                        <ul className="text-sm text-amber-800 space-y-1">
+                      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
+                        <h5 className="text-sm font-semibold text-amber-900 dark:text-amber-200 mb-2">Required Evidence Types:</h5>
+                        <ul className="text-sm text-amber-800 dark:text-amber-300 space-y-1">
                           {control.evidenceTypes.map((evidence, idx) => (
                             <li key={idx} className="flex items-start gap-2">
-                              <span className="text-amber-600 mt-1">•</span>
+                              <span className="text-amber-600 dark:text-amber-400 mt-1">•</span>
                               <span>{evidence}</span>
                             </li>
                           ))}
@@ -679,13 +703,13 @@ export default function UaeAiAssessmentPage() {
                       </div>
 
                       {/* Implementation and Scoring */}
-                      <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
+                      <div className="bg-white dark:bg-card border border-gray-200 dark:border-border rounded-lg p-4 space-y-4">
                         <div className="flex items-center justify-between">
-                          <label className="block text-sm font-semibold text-gray-700">
-                            📝 Implementation Details
+                          <label className="block text-sm font-semibold text-foreground">
+                            Implementation Details
                           </label>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-600">Score:</span>
+                            <span className="text-sm text-muted-foreground">Score:</span>
                             <Select 
                               value={instance?.score?.toString() || "0"} 
                               onValueChange={(value) => handleControlScoreChange(control.controlId, parseInt(value))}
@@ -699,7 +723,7 @@ export default function UaeAiAssessmentPage() {
                                   <SelectItem key={level.value} value={level.value.toString()}>
                                     <div className="flex items-center gap-2">
                                       <span className="font-medium">{level.value}</span>
-                                      <span className="text-xs text-gray-500">({level.label})</span>
+                                      <span className="text-xs text-muted-foreground">({level.label})</span>
                                     </div>
                                   </SelectItem>
                                 ))}
@@ -720,7 +744,7 @@ export default function UaeAiAssessmentPage() {
 • Who is responsible for this control?
 • What processes and procedures exist?
 • How is effectiveness monitored?"
-                          className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                          className="w-full p-3 border border-input rounded-lg resize-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors bg-background text-foreground"
                           rows={5}
                         />
                         
@@ -745,8 +769,8 @@ export default function UaeAiAssessmentPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                          <div className="text-xs text-gray-500">
+                        <div className="flex items-center justify-between pt-2 border-t border-border">
+                          <div className="text-xs text-muted-foreground">
                             {instance?.implementation?.length || 0} characters
                           </div>
                           <Button
@@ -812,23 +836,23 @@ export default function UaeAiAssessmentPage() {
 
                   {/* Control Scores */}
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Individual Control Scores</h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">Individual Control Scores</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {controls.map(control => {
                         const instance = findControlInstance(control.controlId);
                         const scoreDetails = getScoreLevelDetails(instance?.score || 0);
                         return (
-                          <div key={control.id} className="p-4 border rounded-lg">
+                          <div key={control.id} className="p-4 border border-border rounded-lg bg-card">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="font-medium text-sm">{control.title}</span>
+                              <span className="font-medium text-sm text-foreground">{control.title}</span>
                               <div className="flex items-center gap-2">
                                 <div className={`px-2 py-1 rounded text-xs ${scoreDetails?.bgColor} ${scoreDetails?.textColor}`}>
                                   {scoreDetails?.label}
                                 </div>
-                                <span className="font-bold">{instance?.score || 0}/3</span>
+                                <span className="font-bold text-foreground">{instance?.score || 0}/3</span>
                               </div>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div className="w-full bg-muted rounded-full h-2">
                               <div 
                                 className={`h-2 rounded-full ${scoreDetails?.color === 'red' ? 'bg-red-500' : 
                                   scoreDetails?.color === 'orange' ? 'bg-orange-500' :

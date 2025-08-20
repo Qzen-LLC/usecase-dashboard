@@ -126,6 +126,24 @@ export default function EuAiActAssessmentPage() {
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
   const [expandedSubtopics, setExpandedSubtopics] = useState<Set<string>>(new Set());
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Check for dark mode
+  useEffect(() => {
+    const checkDarkMode = () => {
+      const isDark = document.documentElement.classList.contains('dark') || 
+                    document.body.classList.contains('dark');
+      setIsDarkMode(isDark);
+    };
+
+    checkDarkMode();
+    
+    // Listen for theme changes
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     fetchAssessmentData();
@@ -134,7 +152,7 @@ export default function EuAiActAssessmentPage() {
   // Monitor assessment state changes for debugging
   useEffect(() => {
     if (assessment) {
-      console.log('📊 ASSESSMENT STATE CHANGED:', {
+      console.log('ASSESSMENT STATE CHANGED:', {
         totalControls: assessment.controls?.length || 0,
         controlsWithFiles: assessment.controls?.filter(c => c.evidenceFiles?.length > 0).length || 0,
         controlIds: assessment.controls?.map(c => c.controlStruct?.controlId) || [],
@@ -206,7 +224,7 @@ export default function EuAiActAssessmentPage() {
       setTopics(topicsWithAnswers);
       setControlCategories(controlCategoriesData);
       
-      console.log('🚀 INITIAL DATA LOAD - Assessment controls:', {
+      console.log('INITIAL DATA LOAD - Assessment controls:', {
         totalControls: assessmentData.controls?.length || 0,
         controlsWithFiles: assessmentData.controls?.filter(c => c.evidenceFiles?.length > 0).length || 0,
         sampleControl: assessmentData.controls?.[0] ? {
@@ -415,7 +433,7 @@ export default function EuAiActAssessmentPage() {
     
     const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
 
-    console.log('📊 Progress Calculation:', {
+    console.log('Progress Calculation:', {
       totalQuestions,
       answeredQuestions,
       totalControls,
@@ -576,14 +594,14 @@ export default function EuAiActAssessmentPage() {
   };
 
   const handleControlEvidenceChange = async (controlId: string, evidenceFiles: string[]) => {
-    console.log('🔄 handleControlEvidenceChange START:', { controlId, evidenceFiles });
+    console.log('handleControlEvidenceChange START:', { controlId, evidenceFiles });
     if (!assessment) return;
 
     const existingControl = assessment.controls?.find(c => c.controlStruct.controlId === controlId);
     const currentFiles = existingControl?.evidenceFiles || [];
     const removedFiles = currentFiles.filter(file => !evidenceFiles.includes(file));
     
-    console.log('📊 Control state before update:', {
+    console.log('Control state before update:', {
       existingControl: existingControl ? {
         id: existingControl.id,
         controlId: existingControl.controlStruct?.controlId,
@@ -608,7 +626,7 @@ export default function EuAiActAssessmentPage() {
           evidenceFiles: [...evidenceFiles] // Ensure new array reference
         };
         
-        console.log('🔧 State Update - existing control:', {
+        console.log('State Update - existing control:', {
           controlId,
           controlIndex: existingControlIndex,
           newFiles: evidenceFiles,
@@ -637,7 +655,7 @@ export default function EuAiActAssessmentPage() {
           subcontrols: []
         };
         
-        console.log('🔧 State Update - new control:', {
+        console.log('State Update - new control:', {
           controlId,
           newControl,
           evidenceFiles
@@ -672,7 +690,7 @@ export default function EuAiActAssessmentPage() {
       }
 
       const savedControl = await response.json();
-      console.log('💾 API Response - savedControl:', {
+      console.log('API Response - savedControl:', {
         id: savedControl.id,
         controlId: savedControl.controlStruct?.controlId,
         evidenceFiles: savedControl.evidenceFiles,
@@ -702,7 +720,7 @@ export default function EuAiActAssessmentPage() {
           updatedControls = [...(currentAssessment.controls || []), savedControl];
         }
         
-        console.log('✅ API State update - merging with current state:', {
+        console.log('API State update - merging with current state:', {
           controlId,
           savedControlFiles: savedControl.evidenceFiles,
           currentControlsCount: currentAssessment.controls?.length || 0,
@@ -804,12 +822,12 @@ export default function EuAiActAssessmentPage() {
               subcontrols: updatedSubcontrols
             };
             
-            console.log('🔧 State Update - existing subcontrol:', {
-              controlId,
-              subcontrolId,
-              subcontrolIndex,
-              newFiles: evidenceFiles
-            });
+                    console.log('State Update - existing subcontrol:', {
+          controlId,
+          subcontrolId,
+          subcontrolIndex,
+          newFiles: evidenceFiles
+        });
           }
         } else {
           // Create new subcontrol with evidence files
@@ -830,12 +848,12 @@ export default function EuAiActAssessmentPage() {
             subcontrols: [...(targetControl.subcontrols || []), newSubcontrol]
           };
           
-          console.log('🔧 State Update - new subcontrol:', {
-            controlId,
-            subcontrolId,
-            newSubcontrol,
-            evidenceFiles
-          });
+                  console.log('State Update - new subcontrol:', {
+          controlId,
+          subcontrolId,
+          newSubcontrol,
+          evidenceFiles
+        });
         }
         
         return {
@@ -886,11 +904,11 @@ export default function EuAiActAssessmentPage() {
                 : control
             ) || [];
             
-            console.log('✅ API Subcontrol update - merging with current state:', {
-              controlId,
-              subcontrolId,
-              savedSubcontrolFiles: savedSubcontrol.evidenceFiles
-            });
+                    console.log('API Subcontrol update - merging with current state:', {
+          controlId,
+          subcontrolId,
+          savedSubcontrolFiles: savedSubcontrol.evidenceFiles
+        });
             
             return {
               ...currentAssessment,
@@ -972,11 +990,11 @@ export default function EuAiActAssessmentPage() {
             const updatedControls = currentAssessment.controls?.filter(c => c.controlStruct?.controlId !== existingControl.controlStruct.controlId) || [];
             updatedControls.push(controlWithSubcontrol);
             
-            console.log('✅ API New Subcontrol update - merging with current state:', {
-              controlId,
-              subcontrolId,
-              savedSubcontrolFiles: savedSubcontrol.evidenceFiles
-            });
+                    console.log('API New Subcontrol update - merging with current state:', {
+          controlId,
+          subcontrolId,
+          savedSubcontrolFiles: savedSubcontrol.evidenceFiles
+        });
             
             return {
               ...currentAssessment,
@@ -1164,7 +1182,7 @@ export default function EuAiActAssessmentPage() {
             : control
         ) || [];
         
-        console.log('✅ API Save Subcontrol update - merging with current state:', {
+        console.log('API Save Subcontrol update - merging with current state:', {
           controlId,
           subcontrolId,
           savedSubcontrolFiles: savedSubcontrol.evidenceFiles
@@ -1187,46 +1205,46 @@ export default function EuAiActAssessmentPage() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority.toLowerCase()) {
-      case 'high': return 'bg-red-100 text-red-800 border-red-300';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'low': return 'bg-green-100 text-green-800 border-green-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
+      case 'high': return isDarkMode ? 'bg-red-950/50 text-red-300 border-red-800' : 'bg-red-100 text-red-800 border-red-300';
+      case 'medium': return isDarkMode ? 'bg-yellow-950/50 text-yellow-300 border-yellow-800' : 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'low': return isDarkMode ? 'bg-green-950/50 text-green-300 border-green-800' : 'bg-green-100 text-green-800 border-green-300';
+      default: return isDarkMode ? 'bg-muted text-muted-foreground border-border' : 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'implemented': return 'bg-green-100 text-green-800 border-green-300';
-      case 'reviewed': return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
+      case 'implemented': return 'bg-success/20 text-success border-success/30';
+      case 'reviewed': return 'bg-primary/20 text-primary border-primary/30';
+      case 'pending': return 'bg-warning/20 text-warning border-warning/30';
+      default: return 'bg-muted text-muted-foreground border-border';
     }
   };
 
   const getStatusIcon = (question: Question) => {
     if (question.answer?.answer?.trim()) {
-      return <CheckCircle className="w-5 h-5 text-green-600" />;
+      return <CheckCircle className="w-5 h-5 text-success" />;
     }
     if (question.priority.toLowerCase() === 'high') {
-      return <AlertCircle className="w-5 h-5 text-red-600" />;
+      return <AlertCircle className="w-5 h-5 text-destructive" />;
     }
-    return <Clock className="w-5 h-5 text-gray-400" />;
+    return <Clock className="w-5 h-5 text-muted-foreground" />;
   };
 
   const getControlStatusIcon = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'implemented': return <CheckCircle className="w-5 h-5 text-green-600" />;
-      case 'reviewed': return <CheckCircle className="w-5 h-5 text-blue-600" />;
-      default: return <Clock className="w-5 h-5 text-gray-400" />;
+      case 'implemented': return <CheckCircle className="w-5 h-5 text-success" />;
+      case 'reviewed': return <CheckCircle className="w-5 h-5 text-primary" />;
+      default: return <Clock className="w-5 h-5 text-muted-foreground" />;
     }
   };
 
   if (loading) {
     return (
-      <div className="bg-gray-50 min-h-full flex items-center justify-center">
+      <div className="bg-background min-h-full flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading EU AI ACT Assessment...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading EU AI ACT Assessment...</p>
         </div>
       </div>
     );
@@ -1234,13 +1252,13 @@ export default function EuAiActAssessmentPage() {
 
   if (error) {
     return (
-      <div className="bg-gray-50 min-h-full flex items-center justify-center">
+      <div className="bg-background min-h-full flex items-center justify-center">
         <Card className="max-w-md w-full">
           <CardHeader>
-            <CardTitle className="text-red-600">Error</CardTitle>
+            <CardTitle className="text-destructive">Error</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-600 mb-4">{error}</p>
+            <p className="text-muted-foreground mb-4">{error}</p>
             <Button onClick={fetchAssessmentData}>Try Again</Button>
           </CardContent>
         </Card>
@@ -1249,14 +1267,14 @@ export default function EuAiActAssessmentPage() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-full">
+    <div className="bg-background min-h-full">
       <div className="px-6 py-6">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-6">
             <div className="flex items-center gap-4 mb-4">
               <Link href="/dashboard/governance">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="text-black">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Governance
                 </Button>
@@ -1264,21 +1282,21 @@ export default function EuAiActAssessmentPage() {
             </div>
             
             {assessment && (
-              <div className="bg-white rounded-lg p-6 shadow-sm border">
+              <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Assessment Progress</h2>
-                    <p className="text-sm text-gray-600">Complete all required questions and controls to ensure compliance</p>
+                    <h2 className="text-lg font-semibold text-foreground">Assessment Progress</h2>
+                    <p className="text-sm text-muted-foreground">Complete all required questions and controls to ensure compliance</p>
                   </div>
                   <Badge 
                     variant="outline" 
-                    className={assessment.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}
+                    className={assessment.status === 'completed' ? 'bg-success/20 text-success border-success/30' : 'bg-warning/20 text-warning border-warning/30'}
                   >
                     {assessment.status === 'completed' ? 'Completed' : 'In Progress'}
                   </Badge>
                 </div>
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Progress</span>
                     <span>{Math.round(assessment.progress)}% Complete</span>
                   </div>
@@ -1290,20 +1308,20 @@ export default function EuAiActAssessmentPage() {
 
           {/* Enhanced Tabs */}
           <div className="mb-8">
-            <div className="bg-white rounded-lg shadow-sm border">
-              <div className="px-6 py-4 border-b border-gray-200">
+            <div className="bg-card rounded-lg shadow-sm border border-border">
+              <div className="px-6 py-4 border-b border-border">
                 <nav className="flex space-x-8">
                   <button
                     onClick={() => setActiveTab('assessment')}
                     className={`${
                       activeTab === 'assessment'
-                        ? 'bg-blue-100 text-blue-700 border-blue-300'
-                        : 'bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100'
+                        ? 'bg-primary/20 text-primary border-primary/30'
+                        : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
                     } px-4 py-2 rounded-lg border font-medium text-sm transition-colors flex items-center gap-2`}
                   >
                     <HelpCircle className="w-4 h-4" />
                     Assessment Questions
-                    <span className="text-xs bg-white px-2 py-1 rounded-full">
+                    <span className="text-xs bg-card px-2 py-1 rounded-full">
                       {topics.reduce((total, topic) => total + topic.subtopics.reduce((subTotal, subtopic) => subTotal + subtopic.questions.length, 0), 0)}
                     </span>
                   </button>
@@ -1311,13 +1329,13 @@ export default function EuAiActAssessmentPage() {
                     onClick={() => setActiveTab('controls')}
                     className={`${
                       activeTab === 'controls'
-                        ? 'bg-green-100 text-green-700 border-green-300'
-                        : 'bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100'
+                        ? 'bg-success/20 text-success border-success/30'
+                        : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
                     } px-4 py-2 rounded-lg border font-medium text-sm transition-colors flex items-center gap-2`}
                   >
                     <Shield className="w-4 h-4" />
                     Compliance Controls
-                    <span className="text-xs bg-white px-2 py-1 rounded-full">
+                    <span className="text-xs bg-card px-2 py-1 rounded-full">
                       {controlCategories.reduce((total, category) => 
                         total + category.controls.reduce((controlTotal, control) => 
                           controlTotal + 1 + control.subcontrols.length, 0), 0)}
@@ -1327,25 +1345,25 @@ export default function EuAiActAssessmentPage() {
               </div>
               
               {/* Tab Content Header */}
-              <div className="px-6 py-4 bg-gray-50">
+              <div className="px-6 py-4 bg-muted/50">
                 {activeTab === 'assessment' ? (
                   <div className="flex items-center gap-3">
-                    <div className="bg-blue-100 p-2 rounded-lg">
-                      <HelpCircle className="w-5 h-5 text-blue-600" />
+                    <div className="bg-primary/20 p-2 rounded-lg">
+                      <HelpCircle className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">Assessment Questions</h3>
-                      <p className="text-sm text-gray-600">Answer all questions to demonstrate compliance with EU AI ACT requirements</p>
+                      <h3 className="font-semibold text-foreground">Assessment Questions</h3>
+                      <p className="text-sm text-muted-foreground">Answer all questions to demonstrate compliance with EU AI ACT requirements</p>
                     </div>
                   </div>
                 ) : (
                   <div className="flex items-center gap-3">
-                    <div className="bg-green-100 p-2 rounded-lg">
-                      <Shield className="w-5 h-5 text-green-600" />
+                    <div className="bg-success/20 p-2 rounded-lg">
+                      <Shield className="w-5 h-5 text-success" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">Compliance Controls</h3>
-                      <p className="text-sm text-gray-600">Implement and document required controls for AI system governance</p>
+                      <h3 className="font-semibold text-foreground">Compliance Controls</h3>
+                      <p className="text-sm text-muted-foreground">Implement and document required controls for AI system governance</p>
                     </div>
                   </div>
                 )}
@@ -1358,24 +1376,24 @@ export default function EuAiActAssessmentPage() {
             {activeTab === 'assessment' && topics.map((topic) => (
               <Card key={topic.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader 
-                  className="cursor-pointer bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 transition-all duration-200"
+                  className="cursor-pointer bg-gradient-to-r from-primary/10 to-primary/20 hover:from-primary/20 hover:to-primary/30 transition-all duration-200"
                   onClick={() => toggleTopic(topic.topicId)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-xl w-12 h-12 flex items-center justify-center text-sm font-bold shadow-lg">
+                      <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-xl w-12 h-12 flex items-center justify-center text-sm font-bold shadow-lg">
                         {topic.orderIndex}
                       </div>
                       <div>
-                        <CardTitle className="text-lg text-gray-900">{topic.title}</CardTitle>
-                        <CardDescription className="text-sm text-gray-600">{topic.description}</CardDescription>
+                        <CardTitle className="text-lg text-foreground">{topic.title}</CardTitle>
+                        <CardDescription className="text-sm text-muted-foreground">{topic.description}</CardDescription>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {expandedTopics.has(topic.topicId) ? (
-                        <ChevronDown className="w-5 h-5 text-gray-500" />
+                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
                       ) : (
-                        <ChevronRight className="w-5 h-5 text-gray-500" />
+                        <ChevronRight className="w-5 h-5 text-muted-foreground" />
                       )}
                     </div>
                   </div>
@@ -1384,25 +1402,25 @@ export default function EuAiActAssessmentPage() {
                 {expandedTopics.has(topic.topicId) && (
                   <CardContent className="p-0">
                     {topic.subtopics.map((subtopic) => (
-                      <div key={subtopic.id} className="border-t border-gray-100">
+                      <div key={subtopic.id} className="border-t border-border">
                         <div 
-                          className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                          className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
                           onClick={() => toggleSubtopic(subtopic.subtopicId)}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="bg-gray-100 rounded-lg p-2">
-                                <ListChecks className="w-4 h-4 text-gray-600" />
+                              <div className="bg-muted rounded-lg p-2">
+                                <ListChecks className="w-4 h-4 text-muted-foreground" />
                               </div>
                               <div>
-                                <h4 className="font-medium text-gray-900">{subtopic.title}</h4>
-                                <p className="text-sm text-gray-600 mt-1">{subtopic.description}</p>
+                                <h4 className="font-medium text-foreground">{subtopic.title}</h4>
+                                <p className="text-sm text-muted-foreground mt-1">{subtopic.description}</p>
                               </div>
                             </div>
                             {expandedSubtopics.has(subtopic.subtopicId) ? (
-                              <ChevronDown className="w-4 h-4 text-gray-500" />
+                              <ChevronDown className="w-4 h-4 text-muted-foreground" />
                             ) : (
-                              <ChevronRight className="w-4 h-4 text-gray-500" />
+                              <ChevronRight className="w-4 h-4 text-muted-foreground" />
                             )}
                           </div>
                         </div>
@@ -1410,7 +1428,7 @@ export default function EuAiActAssessmentPage() {
                         {expandedSubtopics.has(subtopic.subtopicId) && (
                           <div className="px-6 pb-6 space-y-6">
                             {subtopic.questions.map((question) => (
-                              <div key={question.id} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                              <div key={question.id} className="bg-card border border-border rounded-lg p-6 shadow-sm">
                                 <div className="space-y-4">
                                   <div className="flex items-start gap-4">
                                     <div className="flex-shrink-0 mt-1">
@@ -1424,23 +1442,23 @@ export default function EuAiActAssessmentPage() {
                                         >
                                           {question.priority} Priority
                                         </Badge>
-                                        <span className="text-xs text-gray-500 font-mono">
+                                        <span className="text-xs text-muted-foreground font-mono">
                                           ID: {question.questionId}
                                         </span>
                                       </div>
-                                      <p className="text-gray-900 font-medium text-base leading-relaxed mb-4">
+                                      <p className="text-foreground font-medium text-base leading-relaxed mb-4">
                                         {question.question}
                                       </p>
                                       
-                                      <div className="bg-gray-50 p-4 rounded-lg">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                      <div className="bg-muted/50 p-4 rounded-lg">
+                                        <label className="block text-sm font-medium text-foreground mb-2">
                                           Your Answer
                                         </label>
                                         <textarea
                                           value={question.answer?.answer || ''}
                                           onChange={(e) => handleAnswerChange(question.questionId, e.target.value)}
                                           placeholder="Provide your detailed answer here..."
-                                          className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                          className="w-full p-3 border border-input rounded-lg resize-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors bg-background text-foreground"
                                           rows={4}
                                         />
                                         
@@ -1457,7 +1475,7 @@ export default function EuAiActAssessmentPage() {
                                               frameworkType="eu-ai-act"
                                             />
                                             {savingFiles.has(`question-${question.questionId}`) && (
-                                              <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                                              <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-md flex items-center gap-1">
                                                 <Loader2 className="w-3 h-3 animate-spin" />
                                                 Saving...
                                               </div>
@@ -1465,9 +1483,9 @@ export default function EuAiActAssessmentPage() {
                                           </div>
                                         </div>
                                         
-                                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
+                                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
                                           <div className="flex items-center gap-4">
-                                            <div className="text-xs text-gray-500">
+                                            <div className="text-xs text-muted-foreground">
                                               {question.answer?.answer?.length || 0} characters
                                             </div>
                                           </div>
@@ -1500,15 +1518,15 @@ export default function EuAiActAssessmentPage() {
               <Card className="shadow-sm">
                 <CardContent className="p-8">
                   <div className="text-center space-y-4">
-                    <Shield className="w-12 h-12 text-gray-400 mx-auto" />
+                    <Shield className="w-12 h-12 text-muted-foreground mx-auto" />
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Control Categories Not Available</h3>
-                      <p className="text-gray-600 mt-2">
+                      <h3 className="text-lg font-semibold text-foreground">Control Categories Not Available</h3>
+                      <p className="text-muted-foreground mt-2">
                         The EU AI Act control categories have not been set up yet. 
                         Please run the framework setup script to populate the control data.
                       </p>
-                      <p className="text-sm text-gray-500 mt-4">
-                        Run: <code className="bg-gray-100 px-2 py-1 rounded">npx tsx scripts/setup-frameworks.ts</code>
+                      <p className="text-sm text-muted-foreground mt-4">
+                        Run: <code className="bg-muted px-2 py-1 rounded text-foreground">npx tsx scripts/setup-frameworks.ts</code>
                       </p>
                     </div>
                   </div>
@@ -1519,7 +1537,11 @@ export default function EuAiActAssessmentPage() {
             {activeTab === 'controls' && controlCategories.map((category) => (
               <Card key={category.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader 
-                  className="cursor-pointer bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 transition-all duration-200"
+                  className={`cursor-pointer transition-all duration-200 ${
+                    isDarkMode 
+                      ? 'bg-gradient-to-r from-green-950/30 to-emerald-950/30 hover:from-green-950/50 hover:to-emerald-950/50' 
+                      : 'bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100'
+                  }`}
                   onClick={() => toggleCategory(category.categoryId)}
                 >
                   <div className="flex items-center justify-between">
@@ -1528,15 +1550,15 @@ export default function EuAiActAssessmentPage() {
                         {category.categoryId}
                       </div>
                       <div>
-                        <CardTitle className="text-lg text-gray-900">{category.title}</CardTitle>
-                        <CardDescription className="text-sm text-gray-600">{category.description}</CardDescription>
+                        <CardTitle className="text-lg text-foreground">{category.title}</CardTitle>
+                        <CardDescription className="text-sm text-muted-foreground">{category.description}</CardDescription>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {expandedCategories.has(category.categoryId) ? (
-                        <ChevronDown className="w-5 h-5 text-gray-500" />
+                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
                       ) : (
-                        <ChevronRight className="w-5 h-5 text-gray-500" />
+                        <ChevronRight className="w-5 h-5 text-muted-foreground" />
                       )}
                     </div>
                   </div>
@@ -1549,14 +1571,14 @@ export default function EuAiActAssessmentPage() {
                         c => c.controlStruct?.controlId === control.controlId
                       );
                       
-                      console.log(`🎨 UI RENDER - Control ${control.controlId}:`, {
-                        hasAssessmentControl: !!assessmentControl,
-                        evidenceFiles: assessmentControl?.evidenceFiles || [],
-                        evidenceFilesLength: (assessmentControl?.evidenceFiles || []).length
-                      });
+                            console.log(`UI RENDER - Control ${control.controlId}:`, {
+        hasAssessmentControl: !!assessmentControl,
+        evidenceFiles: assessmentControl?.evidenceFiles || [],
+        evidenceFilesLength: (assessmentControl?.evidenceFiles || []).length
+      });
                       
                       return (
-                        <div key={control.id} className="border-t border-gray-100">
+                        <div key={control.id} className="border-t border-border">
                           <div className="p-6">
                             <div className="space-y-4">
                               <div className="flex items-start gap-4">
@@ -1565,7 +1587,7 @@ export default function EuAiActAssessmentPage() {
                                 </div>
                                 <div className="flex-1">
                                   <div className="flex items-center gap-3 mb-2">
-                                    <h4 className="font-medium text-gray-900">{control.controlId}: {control.title}</h4>
+                                    <h4 className="font-medium text-foreground">{control.controlId}: {control.title}</h4>
                                     <Badge 
                                       variant="outline" 
                                       className={getStatusColor(assessmentControl?.status || 'pending')}
@@ -1573,17 +1595,17 @@ export default function EuAiActAssessmentPage() {
                                       {assessmentControl?.status || 'Pending'}
                                     </Badge>
                                   </div>
-                                  <p className="text-sm text-gray-600 mb-4">{control.description}</p>
+                                  <p className="text-sm text-muted-foreground mb-4">{control.description}</p>
                                   
-                                  <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+                                  <div className="bg-muted/50 p-4 rounded-lg space-y-4">
                                     <div>
-                                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                                      <label className="block text-sm font-medium text-foreground mb-2">
                                         Implementation Status
                                       </label>
                                       <select
                                         value={assessmentControl?.status || 'pending'}
                                         onChange={(e) => handleControlStatusChange(control.controlId, e.target.value, assessmentControl?.notes || '')}
-                                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                        className="w-full p-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-ring bg-background text-foreground"
                                       >
                                         <option value="pending">Pending</option>
                                         <option value="reviewed">Reviewed</option>
@@ -1592,14 +1614,14 @@ export default function EuAiActAssessmentPage() {
                                     </div>
                                     
                                     <div>
-                                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                                      <label className="block text-sm font-medium text-foreground mb-2">
                                         Implementation Notes
                                       </label>
                                       <textarea
                                         value={assessmentControl?.notes || ''}
                                         onChange={(e) => handleControlStatusChange(control.controlId, assessmentControl?.status || 'pending', e.target.value)}
                                         placeholder="Document how this control is implemented..."
-                                        className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                        className="w-full p-3 border border-input rounded-lg resize-none focus:ring-2 focus:ring-ring focus:border-ring bg-background text-foreground"
                                         rows={3}
                                       />
                                     </div>
@@ -1617,7 +1639,7 @@ export default function EuAiActAssessmentPage() {
                                           frameworkType="eu-ai-act"
                                         />
                                         {savingFiles.has(`control-${control.controlId}`) && (
-                                          <div className="absolute top-0 right-0 bg-green-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                                          <div className="absolute top-0 right-0 bg-success text-success-foreground text-xs px-2 py-1 rounded-md flex items-center gap-1">
                                             <Loader2 className="w-3 h-3 animate-spin" />
                                             Saving...
                                           </div>
@@ -1625,7 +1647,7 @@ export default function EuAiActAssessmentPage() {
                                       </div>
                                     </div>
                                     
-                                    <div className="flex items-center justify-end pt-3 border-t border-gray-200">
+                                    <div className="flex items-center justify-end pt-3 border-t border-border">
                                       <Button
                                         onClick={() => handleSaveControl(control.controlId)}
                                         disabled={saving}
@@ -1641,21 +1663,21 @@ export default function EuAiActAssessmentPage() {
                                   {/* Subcontrols */}
                                   {control.subcontrols.length > 0 && (
                                     <div className="mt-6 space-y-4">
-                                      <h5 className="text-sm font-medium text-gray-700">Subcontrols</h5>
+                                      <h5 className="text-sm font-medium text-foreground">Subcontrols</h5>
                                       {control.subcontrols.map((subcontrol) => {
                                         const assessmentSubcontrol = assessmentControl?.subcontrols?.find(
                                           sc => sc.subcontrolStruct.subcontrolId === subcontrol.subcontrolId
                                         );
                                         
                                         return (
-                                          <div key={subcontrol.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                                          <div key={subcontrol.id} className="bg-card border border-border rounded-lg p-4">
                                             <div className="flex items-start gap-3">
                                               <div className="flex-shrink-0 mt-1">
                                                 {getControlStatusIcon(assessmentSubcontrol?.status || 'pending')}
                                               </div>
                                               <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-2">
-                                                  <h6 className="font-medium text-gray-800">{subcontrol.subcontrolId}: {subcontrol.title}</h6>
+                                                  <h6 className="font-medium text-foreground">{subcontrol.subcontrolId}: {subcontrol.title}</h6>
                                                   <Badge 
                                                     variant="outline" 
                                                     className={`text-xs ${getStatusColor(assessmentSubcontrol?.status || 'pending')}`}
@@ -1663,14 +1685,14 @@ export default function EuAiActAssessmentPage() {
                                                     {assessmentSubcontrol?.status || 'Pending'}
                                                   </Badge>
                                                 </div>
-                                                <p className="text-sm text-gray-600 mb-3">{subcontrol.description}</p>
+                                                <p className="text-sm text-muted-foreground mb-3">{subcontrol.description}</p>
                                                 
                                                 <div className="space-y-3">
                                                   <div>
                                                     <select
                                                       value={assessmentSubcontrol?.status || 'pending'}
                                                       onChange={(e) => handleSubcontrolStatusChange(control.controlId, subcontrol.subcontrolId, e.target.value, assessmentSubcontrol?.notes || '')}
-                                                      className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                                      className="w-full p-2 border border-input rounded-lg text-sm focus:ring-2 focus:ring-ring focus:border-ring bg-background text-foreground"
                                                     >
                                                       <option value="pending">Pending</option>
                                                       <option value="reviewed">Reviewed</option>
@@ -1683,7 +1705,7 @@ export default function EuAiActAssessmentPage() {
                                                       value={assessmentSubcontrol?.notes || ''}
                                                       onChange={(e) => handleSubcontrolStatusChange(control.controlId, subcontrol.subcontrolId, assessmentSubcontrol?.status || 'pending', e.target.value)}
                                                       placeholder="Implementation notes..."
-                                                      className="w-full p-2 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                                      className="w-full p-2 border border-input rounded-lg text-sm resize-none focus:ring-2 focus:ring-ring focus:border-ring bg-background text-foreground"
                                                       rows={2}
                                                     />
                                                   </div>
@@ -1701,7 +1723,7 @@ export default function EuAiActAssessmentPage() {
                                                         frameworkType="eu-ai-act"
                                                       />
                                                       {savingFiles.has(`subcontrol-${subcontrol.subcontrolId}`) && (
-                                                        <div className="absolute top-0 right-0 bg-purple-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                                                        <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-md flex items-center gap-1">
                                                           <Loader2 className="w-3 h-3 animate-spin" />
                                                           Saving...
                                                         </div>

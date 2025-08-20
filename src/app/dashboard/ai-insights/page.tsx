@@ -94,28 +94,28 @@ export default function UnifiedAIInsightsPage() {
   const getInsightColor = (category: string) => {
     switch (category) {
       case 'cost_governance':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-primary/10 text-primary border-primary/30';
       case 'risk_financial':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-destructive/10 text-destructive border-destructive/30';
       case 'compliance_efficiency':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-secondary/10 text-secondary-foreground border-secondary/30';
       case 'opportunity_optimization':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
+        return 'bg-accent/10 text-accent-foreground border-accent/30';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-muted text-muted-foreground border';
     }
   };
 
   const getImpactColor = (impact: string) => {
     switch (impact) {
       case 'high':
-        return 'bg-red-100 text-red-800';
+        return 'bg-destructive/10 text-destructive';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-secondary/20 text-foreground';
       case 'low':
-        return 'bg-green-100 text-green-800';
+        return 'bg-muted text-muted-foreground';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -123,8 +123,8 @@ export default function UnifiedAIInsightsPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Analyzing portfolio with AI...</p>
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Analyzing portfolio with AI...</p>
         </div>
       </div>
     );
@@ -147,23 +147,23 @@ export default function UnifiedAIInsightsPage() {
   if (!portfolioInsights) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-600">No portfolio insights available</p>
+        <p className="text-muted-foreground">No portfolio insights available</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                <Brain className="h-8 w-8 mr-3 text-purple-600" />
+              <h1 className="text-3xl font-bold text-foreground flex items-center">
+                <Brain className="h-8 w-8 mr-3 text-accent-foreground" />
                 Unified AI Insights Dashboard
               </h1>
-              <p className="text-gray-600 mt-2">
+              <p className="text-muted-foreground mt-2">
                 Cross-domain intelligence combining financial and governance analysis
               </p>
             </div>
@@ -176,20 +176,20 @@ export default function UnifiedAIInsightsPage() {
 
         {/* Executive Summary */}
         {executiveReport && (
-          <Card className="mb-8 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+          <Card className="mb-8 bg-gradient-to-r from-primary/10 to-accent/10 border">
             <CardHeader>
-              <CardTitle className="flex items-center text-blue-900">
+              <CardTitle className="flex items-center text-foreground">
                 <Building className="h-5 w-5 mr-2" />
                 Executive Summary
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 mb-4">{executiveReport.summary}</p>
+              <p className="text-muted-foreground mb-4">{executiveReport.summary}</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {Object.entries(executiveReport.keyMetrics).map(([key, value]) => (
                   <div key={key} className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{value as number}</div>
-                    <div className="text-xs text-gray-600 capitalize">
+                    <div className="text-2xl font-bold text-primary">{value as number}</div>
+                    <div className="text-xs text-muted-foreground capitalize">
                       {key.replace(/([A-Z])/g, ' $1').trim()}
                     </div>
                   </div>
@@ -225,61 +225,61 @@ export default function UnifiedAIInsightsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Total Insights</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Insights</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-purple-600">
+                  <div className="text-2xl font-bold text-accent-foreground">
                     {portfolioInsights.financialInsights.length + portfolioInsights.governanceInsights.length}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">AI Generated</p>
+                  <p className="text-xs text-muted-foreground mt-1">AI Generated</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Cross-Domain Insights</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Cross-Domain Insights</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">
+                  <div className="text-2xl font-bold text-primary">
                     {portfolioInsights.crossDomainInsights.length}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Unified Analysis</p>
+                  <p className="text-xs text-muted-foreground mt-1">Unified Analysis</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Top Performers</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Top Performers</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
+                  <div className="text-2xl font-bold text-secondary-foreground">
                     {portfolioInsights.topPerformers.length}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">High-ROI Use Cases</p>
+                  <p className="text-xs text-muted-foreground mt-1">High-ROI Use Cases</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">High Risk Areas</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">High Risk Areas</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-red-600">
+                  <div className="text-2xl font-bold text-destructive">
                     {portfolioInsights.highRiskUseCases.length}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Require Attention</p>
+                  <p className="text-xs text-muted-foreground mt-1">Require Attention</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">Compliance Gaps</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Compliance Gaps</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-orange-600">
+                  <div className="text-2xl font-bold text-primary">
                     {portfolioInsights.complianceGaps.length}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Need Remediation</p>
+                  <p className="text-xs text-muted-foreground mt-1">Need Remediation</p>
                 </CardContent>
               </Card>
 

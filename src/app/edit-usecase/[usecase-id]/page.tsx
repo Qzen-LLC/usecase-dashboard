@@ -629,25 +629,25 @@ const AIUseCaseTool = () => {
   return (
     <div className="min-h-screen flex justify-center items-start bg-gray-50 p-0 sm:p-4">
       <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden border-0 sm:border sm:mt-6 sm:mb-6 sm:mx-0 mx-0">
-        <div className="bg-gray-100 px-2 py-3 sm:px-6 sm:py-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0">
+        <div className="bg-gray-100 px-4 py-4 sm:px-6 sm:py-5">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
             {steps.map((step, index) => (
               <div
                 key={step.id}
-                className="flex items-center mb-2 sm:mb-0 cursor-pointer group"
+                className="flex items-center cursor-pointer group"
                 onClick={() => setCurrentStep(step.id)}
                 tabIndex={0}
                 role="button"
                 aria-label={`Go to ${step.title}`}
               >
-                <div className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-all duration-150 ${
+                <div className={`flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all duration-150 ${
                   currentStep === step.id ? 'bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white scale-110 shadow-lg' : currentStep > step.id ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
                 } group-hover:scale-110`}
                 >
-                  <step.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <step.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
-                <div className="ml-2 sm:ml-3">
-                  <div className={`text-xs sm:text-sm font-medium ${
+                <div className="ml-3 sm:ml-4">
+                  <div className={`text-sm sm:text-base font-medium ${
                     currentStep === step.id ? 'text-[#8f4fff]' : currentStep > step.id ? 'text-blue-600' : 'text-gray-500'
                   } group-hover:text-[#b84fff]`}
                   >
@@ -655,7 +655,7 @@ const AIUseCaseTool = () => {
                   </div>
                 </div>
                 {index < steps.length - 1 && (
-                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mx-2 sm:mx-4" />
+                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400 mx-3 sm:mx-6" />
                 )}
               </div>
             ))}

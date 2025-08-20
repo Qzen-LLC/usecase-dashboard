@@ -703,7 +703,7 @@ const ApprovalsPage = forwardRef((props, ref) => {
   }, [useCaseId]);
 
   useEffect(() => {
-    if (!stepsData) return; // ✅ prevents early/invalid call
+    if (!stepsData) return; // prevents early/invalid call
 
     // console.log("[ApprovalsPage] stepsData set in state:", stepsData);
     const result = RiskCalculation(stepsData);
@@ -795,20 +795,20 @@ const ApprovalsPage = forwardRef((props, ref) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-8">
-      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-gray-200 p-8">
+    <div className="min-h-screen bg-background flex flex-col items-center py-8">
+      <div className="w-full max-w-4xl bg-card rounded-2xl shadow-2xl border border-border p-8">
         {/* Problem Statement */}
         {summaryLoading ? (
-          <div className="mb-6 text-gray-500">Loading use case summary...</div>
+          <div className="mb-6 text-muted-foreground">Loading use case summary...</div>
         ) : summaryError ? (
-          <div className="mb-6 text-red-500">{summaryError}</div>
+          <div className="mb-6 text-destructive">{summaryError}</div>
         ) : summary ? (
           <>
             <div className="mb-6">
-              <h2 className="text-xl font-bold mb-2 text-gray-900">Problem Statement</h2>
-              <p className="text-gray-700 bg-gray-50 rounded-lg p-4">{summary.problemStatement && typeof summary.problemStatement === 'string' && summary.problemStatement.trim() ? summary.problemStatement : <span className="text-gray-400">Not specified</span>}</p>
-              <h2 className="text-xl font-bold mb-2 text-gray-900">Proposed Solution</h2>
-              <p className="text-gray-700 bg-gray-50 rounded-lg p-4">{summary.proposedAISolution && typeof summary.proposedAISolution === 'string' && summary.proposedAISolution.trim() ? summary.proposedAISolution : <span className="text-gray-400">Not specified</span>}</p>
+              <h2 className="text-xl font-bold mb-2 text-foreground">Problem Statement</h2>
+              <div className="text-foreground bg-muted rounded-lg p-4">{summary.problemStatement && typeof summary.problemStatement === 'string' && summary.problemStatement.trim() ? summary.problemStatement : <span className="text-muted-foreground">Not specified</span>}</div>
+              <h2 className="text-xl font-bold mb-2 text-foreground">Proposed Solution</h2>
+              <div className="text-foreground bg-muted rounded-lg p-4">{summary.proposedAISolution && typeof summary.proposedAISolution === 'string' && summary.proposedAISolution.trim() ? summary.proposedAISolution : <span className="text-muted-foreground">Not specified</span>}</div>
             </div>
             {/* Radar Chart */}
             {Array.isArray(chartData) && chartData.length > 0 && (
@@ -817,20 +817,20 @@ const ApprovalsPage = forwardRef((props, ref) => {
             {/* Summary Cards Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <Card className="flex flex-col items-center justify-center p-6">
-                <div className="text-2xl font-bold text-red-600">{formatCurrency(finops?.totalInvestment ?? 0)}</div>
-                <div className="text-gray-600 mt-1">Total Investment</div>
+                <div className="text-2xl font-bold text-destructive">{formatCurrency(finops?.totalInvestment ?? 0)}</div>
+                <div className="text-muted-foreground mt-1">Total Investment</div>
               </Card>
               <Card className="flex flex-col items-center justify-center p-6">
                 <div className="text-2xl font-bold text-green-600">{formatCurrency(finops?.cumValue ?? 0)}</div>
-                <div className="text-gray-600 mt-1">Total Value Generated</div>
+                <div className="text-muted-foreground mt-1">Total Value Generated</div>
               </Card>
               <Card className="flex flex-col items-center justify-center p-6">
                 <div className="text-2xl font-bold text-blue-600">{typeof finops?.ROI === 'number' ? `${finops.ROI.toFixed(1)}%` : '0%'}</div>
-                <div className="text-gray-600 mt-1">Net ROI</div>
+                <div className="text-muted-foreground mt-1">Net ROI</div>
               </Card>
               <Card className="flex flex-col items-center justify-center p-6">
                 <div className="text-2xl font-bold text-green-600">{typeof finops?.breakEvenMonth === 'number' ? `${finops.breakEvenMonth} months` : 'N/A'}</div>
-                <div className="text-gray-600 mt-1">Payback Period</div>
+                <div className="text-muted-foreground mt-1">Payback Period</div>
               </Card>
             </div>
             {/* Risk Summary Card */}
@@ -851,7 +851,7 @@ const ApprovalsPage = forwardRef((props, ref) => {
                     mediumCount={mediumCount}
                   />
                   {riskResult.regulatoryWarnings && riskResult.regulatoryWarnings.length > 0 && (
-                    <div className="mt-4 p-3 bg-blue-50 text-blue-900 rounded flex items-start gap-2 border border-blue-200">
+                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-100 rounded flex items-start gap-2 border border-blue-200 dark:border-blue-800">
                       <InformationCircleIcon className="w-5 h-5 mt-0.5 text-blue-400 flex-shrink-0" />
                       <div>
                         <div className="font-semibold mb-1">Regulatory frameworks have been automatically inferred:</div>
@@ -860,7 +860,7 @@ const ApprovalsPage = forwardRef((props, ref) => {
                     </div>
                   )}
                   {riskResult.dataPrivacyInfo && riskResult.dataPrivacyInfo.length > 0 && (
-                    <div className="mt-4 p-3 bg-blue-50 text-blue-900 rounded flex items-start gap-2 border border-blue-200">
+                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-100 rounded flex items-start gap-2 border border-blue-200 dark:border-blue-800">
                       <InformationCircleIcon className="w-5 h-5 mt-0.5 text-blue-400 flex-shrink-0" />
                       <div>
                         <div className="font-semibold mb-1">Data Privacy:</div>
@@ -869,7 +869,7 @@ const ApprovalsPage = forwardRef((props, ref) => {
                     </div>
                   )}
                   {riskResult.securityInfo && riskResult.securityInfo.length > 0 && (
-                    <div className="mt-4 p-3 bg-blue-50 text-blue-900 rounded flex items-start gap-2 border border-blue-200">
+                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-100 rounded flex items-start gap-2 border border-blue-200 dark:border-blue-800">
                       <InformationCircleIcon className="w-5 h-5 mt-0.5 text-blue-400 flex-shrink-0" />
                       <div>
                         <div className="font-semibold mb-1">Security:</div>
@@ -878,7 +878,7 @@ const ApprovalsPage = forwardRef((props, ref) => {
                     </div>
                   )}
                   {riskResult.operationalInfo && riskResult.operationalInfo.length > 0 && (
-                    <div className="mt-4 p-3 bg-blue-50 text-blue-900 rounded flex items-start gap-2 border border-blue-200">
+                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-100 rounded flex items-start gap-2 border border-blue-200 dark:border-blue-800">
                       <InformationCircleIcon className="w-5 h-5 mt-0.5 text-blue-400 flex-shrink-0" />
                       <div>
                         <div className="font-semibold mb-1">Operational:</div>
@@ -887,7 +887,7 @@ const ApprovalsPage = forwardRef((props, ref) => {
                     </div>
                   )}
                   {riskResult.ethicalInfo && riskResult.ethicalInfo.length > 0 && (
-                    <div className="mt-4 p-3 bg-blue-50 text-blue-900 rounded flex items-start gap-2 border border-blue-200">
+                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-100 rounded flex items-start gap-2 border border-blue-200 dark:border-blue-800">
                       <InformationCircleIcon className="w-5 h-5 mt-0.5 text-blue-400 flex-shrink-0" />
                       <div>
                         <div className="font-semibold mb-1">Ethical:</div>
@@ -914,10 +914,10 @@ const ApprovalsPage = forwardRef((props, ref) => {
               // Sort by score descending
               const topRisks = riskScores.sort((a, b) => b.score - a.score).slice(0, 3);
               return (
-                <div className="mt-8 p-6 bg-blue-100 border border-blue-200 rounded-xl">
+                <div className="mt-8 p-6 bg-blue-100 dark:bg-gray-800 border border-blue-200 dark:border-gray-700 rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
                     <InformationCircleIcon className="w-5 h-5 text-blue-400" />
-                    <span className="font-bold text-blue-900 text-lg">Risk Action Summary</span>
+                    <span className="font-bold text-blue-900 dark:text-blue-100 text-lg">Risk Action Summary</span>
                   </div>
                   <ul className="list-disc pl-6 space-y-2">
                     {topRisks.map((risk, idx) => (
@@ -925,12 +925,12 @@ const ApprovalsPage = forwardRef((props, ref) => {
                         <span className="font-semibold">{risk.label} Risk ({risk.score}/10):</span>
                         {risk.score >= 8 ? (
                           <ul className="list-disc pl-6">
-                            {(risk.info && risk.info.length > 0 ? risk.info : risk.factors).map((msg, i) => <li key={i} className="text-blue-900">Action: {msg}</li>)}
+                            {(risk.info && risk.info.length > 0 ? risk.info : risk.factors).map((msg, i) => <li key={i} className="text-blue-900 dark:text-blue-100">Action: {msg}</li>)}
                           </ul>
                         ) : risk.score >= 4 ? (
-                          <span className="text-blue-900 ml-2">Monitor this area. {risk.factors && risk.factors.length > 0 ? `Factors: ${risk.factors.join('; ')}` : ''}</span>
+                          <span className="text-blue-900 dark:text-blue-100 ml-2">Monitor this area. {risk.factors && risk.factors.length > 0 ? `Factors: ${risk.factors.join('; ')}` : ''}</span>
                         ) : (
-                          <span className="text-blue-900 ml-2">No immediate action required.</span>
+                          <span className="text-blue-900 dark:text-blue-100 ml-2">No immediate action required.</span>
                         )}
                       </li>
                     ))}
