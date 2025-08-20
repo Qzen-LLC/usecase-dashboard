@@ -498,7 +498,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
       {/* Bottom Navigation Buttons */}
       <div className="px-8 py-6 border-t border-border bg-card flex justify-between items-center">
         <button
-          className={`flex items-center px-4 py-2 rounded-md ${isFirstStep ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
+          className={`flex items-center px-4 py-2 rounded-md ${isFirstStep ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-blue-500 text-white hover:bg-blue-600"}`}
           disabled={isFirstStep}
           onClick={handlePrev}
         >
@@ -537,7 +537,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         )}
         {currentStep < 9 ? (
           <button
-            className={`flex items-center px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90`}
+            className={`flex items-center px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600`}
             onClick={handleNext}
           >
             Next
