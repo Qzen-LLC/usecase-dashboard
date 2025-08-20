@@ -191,6 +191,7 @@ export default function AssessmentPage() {
   const budgetPlanningRef = useRef<{ saveFinops: () => Promise<void> }>(null);
   const [saveSuccess, setSaveSuccess] = useState(false); // State to show success message
   const approvalsPageRef = useRef<{ handleComplete: () => Promise<void> }>(null);
+  const pageTopRef = useRef<HTMLDivElement>(null);
 
   const handleAssessmentChange = (section: string, data: any) => {
     setAssessmentData((prevData: any) => {
@@ -243,6 +244,33 @@ export default function AssessmentPage() {
       return next;
     });
   }, []);
+
+  // Scroll to top when currentStep changes
+  useEffect(() => {
+    if (currentStep > 1) { // Don't scroll on initial load
+      console.log('Attempting to scroll to top for step:', currentStep);
+      
+      // Try to scroll the page top element into view
+      if (pageTopRef.current) {
+        pageTopRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      }
+      
+      // Also try window scrolling as backup
+      setTimeout(() => {
+        try {
+          window.scrollTo(0, 0);
+          document.documentElement.scrollTop = 0;
+          document.body.scrollTop = 0;
+        } catch (error) {
+          console.error('Scroll error:', error);
+        }
+      }, 100);
+    }
+  }, [currentStep]);
 
   // Add this useEffect for auto-move to next stage
   useEffect(() => {
@@ -314,10 +342,10 @@ export default function AssessmentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col overflow-auto">
 
       {/* Use Case Title Section */}
-      <div className="px-8 py-6 border-b bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div ref={pageTopRef} className="px-8 py-6 border-b bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="font-mono text-gray-500 mb-1">AIUC-{useCase.aiucId}</div>
           <div className="text-2xl font-semibold text-gray-900">{useCase.title}</div>
