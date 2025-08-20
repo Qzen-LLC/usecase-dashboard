@@ -251,7 +251,7 @@ export default function AssessmentPage() {
       console.log('Attempting to scroll to top for step:', currentStep);
       
       // Try to scroll the page top element into view
-      if (pageTopRef.current) {
+      if (pageTopRef.current) { 
         pageTopRef.current.scrollIntoView({ 
           behavior: 'smooth', 
           block: 'start',
