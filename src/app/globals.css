@@ -295,6 +295,22 @@
     color: hsl(var(--foreground));
     border-color: hsl(var(--border));
   }
+
+  /* Clerk input overrides: keep inputs white even in dark mode */
+  .dark .cl-formFieldInput,
+  .dark .cl-input,
+  .dark .cl-formField input,
+  .dark .cl-text-field input {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border-color: hsl(var(--border)) !important;
+  }
+  .dark .cl-formFieldInput::placeholder,
+  .dark .cl-input::placeholder,
+  .dark .cl-formField input::placeholder,
+  .dark .cl-text-field input::placeholder {
+    color: #6b7280 !important; /* gray-600 */
+  }
   
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;

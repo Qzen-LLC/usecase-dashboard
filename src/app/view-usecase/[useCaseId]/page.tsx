@@ -80,10 +80,10 @@ const ViewUseCasePage = () => {
   };
 
   const renderSection = (title: string, icon: React.ReactNode, children: React.ReactNode) => (
-    <Card className="p-6 mb-6 dark:bg-gray-800 dark:border-gray-700">
+    <Card className="p-6 mb-6 bg-card border-border">
       <div className="flex items-center mb-4">
         {icon}
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white ml-2">{title}</h2>
+        <h2 className="text-xl font-semibold text-foreground ml-2">{title}</h2>
       </div>
       {children}
     </Card>
@@ -91,11 +91,11 @@ const ViewUseCasePage = () => {
 
   const _renderField = (label: string, value: string | number | string[] | undefined, type: 'text' | 'array' | 'score' = 'text') => (
     <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-foreground mb-1">{label}</label>
       {type === 'array' && Array.isArray(value) ? (
         <div className="flex flex-wrap gap-2">
           {value.map((item, index) => (
-            <span key={index} className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full text-sm">
+            <span key={index} className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full text-sm">
               {item}
             </span>
           ))}
@@ -103,10 +103,10 @@ const ViewUseCasePage = () => {
       ) : type === 'score' ? (
         <div className="flex items-center">
           <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">{value}</span>
-          <span className="text-gray-500 dark:text-gray-400 ml-2">/ 10</span>
+          <span className="text-muted-foreground ml-2">/ 10</span>
         </div>
       ) : (
-        <p className="text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+        <p className="text-foreground bg-muted p-3 rounded-lg">
           {value !== undefined && value !== null && value !== "" ? value : "Not specified"}
         </p>
       )}
@@ -115,11 +115,11 @@ const ViewUseCasePage = () => {
 
   // Helper for array rendering
   const renderArray = (items: string[] | undefined, label: string) => {
-    if (!items || items.length === 0) return <span className="text-gray-400 dark:text-gray-500 italic">No {label.toLowerCase()} recorded.</span>;
+    if (!items || items.length === 0) return <span className="text-muted-foreground italic">No {label.toLowerCase()} recorded.</span>;
     return (
       <div className="flex flex-wrap gap-2">
         {items.map((item, index) => (
-          <span key={index} className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full text-sm">
+          <span key={index} className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full text-sm">
             {item}
           </span>
         ))}
@@ -130,7 +130,7 @@ const ViewUseCasePage = () => {
   // Helper for risk rendering
   const _renderRiskList = (risks: Record<string, unknown>[] | string | undefined, label: string) => {
     if (Array.isArray(risks)) {
-      if (risks.length === 0) return <p className="text-gray-500 dark:text-gray-400 italic">No {label.toLowerCase()} recorded.</p>;
+      if (risks.length === 0) return <p className="text-muted-foreground italic">No {label.toLowerCase()} recorded.</p>;
       return (
         <div className="space-y-2">
           {risks.map((riskObj, idx) => (
@@ -149,18 +149,18 @@ const ViewUseCasePage = () => {
         </div>
       );
     } else if (typeof risks === 'string') {
-      return <p className="text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">{risks}</p>;
+      return <p className="text-foreground bg-muted p-3 rounded-lg">{risks}</p>;
     } else {
-      return <p className="text-gray-500 dark:text-gray-400 italic">No {label.toLowerCase()} recorded.</p>;
+      return <p className="text-muted-foreground italic">No {label.toLowerCase()} recorded.</p>;
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading use case details...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-foreground">Loading use case details...</p>
         </div>
       </div>
     );
@@ -168,10 +168,10 @@ const ViewUseCasePage = () => {
 
   if (error || !useCase) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600">{error || 'Use case not found'}</p>
+          <p className="text-destructive">{error || 'Use case not found'}</p>
           <Button 
             onClick={() => router.back()} 
             className="mt-4"
@@ -184,9 +184,9 @@ const ViewUseCasePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 top-0 z-10">
+      <div className="bg-card border-b border-border top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
@@ -198,23 +198,23 @@ const ViewUseCasePage = () => {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  <span className="font-mono text-gray-500 dark:text-gray-400">AIUC-{useCase.aiucId}</span>
+                <h1 className="text-2xl font-bold text-foreground">
+                  <span className="font-mono text-muted-foreground">AIUC-{useCase.aiucId}</span>
                   <br />
                   {useCase.title}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-300">Use Case Details</p>
+                <p className="text-muted-foreground">Use Case Details</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                useCase.priority === 'high' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
-                useCase.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
-                'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                useCase.priority === 'high' ? 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200' :
+                useCase.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200' :
+                'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200'
               }`}>
                 {useCase.priority || 'Medium'} Priority
               </span>
-              <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium">
+              <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium">
                 {useCase.stage || 'Discovery'}
               </span>
             </div>
@@ -231,11 +231,11 @@ const ViewUseCasePage = () => {
               'Use Case Documentation',
               <Target className="h-6 w-6 text-blue-600 dark:text-blue-400" />,
               <div className="space-y-4">
-                <div><span className="font-medium text-gray-700 dark:text-gray-300">Problem Statement:</span> <span className="dark:text-gray-200">{useCase.problemStatement}</span></div>
-                <div><span className="font-medium text-gray-700 dark:text-gray-300">Proposed AI Solution:</span> <span className="dark:text-gray-200">{useCase.proposedAISolution}</span></div>
-                <div><span className="font-medium text-gray-700 dark:text-gray-300">Primary Stakeholders:</span> {renderArray(useCase.primaryStakeholders, 'stakeholder')}</div>
-                <div><span className="font-medium text-gray-700 dark:text-gray-300">Secondary Stakeholders:</span> {renderArray(useCase.secondaryStakeholders, 'stakeholder')}</div>
-                <div><span className="font-medium text-gray-700 dark:text-gray-300">Success Criteria:</span> <span className="dark:text-gray-200">{useCase.successCriteria}</span></div>
+                <div><span className="font-medium text-foreground">Problem Statement:</span> <span className="text-foreground">{useCase.problemStatement}</span></div>
+                <div><span className="font-medium text-foreground">Proposed AI Solution:</span> <span className="text-foreground">{useCase.proposedAISolution}</span></div>
+                <div><span className="font-medium text-foreground">Primary Stakeholders:</span> {renderArray(useCase.primaryStakeholders, 'stakeholder')}</div>
+                <div><span className="font-medium text-foreground">Secondary Stakeholders:</span> {renderArray(useCase.secondaryStakeholders, 'stakeholder')}</div>
+                <div><span className="font-medium text-foreground">Success Criteria:</span> <span className="text-foreground">{useCase.successCriteria}</span></div>
               </div>
             )}
 
@@ -244,11 +244,11 @@ const ViewUseCasePage = () => {
               'Lean Business Case',
               <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />,
               <div className="space-y-4">
-                <div><span className="font-medium text-gray-700 dark:text-gray-300">Problem Validation:</span> <span className="dark:text-gray-200">{useCase.problemValidation}</span></div>
-                <div><span className="font-medium text-gray-700 dark:text-gray-300">Solution Hypothesis:</span> <span className="dark:text-gray-200">{useCase.solutionHypothesis}</span></div>
-                <div><span className="font-medium text-gray-700 dark:text-gray-300">Key Assumptions:</span> <span className="dark:text-gray-200">{useCase.keyAssumptions}</span></div>
-                <div><span className="font-medium text-gray-700 dark:text-gray-300">Initial ROI:</span> <span className="dark:text-gray-200">{useCase.initialROI}</span></div>
-                <div><span className="font-medium text-gray-700 dark:text-gray-300">Confidence Level:</span> <span className="dark:text-gray-200">{useCase.confidenceLevel}</span></div>
+                <div><span className="font-medium text-foreground">Problem Validation:</span> <span className="text-foreground">{useCase.problemValidation}</span></div>
+                <div><span className="font-medium text-foreground">Solution Hypothesis:</span> <span className="text-foreground">{useCase.solutionHypothesis}</span></div>
+                <div><span className="font-medium text-foreground">Key Assumptions:</span> <span className="text-foreground">{useCase.keyAssumptions}</span></div>
+                <div><span className="font-medium text-foreground">Initial ROI:</span> <span className="text-foreground">{useCase.initialROI}</span></div>
+                <div><span className="font-medium text-foreground">Confidence Level:</span> <span className="text-foreground">{useCase.confidenceLevel}</span></div>
               </div>
             )}
 
@@ -271,12 +271,12 @@ const ViewUseCasePage = () => {
                     <div className="text-sm text-blue-800 dark:text-blue-200">Revenue Impact</div>
                   </div>
                 </div>
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <div className="text-xl font-bold text-gray-800 dark:text-white">Overall Score: {getOverallScore()}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300">Implementation Complexity: {useCase.implementationComplexity}/10</div>
+                <div className="text-center p-4 bg-muted rounded-lg">
+                  <div className="text-xl font-bold text-foreground">Overall Score: {getOverallScore()}</div>
+                  <div className="text-sm text-muted-foreground">Implementation Complexity: {useCase.implementationComplexity}/10</div>
                 </div>
-                <div><span className="font-medium text-gray-700 dark:text-gray-300">Estimated Timeline:</span> <span className="dark:text-gray-200">{useCase.estimatedTimeline}</span></div>
-                <div><span className="font-medium text-gray-700 dark:text-gray-300">Required Resources:</span> <span className="dark:text-gray-200">{useCase.requiredResources}</span></div>
+                <div><span className="font-medium text-foreground">Estimated Timeline:</span> <span className="text-foreground">{useCase.estimatedTimeline}</span></div>
+                <div><span className="font-medium text-foreground">Required Resources:</span> <span className="text-foreground">{useCase.requiredResources}</span></div>
               </div>
             )}
 
@@ -289,20 +289,20 @@ const ViewUseCasePage = () => {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Quick Info */}
-            <Card className="p-6 dark:bg-gray-800 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Quick Info</h3>
+            <Card className="p-6 bg-card border-border">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Quick Info</h3>
               <div className="space-y-3">
                 <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Business Function</label>
-                  <p className="text-gray-900 dark:text-white">{useCase.businessFunction}</p>
+                  <label className="text-sm font-medium text-muted-foreground">Business Function</label>
+                  <p className="text-foreground">{useCase.businessFunction}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Created</label>
-                  <p className="text-gray-900 dark:text-white">{new Date(useCase.createdAt).toLocaleDateString()}</p>
+                  <label className="text-sm font-medium text-muted-foreground">Created</label>
+                  <p className="text-foreground">{new Date(useCase.createdAt).toLocaleDateString()}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Last Updated</label>
-                  <p className="text-gray-900 dark:text-white">{new Date(useCase.updatedAt).toLocaleDateString()}</p>
+                  <label className="text-sm font-medium text-muted-foreground">Last Updated</label>
+                  <p className="text-foreground">{new Date(useCase.updatedAt).toLocaleDateString()}</p>
                 </div>
               </div>
             </Card>

@@ -67,13 +67,30 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen items-center justify-center bg-white">
       <div className="w-full max-w-md">
         <SignUp 
           appearance={{
+            variables: {
+              colorBackground: '#ffffff',
+              colorText: '#000000',
+              colorInputBackground: '#ffffff',
+              colorInputText: '#000000',
+              colorInputBorder: 'hsl(var(--border))',
+              colorPrimary: '#2563eb',
+            },
             elements: {
-              formButtonPrimary: "bg-blue-600 hover:bg-blue-700",
-              card: "shadow-lg",
+              card: "bg-white text-black border border-border shadow-lg",
+              headerTitle: "text-black",
+              headerSubtitle: "text-gray-600",
+              dividerLine: "bg-gray-200",
+              dividerText: "text-gray-500",
+              formFieldLabel: "text-gray-700",
+              formFieldInput: "bg-white text-black placeholder:text-gray-600 border-border focus:ring-2 focus:ring-ring focus:border-ring",
+              socialButtonsBlockButton: "bg-white text-black border border-gray-300 hover:bg-gray-50",
+              socialButtonsBlockButtonText: "text-black",
+              footer: "text-gray-600",
+              formButtonPrimary: "bg-blue-600 hover:bg-blue-700 text-white",
             },
           }}
           fallbackRedirectUrl={redirectUrl}
