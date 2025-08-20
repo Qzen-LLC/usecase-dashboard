@@ -907,12 +907,6 @@ const Dashboard = () => {
                       </div>
                       {/* Use case column */}
                       <div className="flex-shrink-0 w-60 space-y-4">
-                        <div className="flex items-center justify-between mb-2 px-2">
-                          <h3 className="font-semibold text-sm text-foreground">{stage.title}</h3>
-                          <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                            {stageUseCases.length}
-                          </span>
-                        </div>
                                                  <DroppableStageColumn stage={stage} stageUseCases={stageUseCases}>
                            <SortableContext items={stageUseCases.map(uc => uc.id)} strategy={verticalListSortingStrategy}>
                              {stageUseCases.length === 0 ? (
