@@ -10,7 +10,7 @@ export default function UseCaseDashboard() {
 
   useEffect(() => {
     if (useCaseId) {
-      router.replace(`/dashboard/${useCaseId}/assess?returnTo=dashboard`);
+      router.replace(`/dashboard/${useCaseId}/assess`);
     }
   }, [useCaseId, router]);
 

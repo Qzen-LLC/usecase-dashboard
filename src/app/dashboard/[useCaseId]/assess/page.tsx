@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import TechnicalFeasibility from '@/components/TechnicalFeasibility';
 import EthicalImpact from '@/components/EthicalImpact';
 import RiskAssessment from '@/components/RiskAssessment';
@@ -28,9 +28,7 @@ interface UseCase {
 export default function AssessmentPage() {
   const router = useRouter();
   const params = useParams();
-  const searchParams = useSearchParams();
   const useCaseId = params.useCaseId as string;
-  const returnTo = searchParams.get('returnTo') || 'dashboard';
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -559,12 +557,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
                 if (approvalsPageRef.current && approvalsPageRef.current.handleComplete) {
                   await approvalsPageRef.current.handleComplete();
                 }
-                const returnPath = returnTo === 'governance' ? '/dashboard/governance' : '/dashboard';
-                window.location.href = returnPath;
+                window.location.href = '/dashboard';
               } catch (error) {
                 console.error('Error completing assessment:', error);
-                const returnPath = returnTo === 'governance' ? '/dashboard/governance' : '/dashboard';
-                window.location.href = returnPath;
+                window.location.href = '/dashboard';
               }
             }}
           >
