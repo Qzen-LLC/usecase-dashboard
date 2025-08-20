@@ -157,7 +157,7 @@ export function FileUpload({
   return (
     <div className={`space-y-3 ${className}`}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
           {label}
         </label>
       )}
@@ -167,8 +167,8 @@ export function FileUpload({
         className={`
           border-2 border-dashed rounded-lg p-6 text-center transition-colors
           ${dragOver 
-            ? 'border-blue-400 bg-blue-50' 
-            : 'border-gray-300 hover:border-gray-400'
+            ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' 
+            : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
           }
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         `}
@@ -189,16 +189,16 @@ export function FileUpload({
         
         {uploading ? (
           <div className="flex flex-col items-center">
-            <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-2" />
-            <p className="text-sm text-gray-600">Uploading files...</p>
+            <Loader2 className="w-8 h-8 text-blue-500 dark:text-blue-400 animate-spin mb-2" />
+            <p className="text-sm text-gray-600 dark:text-gray-300">Uploading files...</p>
           </div>
         ) : (
           <div className="flex flex-col items-center">
-            <Upload className="w-8 h-8 text-gray-400 mb-2" />
-            <p className="text-sm text-gray-600 mb-1">
+            <Upload className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
               Click to upload or drag and drop files here
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               {accept.split(',').join(', ')} (max {maxSize}MB each, {maxFiles} files total)
             </p>
           </div>
@@ -208,30 +208,30 @@ export function FileUpload({
       {/* File List */}
       {value.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200">
             Uploaded Files ({value.length}/{maxFiles}):
           </h4>
           <div className="space-y-2">
             {value.map((fileUrl, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
               >
                 <div className="flex items-center gap-3">
-                  <File className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-700 truncate max-w-[200px]">
+                  <File className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm text-gray-700 dark:text-gray-200 truncate max-w-[200px]">
                     {getFileName(fileUrl)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
-                    variant="ghost"
+                    // variant="ghost"
                     onClick={(e) => {
                       e.stopPropagation();
                       downloadFile(fileUrl);
                     }}
-                    className="h-8 w-8 p-0"
+                    className="h-8 w-8 p-0 text-white"
                     title="Download"
                   >
                     <Download className="w-4 h-4" />
@@ -243,7 +243,7 @@ export function FileUpload({
                       e.stopPropagation();
                       removeFile(index);
                     }}
-                    className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                    className="h-8 w-8 p-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                     title="Remove"
                     disabled={disableRemove}
                   >
