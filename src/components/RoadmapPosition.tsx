@@ -224,7 +224,7 @@ export default function RoadmapPosition({ value, onChange }: Props) {
         </div>
       </div>
 
-      {/* Roadmap Recommendation Section */}
+      {/* Roadmap Recommendation Section
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 shadow-sm">
         <div className="flex items-start gap-3">
           <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -237,7 +237,7 @@ export default function RoadmapPosition({ value, onChange }: Props) {
         <div className="text-blue-800 dark:text-blue-300 text-sm leading-relaxed">Based on your selections, we recommend starting after infrastructure setup and prioritizing data platform upgrades for maximum impact.</div>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
