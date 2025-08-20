@@ -513,48 +513,51 @@ export default function FinancialDashboard() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col items-center py-8">
       <div className="w-full max-w-7xl bg-card rounded-2xl shadow-2xl border border-border mt-6 mb-6 p-0 relative">
-        {/* Back Button */}
-        <button
-          onClick={() => router.push('/dashboard/finops-dashboard')}
-          className="absolute top-4 left-4 px-4 py-2 text-sm bg-card text-primary border border-border rounded-lg shadow hover:bg-accent transition-all duration-200 flex items-center gap-2 font-medium z-10"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
-        </button>
+        {/* Header with Back Button and Formula Button */}
+        <div className="flex flex-col items-center bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 dark:from-blue-950/40 dark:via-blue-900/30 dark:to-blue-950/40 rounded-t-2xl border-b border-blue-100 dark:border-border shadow-lg relative">
+          {/* Back Button */}
+          <button
+            onClick={() => router.push('/dashboard/finops-dashboard')}
+            className="absolute top-4 left-4 px-4 py-2 text-sm bg-card text-primary border border-border rounded-lg shadow hover:bg-accent transition-all duration-200 flex items-center gap-2 font-medium z-10"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </button>
 
-        {/* Show Formulae Button */}
-        <button
-          className="absolute top-4 right-4 px-3 py-1 text-xs bg-card text-primary border border-border rounded-lg shadow hover:bg-accent transition-all duration-200 z-10 font-medium"
-          onClick={() => setShowFormulae(true)}
-        >
-          Formula
-        </button>
-        {/* Formulae Modal */}
-        {showFormulae && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-card rounded-xl shadow-2xl p-8 max-w-lg w-full relative border border-border">
-              <button className="absolute top-2 right-2 text-muted-foreground hover:text-foreground text-xl" onClick={() => setShowFormulae(false)}>&times;</button>
-              <h2 className="text-xl font-bold mb-4 text-foreground">Financial Formula Used</h2>
-              <ul className="text-sm text-muted-foreground space-y-2">
-                <li><b>API Cost Growth:</b> <code>monthlyApiCost(month) = baseApiCost × 1.12<sup>month/12</sup></code></li>
-                <li><b>Infrastructure Cost Growth:</b> <code>monthlyInfraCost(month) = baseInfraCost × 1.05<sup>month/12</sup></code></li>
-                <li><b>Operations Cost Growth:</b> <code>monthlyOpCost(month) = baseOpCost × 1.08<sup>month/12</sup></code></li>
-                <li><b>Total Monthly Operating Cost:</b> <code>totalMonthlyCost(month) = monthlyApiCost + monthlyInfraCost + monthlyOpCost</code></li>
-                <li><b>Monthly Value Growth:</b> <code>monthlyValue(month) = baseMonthlyValue × (1 + valueGrowthRate)<sup>month/12</sup></code></li>
-                <li><b>Cumulative Value:</b> <code>cumulativeValue(month) = Σ monthlyValue(i) for i = 1 to month</code></li>
-                <li><b>Cumulative Operating Costs:</b> <code>cumulativeOpCosts(month) = Σ totalMonthlyCost(i) for i = 1 to month</code></li>
-                <li><b>Total Investment:</b> <code>totalInvestment(month) = initialDevCost + cumulativeOpCosts(month)</code></li>
-                <li><b>Monthly Profit/Loss:</b> <code>monthlyProfit(month) = monthlyValue(month) - totalMonthlyCost(month)</code></li>
-                <li><b>Net Value (Cumulative Profit):</b> <code>netValue(month) = cumulativeValue(month) - totalInvestment(month)</code></li>
-                <li><b>Return on Investment:</b> <code>ROI(month) = (netValue(month) / totalInvestment(month)) × 100</code></li>
-                <li><b>Break-even Detection:</b> <code>breakEven = first month where netValue(month) ≥ 0</code></li>
-              </ul>
+          {/* Show Formulae Button */}
+          <button
+            className="absolute top-4 right-4 px-3 py-1 text-xs bg-card text-primary border border-border rounded-lg shadow hover:bg-accent transition-all duration-200 z-10 font-medium"
+            onClick={() => setShowFormulae(true)}
+          >
+            Formula
+          </button>
+          
+          {/* Formulae Modal */}
+          {showFormulae && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+              <div className="bg-card rounded-xl shadow-2xl p-8 max-w-lg w-full relative border border-border">
+                <button className="absolute top-2 right-2 text-muted-foreground hover:text-foreground text-xl" onClick={() => setShowFormulae(false)}>&times;</button>
+                <h2 className="text-xl font-bold mb-4 text-foreground">Financial Formula Used</h2>
+                <ul className="text-sm text-muted-foreground space-y-2">
+                  <li><b>API Cost Growth:</b> <code>monthlyApiCost(month) = baseApiCost × 1.12<sup>month/12</sup></code></li>
+                  <li><b>Infrastructure Cost Growth:</b> <code>monthlyInfraCost(month) = baseInfraCost × 1.05<sup>month/12</sup></code></li>
+                  <li><b>Operations Cost Growth:</b> <code>monthlyOpCost(month) = baseOpCost × 1.08<sup>month/12</sup></code></li>
+                  <li><b>Total Monthly Operating Cost:</b> <code>totalMonthlyCost(month) = monthlyApiCost + monthlyInfraCost + monthlyOpCost</code></li>
+                  <li><b>Monthly Value Growth:</b> <code>monthlyValue(month) = baseMonthlyValue × (1 + valueGrowthRate)<sup>month/12</sup></code></li>
+                  <li><b>Cumulative Value:</b> <code>cumulativeValue(month) = Σ monthlyValue(i) for i = 1 to month</code></li>
+                  <li><b>Cumulative Operating Costs:</b> <code>cumulativeOpCosts(month) = Σ totalMonthlyCost(i) for i = 1 to month</code></li>
+                  <li><b>Total Investment:</b> <code>totalInvestment(month) = initialDevCost + cumulativeOpCosts(month)</code></li>
+                  <li><b>Monthly Profit/Loss:</b> <code>monthlyProfit(month) = monthlyValue(month) - totalMonthlyCost(month)</code></li>
+                  <li><b>Net Value (Cumulative Profit):</b> <code>netValue(month) = cumulativeValue(month) - totalInvestment(month)</code></li>
+                  <li><b>Return on Investment:</b> <code>ROI(month) = (netValue(month) / totalInvestment(month)) × 100</code></li>
+                  <li><b>Break-even Detection:</b> <code>breakEven = first month where netValue(month) ≥ 0</code></li>
+                </ul>
+              </div>
             </div>
-          </div>
-        )}
-        {/* Header */}
-        <div className="flex flex-col items-center bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 dark:from-blue-950/40 dark:via-blue-900/30 dark:to-blue-950/40 rounded-t-2xl border-b border-blue-100 dark:border-border shadow-lg">
-          <div className="flex items-center gap-3 justify-center py-6">
+          )}
+          
+          {/* Title Content with proper spacing */}
+          <div className="flex items-center gap-3 justify-center py-6 mt-8">
             <div className="bg-card rounded-2xl shadow-lg flex items-center gap-3 px-6 py-3 border border-border">
               <span className="text-3xl font-extrabold text-foreground font-sans tracking-tight">
                 {useCaseDetails ? (
