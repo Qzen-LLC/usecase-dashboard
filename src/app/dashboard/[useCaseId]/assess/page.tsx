@@ -508,10 +508,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
           Previous
         </button>
         <button
-          onClick={() => {
-            const returnPath = returnTo === 'governance' ? '/dashboard/governance' : '/dashboard';
-            router.push(returnPath);
-          }}
+          onClick={() => router.back()}
           className={`flex items-center px-4 py-2 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90`}
         >
           Cancel
