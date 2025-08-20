@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
+  ArrowLeft,
   Loader2, 
   AlertTriangle, 
   Shield, 
@@ -23,6 +24,7 @@ import {
   ChevronUp
 } from "lucide-react";
 import { calculateRiskScores, getRiskLevel, type StepsData } from '@/lib/risk-calculations';
+import Link from 'next/link';
 
 // Simple date formatting function to avoid external dependency
 const formatDate = (dateString: string) => {
@@ -263,18 +265,19 @@ export default function RiskManagementPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Risk Management</h1>
+          <Link href="/dashboard/governance">
+                <Button variant="outline" size="sm" className="text-black">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Governance
+                </Button>
+              </Link>
+            <h1 className="text-3xl font-bold text-foreground mb-2 py-4">Risk Management</h1>
             <p className="text-gray-600">
               AIUC-{useCase?.aiucId} - {useCase?.title}
             </p>
           </div>
           <div className="flex gap-3">
-            <Button
-              onClick={() => router.push(`/dashboard/governance`)}
-              variant="outline"
-            >
-              Back to Governance
-            </Button>
+            
             <Button
               onClick={() => setCreatingRisk(true)}
               className="flex items-center gap-2"
