@@ -231,11 +231,29 @@ const ViewUseCasePage = () => {
               'Use Case Documentation',
               <Target className="h-6 w-6 text-blue-600 dark:text-blue-400" />,
               <div className="space-y-4">
-                <div><span className="font-medium text-foreground">Problem Statement:</span> <span className="text-foreground">{useCase.problemStatement}</span></div>
-                <div><span className="font-medium text-foreground">Proposed AI Solution:</span> <span className="text-foreground">{useCase.proposedAISolution}</span></div>
+                <div>
+                  <span className="font-medium text-foreground">Problem Statement:</span>
+                  <div 
+                    className="text-foreground bg-muted p-3 rounded-lg mt-1"
+                    dangerouslySetInnerHTML={{ __html: useCase.problemStatement || 'Not specified' }}
+                  />
+                </div>
+                <div>
+                  <span className="font-medium text-foreground">Proposed AI Solution:</span>
+                  <div 
+                    className="text-foreground bg-muted p-3 rounded-lg mt-1"
+                    dangerouslySetInnerHTML={{ __html: useCase.proposedAISolution || 'Not specified' }}
+                  />
+                </div>
                 <div><span className="font-medium text-foreground">Primary Stakeholders:</span> {renderArray(useCase.primaryStakeholders, 'stakeholder')}</div>
                 <div><span className="font-medium text-foreground">Secondary Stakeholders:</span> {renderArray(useCase.secondaryStakeholders, 'stakeholder')}</div>
-                <div><span className="font-medium text-foreground">Success Criteria:</span> <span className="text-foreground">{useCase.successCriteria}</span></div>
+                <div>
+                  <span className="font-medium text-foreground">Success Criteria:</span>
+                  <div 
+                    className="text-foreground bg-muted p-3 rounded-lg mt-1"
+                    dangerouslySetInnerHTML={{ __html: useCase.successCriteria || 'Not specified' }}
+                  />
+                </div>
               </div>
             )}
 
@@ -244,10 +262,34 @@ const ViewUseCasePage = () => {
               'Lean Business Case',
               <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />,
               <div className="space-y-4">
-                <div><span className="font-medium text-foreground">Problem Validation:</span> <span className="text-foreground">{useCase.problemValidation}</span></div>
-                <div><span className="font-medium text-foreground">Solution Hypothesis:</span> <span className="text-foreground">{useCase.solutionHypothesis}</span></div>
-                <div><span className="font-medium text-foreground">Key Assumptions:</span> <span className="text-foreground">{useCase.keyAssumptions}</span></div>
-                <div><span className="font-medium text-foreground">Initial ROI:</span> <span className="text-foreground">{useCase.initialROI}</span></div>
+                <div>
+                  <span className="font-medium text-foreground">Problem Validation:</span>
+                  <div 
+                    className="text-foreground bg-muted p-3 rounded-lg mt-1"
+                    dangerouslySetInnerHTML={{ __html: useCase.problemValidation || 'Not specified' }}
+                  />
+                </div>
+                <div>
+                  <span className="font-medium text-foreground">Solution Hypothesis:</span>
+                  <div 
+                    className="text-foreground bg-muted p-3 rounded-lg mt-1"
+                    dangerouslySetInnerHTML={{ __html: useCase.solutionHypothesis || 'Not specified' }}
+                  />
+                </div>
+                <div>
+                  <span className="font-medium text-foreground">Key Assumptions:</span>
+                  <div 
+                    className="text-foreground bg-muted p-3 rounded-lg mt-1"
+                    dangerouslySetInnerHTML={{ __html: useCase.keyAssumptions || 'Not specified' }}
+                  />
+                </div>
+                <div>
+                  <span className="font-medium text-foreground">Initial ROI:</span>
+                  <div 
+                    className="text-foreground bg-muted p-3 rounded-lg mt-1"
+                    dangerouslySetInnerHTML={{ __html: useCase.initialROI || 'Not specified' }}
+                  />
+                </div>
                 <div><span className="font-medium text-foreground">Confidence Level:</span> <span className="text-foreground">{useCase.confidenceLevel}</span></div>
               </div>
             )}
@@ -276,7 +318,13 @@ const ViewUseCasePage = () => {
                   <div className="text-sm text-muted-foreground">Implementation Complexity: {useCase.implementationComplexity}/10</div>
                 </div>
                 <div><span className="font-medium text-foreground">Estimated Timeline:</span> <span className="text-foreground">{useCase.estimatedTimeline}</span></div>
-                <div><span className="font-medium text-foreground">Required Resources:</span> <span className="text-foreground">{useCase.requiredResources}</span></div>
+                <div>
+                  <span className="font-medium text-foreground">Required Resources:</span>
+                  <div 
+                    className="text-foreground bg-muted p-3 rounded-lg mt-1"
+                    dangerouslySetInnerHTML={{ __html: useCase.requiredResources || 'Not specified' }}
+                  />
+                </div>
               </div>
             )}
 

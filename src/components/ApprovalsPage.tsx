@@ -806,9 +806,23 @@ const ApprovalsPage = forwardRef((props, ref) => {
           <>
             <div className="mb-6">
               <h2 className="text-xl font-bold mb-2 text-foreground">Problem Statement</h2>
-              <div className="text-foreground bg-muted rounded-lg p-4">{summary.problemStatement && typeof summary.problemStatement === 'string' && summary.problemStatement.trim() ? summary.problemStatement : <span className="text-muted-foreground">Not specified</span>}</div>
+              <div 
+                className="text-foreground bg-muted rounded-lg p-4"
+                dangerouslySetInnerHTML={{ 
+                  __html: summary.problemStatement && typeof summary.problemStatement === 'string' && summary.problemStatement.trim() 
+                    ? summary.problemStatement 
+                    : '<span class="text-muted-foreground">Not specified</span>'
+                }}
+              />
               <h2 className="text-xl font-bold mb-2 text-foreground">Proposed Solution</h2>
-              <div className="text-foreground bg-muted rounded-lg p-4">{summary.proposedAISolution && typeof summary.proposedAISolution === 'string' && summary.proposedAISolution.trim() ? summary.proposedAISolution : <span className="text-muted-foreground">Not specified</span>}</div>
+              <div 
+                className="text-foreground bg-muted rounded-lg p-4"
+                dangerouslySetInnerHTML={{ 
+                  __html: summary.proposedAISolution && typeof summary.proposedAISolution === 'string' && summary.proposedAISolution.trim() 
+                    ? summary.proposedAISolution 
+                    : '<span class="text-muted-foreground">Not specified</span>'
+                }}
+              />
             </div>
             {/* Radar Chart */}
             {Array.isArray(chartData) && chartData.length > 0 && (
