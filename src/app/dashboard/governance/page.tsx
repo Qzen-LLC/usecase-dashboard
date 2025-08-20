@@ -328,7 +328,7 @@ export default function GovernancePage() {
                           ))}
                         </div>
                       </div>
-                      <Link href={`/dashboard/${item.useCaseId}/assess`}>
+                      <Link href={`/dashboard/${item.useCaseId}/assess?returnTo=governance`}>
                         <Button variant="outline" size="sm" className="text-xs text-black">View Assessment</Button>
                       </Link>
                     </div>

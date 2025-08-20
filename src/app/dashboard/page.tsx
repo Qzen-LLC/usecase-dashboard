@@ -344,7 +344,7 @@ const Dashboard = () => {
   }
 
   const handleAssess = (id: string) => {
-    router.push(`/dashboard/${id}/assess`);
+    router.push(`/dashboard/${id}/assess?returnTo=dashboard`);
   }
 
   const handleDelete = async (id: string) => {
