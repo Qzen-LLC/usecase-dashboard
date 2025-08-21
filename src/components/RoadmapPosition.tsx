@@ -224,17 +224,16 @@ export default function RoadmapPosition({ value, onChange }: Props) {
         </div>
       </div>
 
-      Roadmap Recommendation Section
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 shadow-sm">
+      <div className="text-white border border-blue-200 rounded-xl p-6 shadow-sm">
         <div className="flex items-start gap-3">
-          <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <div className="w-6 h-6 bg-black dark:bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg className="w-3 h-3 text-white dark:text-black" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
             </svg>
           </div>
           <div>
-                    <div className="font-semibold text-blue-900 dark:text-blue-200 mb-2">Roadmap Recommendation</div>
-        <div className="text-blue-800 dark:text-blue-300 text-sm leading-relaxed">Based on your selections, we recommend starting after infrastructure setup and prioritizing data platform upgrades for maximum impact.</div>
+                    <div className="font-semibold text-black dark:text-white mb-2">Roadmap Recommendation</div>
+        <div className="text-black dark:text-white text-sm leading-relaxed">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</div>
           </div>
         </div>
       </div>
