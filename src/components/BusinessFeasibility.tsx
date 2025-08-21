@@ -41,7 +41,7 @@ const REVENUE_IMPACT_TYPE = [
   'Direct Revenue Generation',
   'Cost Reduction',
   'Risk Mitigation',
-  'Compliance/Regulatory',
+  'Compliance and Regulatory',
   'Customer Experience',
   'Operational Efficiency',
   'No Direct Impact',
@@ -111,7 +111,7 @@ type Props = {
     availabilityRequirement: string;
     responseTimeRequirement: string;
     concurrentUsers: string;
-    revenueImpactType: string;
+    revenueImpactType: string[];
     estimatedFinancialImpact: string;
     userCategories: string[];
     systemCriticality: string;
@@ -289,15 +289,15 @@ export default function BusinessFeasibility({ value, onChange }: Props) {
         
         <div className="space-y-8">
           <div>
-            <Label className="block font-medium mb-4 text-foreground">Revenue Impact Type</Label>
-            <RadioGroup value={value.revenueImpactType} onValueChange={(newValue) => onChange({ ...value, revenueImpactType: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <Label className="block font-medium mb-4 text-foreground">Revenue Impact Type</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {REVENUE_IMPACT_TYPE.map((item) => (
                 <Label key={item} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
-                  <RadioGroupItem value={item} />
+                  <Checkbox checked={value.revenueImpactType.includes(item)} onCheckedChange={(checked) => handleMultiSelectChange('revenueImpactType', item)} />
                   <span className="text-sm text-foreground">{item}</span>
                 </Label>
               ))}
-            </RadioGroup>
+            </div>
           </div>
           
           <div>
