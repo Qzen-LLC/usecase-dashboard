@@ -35,7 +35,8 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  closestCorners,
+  closestCenter,
+  rectIntersection,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -216,11 +217,17 @@ const DroppableStageColumn = ({ stage, stageUseCases, children }: {
   return (
     <div 
       ref={setNodeRef}
-      className={`space-y-3 min-h-[200px] p-3 rounded-lg border-2 border-dashed transition-colors ${
+      className={`space-y-3 p-3 rounded-lg border-2 border-dashed transition-colors h-full ${
         isOver 
           ? 'bg-primary/10 border-primary/40 shadow-lg' 
           : 'bg-background border-border shadow-inner'
       }`}
+      style={{ 
+        minHeight: '300px', // Increased minimum height for better drop detection
+        minWidth: '240px', // Ensure minimum width for proper drop detection
+        height: '100%', // Use full height of parent container
+        position: 'relative' // Ensure proper positioning for drop detection
+      }}
     >
       {isOver && (
         <div className="text-center text-primary text-xs font-medium mb-3">
@@ -277,11 +284,14 @@ const Dashboard = () => {
     );
   }
 
-  // DnD sensors
+  // Use closestCenter for more reliable drop detection
+  const customCollisionDetection = closestCenter;
+
+  // DnD sensors - more permissive for better drag and drop
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 1, // Very low distance for immediate activation
       },
     })
   );
@@ -631,28 +641,41 @@ const Dashboard = () => {
 
   // Drag and Drop handlers
   const handleDragStart = (event: DragStartEvent) => {
+    console.log('Drag started:', event.active.id);
     setActiveId(event.active.id as string);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    console.log('Drag ended:', { active: active.id, over: over?.id });
     setActiveId(null);
 
-    if (!over) return;
+    if (!over) {
+      console.log('No drop target found');
+      return;
+    }
 
     const useCaseId = active.id as string;
     const targetId = over.id as string;
 
+    console.log('Drop target:', { useCaseId, targetId });
+
     // Check if the target is a stage column
     const isTargetStage = stages.some(stage => stage.id === targetId);
+    console.log('Is target stage:', isTargetStage);
     
     if (isTargetStage) {
       const useCase = filteredUseCases.find(uc => uc.id === useCaseId);
+      console.log('Found use case:', useCase);
+      
       if (useCase && useCase.stage !== targetId) {
+        console.log('Moving use case from', useCase.stage, 'to', targetId);
+        
         // Validate if moving from discovery to business-case
         if (useCase.stage === 'discovery' && targetId === 'business-case') {
           const missingFields = getMissingFields(useCase);
           if (missingFields.length > 0) {
+            console.log('Validation failed:', missingFields);
             setValidationError({ 
               show: true, 
               fields: missingFields, 
@@ -696,7 +719,11 @@ const Dashboard = () => {
               .filter((change: any) => !(change.useCaseId === useCaseId && change.newStage === targetId));
             localStorage.setItem('pendingStageChanges', JSON.stringify(updatedPendingChanges));
           });
+      } else {
+        console.log('Use case not found or already in target stage');
       }
+    } else {
+      console.log('Target is not a valid stage');
     }
   };
 
@@ -752,11 +779,11 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="page-layout">
+    <div className="min-h-screen bg-background">
       <ClerkInvitationHandler />
-      <div className="page-container">
+      <div className="h-full p-6 flex flex-col min-h-0">
         {/* Header with role-based tabs */}
-        <div className="page-header">
+        <div className="page-header flex-shrink-0">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               
@@ -770,7 +797,7 @@ const Dashboard = () => {
         </div>
 
         {/* Search and Filter Section */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row gap-4 mb-6 flex-shrink-0">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input
@@ -826,7 +853,7 @@ const Dashboard = () => {
 
         {/* Validation Error Alert */}
         {validationError.show && (
-          <Alert variant="destructive" className="mb-6">
+          <Alert variant="destructive" className="mb-6 flex-shrink-0">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Missing Required Fields</AlertTitle>
             <AlertDescription>
@@ -868,7 +895,7 @@ const Dashboard = () => {
         )}
 
                  {/* Kanban board with drag and drop */}
-         <div className="relative">
+         <div className="relative flex-1 min-h-0 overflow-hidden">
            {deletingUseCaseId && (
              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
                <div className="flex flex-col items-center gap-3 p-6 bg-card rounded-lg shadow-lg border">
@@ -879,19 +906,20 @@ const Dashboard = () => {
            )}
            <DndContext
              sensors={sensors}
-             collisionDetection={closestCorners}
+             collisionDetection={customCollisionDetection}
              onDragStart={handleDragStart}
              onDragEnd={handleDragEnd}
+
            >
-          <div className="relative w-full mb-10">
-            <div className="w-full pb-6 overflow-x-auto">
-              <div className="flex flex-row gap-6 min-w-[2000px] px-2">
+          <div className="relative w-full h-full">
+            <div className="w-full h-full pb-6 overflow-x-auto">
+              <div className="flex flex-row gap-6 min-w-[2000px] px-2 h-full">
                 {stages.map((stage, idx) => {
                   const stageUseCases = getUseCasesByStage(stage.id);
                   return (
-                    <div key={stage.id} className="flex flex-col items-center w-60">
+                    <div key={stage.id} className="flex flex-col items-center w-60 h-full">
                       {/* Summary card */}
-                      <div className="card-interactive w-60 h-24 mb-4 flex flex-col items-center justify-center group">
+                      <div className="card-interactive w-60 h-24 mb-4 flex flex-col items-center justify-center group flex-shrink-0">
                         <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">
                           {idx === 0 && <Search className="text-primary w-6 h-6" />}
                           {idx === 1 && <DollarSign className="text-success w-6 h-6" />}
@@ -906,13 +934,13 @@ const Dashboard = () => {
                         <div className="text-2xl font-extrabold text-foreground group-hover:text-primary transition-colors">{stageUseCases.length}</div>
                       </div>
                       {/* Use case column */}
-                      <div className="flex-shrink-0 w-60 space-y-4">
+                      <div className="flex-1 w-60 min-h-0">
                                                  <DroppableStageColumn stage={stage} stageUseCases={stageUseCases}>
-                           <SortableContext items={stageUseCases.map(uc => uc.id)} strategy={verticalListSortingStrategy}>
+                                                      <SortableContext id={stage.id} items={stageUseCases.map(uc => uc.id)} strategy={verticalListSortingStrategy}>
                              {stageUseCases.length === 0 ? (
                                <div className="bg-muted rounded-lg p-4 text-center text-muted-foreground border border-dashed text-xs">No use cases in this stage</div>
                              ) : stageUseCases.map((useCase) => (
-                                                                                               <DraggableUseCaseCard
+                                 <DraggableUseCaseCard
                                    key={useCase.id}
                                    useCase={useCase}
                                    onClick={() => { setModalUseCase(useCase); setIsSheetOpen(true); }}
@@ -923,7 +951,7 @@ const Dashboard = () => {
                                    handleDelete={handleDelete}
                                    isDeleting={deletingUseCaseId === useCase.id}
                                  />
-                             ))}
+                               ))}
                            </SortableContext>
                          </DroppableStageColumn>
                       </div>
