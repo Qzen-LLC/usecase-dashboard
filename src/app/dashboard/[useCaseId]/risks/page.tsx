@@ -652,6 +652,7 @@ export default function RiskManagementPage() {
                 <div className="flex justify-end gap-3 pt-4">
                   <Button
                     variant="outline"
+                    className="text-black"
                     onClick={() => {
                       setCreatingRisk(false);
                       setFormData({});

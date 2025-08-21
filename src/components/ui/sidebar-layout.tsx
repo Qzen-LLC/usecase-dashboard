@@ -14,7 +14,6 @@ import {
   FileText, 
   Shield,
   Home,
-  Settings,
   HelpCircle
 } from 'lucide-react';
 import { Button } from './button';

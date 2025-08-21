@@ -121,8 +121,20 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
-        mono: ["var(--font-geist-mono)", "monospace"],
+        // Primary fonts for different use cases
+        sans: ["var(--font-geist-sans)", "var(--font-inter)", "system-ui", "sans-serif"],
+        mono: ["var(--font-jetbrains-mono)", "var(--font-geist-mono)", "monospace"],
+        
+        // Specialized font families
+        display: ["var(--font-poppins)", "var(--font-geist-sans)", "system-ui", "sans-serif"],
+        body: ["var(--font-inter)", "var(--font-geist-sans)", "system-ui", "sans-serif"],
+        heading: ["var(--font-poppins)", "var(--font-geist-sans)", "system-ui", "sans-serif"],
+        code: ["var(--font-jetbrains-mono)", "var(--font-geist-mono)", "monospace"],
+        
+        // Legacy support
+        geist: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        inter: ["var(--font-inter)", "system-ui", "sans-serif"],
+        poppins: ["var(--font-poppins)", "system-ui", "sans-serif"],
       },
       spacing: {
         xs: "var(--space-xs)",
@@ -143,6 +155,155 @@ const config: Config = {
         "fade-in": "fadeIn 0.5s ease-in-out",
         "slide-up": "slideUp 0.3s ease-out",
         "scale-in": "scaleIn 0.2s ease-out",
+      },
+      // Enhanced typography utilities
+      fontSize: {
+        'xs': ['0.75rem', { lineHeight: '1rem', letterSpacing: '0.025em' }],
+        'sm': ['0.875rem', { lineHeight: '1.25rem', letterSpacing: '0.025em' }],
+        'base': ['1rem', { lineHeight: '1.5rem', letterSpacing: '0.025em' }],
+        'lg': ['1.125rem', { lineHeight: '1.75rem', letterSpacing: '0.025em' }],
+        'xl': ['1.25rem', { lineHeight: '1.75rem', letterSpacing: '0.025em' }],
+        '2xl': ['1.5rem', { lineHeight: '2rem', letterSpacing: '0.025em' }],
+        '3xl': ['1.875rem', { lineHeight: '2.25rem', letterSpacing: '0.025em' }],
+        '4xl': ['2.25rem', { lineHeight: '2.5rem', letterSpacing: '0.025em' }],
+        '5xl': ['3rem', { lineHeight: '1', letterSpacing: '0.025em' }],
+        '6xl': ['3.75rem', { lineHeight: '1', letterSpacing: '0.025em' }],
+        '7xl': ['4.5rem', { lineHeight: '1', letterSpacing: '0.025em' }],
+        '8xl': ['6rem', { lineHeight: '1', letterSpacing: '0.025em' }],
+        '9xl': ['8rem', { lineHeight: '1', letterSpacing: '0.025em' }],
+      },
+      // Enhanced font weights
+      fontWeight: {
+        thin: '100',
+        extralight: '200',
+        light: '300',
+        normal: '400',
+        medium: '500',
+        semibold: '600',
+        bold: '700',
+        extrabold: '800',
+        black: '900',
+      },
+      // Enhanced letter spacing
+      letterSpacing: {
+        tighter: '-0.05em',
+        tight: '-0.025em',
+        normal: '0em',
+        wide: '0.025em',
+        wider: '0.05em',
+        widest: '0.1em',
+      },
+      // Enhanced line heights
+      lineHeight: {
+        none: '1',
+        tight: '1.25',
+        snug: '1.375',
+        normal: '1.5',
+        relaxed: '1.625',
+        loose: '2',
+        '3': '.75rem',
+        '4': '1rem',
+        '5': '1.25rem',
+        '6': '1.5rem',
+        '7': '1.75rem',
+        '8': '2rem',
+        '9': '2.25rem',
+        '10': '2.5rem',
+      },
+      // Text rendering and font smoothing
+      textRendering: {
+        'optimizeLegibility': 'optimizeLegibility',
+        'optimizeSpeed': 'optimizeSpeed',
+        'geometricPrecision': 'geometricPrecision',
+      },
+      // Font feature settings for better typography
+      fontFeatureSettings: {
+        'numeric': 'tnum',
+        'tabular': 'tnum',
+        'ordinal': 'ordn',
+        'slashed-zero': 'zero',
+        'diagonal-fractions': 'frac',
+        'stacked-fractions': 'afrc',
+        'proportional-nums': 'pnum',
+        'oldstyle-nums': 'onum',
+        'lining-nums': 'lnum',
+      },
+      // Font variant numeric for better number display
+      fontVariantNumeric: {
+        'normal': 'normal',
+        'ordinal': 'ordinal',
+        'slashed-zero': 'slashed-zero',
+        'lining-nums': 'lining-nums',
+        'oldstyle-nums': 'oldstyle-nums',
+        'proportional-nums': 'proportional-nums',
+        'tabular-nums': 'tabular-nums',
+        'diagonal-fractions': 'diagonal-fractions',
+        'stacked-fractions': 'stacked-fractions',
+      },
+      // Font variant caps for better text display
+      fontVariantCaps: {
+        'normal': 'normal',
+        'small-caps': 'small-caps',
+        'all-small-caps': 'all-small-caps',
+        'petite-caps': 'petite-caps',
+        'all-petite-caps': 'all-petite-caps',
+        'unicase': 'unicase',
+        'titling-caps': 'titling-caps',
+      },
+      // Font variant ligatures for better text display
+      fontVariantLigatures: {
+        'normal': 'normal',
+        'none': 'none',
+        'common-ligatures': 'common-ligatures',
+        'no-common-ligatures': 'no-common-ligatures',
+        'discretionary-ligatures': 'discretionary-ligatures',
+        'no-discretionary-ligatures': 'no-discretionary-ligatures',
+        'historical-ligatures': 'historical-ligatures',
+        'no-historical-ligatures': 'no-historical-ligatures',
+        'contextual': 'contextual',
+        'no-contextual': 'no-contextual',
+      },
+      // Font variant position for better text display
+      fontVariantPosition: {
+        'normal': 'normal',
+        'sub': 'sub',
+        'super': 'super',
+      },
+      // Font variant east asian for better text display
+      fontVariantEastAsian: {
+        'normal': 'normal',
+        'jis78': 'jis78',
+        'jis83': 'jis83',
+        'jis90': 'jis90',
+        'jis04': 'jis04',
+        'simplified': 'simplified',
+        'traditional': 'traditional',
+        'full-width': 'full-width',
+        'proportional-width': 'proportional-width',
+        'ruby': 'ruby',
+      },
+      // Font variant alternates for better text display
+      fontVariantAlternates: {
+        'normal': 'normal',
+        'historical-forms': 'historical-forms',
+      },
+      // Font variant kerning for better text display
+      fontVariantKerning: {
+        'normal': 'normal',
+        'none': 'none',
+        'auto': 'auto',
+      },
+      // Font variant language for better text display
+      fontVariantLanguage: {
+        'normal': 'normal',
+        'historical-forms': 'historical-forms',
+      },
+      // Font variant emoji for better text display
+      fontVariantEmoji: {
+        'normal': 'normal',
+        'emoji': 'emoji',
+        'text': 'text',
+        'unicode': 'unicode',
       },
       keyframes: {
         fadeIn: {

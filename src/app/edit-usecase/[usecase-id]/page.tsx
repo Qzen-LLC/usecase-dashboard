@@ -82,12 +82,12 @@ const ArrayInput = ({
 
   return (
     <div className="space-y-2">
-      <Label>{label}</Label>
-      <div className="flex gap-2">
+      <Label className="text-gray-900 dark:text-white">{label}</Label>
+      <div className="flex gap-2 items-center">
         <Input
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
-          className={invalid ? 'border-red-500' : ''}
+          className={`${invalid ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600 h-9`}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               onAdd(field as ArrayField, inputVal);
@@ -97,10 +97,12 @@ const ArrayInput = ({
         />
         <Button
           type="button"
+          size="icon"
           onClick={() => {
             onAdd(field as ArrayField, inputVal);
             setInputVal("");
           }}
+          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white h-9 w-9 flex-shrink-0"
         >
           <Plus className="w-4 h-4" />
         </Button>
@@ -109,10 +111,10 @@ const ArrayInput = ({
         {value.map((item, i) => (
           <div
             key={i}
-            className="flex justify-between items-center border p-2 rounded"
+            className="flex justify-between items-center border border-gray-200 dark:border-gray-600 p-2 rounded bg-gray-50 dark:bg-gray-700 min-h-[40px]"
           >
-            <span>{item}</span>
-            <Button variant="destructive" size="icon" onClick={() => onRemove(field as ArrayField, i)}>
+            <span className="text-gray-900 dark:text-white">{item}</span>
+            <Button variant="destructive" size="icon" onClick={() => onRemove(field as ArrayField, i)} className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 h-9 w-9 flex-shrink-0">
               <Minus className="w-4 h-4" />
             </Button>
           </div>
@@ -232,53 +234,53 @@ const AIUseCaseTool = () => {
 
   const renderStep1 = () => (
     <div className="space-y-6">
-      <div className="bg-blue-50 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold text-blue-800 mb-2">Use Case Documentation</h3>
-        <p className="text-blue-700">Define and structure your AI use case with clear problem statements and success criteria.</p>
+      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+        <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">Use Case Documentation</h3>
+        <p className="text-blue-700 dark:text-blue-300">Define and structure your AI use case with clear problem statements and success criteria.</p>
       </div>
       <div className="grid grid-cols-1">
-        <Card className="p-6">
-          <Label htmlFor="title">Use Case Title <span className="text-red-500">*</span></Label>
+        <Card className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+          <Label htmlFor="title" className="text-gray-900 dark:text-white">Use Case Title <span className="text-red-500">*</span></Label>
           <Input
             id="title"
             value={formData.title}
             onChange={(e) => handleChange("title", e.target.value)}
-            className={invalidFields.includes('title') ? 'border-red-500' : ''}
+            className={`${invalidFields.includes('title') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
           />
-          <Label htmlFor="problemStatement">Problem Statement <span className="text-red-500">*</span></Label>
+          <Label htmlFor="problemStatement" className="text-gray-900 dark:text-white">Problem Statement <span className="text-red-500">*</span></Label>
           <RichTextEditor
             content={formData.problemStatement}
             onChange={(content) => handleChange("problemStatement", content)}
             placeholder="Describe the problem this use case will solve..."
-            className={invalidFields.includes('problemStatement') ? 'border-red-500' : ''}
+            className={`${invalidFields.includes('problemStatement') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
           />
-          <Label htmlFor="proposedAISolution">Proposed Solution</Label>
+          <Label htmlFor="proposedAISolution" className="text-gray-900 dark:text-white">Proposed Solution</Label>
           <RichTextEditor
             content={formData.proposedAISolution}
             onChange={(content) => handleChange("proposedAISolution", content)}
             placeholder="Describe your proposed AI solution..."
-            className={invalidFields.includes('proposedAISolution') ? 'border-red-500' : ''}
+            className={`${invalidFields.includes('proposedAISolution') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
           />
-          <Label htmlFor="keyBenefits">Key Benefits</Label>
+          <Label htmlFor="keyBenefits" className="text-gray-900 dark:text-white">Key Benefits</Label>
           <RichTextEditor
             content={formData.keyBenefits}
             onChange={(content) => handleChange("keyBenefits", content)}
             placeholder="List the key benefits this solution will provide..."
-            className={invalidFields.includes('keyBenefits') ? 'border-red-500' : ''}
+            className={`${invalidFields.includes('keyBenefits') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
           />
-          <Label htmlFor="successCriteria">Success Criteria</Label>
+          <Label htmlFor="successCriteria" className="text-gray-900 dark:text-white">Success Criteria</Label>
           <RichTextEditor
             content={formData.successCriteria}
             onChange={(content) => handleChange("successCriteria", content)}
             placeholder="Define what success looks like for this use case..."
-            className={invalidFields.includes('successCriteria') ? 'border-red-500' : ''}
+            className={`${invalidFields.includes('successCriteria') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
           />
-          <Label htmlFor="businessFunction">Business Function</Label>
+          <Label htmlFor="businessFunction" className="text-gray-900 dark:text-white">Business Function</Label>
           <select
             id="businessFunction"
             value={formData.businessFunction}
             onChange={e => handleChange("businessFunction", e.target.value)}
-            className={"mb-4 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 " + (invalidFields.includes('businessFunction') ? 'border-red-500' : '')}
+            className={`mb-4 w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${invalidFields.includes('businessFunction') ? 'border-red-500' : ''}`}
           >
             <option value="" disabled>Select a business function</option>
             <option value="Sales">Sales</option>
@@ -300,13 +302,6 @@ const AIUseCaseTool = () => {
             <option value="Data Office">Data Office</option>
             <option value="PMO">PMO</option>
           </select>
-          {/* <Label htmlFor="primaryStakeholders">Primary Stakeholder</Label>
-          <Input
-            id="primaryStakeholders"
-            value={formData.primaryStakeholders}
-            onChange={(e) => handleChange("primaryStakeholders", e.target.value)}
-            className={invalidFields.includes('primaryStakeholders') ? 'border-red-500' : ''}
-          /> */}
           <ArrayInput
             label="Primary Stakeholders"
             field="primaryStakeholders"
@@ -330,44 +325,44 @@ const AIUseCaseTool = () => {
 
   const renderStep2 = () => (
     <div className="space-y-6">
-      <div className="bg-green-50 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold text-green-800 mb-2">Lean Business Case</h3>
-        <p className="text-green-700">Build a lightweight business case focusing on problem-solution fit and key assumptions.</p>
+      <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+        <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">Lean Business Case</h3>
+        <p className="text-green-700 dark:text-green-300">Build a lightweight business case focusing on problem-solution fit and key assumptions.</p>
       </div>
       <div className="space-y-6">
-        <Card className='p-6'>
-          <Label htmlFor="keyAssumptions">Key Assumptions</Label>
+        <Card className='p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'>
+          <Label htmlFor="keyAssumptions" className="text-gray-900 dark:text-white">Key Assumptions</Label>
           <RichTextEditor
             content={formData.keyAssumptions}
             onChange={(content) => handleChange("keyAssumptions", content)}
             placeholder="List your key assumptions for this use case..."
-            className={invalidFields.includes('keyAssumptions') ? 'border-red-500' : ''}
+            className={`${invalidFields.includes('keyAssumptions') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
           />
-          <Label htmlFor="initialCost">Initial Cost</Label>
+          <Label htmlFor="initialCost" className="text-gray-900 dark:text-white">Initial Cost</Label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">$</span>
             <Input
               id="initialCost"
               value={formData.initialCost}
               onChange={(e) => handleChange("initialCost", e.target.value)}
-              className={`pl-7 ${invalidFields.includes('initialCost') ? 'border-red-500' : ''}`}
+              className={`pl-7 ${invalidFields.includes('initialCost') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
               placeholder="0"
             />
           </div>
-          <Label htmlFor="initialROI">Initial ROI</Label>
+          <Label htmlFor="initialROI" className="text-gray-900 dark:text-white">Initial ROI</Label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">$</span>
             <Input
               id="initialROI"
               value={formData.initialROI}
               onChange={(e) => handleChange("initialROI", e.target.value)}
-              className={`pl-7 ${invalidFields.includes('initialROI') ? 'border-red-500' : ''}`}
+              className={`pl-7 ${invalidFields.includes('initialROI') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
               placeholder="0"
             />
           </div>
           <div className="flex justify-between items-center mb-1">
-            <Label htmlFor="confidenceLevel">Confidence Level</Label>
-            <span className="text-blue-600 font-bold">{formData.confidenceLevel}</span>
+            <Label htmlFor="confidenceLevel" className="text-gray-900 dark:text-white">Confidence Level</Label>
+            <span className="text-blue-600 dark:text-blue-400 font-bold">{formData.confidenceLevel}</span>
           </div>
           <Slider
             min={1}
@@ -375,28 +370,28 @@ const AIUseCaseTool = () => {
             value={[formData.confidenceLevel]}
             onValueChange={([val]) => handleChange("confidenceLevel", val)}
           />
-          <div className='space-y-1'>
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>Low (1)</span>
-              <span>High (10)</span>
+                      <div className='space-y-1'>
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <span>Low (1)</span>
+                <span>High (10)</span>
+              </div>
+              <Label htmlFor="confidenceLevel" className='text-sm font-normal text-gray-800 dark:text-gray-200'>How confident are you in your estimates?</Label>
             </div>
-            <Label htmlFor="confidenceLevel" className='text-sm font-normal text-gray-800'>How confident are you in your estimates?</Label>
-          </div>
-          <Label htmlFor="plannedStartDate">Planned Start Date</Label>
-          <Input
-            id="plannedStartDate"
-            type="date"
-            value={formData.plannedStartDate}
-            onChange={(e) => handleChange("plannedStartDate", e.target.value)}
-            className={invalidFields.includes('plannedStartDate') ? 'border-red-500' : ''}
-          />
-          <Label htmlFor="estimatedTimelineMonths">Estimated Timeline</Label>
-          <select
-            id="estimatedTimelineMonths"
-            value={formData.estimatedTimelineMonths}
-            onChange={e => handleChange("estimatedTimelineMonths", e.target.value)}
-            className={`mb-4 w-full border border-gray-200 rounded-none px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 ${invalidFields.includes('estimatedTimelineMonths') ? 'border-red-500' : ''}`}
-          >
+          <Label htmlFor="plannedStartDate" className="text-gray-900 dark:text-white">Planned Start Date</Label>
+                      <Input
+              id="plannedStartDate"
+              type="date"
+              value={formData.plannedStartDate}
+              onChange={(e) => handleChange("plannedStartDate", e.target.value)}
+              className={`${invalidFields.includes('plannedStartDate') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
+            />
+          <Label htmlFor="estimatedTimelineMonths" className="text-gray-900 dark:text-white">Estimated Timeline</Label>
+                      <select
+              id="estimatedTimelineMonths"
+              value={formData.estimatedTimelineMonths}
+              onChange={e => handleChange("estimatedTimelineMonths", e.target.value)}
+              className={`mb-4 w-full border border-gray-200 dark:border-gray-600 rounded-none px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${invalidFields.includes('estimatedTimelineMonths') ? 'border-red-500' : ''}`}
+            >
             <option value="" disabled>Select timeline</option>
             <option value="1">1 month</option>
             <option value="2">2 months</option>
@@ -410,12 +405,12 @@ const AIUseCaseTool = () => {
             <option value="24">24 months</option>
             <option value="36">36 months</option>
           </select>
-          <Label htmlFor="requiredResources">Required Resources</Label>
+          <Label htmlFor="requiredResources" className="text-gray-900 dark:text-white">Required Resources</Label>
           <RichTextEditor
             content={formData.requiredResources}
             onChange={(content) => handleChange("requiredResources", content)}
             placeholder="List the required resources for this use case..."
-            className={invalidFields.includes('requiredResources') ? 'border-red-500' : ''}
+            className={`${invalidFields.includes('requiredResources') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
           />
         </Card>
       </div>
@@ -424,21 +419,21 @@ const AIUseCaseTool = () => {
 
   const renderStep3 = () => (
     <div className="space-y-6">
-      <div className="bg-purple-50 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold text-purple-800 mb-2">Multi-Dimensional Scoring</h3>
-        <p className="text-purple-700">Quantify your use case across the three strategic dimensions.</p>
+      <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
+        <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-200 mb-2">Multi-Dimensional Scoring</h3>
+        <p className="text-purple-700 dark:text-purple-300">Quantify your use case across the three strategic dimensions.</p>
       </div>
       <div className="space-y-8">
-        <div className="bg-white p-6 rounded-lg border-2 border-orange-200">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border-2 border-orange-200 dark:border-orange-700">
           <div className="flex items-center mb-4">
-            <TrendingUp className="w-6 h-6 text-orange-500 mr-2" />
-            <Label htmlFor="operationalImpactScore" className='text-lg font-semibold text-orange-800'>Operational Enhancers</Label>
+            <TrendingUp className="w-6 h-6 text-orange-500 dark:text-orange-400 mr-2" />
+            <Label htmlFor="operationalImpactScore" className='text-lg font-semibold text-orange-800 dark:text-orange-200'>Operational Enhancers</Label>
           </div>
           <div className="space-y-4">
-            <Label htmlFor="operationalImpactScore" className='text-sm font-normal text-gray-800 mb-2'>Operational Impact Score</Label>
+            <Label htmlFor="operationalImpactScore" className='text-sm font-normal text-gray-800 dark:text-gray-200 mb-2'>Operational Impact Score</Label>
             <div className="flex justify-between items-center mb-1">
               <span></span>
-              <span className="text-blue-600 font-bold">{formData.operationalImpactScore}</span>
+              <span className="text-blue-600 dark:text-blue-400 font-bold">{formData.operationalImpactScore}</span>
             </div>
             <Slider
               min={1}
@@ -446,23 +441,23 @@ const AIUseCaseTool = () => {
               value={[formData.operationalImpactScore]}
               onValueChange={([val]) => handleChange("operationalImpactScore", val)}
             />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
               <span>Low (1)</span>
               <span>High (10)</span>
             </div>
-            <Label htmlFor="operationalImpactScore" className='text-sm font-normal text-gray-800 mb-4'>How much will this improve operational efficiency, reduce costs, or streamline processes?</Label>
+            <Label htmlFor="operationalImpactScore" className='text-sm font-normal text-gray-800 dark:text-gray-200 mb-4'>How much will this improve operational efficiency, reduce costs, or streamline processes?</Label>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-lg border-2 border-pink-200">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border-2 border-pink-200 dark:border-pink-700">
           <div className="flex items-center mb-4">
-            <Zap className="w-6 h-6 text-pink-500 mr-2" />
-            <Label htmlFor="productivityImpactScore" className='text-lg font-semibold text-pink-800'>Productivity Driver</Label>
+            <Zap className="w-6 h-6 text-pink-500 dark:text-pink-400 mr-2" />
+            <Label htmlFor="productivityImpactScore" className='text-lg font-semibold text-pink-800 dark:text-pink-200'>Productivity Driver</Label>
           </div>
           <div className="space-y-4">
-            <Label htmlFor="productivityImpactScore" className='text-sm font-normal text-gray-800 mb-2'>Productivity Impact Score</Label>
+            <Label htmlFor="productivityImpactScore" className='text-sm font-normal text-gray-800 dark:text-gray-200 mb-2'>Productivity Impact Score</Label>
             <div className="flex justify-between items-center mb-1">
               <span></span>
-              <span className="text-blue-600 font-bold">{formData.productivityImpactScore}</span>
+              <span className="text-blue-600 dark:text-blue-400 font-bold">{formData.productivityImpactScore}</span>
             </div>
             <Slider
               min={1}
@@ -470,23 +465,23 @@ const AIUseCaseTool = () => {
               value={[formData.productivityImpactScore]}
               onValueChange={([val]) => handleChange("productivityImpactScore", val)}
             />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
               <span>Low (1)</span>
               <span>High (10)</span>
             </div>
-            <Label htmlFor="productivityImpactScore" className='text-sm font-normal text-gray-800 mb-4'>How significantly will this boost employee productivity or automate manual tasks?</Label>
+            <Label htmlFor="productivityImpactScore" className='text-sm font-normal text-gray-800 dark:text-gray-200 mb-4'>How significantly will this boost employee productivity or automate manual tasks?</Label>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-lg border-2 border-blue-200">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border-2 border-blue-200 dark:border-blue-700">
           <div className="flex items-center mb-4">
-            <DollarSign className="w-6 h-6 text-blue-500 mr-2" />
-            <Label htmlFor="revenueImpactScore" className='text-lg font-semibold text-blue-800'>Revenue Accelerators</Label>
+            <DollarSign className="w-6 h-6 text-blue-500 dark:text-blue-400 mr-2" />
+            <Label htmlFor="revenueImpactScore" className='text-lg font-semibold text-blue-800 dark:text-blue-200'>Revenue Accelerators</Label>
           </div>
           <div className="space-y-4">
-            <Label htmlFor="revenueImpactScore" className='text-sm font-normal text-gray-800 mb-2'>Revenue Impact Score</Label>
+            <Label htmlFor="revenueImpactScore" className='text-sm font-normal text-gray-800 dark:text-gray-200 mb-2'>Revenue Impact Score</Label>
             <div className="flex justify-between items-center mb-1">
               <span></span>
-              <span className="text-blue-600 font-bold">{formData.revenueImpactScore}</span>
+              <span className="text-blue-600 dark:text-blue-400 font-bold">{formData.revenueImpactScore}</span>
             </div>
             <Slider
               min={1}
@@ -494,22 +489,22 @@ const AIUseCaseTool = () => {
               value={[formData.revenueImpactScore]}
               onValueChange={([val]) => handleChange("revenueImpactScore", val)}
             />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
               <span>Low (1)</span>
               <span>High (10)</span>
             </div>
-            <Label htmlFor="revenueImpactScore" className='text-sm font-normal text-gray-800 mb-4'>What is the potential for direct revenue generation or customer value creation?</Label>
+            <Label htmlFor="revenueImpactScore" className='text-sm font-normal text-gray-800 dark:text-gray-200 mb-4'>What is the potential for direct revenue generation or customer value creation?</Label>
           </div>
         </div>
-        <div className="bg-gray-75 p-6 rounded-lg">
+        <div className="bg-gray-75 dark:bg-gray-700 p-6 rounded-lg">
           <div className="flex items-center mb-4">
-            <Label htmlFor="implementationComplexity" className='text-lg font-semibold text-black-800'>Additional Metrics</Label>
+            <Label htmlFor="implementationComplexity" className='text-lg font-semibold text-black-800 dark:text-white'>Additional Metrics</Label>
           </div>
           <div className="space-y-4">
-            <Label htmlFor="implementationComplexity" className='text-sm font-normal text-gray-800 mb-2'>Implementation Complexity</Label>
+            <Label htmlFor="implementationComplexity" className='text-sm font-normal text-gray-800 dark:text-gray-200 mb-2'>Implementation Complexity</Label>
             <div className="flex justify-between items-center mb-1">
               <span></span>
-              <span className="text-blue-600 font-bold">{formData.implementationComplexity}</span>
+              <span className="text-blue-600 dark:text-blue-400 font-bold">{formData.implementationComplexity}</span>
             </div>
             <Slider
               min={1}
@@ -517,37 +512,37 @@ const AIUseCaseTool = () => {
               value={[formData.implementationComplexity]}
               onValueChange={([val]) => handleChange("implementationComplexity", val)}
             />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
               <span>Low (1)</span>
               <span>High (10)</span>
             </div>
-            <Label htmlFor="implementationComplexity" className='text-sm font-normal text-gray-800 mb-4'>How complex will this be to implement? (1 = Very Simple, 10 = Very Complex)</Label>
+            <Label htmlFor="implementationComplexity" className='text-sm font-bold text-gray-800 dark:text-gray-200 mb-4'>How complex will this be to implement? (1 = Very Simple, 10 = Very Complex)</Label>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-lg border-2 border-gray-200">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">Use Case Profile</h4>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border-2 border-gray-200 dark:border-gray-700">
+          <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Use Case Profile</h4>
           <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="bg-orange-100 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-orange-600">{formData.operationalImpactScore}</div>
-              <div className="text-sm text-orange-800">Operational</div>
+            <div className="bg-orange-100 dark:bg-orange-900/20 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{formData.operationalImpactScore}</div>
+              <div className="text-sm text-orange-800 dark:text-orange-200">Operational</div>
             </div>
-            <div className="bg-pink-100 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-pink-600">{formData.productivityImpactScore}</div>
-              <div className="text-sm text-pink-800">Productivity</div>
+            <div className="bg-pink-100 dark:bg-pink-900/20 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-pink-600 dark:text-pink-400">{formData.productivityImpactScore}</div>
+              <div className="text-sm text-pink-800 dark:text-pink-200">Productivity</div>
             </div>
-            <div className="bg-blue-100 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{formData.revenueImpactScore}</div>
-              <div className="text-sm text-blue-800">Revenue</div>
-            </div>
-          </div>
-          <div className="mt-4 text-center">
-            <div className="text-lg font-semibold text-gray-700">
-              Overall Score: {((formData.operationalImpactScore + formData.productivityImpactScore + formData.revenueImpactScore) / 3).toFixed(1)}
-            </div>
-            <div className="text-sm text-gray-600">
-              Complexity: {formData.implementationComplexity}/10
+            <div className="bg-blue-100 dark:bg-blue-900/20 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{formData.revenueImpactScore}</div>
+              <div className="text-sm text-blue-800 dark:text-blue-200">Revenue</div>
             </div>
           </div>
+                      <div className="mt-4 text-center">
+              <div className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                Overall Score: {((formData.operationalImpactScore + formData.productivityImpactScore + formData.revenueImpactScore) / 3).toFixed(1)}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Complexity: {formData.implementationComplexity}/10
+              </div>
+            </div>
         </div>
       </div>
     </div>
@@ -627,9 +622,9 @@ const AIUseCaseTool = () => {
   };
 
   return (
-    <div className="min-h-screen flex justify-center items-start bg-gray-50 p-0 sm:p-4">
-      <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden border-0 sm:border sm:mt-6 sm:mb-6 sm:mx-0 mx-0">
-        <div className="bg-gray-100 px-4 py-4 sm:px-6 sm:py-5">
+    <div className="min-h-screen flex justify-center items-start bg-gray-50 dark:bg-gray-900 p-0 sm:p-4">
+      <div className="w-full max-w-4xl bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden border-0 sm:border sm:mt-6 sm:mb-6 sm:mx-0 mx-0">
+        <div className="bg-gray-100 dark:bg-gray-700 px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
             {steps.map((step, index) => (
               <div
@@ -641,36 +636,36 @@ const AIUseCaseTool = () => {
                 aria-label={`Go to ${step.title}`}
               >
                 <div className={`flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all duration-150 ${
-                  currentStep === step.id ? 'bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white scale-110 shadow-lg' : currentStep > step.id ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
+                  currentStep === step.id ? 'bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white scale-110 shadow-lg' : currentStep > step.id ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
                 } group-hover:scale-110`}
                 >
                   <step.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <div className="ml-3 sm:ml-4">
                   <div className={`text-sm sm:text-base font-medium ${
-                    currentStep === step.id ? 'text-[#8f4fff]' : currentStep > step.id ? 'text-blue-600' : 'text-gray-500'
+                    currentStep === step.id ? 'text-[#8f4fff]' : currentStep > step.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'
                   } group-hover:text-[#b84fff]`}
                   >
                     {step.title}
                   </div>
                 </div>
                 {index < steps.length - 1 && (
-                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400 mx-3 sm:mx-6" />
+                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400 dark:text-gray-500 mx-3 sm:mx-6" />
                 )}
               </div>
             ))}
           </div>
         </div>
-        <div className="bg-white border-t border-gray-200">
+        <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
           <div className="p-6">
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formData.aiucId ? `AIUC-${formData.aiucId} ${formData.title}` : formData.title}
               </h1>
-              <p className="text-gray-600">Edit Use Case</p>
+              <p className="text-gray-600 dark:text-gray-400">Edit Use Case</p>
             </div>
             {showError && (
-              <div className="mb-4 text-red-600 font-semibold">
+              <div className="mb-4 text-red-600 dark:text-red-400 font-semibold">
                 Please fill all required fields before proceeding.
               </div>
             )}
@@ -680,12 +675,12 @@ const AIUseCaseTool = () => {
               {currentStep === 3 && renderStep3()}
             </main>
           </div>
-          <div className="flex justify-between items-center p-6 border-t">
+          <div className="flex justify-between items-center p-6 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-2">
               <Button
                 onClick={() => setCurrentStep(prev => prev > 1 ? prev - 1 : prev)}
                 disabled={currentStep === 1}
-                className={`flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white ${currentStep === 1 ? 'invisible' : ''}`}
+                className={`flex items-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white ${currentStep === 1 ? 'invisible' : ''}`}
               >
                 <ChevronLeft className="w-4 h-4" />
                 Previous
@@ -693,26 +688,26 @@ const AIUseCaseTool = () => {
               <Button
                 onClick={() => router.push('/dashboard')}
                 variant="outline"
-                className="flex items-center gap-2 border-gray-500 text-gray-600 hover:bg-gray-50"
+                className="flex items-center gap-2 border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSave}
                 variant="outline"
-                className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
+                className="flex items-center gap-2 border-green-500 dark:border-green-400 text-green-600 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 bg-white dark:bg-gray-800"
               >
                 Save Draft
               </Button>
             </div>
             <div className="flex items-center gap-4">
-              <div className="text-sm font-medium text-gray-500">
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Step {currentStep} of {steps.length}
               </div>
               {currentStep === steps.length ? (
                 <Button
                   onClick={handleGoToPipeline}
-                  className="flex items-center gap-2 bg-[#10b981] hover:bg-[#059669] text-white"
+                  className="flex items-center gap-2 bg-[#10b981] hover:bg-[#059669] dark:bg-green-600 dark:hover:bg-green-700 text-white"
                 >
                   Go to Pipeline
                   <ChevronRight className="w-4 h-4" />
@@ -720,7 +715,7 @@ const AIUseCaseTool = () => {
               ) : (
                 <Button
                   onClick={() => setCurrentStep(prev => prev < steps.length ? prev + 1 : prev)}
-                  className="flex items-center gap-2 bg-[#10b981] hover:bg-[#059669] text-white"
+                  className="flex items-center gap-2 bg-[#10b981] hover:bg-[#059669] dark:bg-green-600 dark:hover:bg-green-700 text-white"
                 >
                   Next
                   <ChevronRight className="w-4 h-4" />

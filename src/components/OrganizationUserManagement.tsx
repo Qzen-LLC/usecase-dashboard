@@ -131,29 +131,29 @@ export default function OrganizationUserManagement() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading user management...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground font-medium">Loading user management...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
         {/* Modern Header */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className="bg-card border rounded-2xl shadow-sm p-8">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent leading-tight">
                 User Management
               </h1>
-              <p className="text-gray-600 mt-3 text-lg">Manage users within your organization</p>
+              <p className="text-muted-foreground mt-3 text-lg">Manage users within your organization</p>
             </div>
             <Button 
-              className="flex items-center gap-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex-shrink-0" 
+              className="flex items-center gap-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-primary-foreground px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex-shrink-0" 
               onClick={() => setShowAddUser(true)}
             >
               <UserPlus className="w-6 h-6" />
@@ -164,29 +164,29 @@ export default function OrganizationUserManagement() {
 
         {/* Success/Error Messages */}
         {success && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-green-800 font-medium">{success}</span>
+          <div className="bg-success/10 border border-success/20 rounded-xl p-4 flex items-center gap-2">
+            <div className="w-2 h-2 bg-success rounded-full"></div>
+            <span className="text-success-foreground font-medium">{success}</span>
           </div>
         )}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-2">
-            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-            <span className="text-red-800 font-medium">{error}</span>
+          <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-2">
+            <div className="w-2 h-2 bg-destructive rounded-full"></div>
+            <span className="text-destructive-foreground font-medium">{error}</span>
           </div>
         )}
 
         {/* Add User Modal */}
         {showAddUser && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full mx-4 border border-gray-100">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div className="bg-card border rounded-2xl shadow-2xl p-8 max-w-lg w-full mx-4">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <UserPlus className="w-5 h-5 text-blue-600" />
+                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <UserPlus className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Add New User</h2>
-                  <p className="text-gray-600">Send invitation to join your organization</p>
+                  <h2 className="text-2xl font-bold text-foreground">Add New User</h2>
+                  <p className="text-muted-foreground">Send invitation to join your organization</p>
                 </div>
               </div>
               
@@ -199,7 +199,7 @@ export default function OrganizationUserManagement() {
                       value={newUserFirstName}
                       onChange={(e) => setNewUserFirstName(e.target.value)}
                       placeholder="First Name"
-                      className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
+                      className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-ring focus:border-primary transition-all duration-200 bg-background text-foreground placeholder:text-muted-foreground"
                     />
                   </div>
                   <div>
@@ -209,7 +209,7 @@ export default function OrganizationUserManagement() {
                       value={newUserLastName}
                       onChange={(e) => setNewUserLastName(e.target.value)}
                       placeholder="Last Name"
-                      className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
+                      className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-ring focus:border-primary transition-all duration-200 bg-background text-foreground placeholder:text-muted-foreground"
                     />
                   </div>
                 </div>
@@ -222,14 +222,14 @@ export default function OrganizationUserManagement() {
                     value={newUserEmail}
                     onChange={(e) => setNewUserEmail(e.target.value)}
                     placeholder="user@example.com"
-                    className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
+                    className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-ring focus:border-primary transition-all duration-200 bg-background text-foreground placeholder:text-muted-foreground"
                   />
                 </div>
 
                 <div>
                   <Label htmlFor="userRole" className="text-sm font-medium text-foreground mb-2 block">Role</Label>
                   <Select value={newUserRole} onValueChange={setNewUserRole}>
-                    <SelectTrigger className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground">
+                    <SelectTrigger className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-ring focus:border-primary transition-all duration-200 bg-background text-foreground">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -297,15 +297,15 @@ export default function OrganizationUserManagement() {
             </CardContent>
           </Card>
           
-          <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl">
+          <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-purple-600" />
+                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <Shield className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Admins</p>
-                  <p className="text-3xl font-bold text-gray-900">{users.filter(u => u.role === 'ORG_ADMIN').length}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Admins</p>
+                  <p className="text-3xl font-bold text-foreground">{users.filter(u => u.role === 'ORG_ADMIN').length}</p>
                 </div>
               </div>
             </CardContent>
@@ -315,8 +315,8 @@ export default function OrganizationUserManagement() {
         {/* Users List */}
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-              <Users className="w-6 h-6 text-blue-600" />
+            <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
+              <Users className="w-6 h-6 text-primary" />
               Organization Users
             </h2>
             <Badge variant="secondary" className="px-3 py-1 rounded-full">
@@ -325,16 +325,16 @@ export default function OrganizationUserManagement() {
           </div>
           
           {users.length === 0 ? (
-            <Card className="bg-white border-0 shadow-sm rounded-2xl">
+            <Card className="bg-card border border-border shadow-sm rounded-2xl">
               <CardContent className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-8 h-8 text-gray-400" />
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-8 h-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Users Yet</h3>
-                <p className="text-gray-600 mb-6 max-w-md mx-auto">Add users to your organization to get started with collaboration</p>
+                <h3 className="text-xl font-semibold text-foreground mb-2">No Users Yet</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">Add users to your organization to get started with collaboration</p>
                 <Button 
                   onClick={() => setShowAddUser(true)}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl"
+                  className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-primary-foreground px-6 py-3 rounded-xl"
                 >
                   Add User
                 </Button>
@@ -343,18 +343,18 @@ export default function OrganizationUserManagement() {
           ) : (
             <div className="grid gap-6">
               {users.map((user) => (
-                <Card key={user.id} className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl overflow-hidden">
+                <Card key={user.id} className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl overflow-hidden">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start">
                       <div className="flex items-start gap-4 min-w-0">
-                        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-lg font-medium text-gray-700">
+                        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-lg font-medium text-muted-foreground">
                             {user.firstName?.[0]}{user.lastName?.[0]}
                           </span>
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-3 mb-2 flex-wrap">
-                            <h3 className="text-lg font-semibold text-gray-900 truncate">
+                            <h3 className="text-lg font-semibold text-foreground truncate">
                               {user.firstName} {user.lastName}
                             </h3>
                             <Badge 
@@ -370,7 +370,7 @@ export default function OrganizationUserManagement() {
                               {user.isActive ? 'Active' : 'Inactive'}
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                             <div className="flex items-center gap-1 flex-shrink-0">
                               <Mail className="w-4 h-4 flex-shrink-0" />
                               <span className="truncate">{user.email}</span>
@@ -389,10 +389,10 @@ export default function OrganizationUserManagement() {
                             size="sm"
                             onClick={() => handleRemoveUser(user.id)}
                             disabled={removeUserLoading === user.id}
-                            className="border-red-200 text-red-600 hover:bg-red-50 rounded-xl px-3 py-2"
+                            className="border-destructive/20 text-destructive hover:bg-destructive/10 rounded-xl px-3 py-2"
                           >
                             {removeUserLoading === user.id ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b border-red-600"></div>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b border-destructive"></div>
                             ) : (
                               <Trash2 className="w-4 h-4" />
                             )}

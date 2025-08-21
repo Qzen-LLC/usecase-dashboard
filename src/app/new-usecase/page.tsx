@@ -83,11 +83,11 @@ const ArrayInput = ({
   return (
     <div className="space-y-2">
       <Label className="text-foreground">{label}</Label>
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center">
         <Input
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
-          className={`${invalid ? 'border-destructive' : ''} bg-background text-foreground border-border`}
+          className={`${invalid ? 'border-destructive' : ''} bg-background text-foreground border-border h-9`}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               onAdd(field as ArrayField, inputVal);
@@ -97,11 +97,12 @@ const ArrayInput = ({
         />
         <Button
           type="button"
+          size="icon"
           onClick={() => {
             onAdd(field as ArrayField, inputVal);
             setInputVal("");
           }}
-          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
+          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white h-9 w-9 flex-shrink-0"
         >
           <Plus className="w-4 h-4" />
         </Button>
@@ -110,10 +111,10 @@ const ArrayInput = ({
         {value.map((item, i) => (
           <div
             key={i}
-            className="flex justify-between items-center border border-gray-200 dark:border-gray-600 p-2 rounded bg-gray-50 dark:bg-gray-700"
+            className="flex justify-between items-center border border-gray-200 dark:border-gray-600 p-2 rounded bg-gray-50 dark:bg-gray-700 min-h-[40px]"
           >
             <span className="text-gray-900 dark:text-white">{item}</span>
-            <Button variant="destructive" size="icon" onClick={() => onRemove(field as ArrayField, i)} className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600">
+            <Button variant="destructive" size="icon" onClick={() => onRemove(field as ArrayField, i)} className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 h-9 w-9 flex-shrink-0">
               <Minus className="w-4 h-4" />
             </Button>
           </div>
