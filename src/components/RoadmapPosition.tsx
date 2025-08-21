@@ -24,7 +24,7 @@ const TIMELINE_CONSTRAINTS = [
   "> 24 months",
 ];
 const PRIORITY_LEVELS = ["high", "medium", "low"];
-const TIMELINE_OPTIONS = ["Q1 2025 - Immediate start", "Q2 2025 - After infrastructure setup", "Q3 2025 - Phase 2 implementation"];
+const TIMELINE_OPTIONS = ["Q3 2025", "Q4 2025", "Q1 2026", "Q2 2026"];
 
 type Props = {
   value: {
