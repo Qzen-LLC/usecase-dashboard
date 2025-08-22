@@ -892,7 +892,7 @@ const FinancialDashboard = () => {
                  <Button
            variant="outline"
            onClick={() => setShowFormulae(!showFormulae)}
-           className="mb-4 text-black dark:text-black dark:border-gray-600 dark:hover:bg-gray-700"
+           className="mb-4 text-dark dark:border-gray-600 dark:hover:bg-gray-700"
          >
           {showFormulae ? 'Hide Formula' : 'Show Formula'}
         </Button>

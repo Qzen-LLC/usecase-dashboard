@@ -78,17 +78,17 @@
     
     /* Semantic Colors */
     --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --foreground: 0 0% 0%; /* Pure black for better readability */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 0 0% 0%; /* Pure black for better readability */
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
+    --popover-foreground: 0 0% 0%; /* Pure black for better readability */
     --primary: 59 130 246;
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    --muted-foreground: 0 0% 25%; /* Darker gray for better readability in light mode */
     --accent: 0 0% 96.1%;
     --accent-foreground: 0 0% 9%;
     --destructive: 0 84.2% 60.2%;
@@ -115,37 +115,37 @@
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --background: 0 0% 7%; /* Slightly lighter than pure black */
+    --foreground: 0 0% 100%; /* Pure white for maximum brightness in dark mode */
+    --card: 0 0% 9%; /* Slightly lighter than background */
+    --card-foreground: 0 0% 100%; /* Pure white for maximum brightness in dark mode */
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 100%; /* Pure white for maximum brightness in dark mode */
     --primary: 59 130 246;
     --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
+    --secondary: 0 0% 16%; /* Slightly lighter than pure black */
+    --secondary-foreground: 0 0% 100%; /* Pure white for maximum brightness in dark mode */
+    --muted: 0 0% 16%;
+    --muted-foreground: 0 0% 80%; /* Brighter gray for better visibility in dark mode */
+    --accent: 0 0% 16%;
+    --accent-foreground: 0 0% 100%; /* Pure white for maximum brightness in dark mode */
     --destructive: 239 68 68; /* Using danger-500 for better visibility in dark mode */
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
+    --destructive-foreground: 0 0% 95%;
+    --border: 0 0% 16%;
+    --input: 0 0% 16%;
     --ring: 59 130 246;
     
-    /* Dark mode specific color overrides for better readability */
-    --primary-50: 239 246 255;
-    --primary-100: 219 234 254;
-    --primary-200: 191 219 254;
-    --primary-300: 147 197 253;
-    --primary-400: 96 165 250;
-    --primary-500: 59 130 246;
-    --primary-600: 37 99 235;
-    --primary-700: 147 197 253; /* Bright blue for dark mode */
-    --primary-800: 191 219 254; /* Even brighter blue for dark mode */
-    --primary-900: 219 234 254; /* Very bright blue for dark mode */
+    /* Dark mode specific color overrides for better readability - using bright colors for maximum visibility */
+    --primary-50: 248 250 252; /* slate-50 */
+    --primary-100: 241 245 249; /* slate-100 */
+    --primary-200: 226 232 240; /* slate-200 */
+    --primary-300: 203 213 225; /* slate-300 */
+    --primary-400: 148 163 184; /* slate-400 */
+    --primary-500: 100 116 139; /* slate-500 */
+    --primary-600: 59 130 246; /* Bright blue for dark mode */
+    --primary-700: 37 99 235; /* Brighter blue for dark mode */
+    --primary-800: 29 78 216; /* Even brighter blue for dark mode */
+    --primary-900: 30 64 175; /* Very bright blue for dark mode */
     
     --success-50: 240 253 244;
     --success-100: 220 252 231;
@@ -189,6 +189,120 @@
   
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+  
+  /* Custom utility classes for better dark mode colors */
+  .text-dark {
+    @apply text-black dark:text-white;
+  }
+  
+  .text-dark-secondary {
+    @apply text-black dark:text-gray-200;
+  }
+  
+  .bg-dark {
+    @apply bg-gray-800 dark:bg-gray-900;
+  }
+  
+  .bg-dark-secondary {
+    @apply bg-gray-700 dark:bg-gray-800;
+  }
+  
+  .border-dark {
+    @apply border-gray-700 dark:border-gray-600;
+  }
+  
+  /* Additional utility classes for consistent dark mode */
+  .bg-dark-overlay {
+    @apply bg-gray-900/50;
+  }
+  
+  .text-dark-primary {
+    @apply text-black dark:text-white;
+  }
+  
+  /* Bright heading classes for dark mode */
+  .heading-bright {
+    @apply text-black dark:text-white;
+  }
+  
+  .heading-primary {
+    @apply text-black dark:text-white;
+  }
+  
+  .heading-secondary {
+    @apply text-gray-800 dark:text-gray-200;
+  }
+  
+  /* Enhanced heading styles for better visibility */
+  .text-heading {
+    @apply text-black dark:text-white font-bold;
+  }
+  
+  .text-heading-large {
+    @apply text-4xl text-black dark:text-white font-bold leading-tight;
+  }
+  
+  .text-heading-medium {
+    @apply text-2xl text-black dark:text-white font-semibold leading-tight;
+  }
+  
+  .text-heading-small {
+    @apply text-lg text-black dark:text-white font-medium leading-tight;
+  }
+  
+  /* Enhanced subtitle styles for better visibility */
+  .text-subtitle {
+    @apply text-lg text-gray-700 dark:text-gray-200 font-medium leading-relaxed;
+  }
+  
+  .text-subtitle-bright {
+    @apply text-lg text-gray-800 dark:text-white font-medium leading-relaxed;
+  }
+  
+  .bg-dark-card {
+    @apply bg-gray-800 dark:bg-gray-900;
+  }
+  
+  /* Utility classes to replace blue backgrounds with grey alternatives */
+  .bg-blue-replacement {
+    @apply bg-gray-100 dark:bg-gray-800;
+  }
+  
+  .bg-blue-50-replacement {
+    @apply bg-gray-50 dark:bg-gray-800;
+  }
+  
+  .bg-blue-100-replacement {
+    @apply bg-gray-100 dark:bg-gray-700;
+  }
+  
+  .bg-blue-500-replacement {
+    @apply bg-gray-600 dark:bg-gray-500;
+  }
+  
+  .bg-blue-600-replacement {
+    @apply bg-gray-700 dark:bg-gray-600;
+  }
+  
+  .text-blue-replacement {
+    @apply text-gray-700 dark:text-gray-300;
+  }
+  
+  .text-blue-800-replacement {
+    @apply text-gray-800 dark:text-gray-200;
+  }
+  
+  .border-blue-replacement {
+    @apply border-gray-300 dark:border-gray-600;
+  }
+  
+  .border-blue-200-replacement {
+    @apply border-gray-200 dark:border-gray-700;
+  }
+  
+  .border-blue-700-replacement {
+    @apply border-gray-600 dark:border-gray-500;
   }
   
   /* Debug: Show current CSS variable values */
@@ -396,11 +510,11 @@
   }
   
   .btn-secondary {
-    @apply bg-secondary-100 hover:bg-secondary-200 text-secondary-700 font-medium px-4 py-2.5 rounded-lg transition-all duration-200;
+    @apply bg-secondary-100 hover:bg-secondary-200 text-black dark:text-white font-medium px-4 py-2.5 rounded-lg transition-all duration-200;
   }
   
   .btn-outline {
-    @apply border bg-card hover:bg-muted text-foreground font-medium px-4 py-2.5 rounded-lg transition-all duration-200 shadow-sm;
+    @apply border border-border bg-card hover:bg-muted text-black dark:text-white font-medium px-4 py-2.5 rounded-lg transition-all duration-200 shadow-sm;
   }
   
   .btn-success {

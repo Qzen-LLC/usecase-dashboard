@@ -1043,11 +1043,11 @@ const Dashboard = () => {
                 </div>
                 <SheetFooter className="flex flex-wrap gap-2 justify-start sm:justify-end">
                   <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                    <Button size="sm" variant="outline" className='text-black' onClick={() => { handleView(modalUseCase.id); setIsSheetOpen(false); }}>
+                    <Button size="sm" variant="outline" className='text-dark' onClick={() => { handleView(modalUseCase.id); setIsSheetOpen(false); }}>
                       <Eye className="w-4 h-4 mr-2" /> View
                     </Button>
                     {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && (
-                      <Button size="sm" variant="outline" className='text-black' onClick={() => { handleEdit(modalUseCase.id); setIsSheetOpen(false); }}>
+                      <Button size="sm" variant="outline" className='text-dark' onClick={() => { handleEdit(modalUseCase.id); setIsSheetOpen(false); }}>
                         <EditIcon className="w-4 h-4 mr-2" /> Edit
                       </Button>
                     )}
@@ -1059,14 +1059,14 @@ const Dashboard = () => {
                           handleMoveToStage(modalUseCase.id, getNextStage(modalUseCase.stage)); 
                           setIsSheetOpen(false); 
                         }}
-                        className="whitespace-nowrap text-black"
+                        className="whitespace-nowrap text-dark"
                       >
                         <ArrowRightIcon className="w-4 h-4 mr-2" />
                         Next Stage
                       </Button>
                     )}
                     {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER' || userData?.role === 'QZEN_ADMIN') && modalUseCase.stage !== 'discovery' && (
-                      <Button size="sm" className='text-black' variant="outline" onClick={() => { handleAssess(modalUseCase.id); setIsSheetOpen(false); }}>
+                      <Button size="sm" className='text-dark' variant="outline" onClick={() => { handleAssess(modalUseCase.id); setIsSheetOpen(false); }}>
                         <Zap className="w-4 h-4 mr-2" /> Assess
                       </Button>
                     )}

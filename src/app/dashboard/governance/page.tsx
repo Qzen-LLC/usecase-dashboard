@@ -186,7 +186,7 @@ export default function GovernancePage() {
 
   const getFrameworkColor = (framework: string) => {
     const colors: { [key: string]: string } = {
-      'EU AI Act': 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 border-blue-300 dark:border-blue-700',
+      'EU AI Act': 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600',
       'US AI Bill of Rights': 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 border-red-300 dark:border-red-700',
       'China AI Regulations': 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700',
       'UK AI Framework': 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700',
@@ -202,7 +202,7 @@ export default function GovernancePage() {
       'ISO 27701 (Privacy)': 'bg-teal-100 dark:bg-teal-900/20 text-teal-800 dark:text-teal-200 border-teal-300 dark:border-teal-700',
       'ISO/IEC 23053 (AI)': 'bg-cyan-100 dark:bg-cyan-900/20 text-cyan-800 dark:text-cyan-200 border-cyan-300 dark:border-cyan-700',
       'ISO/IEC 23894 (AI Risk)': 'bg-sky-100 dark:bg-sky-900/20 text-sky-800 dark:text-sky-200 border-sky-300 dark:border-sky-700',
-      'ISO/IEC 42001:2023 – AI Management System (AIMS)': 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 border-blue-300 dark:border-blue-700',
+      'ISO/IEC 42001:2023 – AI Management System (AIMS)': 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600',
       'ISO/IEC JTC 1/SC 42 – AI Standardization Committee': 'bg-indigo-100 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-200 border-indigo-300 dark:border-indigo-700',
       'SOC 2': 'bg-violet-100 dark:bg-violet-900/20 text-violet-800 dark:text-violet-200 border-violet-300 dark:border-violet-700',
       'FedRAMP': 'bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-200 border-purple-300 dark:border-purple-700',
@@ -254,13 +254,13 @@ export default function GovernancePage() {
                 variant="outline" 
                 size="sm" 
                 disabled={refreshing}
-                className="flex items-center gap-2 text-black"
+                className="flex items-center gap-2 text-dark"
               >
                 <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
                 {refreshing ? 'Refreshing...' : 'Refresh'}
               </Button>
               {refreshing && (
-                <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
+                <div className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded">
                   Updating progress...
                 </div>
               )}
@@ -313,7 +313,7 @@ export default function GovernancePage() {
                         </div>
                         <div className="flex items-center gap-1 flex-wrap">
                           {item.regulatoryFrameworks.slice(0, 2).map((framework: string, index: number) => (
-                            <Badge key={index} variant="outline" className="text-xs px-1.5 py-0.5 h-5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700">
+                            <Badge key={index} variant="outline" className="text-xs px-1.5 py-0.5 h-5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600">
                               {framework}
                             </Badge>
                           ))}
@@ -329,7 +329,7 @@ export default function GovernancePage() {
                         </div>
                       </div>
                       <Link href={`/dashboard/${item.useCaseId}/assess`}>
-                        <Button variant="outline" size="sm" className="text-xs text-black">View Assessment</Button>
+                        <Button variant="outline" size="sm" className="text-xs text-dark">View Assessment</Button>
                       </Link>
                     </div>
 
@@ -384,20 +384,20 @@ export default function GovernancePage() {
 
                       {/* EU AI ACT Section */}
                       {showEuAiAct && (
-                      <div className="border-l-4 border-blue-400 dark:border-blue-500 bg-gradient-to-r from-blue-50 dark:from-blue-900/20 to-blue-25 dark:to-blue-800/10 pl-3 pr-2 py-2.5 rounded-r">
+                      <div className="border-l-4 border-gray-400 dark:border-gray-500 bg-gradient-to-r from-gray-50 dark:from-gray-800 to-gray-25 dark:to-gray-700/10 pl-3 pr-2 py-2.5 rounded-r">
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-xs font-medium text-blue-900 dark:text-blue-100">EU AI ACT</span>
-                          <span className="text-xs text-blue-700 dark:text-blue-300 font-semibold">{assessmentProgress[item.useCaseId]?.euAiAct ? `${Math.round(assessmentProgress[item.useCaseId].euAiAct!.progress)}%` : '0%'}</span>
+                          <span className="text-xs font-medium text-gray-900 dark:text-gray-100">EU AI ACT</span>
+                          <span className="text-xs text-gray-700 dark:text-gray-300 font-semibold">{assessmentProgress[item.useCaseId]?.euAiAct ? `${Math.round(assessmentProgress[item.useCaseId].euAiAct!.progress)}%` : '0%'}</span>
                         </div>
-                        <div className="w-full bg-blue-200/60 dark:bg-blue-700/40 rounded-full h-1.5 mb-2">
-                          <div className="bg-blue-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${assessmentProgress[item.useCaseId]?.euAiAct?.progress || 0}%` }}></div>
+                        <div className="w-full bg-gray-200/60 dark:bg-gray-700/40 rounded-full h-1.5 mb-2">
+                          <div className="bg-gray-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${assessmentProgress[item.useCaseId]?.euAiAct?.progress || 0}%` }}></div>
                         </div>
                         <div className="flex justify-between items-center">
                           <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${assessmentProgress[item.useCaseId]?.euAiAct?.status === 'completed' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' : 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700'}`}>
                             {assessmentProgress[item.useCaseId]?.euAiAct?.status === 'completed' ? 'Completed' : 'In Progress'}
                           </Badge>
                           <Link href={`/dashboard/${item.useCaseId}/eu-ai-act`}>
-                            <Button variant="ghost" size="sm" className="text-xs h-6 px-2 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/20">Start</Button>
+                            <Button variant="ghost" size="sm" className="text-xs h-6 px-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">Start</Button>
                           </Link>
                         </div>
                       </div>

@@ -102,7 +102,7 @@ const ArrayInput = ({
             onAdd(field as ArrayField, inputVal);
             setInputVal("");
           }}
-          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white h-9 w-9 flex-shrink-0"
+                          className="bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white h-9 w-9 flex-shrink-0"
         >
           <Plus className="w-4 h-4" />
         </Button>
@@ -234,7 +234,7 @@ const AIUseCaseTool = () => {
 
   const renderStep1 = () => (
     <div className="space-y-6">
-      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
         <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">Use Case Documentation</h3>
         <p className="text-blue-700 dark:text-blue-300">Define and structure your AI use case with clear problem statements and success criteria.</p>
       </div>
@@ -498,7 +498,7 @@ const AIUseCaseTool = () => {
         </div>
         <div className="bg-gray-75 dark:bg-gray-700 p-6 rounded-lg">
           <div className="flex items-center mb-4">
-            <Label htmlFor="implementationComplexity" className='text-lg font-semibold text-black-800 dark:text-white'>Additional Metrics</Label>
+            <Label htmlFor="implementationComplexity" className='text-lg font-semibold text-dark'>Additional Metrics</Label>
           </div>
           <div className="space-y-4">
             <Label htmlFor="implementationComplexity" className='text-sm font-normal text-gray-800 dark:text-gray-200 mb-2'>Implementation Complexity</Label>
@@ -530,7 +530,7 @@ const AIUseCaseTool = () => {
               <div className="text-2xl font-bold text-pink-600 dark:text-pink-400">{formData.productivityImpactScore}</div>
               <div className="text-sm text-pink-800 dark:text-pink-200">Productivity</div>
             </div>
-            <div className="bg-blue-100 dark:bg-blue-900/20 p-4 rounded-lg">
+                            <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
               <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{formData.revenueImpactScore}</div>
               <div className="text-sm text-blue-800 dark:text-blue-200">Revenue</div>
             </div>
@@ -636,14 +636,14 @@ const AIUseCaseTool = () => {
                 aria-label={`Go to ${step.title}`}
               >
                 <div className={`flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-all duration-150 ${
-                  currentStep === step.id ? 'bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white scale-110 shadow-lg' : currentStep > step.id ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
+                  currentStep === step.id ? 'bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white scale-110 shadow-lg' : currentStep > step.id ? 'bg-gray-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
                 } group-hover:scale-110`}
                 >
                   <step.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <div className="ml-3 sm:ml-4">
                   <div className={`text-sm sm:text-base font-medium ${
-                    currentStep === step.id ? 'text-[#8f4fff]' : currentStep > step.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'
+                    currentStep === step.id ? 'text-[#8f4fff]' : currentStep > step.id ? 'text-gray-600 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'
                   } group-hover:text-[#b84fff]`}
                   >
                     {step.title}
@@ -680,7 +680,7 @@ const AIUseCaseTool = () => {
               <Button
                 onClick={() => setCurrentStep(prev => prev > 1 ? prev - 1 : prev)}
                 disabled={currentStep === 1}
-                className={`flex items-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white ${currentStep === 1 ? 'invisible' : ''}`}
+                className={`flex items-center gap-2 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white ${currentStep === 1 ? 'invisible' : ''}`}
               >
                 <ChevronLeft className="w-4 h-4" />
                 Previous

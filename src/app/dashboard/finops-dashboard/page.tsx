@@ -73,7 +73,7 @@ const FinOpsDashboardPage = () => {
   // Don't render until stable to prevent hydration mismatch
   if (!isReady) {
     return (
-      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-foreground font-medium">Loading FinOps Dashboard...</p>
@@ -92,7 +92,7 @@ const FinOpsDashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black">
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
         {/* Page Header */}
         <div className="bg-card rounded-2xl shadow-sm border border-border p-8">

@@ -603,7 +603,7 @@ export default function AdminDashboard() {
                             setInviteError(null);
                             setInviteSuccess(null);
                           }}
-                          className="border-border text-black text-blackhover:bg-muted whitespace-nowrap"
+                          className="border-border text-dark hover:bg-muted whitespace-nowrap"
                         >
                           <Mail className="w-4 h-4 mr-2" />
                           Invite User
@@ -616,7 +616,7 @@ export default function AdminDashboard() {
                               selectedOrgId === org.id ? null : org.id
                             );
                           }}
-                          className="border-border text-black hover:bg-muted whitespace-nowrap"
+                          className="border-border text-dark hover:bg-muted whitespace-nowrap"
                         >
                           <BarChart3 className="w-4 h-4" />
                           {selectedOrgId === org.id ? "Hide" : "Show"} Use Cases
@@ -852,7 +852,7 @@ export default function AdminDashboard() {
                       setInviteError(null);
                       setInviteSuccess(null);
                     }}
-                    className="flex-1 border-border text-black hover:bg-muted px-6 py-3 rounded-xl"
+                    className="flex-1 border-border text-dark hover:bg-muted px-6 py-3 rounded-xl"
                   >
                     Cancel
                   </Button>

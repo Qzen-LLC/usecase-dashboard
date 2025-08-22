@@ -865,8 +865,8 @@ const ApprovalsPage = forwardRef((props, ref) => {
                     mediumCount={mediumCount}
                   />
                   {riskResult.regulatoryWarnings && riskResult.regulatoryWarnings.length > 0 && (
-                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-100 rounded flex items-start gap-2 border border-blue-200 dark:border-blue-800">
-                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-blue-400 flex-shrink-0" />
+                    <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded flex items-start gap-2 border border-gray-200 dark:border-gray-600">
+                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-gray-400 flex-shrink-0" />
                       <div>
                         <div className="font-semibold mb-1">Regulatory frameworks have been automatically inferred:</div>
                         {riskResult.regulatoryWarnings.map((w, i) => <div key={i}>{w}</div>)}
@@ -874,8 +874,8 @@ const ApprovalsPage = forwardRef((props, ref) => {
                     </div>
                   )}
                   {riskResult.dataPrivacyInfo && riskResult.dataPrivacyInfo.length > 0 && (
-                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-100 rounded flex items-start gap-2 border border-blue-200 dark:border-blue-800">
-                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-blue-400 flex-shrink-0" />
+                    <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded flex items-start gap-2 border border-gray-200 dark:border-gray-600">
+                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-gray-400 flex-shrink-0" />
                       <div>
                         <div className="font-semibold mb-1">Data Privacy:</div>
                         {riskResult.dataPrivacyInfo.map((w, i) => <div key={i}>{w}</div>)}
@@ -883,8 +883,8 @@ const ApprovalsPage = forwardRef((props, ref) => {
                     </div>
                   )}
                   {riskResult.securityInfo && riskResult.securityInfo.length > 0 && (
-                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-100 rounded flex items-start gap-2 border border-blue-200 dark:border-blue-800">
-                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-blue-400 flex-shrink-0" />
+                    <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded flex items-start gap-2 border border-gray-200 dark:border-gray-600">
+                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-gray-400 flex-shrink-0" />
                       <div>
                         <div className="font-semibold mb-1">Security:</div>
                         {riskResult.securityInfo.map((w, i) => <div key={i}>{w}</div>)}
@@ -892,8 +892,8 @@ const ApprovalsPage = forwardRef((props, ref) => {
                     </div>
                   )}
                   {riskResult.operationalInfo && riskResult.operationalInfo.length > 0 && (
-                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-100 rounded flex items-start gap-2 border border-blue-200 dark:border-blue-800">
-                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-blue-400 flex-shrink-0" />
+                    <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded flex items-start gap-2 border border-gray-200 dark:border-gray-600">
+                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-gray-400 flex-shrink-0" />
                       <div>
                         <div className="font-semibold mb-1">Operational:</div>
                         {riskResult.operationalInfo.map((w, i) => <div key={i}>{w}</div>)}
@@ -901,8 +901,8 @@ const ApprovalsPage = forwardRef((props, ref) => {
                     </div>
                   )}
                   {riskResult.ethicalInfo && riskResult.ethicalInfo.length > 0 && (
-                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-100 rounded flex items-start gap-2 border border-blue-200 dark:border-blue-800">
-                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-blue-400 flex-shrink-0" />
+                    <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded flex items-start gap-2 border border-gray-200 dark:border-gray-600">
+                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-gray-400 flex-shrink-0" />
                       <div>
                         <div className="font-semibold mb-1">Ethical:</div>
                         {riskResult.ethicalInfo.map((w, i) => <div key={i}>{w}</div>)}
@@ -928,10 +928,10 @@ const ApprovalsPage = forwardRef((props, ref) => {
               // Sort by score descending
               const topRisks = riskScores.sort((a, b) => b.score - a.score).slice(0, 3);
               return (
-                <div className="mt-8 p-6 bg-blue-100 dark:bg-gray-800 border border-blue-200 dark:border-gray-700 rounded-xl">
+                <div className="mt-8 p-6 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
-                    <InformationCircleIcon className="w-5 h-5 text-blue-400" />
-                    <span className="font-bold text-blue-900 dark:text-blue-100 text-lg">Risk Action Summary</span>
+                    <InformationCircleIcon className="w-5 h-5 text-gray-400" />
+                    <span className="font-bold text-gray-900 dark:text-gray-100 text-lg">Risk Action Summary</span>
                   </div>
                   <ul className="list-disc pl-6 space-y-2">
                     {topRisks.map((risk, idx) => (
@@ -939,12 +939,12 @@ const ApprovalsPage = forwardRef((props, ref) => {
                         <span className="font-semibold">{risk.label} Risk ({risk.score}/10):</span>
                         {risk.score >= 8 ? (
                           <ul className="list-disc pl-6">
-                            {(risk.info && risk.info.length > 0 ? risk.info : risk.factors).map((msg, i) => <li key={i} className="text-blue-900 dark:text-blue-100">Action: {msg}</li>)}
+                            {(risk.info && risk.info.length > 0 ? risk.info : risk.factors).map((msg, i) => <li key={i} className="text-gray-900 dark:text-gray-100">Action: {msg}</li>)}
                           </ul>
                         ) : risk.score >= 4 ? (
-                          <span className="text-blue-900 dark:text-blue-100 ml-2">Monitor this area. {risk.factors && risk.factors.length > 0 ? `Factors: ${risk.factors.join('; ')}` : ''}</span>
+                          <span className="text-gray-900 dark:text-gray-100 ml-2">Monitor this area. {risk.factors && risk.factors.length > 0 ? `Factors: ${risk.factors.join('; ')}` : ''}</span>
                         ) : (
-                          <span className="text-blue-900 dark:text-blue-100 ml-2">No immediate action required.</span>
+                          <span className="text-gray-900 dark:text-gray-100 ml-2">No immediate action required.</span>
                         )}
                       </li>
                     ))}

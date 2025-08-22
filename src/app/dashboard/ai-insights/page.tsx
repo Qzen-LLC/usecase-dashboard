@@ -412,7 +412,7 @@ export default function UnifiedAIInsightsPage() {
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center space-x-2">
-                            <div className="p-2 rounded-lg bg-blue-100 text-blue-800">
+                            <div className="p-2 rounded-lg bg-gray-100 text-gray-800">
                               <DollarSign className="h-5 w-5" />
                             </div>
                             <div>
@@ -475,7 +475,7 @@ export default function UnifiedAIInsightsPage() {
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center space-x-2">
-                            <div className="p-2 rounded-lg bg-blue-100 text-blue-800">
+                            <div className="p-2 rounded-lg bg-gray-100 text-gray-800">
                               <Shield className="h-5 w-5" />
                             </div>
                             <div>
@@ -546,9 +546,9 @@ export default function UnifiedAIInsightsPage() {
                   
                   <h4 className="font-semibold mb-2">Impact Analysis</h4>
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center p-2 bg-blue-50 rounded">
-                      <span className="text-sm font-medium text-blue-700">Financial Impact:</span>
-                      <span className="text-sm text-blue-900">{selectedInsight.financialImpact}</span>
+                    <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Financial Impact:</span>
+                      <span className="text-sm text-gray-900 dark:text-gray-100">{selectedInsight.financialImpact}</span>
                     </div>
                     <div className="flex justify-between items-center p-2 bg-green-50 rounded">
                       <span className="text-sm font-medium text-green-700">Governance Impact:</span>
