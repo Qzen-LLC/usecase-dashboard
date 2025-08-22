@@ -991,7 +991,7 @@ export default function Iso42001AssessmentPage() {
           <div className="mb-6">
             <div className="flex items-center gap-4 mb-4">
               <Link href="/dashboard/governance">
-                <Button variant="outline" size="sm" className="text-black">
+                <Button variant="outline" size="sm" className="text-dark">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Governance
                 </Button>
@@ -1141,7 +1141,7 @@ export default function Iso42001AssessmentPage() {
                       Implement the core requirements of the AI Management
                       System standard
                     </p>
-                    <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded text-xs text-blue-800 dark:text-blue-200">
+                    <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-xs text-gray-800 dark:text-gray-200">
                       <strong>How to edit:</strong> Click on any clause header
                       to expand it, then fill in the implementation details for
                       each subclause requirement.
@@ -1161,7 +1161,7 @@ export default function Iso42001AssessmentPage() {
                       Additional controls to support the AI Management System
                       implementation
                     </p>
-                    <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded text-xs text-blue-800 dark:text-blue-200">
+                    <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-xs text-gray-800 dark:text-gray-200">
                       <strong>How to edit:</strong> Click on any category header
                       to expand it, then fill in the implementation details for
                       each control objective.
@@ -1307,9 +1307,9 @@ export default function Iso42001AssessmentPage() {
 
                                     {subclause.questions.length > 0 && (
                                       <div className="mb-4">
-                                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                                        <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
                                           <h5 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2 flex items-center gap-2">
-                                            <div className="w-4 h-4 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center">
+                                                                                          <div className="w-4 h-4 bg-gray-600 dark:bg-gray-500 rounded-full flex items-center justify-center">
                                               <span className="text-white text-xs">
                                                 ?
                                               </span>
@@ -1614,16 +1614,16 @@ export default function Iso42001AssessmentPage() {
                                     <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
                                       {item.description}
                                     </p>
-                                    <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-4 mb-4">
-                                      <h5 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                                        <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
+                                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 mb-4">
+                                      <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-gray-600 dark:bg-gray-500 rounded-full flex items-center justify-center">
                                           <span className="text-white text-xs">
                                             i
                                           </span>
                                         </div>
                                         Implementation Guidance:
                                       </h5>
-                                      <p className="text-sm text-blue-800 leading-relaxed">
+                                      <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
                                         {item.guidance}
                                       </p>
                                     </div>

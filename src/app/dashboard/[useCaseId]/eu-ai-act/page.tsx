@@ -1274,7 +1274,7 @@ export default function EuAiActAssessmentPage() {
           <div className="mb-6">
             <div className="flex items-center gap-4 mb-4">
               <Link href="/dashboard/governance">
-                <Button variant="outline" size="sm" className="text-black">
+                <Button variant="outline" size="sm" className="text-dark">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Governance
                 </Button>

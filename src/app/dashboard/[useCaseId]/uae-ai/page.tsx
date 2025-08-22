@@ -531,7 +531,7 @@ export default function UaeAiAssessmentPage() {
           <div className="mb-6">
             <div className="flex items-center gap-4 mb-4">
               <Link href="/dashboard/governance">
-                <Button variant="outline" size="sm" className="text-black">
+                <Button variant="outline" size="sm" className="text-dark">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Governance
                 </Button>
@@ -684,7 +684,7 @@ export default function UaeAiAssessmentPage() {
                   <CardContent className="p-6">
                     <div className="space-y-6">
                       {/* Legal Basis */}
-                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
                         <h5 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">Legal/Regulatory Basis:</h5>
                         <p className="text-sm text-blue-800 dark:text-blue-300">{control.legalBasis}</p>
                       </div>
@@ -856,7 +856,7 @@ export default function UaeAiAssessmentPage() {
                               <div 
                                 className={`h-2 rounded-full ${scoreDetails?.color === 'red' ? 'bg-red-500' : 
                                   scoreDetails?.color === 'orange' ? 'bg-orange-500' :
-                                  scoreDetails?.color === 'green' ? 'bg-green-500' : 'bg-blue-500'}`}
+                                  scoreDetails?.color === 'green' ? 'bg-green-500' : 'bg-gray-500'}`}
                                 style={{ width: `${((instance?.score || 0) / 3) * 100}%` }}
                               ></div>
                             </div>

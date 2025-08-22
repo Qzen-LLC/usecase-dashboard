@@ -534,7 +534,7 @@ export default function FinancialDashboard() {
           
           {/* Formulae Modal */}
           {showFormulae && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-40">
               <div className="bg-card rounded-xl shadow-2xl p-8 max-w-lg w-full relative border border-border">
                 <button className="absolute top-2 right-2 text-muted-foreground hover:text-foreground text-xl" onClick={() => setShowFormulae(false)}>&times;</button>
                 <h2 className="text-xl font-bold mb-4 text-foreground">Financial Formula Used</h2>

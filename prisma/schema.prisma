@@ -41,6 +41,7 @@ model UseCase {
   plannedStartDate         String?             @default("")
   organizationId           String?
   userId                   String?
+  businessFunction         String
   Approval                 Approval?
   assessData               Assess?
   euAiActAssessments       EuAiActAssessment?

@@ -95,7 +95,7 @@ const ViewUseCasePage = () => {
       {type === 'array' && Array.isArray(value) ? (
         <div className="flex flex-wrap gap-2">
           {value.map((item, index) => (
-            <span key={index} className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full text-sm">
+            <span key={index} className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-sm">
               {item}
             </span>
           ))}
@@ -119,7 +119,7 @@ const ViewUseCasePage = () => {
     return (
       <div className="flex flex-wrap gap-2">
         {items.map((item, index) => (
-          <span key={index} className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full text-sm">
+          <span key={index} className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-sm">
             {item}
           </span>
         ))}
@@ -214,7 +214,7 @@ const ViewUseCasePage = () => {
               }`}>
                 {useCase.priority || 'Medium'} Priority
               </span>
-              <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium">
+                              <span className="px-3 py-1 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-sm font-medium">
                 {useCase.stage || 'Discovery'}
               </span>
             </div>
@@ -308,7 +308,7 @@ const ViewUseCasePage = () => {
                     <div className="text-2xl font-bold text-pink-600 dark:text-pink-400">{useCase.productivityImpactScore}</div>
                     <div className="text-sm text-pink-800 dark:text-pink-200">Productivity Impact</div>
                   </div>
-                  <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{useCase.revenueImpactScore}</div>
                     <div className="text-sm text-blue-800 dark:text-blue-200">Revenue Impact</div>
                   </div>

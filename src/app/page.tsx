@@ -48,7 +48,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f5f7fa] to-[#c3cfe2] flex items-center justify-center px-2">
+    <div className="min-h-screen bg-gradient-to-br from-[#f5f7fa] to-[#e5e7eb] flex items-center justify-center px-2">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center flex flex-col items-center">
           {/* Logo placeholder - replace src with your logo if available */}

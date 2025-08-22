@@ -71,7 +71,7 @@ type ArrayField = 'primaryStakeholders' | 'secondaryStakeholders';
 
 const BUSINESS_FUNCTION_OPTIONS = [
   'Sales',
-  'Marketing',
+  'Marketing',  
   'Product Development',
   'Operations',
   'Customer Support',

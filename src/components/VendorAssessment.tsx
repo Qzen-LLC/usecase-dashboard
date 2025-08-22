@@ -545,11 +545,11 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
                     value={approval.status}
                     onChange={(e) => updateApprovalStatus(area, e.target.value)}
                     disabled={!isEditing}
-                    className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-primary disabled:opacity-75 text-black ${
-                      approval.status === 'Approved' ? 'bg-success/20 text-black border border-success/30' :
-                      approval.status === 'Rejected' ? 'bg-destructive/20 text-black border border-destructive/30' :
-                      'bg-warning/20 text-black border border-warning/30'
-                    }`}
+                    className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-primary disabled:opacity-75 text-dark ${
+              approval.status === 'Approved' ? 'bg-success/20 text-dark border border-success/30' :
+              approval.status === 'Rejected' ? 'bg-destructive/20 text-dark border border-destructive/30' :
+              'bg-warning/20 text-dark border border-warning/30'
+            }`}
                   >
                     <option value="Pending">Pending</option>
                     <option value="Approved">Approved</option>
@@ -919,7 +919,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
   }
 
   return (
-    <div className="space-y-6 fade-in bg-white dark:bg-black">
+    <div className="space-y-6 fade-in">
       {/* Page Header */}
       <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">

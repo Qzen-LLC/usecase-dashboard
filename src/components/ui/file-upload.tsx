@@ -167,7 +167,7 @@ export function FileUpload({
         className={`
           border-2 border-dashed rounded-lg p-6 text-center transition-colors
           ${dragOver 
-            ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' 
+                            ? 'border-gray-400 bg-gray-50 dark:bg-gray-800' 
             : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
           }
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}

@@ -66,7 +66,7 @@ const ExecutiveDashboard = () => {
         {/* Page Header */}
         <div className="page-header">
           <div className="flex items-center gap-4">
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-xl">
+                            <div className="bg-gradient-to-r from-gray-600 to-purple-600 p-3 rounded-xl">
               <BarChart3 className="w-8 h-8 text-white" />
             </div>
             <div>
