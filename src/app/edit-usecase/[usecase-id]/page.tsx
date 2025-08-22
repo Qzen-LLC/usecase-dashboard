@@ -3,7 +3,7 @@
 import { useParams, useSearchParams } from "next/navigation";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, ChevronLeft, Target, TrendingUp, Zap, DollarSign, Plus, Minus } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Target, TrendingUp, Zap, DollarSign, Plus, Minus, Check, ChevronDown, RefreshCw } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,12 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type FormData = {
   id?: string;
@@ -33,7 +39,7 @@ type FormData = {
   plannedStartDate: string;
   estimatedTimelineMonths: string;
   requiredResources: string;
-  businessFunction: string;
+  businessFunction: string[];
   priority: string;
   stage?: string;
 };
@@ -57,11 +63,110 @@ const initialFormData: FormData = {
   plannedStartDate: "",
   estimatedTimelineMonths: "",
   requiredResources: "",
-  businessFunction: "",
+  businessFunction: [],
   priority: "MEDIUM",
 };
 
 type ArrayField = 'primaryStakeholders' | 'secondaryStakeholders';
+
+const BUSINESS_FUNCTION_OPTIONS = [
+  'Sales',
+  'Marketing',
+  'Product Development',
+  'Operations',
+  'Customer Support',
+  'HR',
+  'Finance',
+  'IT',
+  'Legal',
+  'Procurement',
+  'Facilities',
+  'Strategy',
+  'Communications',
+  'Risk & Audit',
+  'Innovation Office',
+  'ESG',
+  'Data Office',
+  'PMO'
+];
+
+const BusinessFunctionMultiSelect = ({
+  value,
+  onChange,
+  invalid,
+}: {
+  value: string[];
+  onChange: (value: string[]) => void;
+  invalid?: boolean;
+}) => {
+  const handleToggle = (option: string) => {
+    if (value.includes(option)) {
+      onChange(value.filter(item => item !== option));
+    } else {
+      onChange([...value, option]);
+    }
+  };
+
+  const selectedCount = value.length;
+  const displayText = selectedCount === 0 
+    ? 'Select business functions' 
+    : selectedCount === 1 
+      ? value[0] 
+      : `${selectedCount} functions selected`;
+
+  return (
+    <div className="space-y-3 mb-4">
+      <Label className="text-gray-900 dark:text-white">Business Function</Label>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            className={`w-full justify-between ${invalid ? 'border-red-500' : 'border-gray-200 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600`}
+          >
+            <span className={selectedCount === 0 ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'}>
+              {displayText}
+            </span>
+            <ChevronDown className="h-4 w-4 opacity-50" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-full min-w-[300px]" align="start">
+          {BUSINESS_FUNCTION_OPTIONS.map((option) => (
+            <DropdownMenuCheckboxItem
+              key={option}
+              checked={value.includes(option)}
+              onCheckedChange={() => handleToggle(option)}
+              className="cursor-pointer"
+            >
+              {option}
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      
+      {/* Display selected items */}
+      {value.length > 0 && (
+        <div className="space-y-2">
+          {value.map((item, i) => (
+            <div
+              key={i}
+              className="flex justify-between items-center border border-gray-200 dark:border-gray-600 p-2 rounded bg-gray-50 dark:bg-gray-700 min-h-[40px]"
+            >
+              <span className="text-gray-900 dark:text-white">{item}</span>
+              <Button 
+                variant="destructive" 
+                size="icon" 
+                onClick={() => handleToggle(item)} 
+                className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 h-8 w-8 flex-shrink-0"
+              >
+                <Minus className="w-3 h-3" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ArrayInput = ({
   label,
@@ -126,7 +231,16 @@ const ArrayInput = ({
 
 const getUseCase = async(params: string) => {
     try {
-        const res = await fetch(`/api/get-usecase?id=${params}`);
+        // Add cache-busting parameter to force fresh data
+        const timestamp = Date.now();
+        const res = await fetch(`/api/get-usecase?id=${params}&_t=${timestamp}`, {
+            cache: 'no-store',
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        });
         if (!res.ok) {
             throw new Error('Failed to fetch use case');
         }
@@ -150,13 +264,36 @@ const AIUseCaseTool = () => {
   const searchParams = useSearchParams();
   const completeForBusinessCase = searchParams.get('completeForBusinessCase') === '1';
 
+  // Force refresh on every component load
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Manual refresh function
+  const forceRefresh = () => {
+    console.log('Manual refresh triggered');
+    setRefreshKey(prev => prev + 1);
+  };
+
+  useEffect(() => {
+    // Force a fresh API call every time this component is loaded
+    console.log('Component mounted/loaded - forcing refresh');
+    setRefreshKey(prev => prev + 1);
+  }, []); // Empty dependency array - runs once on mount
+
   useEffect(() => {
     const fetchAndFill = async () => {
       try {
         const id = params["usecase-id"] as string;
         if (!id) return;
+        
+        console.log(`Fetching fresh data for usecase ${id}, refresh key: ${refreshKey}`);
+        
+        // Reset form data to initial state before fetching new data
+        setFormData(initialFormData);
+        
+        // Add cache-busting parameter to force fresh data
         const data = await getUseCase(id);
         if (data) {
+          console.log('Fresh data received:', data.businessFunction);
           setFormData(prev => ({
             ...prev,
             // Map existing fields
@@ -167,7 +304,7 @@ const AIUseCaseTool = () => {
             proposedAISolution: data.proposedAISolution || '',
             primaryStakeholders: data.primaryStakeholders || [],
             secondaryStakeholders: data.secondaryStakeholders || [],
-            businessFunction: data.businessFunction || '',
+            businessFunction: data.businessFunction || [],
             confidenceLevel: data.confidenceLevel || 5,
             operationalImpactScore: data.operationalImpactScore || 5,
             productivityImpactScore: data.productivityImpactScore || 5,
@@ -194,7 +331,7 @@ const AIUseCaseTool = () => {
       }
     };
     fetchAndFill();
-  }, [params]);
+  }, [params["usecase-id"], refreshKey]); // Include refreshKey to force refresh
 
   const steps = [
     { id: 1, title: 'Use Case Documentation', icon: Target },
@@ -275,33 +412,11 @@ const AIUseCaseTool = () => {
             placeholder="Define what success looks like for this use case..."
             className={`${invalidFields.includes('successCriteria') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
           />
-          <Label htmlFor="businessFunction" className="text-gray-900 dark:text-white">Business Function</Label>
-          <select
-            id="businessFunction"
+          <BusinessFunctionMultiSelect
             value={formData.businessFunction}
-            onChange={e => handleChange("businessFunction", e.target.value)}
-            className={`mb-4 w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${invalidFields.includes('businessFunction') ? 'border-red-500' : ''}`}
-          >
-            <option value="" disabled>Select a business function</option>
-            <option value="Sales">Sales</option>
-            <option value="Marketing">Marketing</option>
-            <option value="Product Development">Product Development</option>
-            <option value="Operations">Operations</option>
-            <option value="Customer Support">Customer Support</option>
-            <option value="HR">HR</option>
-            <option value="Finance">Finance</option>
-            <option value="IT">IT</option>
-            <option value="Legal">Legal</option>
-            <option value="Procurement">Procurement</option>
-            <option value="Facilities">Facilities</option>
-            <option value="Strategy">Strategy</option>
-            <option value="Communications">Communications</option>
-            <option value="Risk & Audit">Risk & Audit</option>
-            <option value="Innovation Office">Innovation Office</option>
-            <option value="ESG">ESG</option>
-            <option value="Data Office">Data Office</option>
-            <option value="PMO">PMO</option>
-          </select>
+            onChange={(value) => handleChange("businessFunction", value)}
+            invalid={invalidFields.includes('businessFunction')}
+          />
           <ArrayInput
             label="Primary Stakeholders"
             field="primaryStakeholders"
@@ -659,10 +774,14 @@ const AIUseCaseTool = () => {
         <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
           <div className="p-6">
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formData.aiucId ? `AIUC-${formData.aiucId} ${formData.title}` : formData.title}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400">Edit Use Case</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {formData.aiucId ? `AIUC-${formData.aiucId} ${formData.title}` : formData.title}
+                  </h1>
+                  <p className="text-gray-600 dark:text-gray-400">Edit Use Case</p>
+                </div>
+              </div>
             </div>
             {showError && (
               <div className="mb-4 text-red-600 dark:text-red-400 font-semibold">
