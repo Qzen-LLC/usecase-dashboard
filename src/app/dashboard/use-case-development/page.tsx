@@ -1,0 +1,300 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { 
+  Code2, 
+  Plus, 
+  Search, 
+  ChevronRight,
+  FileText,
+  GitBranch,
+  Rocket,
+  Clock
+} from 'lucide-react';
+import { useUser } from '@clerk/nextjs';
+
+interface UseCase {
+  id: string;
+  title: string;
+  stage: string;
+  businessFunction: string;
+  createdAt: string;
+  updatedAt: string;
+  promptTemplates?: any[];
+}
+
+// Eligible stages for Use Case Development (Business Case and beyond)
+const ELIGIBLE_STAGES = ['business-case', 'proof-of-value', 'backlog', 'in-progress', 'solution-validation', 'pilot', 'deployment'];
+
+const stageBadgeColors: Record<string, string> = {
+  'business-case': 'bg-yellow-100 text-yellow-800',
+  'proof-of-value': 'bg-indigo-100 text-indigo-800',
+  'backlog': 'bg-gray-100 text-gray-800',
+  'in-progress': 'bg-blue-100 text-blue-800',
+  'solution-validation': 'bg-purple-100 text-purple-800',
+  'pilot': 'bg-orange-100 text-orange-800',
+  'deployment': 'bg-green-100 text-green-800'
+};
+
+export default function UseCaseDevelopmentDashboard() {
+  const router = useRouter();
+  const { user } = useUser();
+  const [useCases, setUseCases] = useState<UseCase[]>([]);
+  const [filteredUseCases, setFilteredUseCases] = useState<UseCase[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStage, setSelectedStage] = useState<string>('all');
+
+  useEffect(() => {
+    fetchUseCases();
+  }, []);
+
+  useEffect(() => {
+    filterUseCases();
+  }, [useCases, searchTerm, selectedStage]);
+
+  const fetchUseCases = async () => {
+    try {
+      const response = await fetch('/api/read-usecases');
+      if (!response.ok) throw new Error('Failed to fetch use cases');
+      
+      const data = await response.json();
+      // The API returns { useCases: [...] }
+      const allUseCases = data.useCases || [];
+      
+      // Filter for eligible stages only
+      const eligibleUseCases = allUseCases.filter((uc: UseCase) => 
+        ELIGIBLE_STAGES.includes(uc.stage?.toLowerCase() || '')
+      );
+      
+      setUseCases(eligibleUseCases);
+      setFilteredUseCases(eligibleUseCases);
+    } catch (error) {
+      console.error('Error fetching use cases:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterUseCases = () => {
+    let filtered = [...useCases];
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(uc => 
+        uc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        uc.businessFunction?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by stage
+    if (selectedStage !== 'all') {
+      filtered = filtered.filter(uc => uc.stage === selectedStage);
+    }
+
+    setFilteredUseCases(filtered);
+  };
+
+  const handleUseCaseClick = (useCaseId: string) => {
+    router.push(`/dashboard/use-case-development/${useCaseId}`);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-6 max-w-7xl">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-2">
+          <Code2 className="w-8 h-8 text-blue-600" />
+          <h1 className="text-3xl font-bold text-gray-900">Use Case Development</h1>
+        </div>
+        <p className="text-gray-600">
+          Create and manage prompt templates for your AI use cases
+        </p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Total Use Cases</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{useCases.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>In Development</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {useCases.filter(uc => uc.stage === 'in-progress').length}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Ready for Pilot</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {useCases.filter(uc => uc.stage === 'pilot').length}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Total Prompts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">0</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            type="text"
+            placeholder="Search use cases..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant={selectedStage === 'all' ? 'default' : 'outline'}
+            onClick={() => setSelectedStage('all')}
+            size="sm"
+          >
+            All Stages
+          </Button>
+          {ELIGIBLE_STAGES.map(stage => (
+            <Button
+              key={stage}
+              variant={selectedStage === stage ? 'default' : 'outline'}
+              onClick={() => setSelectedStage(stage)}
+              size="sm"
+            >
+              {stage.split('-').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+              ).join(' ')}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Use Cases Grid */}
+      {filteredUseCases.length === 0 ? (
+        <Card className="p-12 text-center">
+          <div className="flex flex-col items-center gap-4">
+            <FileText className="w-16 h-16 text-gray-300" />
+            <h3 className="text-lg font-semibold text-gray-600">
+              No use cases in development stages
+            </h3>
+            <p className="text-gray-500 max-w-md">
+              Use cases will appear here once they reach the Backlog stage or beyond.
+              Move your use cases through the pipeline to start developing prompts.
+            </p>
+          </div>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredUseCases.map((useCase) => (
+            <Card 
+              key={useCase.id} 
+              className="hover:shadow-lg transition-shadow cursor-pointer group"
+              onClick={() => handleUseCaseClick(useCase.id)}
+            >
+              <CardHeader>
+                <div className="flex justify-between items-start mb-2">
+                  <Badge className={stageBadgeColors[useCase.stage] || 'bg-gray-100'}>
+                    {useCase.stage?.split('-').map(word => 
+                      word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ')}
+                  </Badge>
+                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                </div>
+                <CardTitle className="text-lg line-clamp-2">
+                  {useCase.title}
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  {useCase.businessFunction}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {/* Prompt Stats */}
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <FileText className="w-4 h-4" />
+                      <span>{useCase.promptTemplates?.length || 0} Prompts</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <GitBranch className="w-4 h-4" />
+                      <span>0 Versions</span>
+                    </div>
+                  </div>
+
+                  {/* Dates */}
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      <span>Created {formatDate(useCase.createdAt)}</span>
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  <Button 
+                    className="w-full mt-4 group-hover:bg-blue-600 group-hover:text-white"
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Code2 className="w-4 h-4 mr-2" />
+                    Manage Prompts
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Quick Actions */}
+      <div className="fixed bottom-6 right-6">
+        <Button
+          size="lg"
+          className="rounded-full shadow-lg"
+          onClick={() => router.push('/new-usecase')}
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          New Use Case
+        </Button>
+      </div>
+    </div>
+  );
+}

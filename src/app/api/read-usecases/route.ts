@@ -38,6 +38,11 @@ export async function GET(req: Request) {
                         select: {
                             name: true
                         }
+                    },
+                    promptTemplates: {
+                        select: {
+                            id: true
+                        }
                     }
                 },
                 orderBy: { updatedAt: 'desc' }
@@ -56,6 +61,11 @@ export async function GET(req: Request) {
                     organization: {
                         select: {
                             name: true
+                        }
+                    },
+                    promptTemplates: {
+                        select: {
+                            id: true
                         }
                     }
                 },
@@ -77,6 +87,11 @@ export async function GET(req: Request) {
                         select: {
                             name: true
                         }
+                    },
+                    promptTemplates: {
+                        select: {
+                            id: true
+                        }
                     }
                 },
                 orderBy: { updatedAt: 'desc' }
@@ -96,6 +111,11 @@ export async function GET(req: Request) {
                     organization: {
                         select: {
                             name: true
+                        }
+                    },
+                    promptTemplates: {
+                        select: {
+                            id: true
                         }
                     }
                 },

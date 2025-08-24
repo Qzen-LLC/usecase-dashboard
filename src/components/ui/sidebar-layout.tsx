@@ -15,7 +15,8 @@ import {
   Shield,
   Home,
   Settings,
-  HelpCircle
+  HelpCircle,
+  Code2
 } from 'lucide-react';
 import { Button } from './button';
 import { UserButton, useUser } from '@clerk/nextjs';
@@ -44,6 +45,12 @@ const navigationItems: NavigationItem[] = [
     href: '/dashboard',
     icon: Home,
     description: 'AI Use Cases'
+  },
+  {
+    title: 'Use Case Development',
+    href: '/dashboard/use-case-development',
+    icon: Code2,
+    description: 'Prompt Engineering'
   },
   {
     title: 'Risk Management',

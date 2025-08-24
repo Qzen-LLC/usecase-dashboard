@@ -33,6 +33,9 @@ export interface UseCase {
   organization?: {
     name: string;
   };
+  promptTemplates?: {
+    id: string;
+  }[];
 }
 
 // Mapped UseCase type with frontend-specific fields
@@ -131,10 +134,10 @@ export function useUseCases(): UseUseCasesReturn {
           scores: {
             operational: uc.operationalImpactScore || 0,
             productivity: uc.productivityImpactScore || 0,
-            revenue: uc.initialROI || 0,
+            revenue: uc.revenueImpactScore || 0,
           },
           complexity: uc.implementationComplexity || 0,
-          roi: uc.initialROI || 0,
+          roi: parseFloat(uc.initialROI as any) || 0,
           timeline: uc.estimatedTimeline || '',
           stakeholders: uc.primaryStakeholders || [],
           risks: uc.keyAssumptions || [],

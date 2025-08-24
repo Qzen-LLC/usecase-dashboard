@@ -30,7 +30,8 @@ const SIDEBAR_ROUTES = [
   '/view-usecase',
   '/admin',
   '/dev',
-  '/invite'
+  '/invite',
+  '/use-case-development'
 ];
 
 function ConditionalSidebarLayoutContent({ children }: { children: React.ReactNode }) {
