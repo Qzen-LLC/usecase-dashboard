@@ -198,7 +198,7 @@ export default function ClerkInvitationHandler({ onInvitationAccepted }: ClerkIn
   const roleInfo = getRoleDisplay(invitationData?.role);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-gray-900/50 flex items-center justify-center z-50">
       <Card className="w-full max-w-md mx-4">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

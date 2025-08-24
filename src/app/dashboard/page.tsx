@@ -35,7 +35,8 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  closestCorners,
+  closestCenter,
+  rectIntersection,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -50,14 +51,14 @@ import {
 } from '@dnd-kit/core';
 
 const stages = [
-  { id: 'discovery', title: 'Discovery', color: 'bg-white', textColor: 'text-foreground' },
-  { id: 'business-case', title: 'Business Case', color: 'bg-white', textColor: 'text-foreground' },
-  { id: 'proof-of-value', title: 'Proof of Value', color: 'bg-white', textColor: 'text-foreground' },
-  { id: 'backlog', title: 'Backlog', color: 'bg-white', textColor: 'text-foreground' },
-  { id: 'in-progress', title: 'In Progress', color: 'bg-white', textColor: 'text-foreground' },
-  { id: 'solution-validation', title: 'Solution Validation', color: 'bg-white', textColor: 'text-foreground' },
-  { id: 'pilot', title: 'Pilot', color: 'bg-white', textColor: 'text-foreground' },
-  { id: 'deployment', title: 'Deployment', color: 'bg-white', textColor: 'text-foreground' }
+  { id: 'discovery', title: 'Discovery', color: 'bg-card', textColor: 'text-foreground' },
+  { id: 'business-case', title: 'Business Case', color: 'bg-card', textColor: 'text-foreground' },
+  { id: 'proof-of-value', title: 'Proof of Value', color: 'bg-card', textColor: 'text-foreground' },
+  { id: 'backlog', title: 'Backlog', color: 'bg-card', textColor: 'text-foreground' },
+  { id: 'in-progress', title: 'In Progress', color: 'bg-card', textColor: 'text-foreground' },
+  { id: 'solution-validation', title: 'Solution Validation', color: 'bg-card', textColor: 'text-foreground' },
+  { id: 'pilot', title: 'Pilot', color: 'bg-card', textColor: 'text-foreground' },
+  { id: 'deployment', title: 'Deployment', color: 'bg-card', textColor: 'text-foreground' }
 ] as const;
 
 const _STAGE_ORDER = [
@@ -72,10 +73,10 @@ const _STAGE_ORDER = [
 ];
 
 const _priorities = {
-  CRITICAL: { color: 'bg-red-50 text-red-700 border-red-200', label: 'Critical' },
-  HIGH: { color: 'bg-orange-50 text-orange-700 border-orange-200', label: 'High' },
-  MEDIUM: { color: 'bg-yellow-50 text-yellow-700 border-yellow-200', label: 'Medium' },
-  LOW: { color: 'bg-green-50 text-green-700 border-green-200', label: 'Low' }
+  CRITICAL: { color: 'bg-destructive/10 text-destructive border-destructive/20', label: 'Critical' },
+  HIGH: { color: 'bg-warning/10 text-warning border-warning/20', label: 'High' },
+  MEDIUM: { color: 'bg-warning/10 text-warning border-warning/20', label: 'Medium' },
+  LOW: { color: 'bg-success/10 text-success border-success/20', label: 'Low' }
 } as const;
 
 const getNextStage = (currentStage: string) => {
@@ -120,73 +121,82 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
       }`}
       onClick={onClick}
     >
-             <div className="flex flex-col gap-1">
-         <div className="flex items-center justify-between">
-           <div className="font-bold text-[10px] text-gray-500">{formatAiucId(useCase.aiucId, useCase.id)}</div>
-           <div className="flex items-center gap-1">
-             {useCase.priority && (
-               <DropdownMenu>
-                 <DropdownMenuTrigger asChild>
-                   <span 
-                     className={`text-[10px] px-1 py-0.5 rounded-full font-semibold cursor-pointer flex items-center gap-1 ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-gray-100'}`}
-                     onClick={(e) => e.stopPropagation()}
-                   >
-                     {_priorities[useCase.priority as keyof typeof _priorities]?.label || useCase.priority}
-                   </span>
-                 </DropdownMenuTrigger>
-                 <DropdownMenuContent align="end">
-                   {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((priority) => (
-                     <DropdownMenuItem 
-                       key={priority} 
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         handlePriorityChange(useCase.id, priority);
-                       }}
-                     >
-                       {_priorities[priority as keyof typeof _priorities]?.label || priority}
-                     </DropdownMenuItem>
-                   ))}
-                 </DropdownMenuContent>
-               </DropdownMenu>
-             )}
-                           <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!isDeleting) {
-                    handleDelete(useCase.id);
-                  }
-                }}
-                disabled={isDeleting}
-                className={`p-1 rounded-full transition-colors ${
-                  isDeleting 
-                    ? 'text-gray-400 cursor-not-allowed' 
-                    : 'text-red-500 hover:text-red-700 hover:bg-red-50'
-                }`}
-                title={isDeleting ? "Deleting..." : "Delete use case"}
-              >
-                {isDeleting ? (
-                  <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Trash2 className="w-3 h-3" />
-                )}
-              </button>
-           </div>
-         </div>
-        <div className="font-semibold text-base text-gray-900 line-clamp-1 group-hover:text-blue-600 transition-colors">{useCase.title}</div>
-        <div className="text-xs text-gray-500 line-clamp-1">{stripHtmlTags(useCase.description)}</div>
-        <div className="flex items-center gap-2 mt-1">
-          <div className="flex items-center gap-0.5 text-[11px] text-blue-700"><TrendingUp className="w-3 h-3" />{useCase.scores.operational}</div>
-          <div className="flex items-center gap-0.5 text-[11px] text-purple-700"><Zap className="w-3 h-3" />{useCase.scores.productivity}</div>
-          <div className="flex items-center gap-0.5 text-[11px] text-green-700"><DollarSign className="w-3 h-3" />{useCase.scores.revenue}</div>
-        </div>
-        <div className="flex items-center justify-between text-[10px] text-gray-400 mt-1">
-          <span className="flex items-center gap-0.5">
-            {useCase.creator.type === 'user' ? (
-              <User className="w-3 h-3" />
-            ) : (
-              <Building2 className="w-3 h-3" />
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="font-bold text-xs text-muted-foreground">{formatAiucId(useCase.aiucId, useCase.id)}</div>
+          <div className="flex items-center gap-2">
+            {useCase.priority && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <span 
+                    className={`text-xs px-2 py-1 rounded-full font-semibold cursor-pointer flex items-center gap-1 ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-muted'}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {_priorities[useCase.priority as keyof typeof _priorities]?.label || useCase.priority}
+                  </span>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((priority) => (
+                    <DropdownMenuItem 
+                      key={priority} 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePriorityChange(useCase.id, priority);
+                      }}
+                    >
+                      {_priorities[priority as keyof typeof _priorities]?.label || priority}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
-            {useCase.creator.name}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!isDeleting) {
+                  handleDelete(useCase.id);
+                }
+              }}
+              disabled={isDeleting}
+              className={`p-1.5 rounded-full transition-colors ${
+                isDeleting 
+                  ? 'text-muted-foreground cursor-not-allowed' 
+                  : 'text-destructive hover:text-destructive/80 hover:bg-destructive/10'
+              }`}
+              title={isDeleting ? "Deleting..." : "Delete use case"}
+            >
+              {isDeleting ? (
+                <div className="w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Trash2 className="w-3 h-3" />
+              )}
+            </button>
+          </div>
+        </div>
+        <div className="font-semibold text-sm text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-tight">{useCase.title}</div>
+        <div className="text-xs text-foreground line-clamp-2 leading-relaxed">{stripHtmlTags(useCase.description)}</div>
+        <div className="flex items-center gap-3 mt-2">
+          <div className="flex items-center gap-1 text-xs text-primary">
+            <TrendingUp className="w-3 h-3 flex-shrink-0" />
+            <span>{useCase.scores.operational}</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs text-primary">
+            <Zap className="w-3 h-3 flex-shrink-0" />
+            <span>{useCase.scores.productivity}</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs text-success">
+            <DollarSign className="w-3 h-3 flex-shrink-0" />
+            <span>{useCase.scores.revenue}</span>
+          </div>
+        </div>
+        <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
+          <span className="flex items-center gap-1">
+            {useCase.creator.type === 'user' ? (
+              <User className="w-3 h-3 flex-shrink-0" />
+            ) : (
+              <Building2 className="w-3 h-3 flex-shrink-0" />
+            )}
+            <span className="truncate">{useCase.creator.name}</span>
           </span>
         </div>
       </div>
@@ -207,14 +217,20 @@ const DroppableStageColumn = ({ stage, stageUseCases, children }: {
   return (
     <div 
       ref={setNodeRef}
-      className={`space-y-2 min-h-[200px] p-2 rounded-lg border-2 border-dashed transition-colors ${
+      className={`space-y-3 p-3 rounded-lg border-2 border-dashed transition-colors h-full ${
         isOver 
-          ? 'bg-blue-50 border-blue-300 shadow-lg' 
-          : 'bg-gray-50 border-gray-200'
+          ? 'bg-primary/10 border-primary/40 shadow-lg' 
+          : 'bg-background border-border shadow-inner'
       }`}
+      style={{ 
+        minHeight: '300px', // Increased minimum height for better drop detection
+        minWidth: '240px', // Ensure minimum width for proper drop detection
+        height: '100%', // Use full height of parent container
+        position: 'relative' // Ensure proper positioning for drop detection
+      }}
     >
       {isOver && (
-        <div className="text-center text-blue-600 text-xs font-medium mb-2">
+        <div className="text-center text-primary text-xs font-medium mb-3">
           Drop here to move to {stage.title}
         </div>
       )}
@@ -250,7 +266,7 @@ const Dashboard = () => {
   if (!isLoaded) {
     return (
       <div className="loading-container">
-        <div className="text-center max-w-md bg-white/90 rounded-2xl shadow-2xl border border-gray-100 p-8">
+        <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
           <div className="loading-spinner" />
           <p className="loading-text">Initializing...</p>
         </div>
@@ -261,18 +277,21 @@ const Dashboard = () => {
   if (!isSignedIn) {
     return (
       <div className="loading-container">
-        <div className="text-center max-w-md bg-white/90 rounded-2xl shadow-2xl border border-gray-100 p-8">
-          <p className="text-gray-600">Please sign in to access the dashboard.</p>
+        <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
+          <p className="text-muted-foreground">Please sign in to access the dashboard.</p>
         </div>
       </div>
     );
   }
 
-  // DnD sensors
+  // Use closestCenter for more reliable drop detection
+  const customCollisionDetection = closestCenter;
+
+  // DnD sensors - more permissive for better drag and drop
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 1, // Very low distance for immediate activation
       },
     })
   );
@@ -327,7 +346,9 @@ const Dashboard = () => {
   }, []);
 
   const handleEdit = (id: string) => {
-    router.push(`/edit-usecase/${id}`);
+    // Add timestamp to force refresh when editing the same usecase
+    const timestamp = Date.now();
+    router.push(`/edit-usecase/${id}?t=${timestamp}`);
   }
 
   const handleView = (id: string) => {
@@ -622,28 +643,41 @@ const Dashboard = () => {
 
   // Drag and Drop handlers
   const handleDragStart = (event: DragStartEvent) => {
+    console.log('Drag started:', event.active.id);
     setActiveId(event.active.id as string);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    console.log('Drag ended:', { active: active.id, over: over?.id });
     setActiveId(null);
 
-    if (!over) return;
+    if (!over) {
+      console.log('No drop target found');
+      return;
+    }
 
     const useCaseId = active.id as string;
     const targetId = over.id as string;
 
+    console.log('Drop target:', { useCaseId, targetId });
+
     // Check if the target is a stage column
     const isTargetStage = stages.some(stage => stage.id === targetId);
+    console.log('Is target stage:', isTargetStage);
     
     if (isTargetStage) {
       const useCase = filteredUseCases.find(uc => uc.id === useCaseId);
+      console.log('Found use case:', useCase);
+      
       if (useCase && useCase.stage !== targetId) {
+        console.log('Moving use case from', useCase.stage, 'to', targetId);
+        
         // Validate if moving from discovery to business-case
         if (useCase.stage === 'discovery' && targetId === 'business-case') {
           const missingFields = getMissingFields(useCase);
           if (missingFields.length > 0) {
+            console.log('Validation failed:', missingFields);
             setValidationError({ 
               show: true, 
               fields: missingFields, 
@@ -687,7 +721,11 @@ const Dashboard = () => {
               .filter((change: any) => !(change.useCaseId === useCaseId && change.newStage === targetId));
             localStorage.setItem('pendingStageChanges', JSON.stringify(updatedPendingChanges));
           });
+      } else {
+        console.log('Use case not found or already in target stage');
       }
+    } else {
+      console.log('Target is not a valid stage');
     }
   };
 
@@ -732,7 +770,7 @@ const Dashboard = () => {
   if (isLoading || userLoading) {
     return (
       <div className="loading-container">
-        <div className="text-center max-w-md bg-white/90 rounded-2xl shadow-2xl border border-gray-100 p-8">
+        <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
           <div className="loading-spinner" />
           <p className="loading-text">
             {isLoading ? 'Loading use cases...' : 'Loading user data...'}
@@ -743,16 +781,16 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="page-layout">
+    <div className="min-h-screen bg-background">
       <ClerkInvitationHandler />
-      <div className="page-container">
+      <div className="h-full p-6 flex flex-col min-h-0">
         {/* Header with role-based tabs */}
-        <div className="page-header">
+        <div className="page-header flex-shrink-0">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               
               {userData?.organization && (
-                <p className="page-subtitle">
+                <p className="page-subtitle mt-2">
                   {userData.organization.name} • <span className="text-primary font-medium">{userData.role === 'ORG_ADMIN' ? 'Organization Admin' : 'User'}</span>
                 </p>
               )}
@@ -761,9 +799,9 @@ const Dashboard = () => {
         </div>
 
         {/* Search and Filter Section */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-4 mb-6 flex-shrink-0">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input
               placeholder="Search use cases..."
               value={searchTerm}
@@ -771,7 +809,7 @@ const Dashboard = () => {
               className="input-standard pl-12"
             />
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-3 flex-wrap items-center justify-end">
             <select
               value={filterBy}
               onChange={(e) => setFilterBy(e.target.value)}
@@ -794,52 +832,52 @@ const Dashboard = () => {
                 <option key={org.id} value={org.id}>{org.name}</option>
               ))}
             </select>
-            {userData?.role !== 'QZEN_ADMIN' && (
-              <Button onClick={() => router.push('/new-usecase')} className="btn-primary flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                New Use Case
+            <Button onClick={() => router.push('/new-usecase')} className="btn-primary flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              New Use Case
+            </Button>
+            <Button onClick={refetch} variant="outline" className="flex items-center gap-2 bg-muted text-foreground border hover:bg-accent">
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </Button>
+            {pendingChangesCount > 0 && (
+              <Button 
+                onClick={retryFailedChanges} 
+                variant="outline" 
+                className="btn-outline flex items-center gap-2 bg-warning/10 border-warning/20 text-warning hover:bg-warning/20"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                Sync Changes ({pendingChangesCount})
               </Button>
             )}
-                         <Button onClick={refetch} variant="outline" className="btn-outline flex items-center gap-2">
-               <RefreshCw className="w-4 h-4" />
-               Refresh
-             </Button>
-             {pendingChangesCount > 0 && (
-               <Button 
-                 onClick={retryFailedChanges} 
-                 variant="outline" 
-                 className="btn-outline flex items-center gap-2 bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100"
-               >
-                 <AlertTriangle className="w-4 h-4" />
-                 Sync Changes ({pendingChangesCount})
-               </Button>
-             )}
           </div>
         </div>
 
         {/* Validation Error Alert */}
         {validationError.show && (
-          <Alert variant="destructive" className="mb-6">
+          <Alert variant="destructive" className="mb-6 flex-shrink-0">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Missing Required Fields</AlertTitle>
             <AlertDescription>
-              <div className="mt-2">
-                <p className="mb-2">
+              <div className="mt-3">
+                <p className="mb-3 text-sm">
                   Please complete the following required fields for "{validationError.useCaseTitle}" before moving to the Business Case stage:
                 </p>
-                <ul className="list-disc list-inside space-y-1 mb-3">
+                <ul className="list-disc list-inside space-y-2 mb-4">
                   {validationError.fields.map((field, index) => (
                     <li key={index} className="text-sm">{field}</li>
                   ))}
                 </ul>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && (
                     <Button 
                       size="sm" 
                       onClick={() => {
                         const useCase = filteredUseCases.find(uc => uc.title === validationError.useCaseTitle);
                         if (useCase) {
-                          router.push(`/edit-usecase/${useCase.id}`);
+                          // Add timestamp to force refresh when editing the same usecase
+                          const timestamp = Date.now();
+                          router.push(`/edit-usecase/${useCase.id}?t=${timestamp}`);
                         }
                         setValidationError({ show: false, fields: [], useCaseTitle: '' });
                       }}
@@ -861,51 +899,52 @@ const Dashboard = () => {
         )}
 
                  {/* Kanban board with drag and drop */}
-         <div className="relative">
+         <div className="relative flex-1 min-h-0 overflow-hidden">
            {deletingUseCaseId && (
-             <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
-               <div className="flex flex-col items-center gap-3 p-6 bg-white rounded-lg shadow-lg border">
+             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+               <div className="flex flex-col items-center gap-3 p-6 bg-card rounded-lg shadow-lg border">
                  <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                 <p className="text-sm font-medium text-gray-700">Deleting use case...</p>
+                 <p className="text-sm font-medium text-foreground">Deleting use case...</p>
                </div>
              </div>
            )}
            <DndContext
              sensors={sensors}
-             collisionDetection={closestCorners}
+             collisionDetection={customCollisionDetection}
              onDragStart={handleDragStart}
              onDragEnd={handleDragEnd}
+
            >
-          <div className="relative w-full mb-8">
-            <div className="w-full pb-6 overflow-x-auto">
-              <div className="flex flex-row gap-4 min-w-[2000px]">
+          <div className="relative w-full h-full">
+            <div className="w-full h-full pb-6 overflow-x-auto">
+              <div className="flex flex-row gap-6 min-w-[2000px] px-2 h-full">
                 {stages.map((stage, idx) => {
                   const stageUseCases = getUseCasesByStage(stage.id);
                   return (
-                    <div key={stage.id} className="flex flex-col items-center w-60">
+                    <div key={stage.id} className="flex flex-col items-center w-60 h-full">
                       {/* Summary card */}
-                      <div className="card-interactive w-60 h-20 mb-2 flex flex-col items-center justify-center group">
-                        <div className="text-2xl mb-1 group-hover:scale-110 transition-transform">
-                          {idx === 0 && <Search className="text-blue-500 w-5 h-5" />}
-                          {idx === 1 && <DollarSign className="text-green-500 w-5 h-5" />}
-                          {idx === 2 && <TrendingUp className="text-purple-500 w-5 h-5" />}
-                          {idx === 3 && <Clock className="text-orange-500 w-5 h-5" />}
-                          {idx === 4 && <Zap className="text-pink-500 w-5 h-5" />}
-                          {idx === 5 && <Users className="text-teal-500 w-5 h-5" />}
-                          {idx === 6 && <User className="text-indigo-500 w-5 h-5" />}
-                          {idx === 7 && <Clock className="text-red-500 w-5 h-5" />}
+                      <div className="card-interactive w-60 h-24 mb-4 flex flex-col items-center justify-center group flex-shrink-0">
+                        <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">
+                          {idx === 0 && <Search className="text-primary w-6 h-6" />}
+                          {idx === 1 && <DollarSign className="text-success w-6 h-6" />}
+                          {idx === 2 && <TrendingUp className="text-primary w-6 h-6" />}
+                          {idx === 3 && <Clock className="text-warning w-6 h-6" />}
+                          {idx === 4 && <Zap className="text-primary w-6 h-6" />}
+                          {idx === 5 && <Users className="text-primary w-6 h-6" />}
+                          {idx === 6 && <User className="text-primary w-6 h-6" />}
+                          {idx === 7 && <Clock className="text-destructive w-6 h-6" />}
                         </div>
-                        <div className="font-semibold text-gray-700 text-sm group-hover:text-blue-600 transition-colors">{stage.title}</div>
-                        <div className="text-2xl font-extrabold text-gray-900 group-hover:text-blue-600 transition-colors">{stageUseCases.length}</div>
+                        <div className="font-semibold text-muted-foreground text-sm group-hover:text-primary transition-colors mb-1">{stage.title}</div>
+                        <div className="text-2xl font-extrabold text-foreground group-hover:text-primary transition-colors">{stageUseCases.length}</div>
                       </div>
                       {/* Use case column */}
-                      <div className="flex-shrink-0 w-60 space-y-4">
+                      <div className="flex-1 w-60 min-h-0">
                                                  <DroppableStageColumn stage={stage} stageUseCases={stageUseCases}>
-                           <SortableContext items={stageUseCases.map(uc => uc.id)} strategy={verticalListSortingStrategy}>
+                                                      <SortableContext id={stage.id} items={stageUseCases.map(uc => uc.id)} strategy={verticalListSortingStrategy}>
                              {stageUseCases.length === 0 ? (
-                               <div className="bg-gray-50 rounded-lg p-3 text-center text-gray-400 border border-dashed border-gray-200 text-xs">No use cases in this stage</div>
+                               <div className="bg-muted rounded-lg p-4 text-center text-muted-foreground border border-dashed text-xs">No use cases in this stage</div>
                              ) : stageUseCases.map((useCase) => (
-                                                                                               <DraggableUseCaseCard
+                                 <DraggableUseCaseCard
                                    key={useCase.id}
                                    useCase={useCase}
                                    onClick={() => { setModalUseCase(useCase); setIsSheetOpen(true); }}
@@ -916,7 +955,7 @@ const Dashboard = () => {
                                    handleDelete={handleDelete}
                                    isDeleting={deletingUseCaseId === useCase.id}
                                  />
-                             ))}
+                               ))}
                            </SortableContext>
                          </DroppableStageColumn>
                       </div>
@@ -934,31 +973,40 @@ const Dashboard = () => {
                 const useCase = filteredUseCases.find(uc => uc.id === activeId);
                 if (!useCase) return null;
                 return (
-                  <Card className="card-interactive p-3 w-60">
-                    <div className="flex flex-col gap-1">
+                  <Card className="card-interactive p-3 w-60 shadow-xl">
+                    <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between">
-                        <div className="font-bold text-[10px] text-gray-500">{formatAiucId(useCase.aiucId, useCase.id)}</div>
+                        <div className="font-bold text-xs text-muted-foreground">{formatAiucId(useCase.aiucId, useCase.id)}</div>
                         {useCase.priority && (
-                          <span className={`text-[10px] px-1 py-0.5 rounded-full font-semibold ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-gray-100'}`}>
+                          <span className={`text-xs px-2 py-1 rounded-full font-semibold ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-muted'}`}>
                             {_priorities[useCase.priority as keyof typeof _priorities]?.label || useCase.priority}
                           </span>
                         )}
                       </div>
-                      <div className="font-semibold text-base text-gray-900 line-clamp-1">{useCase.title}</div>
-                      <div className="text-xs text-gray-500 line-clamp-1">{stripHtmlTags(useCase.description)}</div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex items-center gap-0.5 text-[11px] text-blue-700"><TrendingUp className="w-3 h-3" />{useCase.scores.operational}</div>
-                        <div className="flex items-center gap-0.5 text-[11px] text-purple-700"><Zap className="w-3 h-3" />{useCase.scores.productivity}</div>
-                        <div className="flex items-center gap-0.5 text-[11px] text-green-700"><DollarSign className="w-3 h-3" />{useCase.scores.revenue}</div>
+                      <div className="font-semibold text-sm text-foreground line-clamp-2 leading-tight">{useCase.title}</div>
+                      <div className="text-xs text-foreground line-clamp-2 leading-relaxed">{stripHtmlTags(useCase.description)}</div>
+                      <div className="flex items-center gap-3 mt-2">
+                        <div className="flex items-center gap-1 text-xs text-primary">
+                          <TrendingUp className="w-3 h-3 flex-shrink-0" />
+                          <span>{useCase.scores.operational}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-primary">
+                          <Zap className="w-3 h-3 flex-shrink-0" />
+                          <span>{useCase.scores.productivity}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-success">
+                          <DollarSign className="w-3 h-3 flex-shrink-0" />
+                          <span>{useCase.scores.revenue}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between text-[10px] text-gray-400 mt-1">
-                        <span className="flex items-center gap-0.5">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
+                        <span className="flex items-center gap-1">
                           {useCase.creator.type === 'user' ? (
-                            <User className="w-3 h-3" />
+                            <User className="w-3 h-3 flex-shrink-0" />
                           ) : (
-                            <Building2 className="w-3 h-3" />
+                            <Building2 className="w-3 h-3 flex-shrink-0" />
                           )}
-                          {useCase.creator.name}
+                          <span className="truncate">{useCase.creator.name}</span>
                         </span>
                       </div>
                     </div>
@@ -966,7 +1014,7 @@ const Dashboard = () => {
                 );
               })()
             ) : null}
-                     </DragOverlay>
+          </DragOverlay>
          </DndContext>
          </div>
 
@@ -979,15 +1027,15 @@ const Dashboard = () => {
                   <SheetTitle>{modalUseCase.title}</SheetTitle>
                   <SheetDescription>{stripHtmlTags(modalUseCase.description)}</SheetDescription>
                 </SheetHeader>
-                <div className="flex flex-col gap-2 p-4">
-                  <div className="text-xs text-gray-500 mb-2">ID: {formatAiucId(modalUseCase.aiucId, modalUseCase.id)}</div>
-                  <div className="flex items-center gap-4 mb-2">
-                    <div className="flex items-center gap-1 text-xs text-blue-700"><TrendingUp className="w-4 h-4" />{modalUseCase.scores.operational}</div>
-                    <div className="flex items-center gap-1 text-xs text-purple-700"><Zap className="w-4 h-4" />{modalUseCase.scores.productivity}</div>
-                    <div className="flex items-center gap-1 text-xs text-green-700"><DollarSign className="w-4 h-4" />{modalUseCase.scores.revenue}</div>
-                    <div className="flex items-center gap-1 text-xs text-blue-500 font-bold">{getOverallScore(modalUseCase.scores)}</div>
+                <div className="flex flex-col gap-3 p-4">
+                  <div className="text-xs text-muted-foreground mb-3">ID: {formatAiucId(modalUseCase.aiucId, modalUseCase.id)}</div>
+                  <div className="flex items-center gap-4 mb-3">
+                    <div className="flex items-center gap-1 text-xs text-primary"><TrendingUp className="w-4 h-4" />{modalUseCase.scores.operational}</div>
+                    <div className="flex items-center gap-1 text-xs text-primary"><Zap className="w-4 h-4" />{modalUseCase.scores.productivity}</div>
+                    <div className="flex items-center gap-1 text-xs text-success"><DollarSign className="w-4 h-4" />{modalUseCase.scores.revenue}</div>
+                    <div className="flex items-center gap-1 text-xs text-primary font-bold">{getOverallScore(modalUseCase.scores)}</div>
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-gray-400 mb-2">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
                     {modalUseCase.creator.type === 'user' ? (
                       <User className="w-4 h-4" />
                     ) : (
@@ -995,35 +1043,38 @@ const Dashboard = () => {
                     )}
                     Created by: {modalUseCase.creator.name}
                   </div>
-                  <div className="text-xs text-gray-400 mb-2">Updated {modalUseCase.lastUpdated}</div>
+                  <div className="text-xs text-muted-foreground mb-3">Updated {modalUseCase.lastUpdated}</div>
                 </div>
-                <SheetFooter>
-                  <Button size="sm" variant="outline" onClick={() => { handleView(modalUseCase.id); setIsSheetOpen(false); }}>
-                    <Eye className="w-4 h-4 mr-1" /> View
-                  </Button>
-                  {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && (
-                    <Button size="sm" variant="outline" onClick={() => { handleEdit(modalUseCase.id); setIsSheetOpen(false); }}>
-                      <EditIcon className="w-4 h-4 mr-1" /> Edit
+                <SheetFooter className="flex flex-wrap gap-2 justify-start sm:justify-end">
+                  <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                    <Button size="sm" variant="outline" className='text-dark' onClick={() => { handleView(modalUseCase.id); setIsSheetOpen(false); }}>
+                      <Eye className="w-4 h-4 mr-2" /> View
                     </Button>
-                  )}
-                  {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER' || userData?.role === 'QZEN_ADMIN') && modalUseCase.stage !== 'deployment' && (
-                                         <Button 
-                       size="sm" 
-                       variant="outline" 
-                       onClick={() => { 
-                         handleMoveToStage(modalUseCase.id, getNextStage(modalUseCase.stage)); 
-                         setIsSheetOpen(false); 
-                       }}
-                     >
-                       <ArrowRightIcon className="w-4 h-4 mr-1" />
-                       Move to Next Stage
-                     </Button>
-                  )}
-                  {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER' || userData?.role === 'QZEN_ADMIN') && modalUseCase.stage !== 'discovery' && (
-                    <Button size="sm" variant="outline" onClick={() => { handleAssess(modalUseCase.id); setIsSheetOpen(false); }}>
-                      <Zap className="w-4 h-4 mr-1" /> Assess
-                    </Button>
-                  )}
+                    {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && (
+                      <Button size="sm" variant="outline" className='text-dark' onClick={() => { handleEdit(modalUseCase.id); setIsSheetOpen(false); }}>
+                        <EditIcon className="w-4 h-4 mr-2" /> Edit
+                      </Button>
+                    )}
+                    {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER' || userData?.role === 'QZEN_ADMIN') && modalUseCase.stage !== 'deployment' && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => { 
+                          handleMoveToStage(modalUseCase.id, getNextStage(modalUseCase.stage)); 
+                          setIsSheetOpen(false); 
+                        }}
+                        className="whitespace-nowrap text-dark"
+                      >
+                        <ArrowRightIcon className="w-4 h-4 mr-2" />
+                        Next Stage
+                      </Button>
+                    )}
+                    {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER' || userData?.role === 'QZEN_ADMIN') && modalUseCase.stage !== 'discovery' && (
+                      <Button size="sm" className='text-dark' variant="outline" onClick={() => { handleAssess(modalUseCase.id); setIsSheetOpen(false); }}>
+                        <Zap className="w-4 h-4 mr-2" /> Assess
+                      </Button>
+                    )}
+                  </div>
                   <SheetClose asChild>
                     <Button size="sm" variant="secondary">Close</Button>
                   </SheetClose>

@@ -4,6 +4,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Database, BarChart3, FileText, Shield, Globe, Clock } from 'lucide-react';
 
 const DATA_TYPES = [
   'Personal Identifiable Information (PII)',
@@ -128,178 +131,286 @@ export default function DataReadiness({ value, onChange }: Props) {
 
   return (
     <div className="space-y-10">
-      <div className="bg-gradient-to-r from-[#b3d8fa] via-[#d1b3fa] to-[#f7b3e3] p-4 mb-8 rounded-2xl flex items-center gap-3 shadow-md border-l-4 border-cyan-400">
-        <div className="font-semibold text-cyan-800 text-lg mb-1">Data Readiness Assessment</div>
-        <div className="text-cyan-700">Comprehensive data characteristics, quality, and governance inputs.</div>
+      <div className="bg-gradient-to-r from-cyan-100 via-blue-100 to-indigo-100 dark:from-cyan-900/20 dark:via-blue-900/20 dark:to-indigo-900/20 p-4 mb-8 rounded-2xl flex items-center gap-3 shadow-md border-l-4 border-cyan-400 dark:border-cyan-300">
+        <div className="font-semibold text-cyan-800 dark:text-cyan-200 text-lg mb-1">Data Readiness Assessment</div>
+        <div className="text-cyan-700 dark:text-cyan-300">Comprehensive data characteristics, quality, and governance inputs.</div>
       </div>
 
       {/* Data Classification Section */}
-      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-        <div className="border-b border-gray-100 pb-4 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Data Classification</h3>
-          <p className="text-sm text-gray-600">Identify the types of data that will be used in your AI system</p>
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Database className="w-6 h-6 text-primary" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Data Classification</h3>
+              <p className="text-sm text-muted-foreground">Identify the types of data that will be used in your AI system</p>
+            </div>
+          </div>
         </div>
         
-        <div>
-          <label className="block font-medium mb-4">Data Types (multi-select)</label>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {DATA_TYPES.map((type) => (
-              <label key={type} className="flex items-center gap-2 hover:bg-gray-50 p-2 rounded border border-gray-100 cursor-pointer">
-                <Checkbox checked={value.dataTypes.includes(type)} onCheckedChange={() => handleMultiSelect('dataTypes', type)} />
-                <span className="text-sm">{type}</span>
-              </label>
-            ))}
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {DATA_TYPES.map((type) => (
+            <label key={type} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+              <Checkbox
+                checked={value.dataTypes.includes(type)}
+                onCheckedChange={(checked) => handleMultiSelect('dataTypes', type)}
+              />
+              <span className="text-sm text-foreground">{type}</span>
+            </label>
+          ))}
         </div>
       </div>
 
       {/* Data Volume & Scale Section */}
-      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-        <div className="border-b border-gray-100 pb-4 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Data Volume & Scale</h3>
-          <p className="text-sm text-gray-600">Define the current and expected data volume characteristics</p>
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <BarChart3 className="w-6 h-6 text-success" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Data Volume & Scale</h3>
+              <p className="text-sm text-muted-foreground">Define the current and expected data volume characteristics</p>
+            </div>
+          </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="space-y-6">
           <div>
-            <label className="block font-medium mb-3">Current Data Volume</label>
-            <Select value={value.dataVolume} onValueChange={(v) => onChange({ ...value, dataVolume: v })}>
-              <SelectTrigger><SelectValue placeholder="Select volume" /></SelectTrigger>
-              <SelectContent>
-                {DATA_VOLUME_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Label className="block font-medium mb-4 text-foreground">Data Volume</Label>
+            <RadioGroup value={value.dataVolume} onValueChange={(newValue) => onChange({ ...value, dataVolume: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {DATA_VOLUME_OPTIONS.map((option) => (
+                <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <RadioGroupItem value={option} />
+                  <span className="text-sm text-foreground">{option}</span>
+                </Label>
+              ))}
+            </RadioGroup>
           </div>
+          
           <div>
-            <label className="block font-medium mb-3">Expected Growth Rate (Annual)</label>
-            <Select value={value.growthRate} onValueChange={(v) => onChange({ ...value, growthRate: v })}>
-              <SelectTrigger><SelectValue placeholder="Select growth" /></SelectTrigger>
-              <SelectContent>
-                {GROWTH_RATE_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Label className="block font-medium mb-4 text-foreground">Growth Rate</Label>
+            <RadioGroup value={value.growthRate} onValueChange={(newValue) => onChange({ ...value, growthRate: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {GROWTH_RATE_OPTIONS.map((option) => (
+                <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <RadioGroupItem value={option} />
+                  <span className="text-sm text-foreground">{option}</span>
+                </Label>
+              ))}
+            </RadioGroup>
           </div>
+          
           <div>
-            <label className="block font-medium mb-3">Number of Records</label>
-            <Select value={value.numRecords} onValueChange={(v) => onChange({ ...value, numRecords: v })}>
-              <SelectTrigger><SelectValue placeholder="Select records" /></SelectTrigger>
-              <SelectContent>
-                {NUM_RECORDS_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Label className="block font-medium mb-4 text-foreground">Number of Records</Label>
+            <RadioGroup value={value.numRecords} onValueChange={(newValue) => onChange({ ...value, numRecords: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {NUM_RECORDS_OPTIONS.map((option) => (
+                <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <RadioGroupItem value={option} />
+                  <span className="text-sm text-foreground">{option}</span>
+                </Label>
+              ))}
+            </RadioGroup>
           </div>
         </div>
       </div>
 
       {/* Data Sources Section */}
-      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-        <div className="border-b border-gray-100 pb-4 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Data Sources</h3>
-          <p className="text-sm text-gray-600">Identify where your data will be sourced from</p>
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+                            <FileText className="w-6 h-6 text-warning" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Data Sources</h3>
+              <p className="text-sm text-muted-foreground">Identify where your data will be sourced from</p>
+            </div>
+          </div>
         </div>
         
-        <div>
-          <label className="block font-medium mb-4">Primary Data Sources (multi-select)</label>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {PRIMARY_DATA_SOURCES.map((src) => (
-              <label key={src} className="flex items-center gap-2 hover:bg-gray-50 p-2 rounded border border-gray-100 cursor-pointer">
-                <Checkbox checked={value.primarySources.includes(src)} onCheckedChange={() => handleMultiSelect('primarySources', src)} />
-                <span className="text-sm">{src}</span>
-              </label>
-            ))}
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {PRIMARY_DATA_SOURCES.map((src) => (
+            <label key={src} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+              <Checkbox
+                checked={value.primarySources.includes(src)}
+                onCheckedChange={(checked) => handleMultiSelect('primarySources', src)}
+              />
+              <span className="text-sm text-foreground">{src}</span>
+            </label>
+          ))}
         </div>
       </div>
 
       {/* Data Quality & Governance Section */}
-      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-        <div className="border-b border-gray-100 pb-4 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Data Quality & Governance</h3>
-          <p className="text-sm text-gray-600">Assess data quality metrics and freshness requirements</p>
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Shield className="w-6 h-6 text-primary" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Data Quality & Governance</h3>
+              <p className="text-sm text-muted-foreground">Assess data quality metrics and freshness requirements</p>
+            </div>
+          </div>
         </div>
         
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block font-medium mb-3">Data Quality Score</label>
-              <Slider value={[value.dataQualityScore]} min={1} max={10} step={1} onValueChange={([v]) => onChange({ ...value, dataQualityScore: v })} className="mb-2" />
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Poor (1)</span>
-                <span className="font-semibold text-blue-600">{value.dataQualityScore}/10</span>
-                <span>Excellent (10)</span>
-              </div>
-            </div>
-            <div>
-              <label className="block font-medium mb-3">Data Completeness (%)</label>
-              <Input type="number" min={0} max={100} value={value.dataCompleteness} onChange={e => onChange({ ...value, dataCompleteness: Number(e.target.value) })} placeholder="0-100" />
-            </div>
-            <div>
-              <label className="block font-medium mb-3">Data Accuracy Confidence (%)</label>
-              <Input type="number" min={0} max={100} value={value.dataAccuracyConfidence} onChange={e => onChange({ ...value, dataAccuracyConfidence: Number(e.target.value) })} placeholder="0-100" />
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Data Quality Score</Label>
+            <div className="flex items-center w-full">
+              <span className="text-muted-foreground text-sm mr-4">Poor</span>
+              <Slider
+                min={1}
+                max={10}
+                step={1}
+                value={[value.dataQualityScore]}
+                onValueChange={([val]) => onChange({ ...value, dataQualityScore: val })}
+                className="w-full"
+              />
+              <span className="text-muted-foreground text-sm ml-4">Excellent</span>
+              <span className="ml-6 px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold text-sm">{value.dataQualityScore}</span>
             </div>
           </div>
           
           <div>
-            <label className="block font-medium mb-3">Data Freshness Requirement</label>
-            <Select value={value.dataFreshness} onValueChange={v => onChange({ ...value, dataFreshness: v })}>
-              <SelectTrigger><SelectValue placeholder="Select freshness" /></SelectTrigger>
-              <SelectContent>
-                {FRESHNESS_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Label className="block font-medium mb-4 text-foreground">Data Completeness</Label>
+            <div className="flex items-center w-full">
+              <span className="text-muted-foreground text-sm mr-4">0%</span>
+              <Slider
+                min={0}
+                max={100}
+                step={5}
+                value={[value.dataCompleteness]}
+                onValueChange={([val]) => onChange({ ...value, dataCompleteness: val })}
+                className="w-full"
+              />
+              <span className="text-muted-foreground text-sm ml-4">100%</span>
+              <span className="ml-6 px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold text-sm">{value.dataCompleteness}%</span>
+            </div>
+          </div>
+          
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Data Accuracy Confidence</Label>
+            <div className="flex items-center w-full">
+              <span className="text-muted-foreground text-sm mr-4">0%</span>
+              <Slider
+                min={0}
+                max={100}
+                step={5}
+                value={[value.dataAccuracyConfidence]}
+                onValueChange={([val]) => onChange({ ...value, dataAccuracyConfidence: val })}
+                className="w-full"
+              />
+              <span className="text-muted-foreground text-sm ml-4">100%</span>
+              <span className="ml-6 px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold text-sm">{value.dataAccuracyConfidence}%</span>
+            </div>
+          </div>
+          
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Data Freshness</Label>
+            <RadioGroup value={value.dataFreshness} onValueChange={(newValue) => onChange({ ...value, dataFreshness: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {FRESHNESS_OPTIONS.map((option) => (
+                <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <RadioGroupItem value={option} />
+                  <span className="text-sm text-foreground">{option}</span>
+                </Label>
+              ))}
+            </RadioGroup>
           </div>
         </div>
       </div>
 
       {/* Geographic & Jurisdictional Section */}
-      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-        <div className="border-b border-gray-100 pb-4 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Geographic & Jurisdictional</h3>
-          <p className="text-sm text-gray-600">Define data subject locations, storage, processing, and cross-border requirements</p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block font-medium mb-3">Data Subject Locations (countries/regions)</label>
-            <Input value={value.dataSubjectLocations} onChange={e => onChange({ ...value, dataSubjectLocations: e.target.value })} placeholder="e.g. US, EU, India" />
-          </div>
-          <div>
-            <label className="block font-medium mb-3">Data Storage Locations</label>
-            <Input value={value.dataStorageLocations} onChange={e => onChange({ ...value, dataStorageLocations: e.target.value })} placeholder="e.g. AWS eu-west-1, on-premise" />
-          </div>
-          <div>
-            <label className="block font-medium mb-3">Data Processing Locations</label>
-            <Input value={value.dataProcessingLocations} onChange={e => onChange({ ...value, dataProcessingLocations: e.target.value })} placeholder="e.g. US, Singapore" />
-          </div>
-          <div>
-            <label className="block font-medium mb-3">Cross-border Transfer Required</label>
-            <div className="flex items-center gap-2 p-2 border border-gray-100 rounded hover:bg-gray-50">
-              <Checkbox checked={value.crossBorderTransfer} onCheckedChange={v => onChange({ ...value, crossBorderTransfer: !!v })} />
-              <span className="text-sm">Cross-border data transfer is required</span>
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Globe className="w-6 h-6 text-warning" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Geographic & Jurisdictional</h3>
+              <p className="text-sm text-muted-foreground">Define data subject locations, storage, processing, and cross-border requirements</p>
             </div>
           </div>
-          <div className="md:col-span-2">
-            <label className="block font-medium mb-3">Data Localization Requirements (countries)</label>
-            <Input value={value.dataLocalization} onChange={e => onChange({ ...value, dataLocalization: e.target.value })} placeholder="e.g. Russia, China" />
+        </div>
+        
+        <div className="space-y-6">
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Data Subject Locations</Label>
+            <RadioGroup value={value.dataSubjectLocations} onValueChange={(newValue) => onChange({ ...value, dataSubjectLocations: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {PRIMARY_DATA_SOURCES.map((option) => (
+                <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <RadioGroupItem value={option} />
+                  <span className="text-sm text-foreground">{option}</span>
+                </Label>
+              ))}
+            </RadioGroup>
+          </div>
+          
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Data Storage Locations</Label>
+            <RadioGroup value={value.dataStorageLocations} onValueChange={(newValue) => onChange({ ...value, dataStorageLocations: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {PRIMARY_DATA_SOURCES.map((option) => (
+                <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <RadioGroupItem value={option} />
+                  <span className="text-sm text-foreground">{option}</span>
+                </Label>
+              ))}
+            </RadioGroup>
+          </div>
+          
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Data Processing Locations</Label>
+            <RadioGroup value={value.dataProcessingLocations} onValueChange={(newValue) => onChange({ ...value, dataProcessingLocations: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {PRIMARY_DATA_SOURCES.map((option) => (
+                <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <RadioGroupItem value={option} />
+                  <span className="text-sm text-foreground">{option}</span>
+                </Label>
+              ))}
+            </RadioGroup>
+          </div>
+          
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Cross-Border Data Transfer</Label>
+            <div className="flex items-center gap-2 p-2 border border-border rounded hover:bg-accent">
+              <Checkbox
+                checked={value.crossBorderTransfer}
+                onCheckedChange={(checked) => onChange({ ...value, crossBorderTransfer: !!checked })}
+              />
+              <span className="text-sm text-foreground">Data will be transferred across international borders</span>
+            </div>
+          </div>
+          
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Data Localization Requirements</Label>
+            <RadioGroup value={value.dataLocalization} onValueChange={(newValue) => onChange({ ...value, dataLocalization: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {PRIMARY_DATA_SOURCES.map((option) => (
+                <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <RadioGroupItem value={option} />
+                  <span className="text-sm text-foreground">{option}</span>
+                </Label>
+              ))}
+            </RadioGroup>
           </div>
         </div>
       </div>
 
       {/* Data Lifecycle Section */}
-      <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
-        <div className="border-b border-gray-100 pb-4 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Data Lifecycle</h3>
-          <p className="text-sm text-gray-600">Define data retention and lifecycle management requirements</p>
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Clock className="w-6 h-6 text-primary" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Data Lifecycle</h3>
+              <p className="text-sm text-muted-foreground">Define data retention and lifecycle management requirements</p>
+            </div>
+          </div>
         </div>
         
         <div>
-          <label className="block font-medium mb-3">Data Retention Period</label>
-          <Select value={value.dataRetention} onValueChange={v => onChange({ ...value, dataRetention: v })}>
-            <SelectTrigger><SelectValue placeholder="Select retention" /></SelectTrigger>
-            <SelectContent>
-              {RETENTION_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <Label className="block font-medium mb-4 text-foreground">Data Retention Period</Label>
+          <RadioGroup value={value.dataRetention} onValueChange={(newValue) => onChange({ ...value, dataRetention: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {RETENTION_OPTIONS.map((option) => (
+              <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                <RadioGroupItem value={option} />
+                <span className="text-sm text-foreground">{option}</span>
+              </Label>
+            ))}
+          </RadioGroup>
         </div>
       </div>
     </div>

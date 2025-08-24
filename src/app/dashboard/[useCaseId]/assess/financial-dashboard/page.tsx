@@ -72,6 +72,24 @@ const FinancialDashboard = () => {
   const [_loading, setLoading] = useState<boolean>(true);
   const [showFormulae, setShowFormulae] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Check for dark mode
+  useEffect(() => {
+    const checkDarkMode = () => {
+      const isDark = document.documentElement.classList.contains('dark') || 
+                    document.body.classList.contains('dark');
+      setIsDarkMode(isDark);
+    };
+
+    checkDarkMode();
+    
+    // Listen for theme changes
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    
+    return () => observer.disconnect();
+  }, []);
   
   useEffect(() => {
     if (!useCaseId) return;
@@ -241,7 +259,7 @@ const FinancialDashboard = () => {
       },
     ]
   };
-  const cumulativeChartOptions = {
+  const cumulativeChartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: 'index' as const, intersect: false },
@@ -257,7 +275,7 @@ const FinancialDashboard = () => {
           usePointStyle: true,
           pointStyle: 'circle',
           font: { size: 14, weight: 600 },
-          color: '#1f2937',
+          color: isDarkMode ? '#ffffff' : '#1f2937',
           padding: 25,
           boxWidth: 12,
           boxHeight: 12,
@@ -276,7 +294,7 @@ const FinancialDashboard = () => {
         displayColors: true,
         usePointStyle: true,
         callbacks: {
-          title: (ctx: any) => `📈 Month ${ctx[0].label} Financial Overview`,
+          title: (ctx: any) => `Month ${ctx[0].label} Financial Overview`,
           label: (ctx: any) => {
             const label = ctx.dataset.label || '';
             let value = ctx.parsed.y;
@@ -301,7 +319,7 @@ const FinancialDashboard = () => {
         beginAtZero: false,
         ticks: {
           callback: (tickValue: string | number) => formatK(Number(tickValue)),
-          color: '#6b7280',
+          color: isDarkMode ? '#ffffff' : '#6b7280',
           font: { size: 13, weight: 600 },
           padding: 12,
           maxTicksLimit: 8,
@@ -309,7 +327,7 @@ const FinancialDashboard = () => {
         title: { 
           display: true,
           text: 'Financial Value ($)',
-          color: '#374151',
+          color: isDarkMode ? '#ffffff' : '#374151',
           font: { size: 14, weight: 'bold' as const },
           padding: { top: 20, bottom: 10 }
         },
@@ -324,12 +342,12 @@ const FinancialDashboard = () => {
         title: { 
           display: true,
           text: 'Timeline (Months)',
-          color: '#374151',
+          color: isDarkMode ? '#ffffff' : '#374151',
           font: { size: 14, weight: 'bold' as const },
           padding: { top: 15, bottom: 5 }
         },
         ticks: {
-          color: '#6b7280',
+          color: isDarkMode ? '#ffffff' : '#6b7280',
           font: { size: 13, weight: 600 },
           padding: 10,
           maxTicksLimit: 12,
@@ -342,7 +360,7 @@ const FinancialDashboard = () => {
         border: { display: false },
       },
     },
-  };
+  }), [isDarkMode]);
 
   // Monthly Cost Breakdown (Stacked Area)
   const costBreakdownChart = {
@@ -422,7 +440,7 @@ const FinancialDashboard = () => {
       },
     ]
   };
-  const costBreakdownOptions = {
+  const costBreakdownOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: 'index' as const, intersect: false },
@@ -438,7 +456,7 @@ const FinancialDashboard = () => {
           usePointStyle: true,
           pointStyle: 'circle',
           font: { size: 14, weight: 600 },
-          color: '#1f2937',
+          color: isDarkMode ? '#ffffff' : '#1f2937',
           padding: 25,
           boxWidth: 12,
           boxHeight: 12,
@@ -457,15 +475,15 @@ const FinancialDashboard = () => {
         displayColors: true,
         usePointStyle: true,
         callbacks: {
-          title: (ctx: any) => `💸 Month ${ctx[0].label} Cost Breakdown`,
+          title: (ctx: any) => `Month ${ctx[0].label} Cost Breakdown`,
           label: (ctx: any) => {
             const label = ctx.dataset.label || '';
             let value = ctx.parsed.y;
             value = formatCurrency(value);
-            let icon = '💰';
-            if (label.includes('API')) icon = '🔌';
-            if (label.includes('Infrastructure')) icon = '🏗️';
-            if (label.includes('Operations')) icon = '⚙️';
+            let icon = '$';
+            if (label.includes('API')) icon = 'API';
+            if (label.includes('Infrastructure')) icon = 'Infra';
+            if (label.includes('Operations')) icon = 'Ops';
             return `  ${icon} ${label}: ${value}`;
           },
         },
@@ -480,7 +498,7 @@ const FinancialDashboard = () => {
         beginAtZero: true,
         ticks: {
           callback: (tickValue: string | number) => formatK(Number(tickValue)),
-          color: '#6b7280',
+          color: isDarkMode ? '#ffffff' : '#6b7280',
           font: { size: 13, weight: 600 },
           padding: 12,
           maxTicksLimit: 8,
@@ -488,7 +506,7 @@ const FinancialDashboard = () => {
         title: { 
           display: true,
           text: 'Monthly Costs ($)',
-          color: '#374151',
+          color: isDarkMode ? '#ffffff' : '#374151',
           font: { size: 14, weight: 'bold' as const },
           padding: { top: 20, bottom: 10 }
         },
@@ -503,12 +521,12 @@ const FinancialDashboard = () => {
         title: { 
           display: true,
           text: 'Timeline (Months)',
-          color: '#374151',
+          color: isDarkMode ? '#ffffff' : '#374151',
           font: { size: 14, weight: 'bold' as const },
           padding: { top: 15, bottom: 5 }
         },
         ticks: {
-          color: '#6b7280',
+          color: isDarkMode ? '#ffffff' : '#6b7280',
           font: { size: 13, weight: 600 },
           padding: 10,
           maxTicksLimit: 12,
@@ -521,7 +539,7 @@ const FinancialDashboard = () => {
         border: { display: false },
       },
     },
-  };
+  }), [isDarkMode]);
 
   // Monthly Profit/Loss (Bar)
   const profitLossChart = {
@@ -588,7 +606,7 @@ const FinancialDashboard = () => {
           usePointStyle: true,
           pointStyle: 'rectRounded',
           font: { size: 14, weight: 600 },
-          color: '#1f2937',
+          color: isDarkMode ? '#ffffff' : '#1f2937',
           padding: 25,
           boxWidth: 15,
           boxHeight: 12,
@@ -607,12 +625,12 @@ const FinancialDashboard = () => {
         displayColors: true,
         usePointStyle: true,
         callbacks: {
-          title: (ctx: any) => `💰 Month ${ctx[0].label} Performance`,
+          title: (ctx: any) => `Month ${ctx[0].label} Performance`,
           label: (ctx: any) => {
             let value = ctx.parsed.y;
             const isProfit = value >= 0;
             value = formatCurrency(value);
-            const icon = isProfit ? '📈' : '📉';
+            const icon = isProfit ? 'Up' : 'Down';
             return `  ${icon} ${isProfit ? 'Profit' : 'Loss'}: ${value}`;
           },
         },
@@ -729,7 +747,7 @@ const FinancialDashboard = () => {
           usePointStyle: true,
           pointStyle: 'circle',
           font: { size: 14, weight: 600 },
-          color: '#1f2937',
+          color: isDarkMode ? '#ffffff' : '#1f2937',
           padding: 25,
           boxWidth: 12,
           boxHeight: 12,
@@ -748,16 +766,16 @@ const FinancialDashboard = () => {
         displayColors: true,
         usePointStyle: true,
         callbacks: {
-          title: (ctx: any) => `📊 Month ${ctx[0].label} ROI Analysis`,
+          title: (ctx: any) => `Month ${ctx[0].label} ROI Analysis`,
           label: (ctx: any) => {
             const label = ctx.dataset.label || '';
             let value = ctx.parsed.y;
             if (label.includes('Return')) {
               const formatted = `${value.toFixed(1)}%`;
-              const icon = value >= 0 ? '🚀' : '📉';
+              const icon = value >= 0 ? 'Up' : 'Down';
               return `  ${icon} ${label}: ${formatted}`;
             }
-            if (label.includes('Break-even')) return `  ⚖️ ${label}: 0%`;
+            if (label.includes('Break-even')) return `  ${label}: 0%`;
             return `  ${label}: ${value}`;
           },
         },
@@ -871,19 +889,19 @@ const FinancialDashboard = () => {
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
-        <Button
-          variant="outline"
-          onClick={() => setShowFormulae(!showFormulae)}
-          className="mb-4"
-        >
+                 <Button
+           variant="outline"
+           onClick={() => setShowFormulae(!showFormulae)}
+           className="mb-4 text-dark dark:border-gray-600 dark:hover:bg-gray-700"
+         >
           {showFormulae ? 'Hide Formula' : 'Show Formula'}
         </Button>
       </div>
 
       {showFormulae && (
-        <Card className="p-6 bg-gray-50">
-          <h3 className="font-semibold mb-4">Financial Formulas</h3>
-          <div className="space-y-2 text-sm">
+        <Card className="p-6 bg-gray-50 dark:bg-gray-800">
+          <h3 className="font-semibold mb-4 text-gray-900 dark:text-gray-100">Financial Formulas</h3>
+          <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
             <p><strong>API Cost Growth:</strong> baseApiCost × (1.12)^(month/12)</p>
             <p><strong>Infrastructure Cost Growth:</strong> baseInfraCost × (1.05)^(month/12)</p>
             <p><strong>Operational Cost Growth:</strong> baseOpCost × (1.08)^(month/12)</p>
@@ -903,27 +921,27 @@ const FinancialDashboard = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className="font-semibold text-[#23235b]">Initial Dev Cost</label>
+                     <label className="font-semibold text-[#23235b] dark:text-blue-200">Initial Dev Cost</label>
           <Input type="number" value={initialDevCost} min={0} onChange={e => { setInitialDevCost(Number(e.target.value)); setSuccess(false); }} className="w-full" />
         </div>
         <div>
-          <label className="font-semibold text-[#23235b]">Monthly API Cost</label>
+                     <label className="font-semibold text-[#23235b] dark:text-blue-200">Monthly API Cost</label>
           <Input type="number" value={baseApiCost} min={0} onChange={e => { setBaseApiCost(Number(e.target.value)); setSuccess(false); }} className="w-full" />
         </div>
         <div>
-          <label className="font-semibold text-[#23235b]">Monthly Infrastructure</label>
+                     <label className="font-semibold text-[#23235b] dark:text-blue-200">Monthly Infrastructure</label>
           <Input type="number" value={baseInfraCost} min={0} onChange={e => { setBaseInfraCost(Number(e.target.value)); setSuccess(false); }} className="w-full" />
         </div>
         <div>
-          <label className="font-semibold text-[#23235b]">Monthly Operations</label>
+                     <label className="font-semibold text-[#23235b] dark:text-blue-200">Monthly Operations</label>
           <Input type="number" value={baseOpCost} min={0} onChange={e => { setBaseOpCost(Number(e.target.value)); setSuccess(false); }} className="w-full" />
         </div>
         <div>
-          <label className="font-semibold text-[#23235b]">Monthly Value Generated</label>
+                     <label className="font-semibold text-[#23235b] dark:text-blue-200">Monthly Value Generated</label>
           <Input type="number" value={baseMonthlyValue} min={0} onChange={e => { setBaseMonthlyValue(Number(e.target.value)); setSuccess(false); }} className="w-full" />
         </div>
         <div>
-          <label className="font-semibold text-[#23235b]">Value Growth Rate (%)</label>
+                     <label className="font-semibold text-[#23235b] dark:text-blue-200">Value Growth Rate (%)</label>
           <Input type="number" value={valueGrowthRate * 100} min={0} max={100} onChange={e => { setValueGrowthRate(Number(e.target.value) / 100); setSuccess(false); }} className="w-full" />
         </div>
       </div>
@@ -947,17 +965,17 @@ const FinancialDashboard = () => {
           value: formatCurrency(summary.netValue),
           label: 'Net Value (Forecast)'
         }].map((item, idx) => (
-          <div key={idx} className="bg-white rounded-xl shadow border border-gray-100 p-6 flex flex-col items-center">
-            <div className="text-3xl font-extrabold mb-1" style={{ color: '#9461fd' }}>{item.value}</div>
-            <div className="font-medium text-base" style={{ color: '#9461fd' }}>{item.label}</div>
-          </div>
+                     <div key={idx} className="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-100 dark:border-gray-700 p-6 flex flex-col items-center">
+             <div className="text-3xl font-extrabold mb-1 text-purple-600 dark:text-purple-400">{item.value}</div>
+             <div className="font-medium text-base text-purple-600 dark:text-purple-400">{item.label}</div>
+           </div>
         ))}
       </div>
 
       {/* Financial Analytics Dashboard */}
       <div className="space-y-12">
         {/* Primary Chart - Cumulative Financial View */}
-        <Card className="w-full mx-auto p-8 bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 border border-gray-200/60 shadow-xl rounded-2xl backdrop-blur-sm">
+                 <Card className="w-full mx-auto p-8 bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 dark:from-gray-800 dark:via-blue-900/20 dark:to-purple-900/20 border border-gray-200/60 dark:border-gray-700/60 shadow-xl rounded-2xl backdrop-blur-sm">
           <div className="flex items-center gap-4 mb-8">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
               <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -965,11 +983,11 @@ const FinancialDashboard = () => {
               </svg>
             </div>
             <div>
-              <h2 className="text-3xl font-bold text-gray-900">Cumulative Financial Overview</h2>
-              <p className="text-gray-600 mt-1">Track investment vs value generation over 36 months</p>
+                             <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Cumulative Financial Overview</h2>
+               <p className="text-gray-600 dark:text-gray-300 mt-1">Track investment vs value generation over 36 months</p>
             </div>
           </div>
-          <div className="bg-white/60 rounded-xl p-6 shadow-inner" style={{ height: 480 }}>
+                     <div className="bg-white/60 dark:bg-gray-900/60 rounded-xl p-6 shadow-inner" style={{ height: 480 }}>
             <Line data={cumulativeChartData} options={cumulativeChartOptions} />
           </div>
         </Card>
@@ -977,7 +995,7 @@ const FinancialDashboard = () => {
         {/* Secondary Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* ROI Analysis */}
-          <Card className="p-8 bg-gradient-to-br from-white via-purple-50/30 to-pink-50/30 border border-gray-200/60 shadow-xl rounded-2xl backdrop-blur-sm">
+                     <Card className="p-8 bg-gradient-to-br from-white via-purple-50/30 to-pink-50/30 dark:from-gray-800 dark:via-purple-900/20 dark:to-pink-900/20 border border-gray-200/60 dark:border-gray-700/60 shadow-xl rounded-2xl backdrop-blur-sm">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center shadow-lg">
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -985,17 +1003,17 @@ const FinancialDashboard = () => {
                 </svg>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900">ROI Performance</h3>
-                <p className="text-gray-600 text-sm">Return on investment trajectory</p>
+                               <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">ROI Performance</h3>
+               <p className="text-gray-600 dark:text-gray-300 text-sm">Return on investment trajectory</p>
               </div>
             </div>
-            <div className="bg-white/60 rounded-xl p-4 shadow-inner" style={{ height: 360 }}>
-              <Line data={roiChart} options={roiOptions} />
-            </div>
+                         <div className="bg-white/60 dark:bg-gray-900/60 rounded-xl p-4 shadow-inner" style={{ height: 360 }}>
+               <Line data={roiChart} options={roiOptions} />
+             </div>
           </Card>
 
           {/* Cost Breakdown */}
-          <Card className="p-8 bg-gradient-to-br from-white via-orange-50/30 to-red-50/30 border border-gray-200/60 shadow-xl rounded-2xl backdrop-blur-sm">
+                     <Card className="p-8 bg-gradient-to-br from-white via-orange-50/30 to-red-50/30 dark:from-gray-800 dark:via-orange-900/20 dark:to-red-900/20 border border-gray-200/60 dark:border-gray-700/60 shadow-xl rounded-2xl backdrop-blur-sm">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg">
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -1003,18 +1021,18 @@ const FinancialDashboard = () => {
                 </svg>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Cost Analysis</h3>
-                <p className="text-gray-600 text-sm">Monthly operational cost breakdown</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Cost Analysis</h3>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">Monthly operational cost breakdown</p>
               </div>
             </div>
-            <div className="bg-white/60 rounded-xl p-4 shadow-inner" style={{ height: 360 }}>
-              <Line data={costBreakdownChart} options={costBreakdownOptions} />
-            </div>
+                         <div className="bg-white/60 dark:bg-gray-900/60 rounded-xl p-4 shadow-inner" style={{ height: 360 }}>
+               <Line data={costBreakdownChart} options={costBreakdownOptions} />
+             </div>
           </Card>
         </div>
 
         {/* Profit/Loss Chart */}
-        <Card className="w-full mx-auto p-8 bg-gradient-to-br from-white via-green-50/30 to-emerald-50/30 border border-gray-200/60 shadow-xl rounded-2xl backdrop-blur-sm">
+                 <Card className="w-full mx-auto p-8 bg-gradient-to-br from-white via-green-50/30 to-emerald-50/30 dark:from-gray-800 dark:via-green-900/20 dark:to-emerald-900/20 border border-gray-200/60 dark:border-gray-700/60 shadow-xl rounded-2xl backdrop-blur-sm">
           <div className="flex items-center gap-4 mb-6">
             <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg">
               <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -1022,18 +1040,18 @@ const FinancialDashboard = () => {
               </svg>
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-gray-900">Monthly Profit & Loss Analysis</h3>
-              <p className="text-gray-600 mt-1">Track monthly profitability and break-even progression</p>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Monthly Profit & Loss Analysis</h3>
+              <p className="text-gray-600 dark:text-gray-300 mt-1">Track monthly profitability and break-even progression</p>
             </div>
           </div>
-          <div className="bg-white/60 rounded-xl p-6 shadow-inner" style={{ height: 420 }}>
+                     <div className="bg-white/60 dark:bg-gray-900/60 rounded-xl p-6 shadow-inner" style={{ height: 420 }}>
             <Bar data={profitLossChart} options={profitLossOptions} />
           </div>
         </Card>
       </div>
 
-      {/* Cost Structure Analysis */}
-      <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+             {/* Cost Structure Analysis */}
+       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center">
             <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -1041,8 +1059,8 @@ const FinancialDashboard = () => {
             </svg>
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Cost Structure Analysis (Month 12)</h3>
-            <p className="text-sm text-gray-600">Detailed breakdown of operational costs at the 1-year mark</p>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Cost Structure Analysis (Month 12)</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Detailed breakdown of operational costs at the 1-year mark</p>
           </div>
         </div>
         
@@ -1055,38 +1073,38 @@ const FinancialDashboard = () => {
           const opPct = total ? (m12.opCost / total) * 100 : 0;
           return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-xl p-6 text-center hover:shadow-md transition-all duration-200">
-                <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-xl text-white">📡</span>
-                </div>
-                <div className="text-2xl font-bold text-red-600 mb-1">{formatCurrency(m12.apiCost)}</div>
-                <div className="font-semibold text-gray-700 mb-1">API Costs</div>
-                <div className="text-sm font-medium text-red-500">{apiPct.toFixed(1)}% of total</div>
-              </div>
-              <div className="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-xl p-6 text-center hover:shadow-md transition-all duration-200">
-                <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-xl text-white">🏗️</span>
-                </div>
-                <div className="text-2xl font-bold text-orange-600 mb-1">{formatCurrency(m12.infraCost)}</div>
-                <div className="font-semibold text-gray-700 mb-1">Infrastructure</div>
-                <div className="text-sm font-medium text-orange-500">{infraPct.toFixed(1)}% of total</div>
-              </div>
-              <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200 rounded-xl p-6 text-center hover:shadow-md transition-all duration-200">
-                <div className="w-12 h-12 bg-yellow-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-xl text-white">⚙️</span>
-                </div>
-                <div className="text-2xl font-bold text-yellow-700 mb-1">{formatCurrency(m12.opCost)}</div>
-                <div className="font-semibold text-gray-700 mb-1">Operations</div>
-                <div className="text-sm font-medium text-yellow-600">{opPct.toFixed(1)}% of total</div>
-              </div>
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-6 text-center hover:shadow-md transition-all duration-200">
-                <div className="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-xl text-white">💯</span>
-                </div>
-                <div className="text-2xl font-bold text-gray-800 mb-1">{formatCurrency(total)}</div>
-                <div className="font-semibold text-gray-700 mb-1">Total Monthly</div>
-                <div className="text-sm font-medium text-gray-600">100% combined</div>
-              </div>
+                             <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border border-red-200 dark:border-red-700 rounded-xl p-6 text-center hover:shadow-md transition-all duration-200">
+                 <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                   <span className="text-xl text-white">API</span>
+                 </div>
+                 <div className="text-2xl font-bold text-red-600 dark:text-red-400 mb-1">{formatCurrency(m12.apiCost)}</div>
+                 <div className="font-semibold text-gray-700 dark:text-gray-200 mb-1">API Costs</div>
+                 <div className="text-sm font-medium text-red-500 dark:text-red-400">{apiPct.toFixed(1)}% of total</div>
+               </div>
+                             <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border border-orange-200 dark:border-orange-700 rounded-xl p-6 text-center hover:shadow-md transition-all duration-200">
+                 <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                   <span className="text-xl text-white">Infra</span>
+                 </div>
+                 <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-1">{formatCurrency(m12.infraCost)}</div>
+                 <div className="font-semibold text-gray-700 dark:text-gray-200 mb-1">Infrastructure</div>
+                 <div className="text-sm font-medium text-orange-500 dark:text-orange-400">{infraPct.toFixed(1)}% of total</div>
+               </div>
+                             <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-6 text-center hover:shadow-md transition-all duration-200">
+                 <div className="w-12 h-12 bg-yellow-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                   <span className="text-xl text-white">Ops</span>
+                 </div>
+                 <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400 mb-1">{formatCurrency(m12.opCost)}</div>
+                 <div className="font-semibold text-gray-700 dark:text-gray-200 mb-1">Operations</div>
+                 <div className="text-sm font-medium text-yellow-600 dark:text-yellow-400">{opPct.toFixed(1)}% of total</div>
+               </div>
+                             <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/20 dark:to-gray-700/20 border border-gray-200 dark:border-gray-600 rounded-xl p-6 text-center hover:shadow-md transition-all duration-200">
+                 <div className="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                   <span className="text-xl text-white">Total</span>
+                 </div>
+                 <div className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-1">{formatCurrency(total)}</div>
+                 <div className="font-semibold text-gray-700 dark:text-gray-200 mb-1">Total Monthly</div>
+                 <div className="text-sm font-medium text-gray-600 dark:text-gray-400">100% combined</div>
+               </div>
             </div>
           );
         })()}

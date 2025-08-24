@@ -32,6 +32,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [dataReady, setDataReady] = useState(false);
 
   const fetchUserData = async () => {
     if (!isSignedIn) {
@@ -72,10 +73,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
     } else if (mounted && isLoaded && !isSignedIn) {
       setLoading(false);
     }
+    
+    // Wait a bit for data to be loaded
+    const timer = setTimeout(() => {
+      setDataReady(true);
+    }, 100);
+    return () => clearTimeout(timer);
   }, [mounted, isLoaded, isSignedIn]);
 
-  // Don't provide context until mounted to prevent hydration mismatch
-  if (!mounted) {
+  // Don't provide context until mounted and data is ready to prevent hydration mismatch
+  if (!mounted || !dataReady) {
     return <>{children}</>;
   }
 

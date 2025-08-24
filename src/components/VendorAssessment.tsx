@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Plus, Edit2, Save, X, Eye, Trash2, Search, BarChart3, Users } from 'lucide-react';
 import { vendorService, type Vendor } from '@/lib/vendorService';
+import { useStableRender } from '@/hooks/useStableRender';
 
 // Types
 interface User {
@@ -26,6 +27,9 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(0);
+  
+  // Use global stable render hook
+  const { isReady } = useStableRender();
 
   const categories = [
     'LLM/Foundation Models',
@@ -115,6 +119,34 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
     }
   };
 
+
+  // Memoize color functions to prevent unnecessary re-renders
+  const getStatusColor = useCallback((status: string) => {
+    switch (status) {
+      case 'Approved': return 'text-success-700 dark:text-success-400 bg-success-100 dark:bg-success-900/30 border border-success-200 dark:border-success-800';
+      case 'Rejected': return 'text-destructive-700 dark:text-destructive-400 bg-destructive-100 dark:bg-destructive-900/30 border border-destructive-200 dark:border-destructive-800';
+      case 'On Hold': return 'text-warning-700 dark:text-warning-400 bg-warning-100 dark:bg-warning-900/30 border border-warning-200 dark:border-warning-800';
+      case 'In Assessment': return 'text-primary-700 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800';
+      default: return 'text-muted-foreground bg-muted border border-border';
+    }
+  }, []);
+
+  const getScoreColor = useCallback((score: number) => {
+    if (score >= 4) return 'text-success-700 dark:text-success-400 bg-success-100 dark:bg-success-900/30 border border-success-200 dark:border-success-800';
+    if (score >= 3) return 'text-warning-700 dark:text-warning-400 bg-warning-100 dark:bg-warning-900/30 border border-warning-200 dark:border-warning-800';
+    if (score >= 2) return 'text-warning-700 dark:text-warning-400 bg-warning-100 dark:bg-warning-900/30 border border-warning-200 dark:border-warning-800';
+    if (score >= 1) return 'text-destructive-700 dark:text-destructive-400 bg-destructive-100 dark:bg-destructive-900/30 border border-destructive-200 dark:border-destructive-800';
+    return 'text-muted-foreground bg-muted border border-border';
+  }, []);
+
+  // Memoize filtered vendors to prevent unnecessary re-renders
+  const filteredVendors = useMemo(() => {
+    return vendors.filter(vendor => {
+      const matchesCategory = filterCategory === 'all' || vendor.category === filterCategory;
+      const matchesSearch = vendor.name.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [vendors, filterCategory, searchTerm]);
 
   useEffect(() => {
     loadVendors();
@@ -318,30 +350,6 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
     });
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Approved': return 'text-green-600 bg-green-50';
-      case 'Rejected': return 'text-red-600 bg-red-50';
-      case 'On Hold': return 'text-orange-600 bg-orange-50';
-      case 'In Assessment': return 'text-blue-600 bg-blue-50';
-      default: return 'text-gray-400 bg-gray-50';
-    }
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score >= 4) return 'text-green-600 bg-green-50';
-    if (score >= 3) return 'text-yellow-600 bg-yellow-50';
-    if (score >= 2) return 'text-orange-600 bg-orange-50';
-    if (score >= 1) return 'text-red-600 bg-red-50';
-    return 'text-gray-400 bg-gray-50';
-  };
-
-  const filteredVendors = vendors.filter(vendor => {
-    const matchesCategory = filterCategory === 'all' || vendor.category === filterCategory;
-    const matchesSearch = vendor.name.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
   const handleDeleteVendor = async (vendorId: string) => {
     if (!confirm('Are you sure you want to delete this vendor? This action cannot be undone.')) {
       return;
@@ -366,9 +374,9 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
     if (!currentVendor) return null;
 
     return (
-      <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="bg-card rounded-lg shadow-lg p-6 border border-border">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-foreground">
             {isEditing ? 'Edit Vendor' : 'Vendor Details'}
           </h2>
           <div className="flex gap-2">
@@ -376,7 +384,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
               <button
                 onClick={saveVendor}
                 disabled={loading}
-                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50"
+                className="flex items-center gap-2 bg-success hover:bg-success/90 text-success-foreground px-4 py-2 rounded-lg disabled:opacity-50"
               >
                 <Save size={16} />
                 Save
@@ -384,14 +392,14 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
             )}
             <button
               onClick={() => setIsEditing(!isEditing)}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg"
             >
               <Edit2 size={16} />
               {isEditing ? 'Cancel' : 'Edit'}
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+              className="flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2 rounded-lg hover:bg-secondary/80"
             >
               <X size={16} />
               Close
@@ -402,23 +410,23 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
         {/* Basic Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Vendor Name</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Vendor Name</label>
             <input
               type="text"
               value={currentVendor.name}
               onChange={(e) => setCurrentVendor(prev => prev ? { ...prev, name: e.target.value } : null)}
               disabled={!isEditing}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+              className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-card text-foreground"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Category</label>
             <select
               value={currentVendor.category}
               onChange={(e) => setCurrentVendor(prev => prev ? { ...prev, category: e.target.value } : null)}
               disabled={!isEditing}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+              className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-card text-foreground"
             >
               {categories.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
@@ -427,34 +435,34 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Website</label>
             <input
               type="url"
               value={currentVendor.website}
               onChange={(e) => setCurrentVendor(prev => prev ? { ...prev, website: e.target.value } : null)}
               disabled={!isEditing}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+              className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-card text-foreground"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Assessment Date</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Assessment Date</label>
             <input
               type="date"
               value={currentVendor.assessmentDate}
               onChange={(e) => setCurrentVendor(prev => prev ? { ...prev, assessmentDate: e.target.value } : null)}
               disabled={!isEditing}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+              className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-card text-foreground"
             />
           </div>
         </div>
 
         {/* Assessment Criteria Tabs */}
         <div className="space-y-6">
-          <h3 className="text-xl font-semibold text-gray-900 border-b pb-2">Assessment Criteria</h3>
+          <h3 className="text-xl font-semibold text-foreground border-b border-border pb-2">Assessment Criteria</h3>
           
           {/* Tab Navigation */}
-          <div className="border-b border-gray-200">
+          <div className="border-b border-border">
             <nav className="-mb-px flex flex-wrap">
               {Object.keys(assessmentCriteria).map((category, index) => (
                 <button
@@ -462,8 +470,8 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
                   onClick={() => setActiveTab(index)}
                   className={`mr-2 mb-2 py-2 px-4 text-sm font-medium rounded-t-lg whitespace-nowrap ${
                     activeTab === index
-                      ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-500'
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                      ? 'bg-primary/10 text-primary border-b-2 border-primary'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   }`}
                 >
                   {category}
@@ -473,10 +481,10 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
           </div>
 
           {/* Tab Content */}
-          <div className="bg-gray-50 rounded-lg p-6">
+          <div className="bg-muted rounded-lg p-6">
             {Object.entries(assessmentCriteria).map(([category, subcriteria], index) => (
               <div key={category} className={activeTab === index ? 'block' : 'hidden'}>
-                <h4 className="text-lg font-semibold text-gray-800 mb-4">{category}</h4>
+                <h4 className="text-lg font-semibold text-foreground mb-4">{category}</h4>
                 <div className="space-y-4">
                   {Object.entries(subcriteria).map(([subcategory, description]) => {
                     const key = `${category}-${subcategory}`;
@@ -484,19 +492,19 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
                     const comment = currentVendor.comments[key] || '';
                     
                     return (
-                      <div key={subcategory} className="bg-white rounded-lg p-4 border">
+                      <div key={subcategory} className="bg-card rounded-lg p-4 border border-border">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1">
-                            <h5 className="font-medium text-gray-900">{subcategory}</h5>
-                            <p className="text-sm text-gray-600 mt-1">{description}</p>
+                            <h5 className="font-medium text-foreground">{subcategory}</h5>
+                            <p className="text-sm text-muted-foreground mt-1">{description}</p>
                           </div>
                           <div className="ml-4 flex items-center gap-2">
-                            <span className="text-sm text-gray-500 whitespace-nowrap">Score:</span>
+                            <span className="text-sm text-muted-foreground whitespace-nowrap">Score:</span>
                             <select
                               value={score}
                               onChange={(e) => updateScore(category, subcategory, e.target.value)}
                               disabled={!isEditing}
-                              className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                              className="w-20 px-2 py-1 border border-border rounded text-sm focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-card text-foreground"
                             >
                               <option value="0">0</option>
                               <option value="1">1</option>
@@ -512,7 +520,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
                           onChange={(e) => updateComment(category, subcategory, e.target.value)}
                           disabled={!isEditing}
                           placeholder="Add your assessment notes..."
-                          className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                          className="w-full px-3 py-2 border border-border rounded text-sm focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-card text-foreground"
                           rows={2}
                         />
                       </div>
@@ -526,22 +534,22 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
 
         {/* Approval Areas */}
         <div className="mt-8 space-y-6">
-          <h3 className="text-xl font-semibold text-gray-900 border-b pb-2">Approval Workflow</h3>
+          <h3 className="text-xl font-semibold text-foreground border-b border-border pb-2">Approval Workflow</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {Object.entries(currentVendor.approvals).map(([area, approval]) => (
-              <div key={area} className="bg-gray-50 rounded-lg p-4">
+              <div key={area} className="bg-muted rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-gray-900">{area}</h4>
+                  <h4 className="font-medium text-foreground">{area}</h4>
                   <select
                     value={approval.status}
                     onChange={(e) => updateApprovalStatus(area, e.target.value)}
                     disabled={!isEditing}
-                    className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-blue-500 disabled:opacity-75 ${
-                      approval.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                      approval.status === 'Rejected' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}
+                    className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-primary disabled:opacity-75 text-dark ${
+              approval.status === 'Approved' ? 'bg-success/20 text-dark border border-success/30' :
+              approval.status === 'Rejected' ? 'bg-destructive/20 text-dark border border-destructive/30' :
+              'bg-warning/20 text-dark border border-warning/30'
+            }`}
                   >
                     <option value="Pending">Pending</option>
                     <option value="Approved">Approved</option>
@@ -551,51 +559,51 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
                 
                 {approval.status === 'Approved' && (
                   <div className="space-y-2">
+                                          <div>
+                        <label className="block text-xs font-medium text-muted-foreground mb-1">Approved By</label>
+                        <input
+                          type="text"
+                          value={approval.approvedBy || ''}
+                          onChange={(e) => updateApprovalField(area, 'approvedBy', e.target.value)}
+                          disabled={!isEditing}
+                          placeholder="Enter approver name"
+                          className="w-full px-2 py-1 text-sm border border-border rounded focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-card text-foreground"
+                        />
+                      </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Approved By</label>
-                      <input
-                        type="text"
-                        value={approval.approvedBy || ''}
-                        onChange={(e) => updateApprovalField(area, 'approvedBy', e.target.value)}
-                        disabled={!isEditing}
-                        placeholder="Enter approver name"
-                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Approval Date</label>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Approval Date</label>
                       <input
                         type="date"
                         value={approval.approvedDate ? approval.approvedDate.split('T')[0] : ''}
                         onChange={(e) => updateApprovalField(area, 'approvedDate', e.target.value)}
                         disabled={!isEditing}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                        className="w-full px-2 py-1 text-sm border border-border rounded focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-background text-foreground"
                       />
                     </div>
                   </div>
                 )}
                 
                 <div className="mt-3">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Comments</label>
-                  <textarea
-                    value={approval.comments}
-                    onChange={(e) => updateApprovalField(area, 'comments', e.target.value)}
-                    disabled={!isEditing}
-                    placeholder="Add approval comments..."
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-                    rows={2}
-                  />
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Comments</label>
+                                      <textarea
+                      value={approval.comments}
+                      onChange={(e) => updateApprovalField(area, 'comments', e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="Add approval comments..."
+                      className="w-full px-2 py-1 text-sm border border-border rounded focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-card text-foreground"
+                      rows={2}
+                    />
                 </div>
               </div>
             ))}
           </div>
           
           {/* Approval Status Summary */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="bg-muted border border-border rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900 mb-1">Overall Approval Status</h4>
-                <p className="text-sm text-gray-600">
+                <h4 className="font-medium text-foreground mb-1">Overall Approval Status</h4>
+                <p className="text-sm text-muted-foreground">
                   {Object.values(currentVendor.approvals).filter(a => a.status === 'Approved').length} of 4 areas approved
                 </p>
               </div>
@@ -607,9 +615,9 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
         </div>
 
         {/* Overall Score */}
-        <div className="mt-8 bg-blue-50 rounded-lg p-6">
+        <div className="mt-8 bg-primary/10 rounded-lg p-6 border border-primary/20">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold text-gray-900">Overall Assessment Score</h3>
+            <h3 className="text-xl font-semibold text-foreground">Overall Assessment Score</h3>
             <div className={`px-6 py-3 rounded-full text-2xl font-bold ${getScoreColor(currentVendor.overallScore)}`}>
               {currentVendor.overallScore.toFixed(1)}/5.0
             </div>
@@ -620,21 +628,22 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
   };
 
   const renderVendorList = () => (
-    <div className="bg-white rounded-lg shadow-lg border border-gray-200">
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">Vendor Assessment List</h2>
-          <div className="flex gap-2">
+    // Vendor Assessment List Component - Dark Mode Enabled
+    <div className="bg-card rounded-2xl shadow-sm border border-border">
+      <div className="p-8 border-b border-border">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-foreground">Vendor Assessment List</h2>
+          <div className="flex gap-3">
             <button
               onClick={addVendor}
-              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 hover:shadow-lg transition-all duration-200 font-medium"
+              className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-primary-foreground px-6 py-2.5 rounded-xl hover:shadow-lg transition-all duration-200 font-medium"
             >
               <Plus size={16} />
               Add Vendor
             </button>
             <button
               onClick={() => setViewMode('dashboard')}
-              className="flex items-center gap-2 bg-gray-600 text-white px-6 py-2.5 rounded-lg hover:bg-gray-700 hover:shadow-lg transition-all duration-200 font-medium"
+              className="flex items-center gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground px-6 py-2.5 rounded-xl hover:shadow-lg transition-all duration-200 font-medium"
             >
               <BarChart3 size={16} />
               Dashboard
@@ -646,13 +655,13 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
               <input
                 type="text"
                 placeholder="Search vendors..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-card text-foreground placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -660,7 +669,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-card text-foreground"
             >
               <option value="all">All Categories</option>
               {categories.map(cat => (
@@ -673,39 +682,39 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
 
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-muted">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assessment Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Vendor</th>
+              <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Category</th>
+              <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
+              <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Score</th>
+              <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Assessment Date</th>
+              <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-card divide-y divide-border">
             {filteredVendors.map((vendor) => (
-              <tr key={vendor.id} className="hover:bg-gray-50">
+              <tr key={vendor.id} className="hover:bg-muted/50 transition-colors duration-150">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div>
-                    <div className="text-sm font-medium text-gray-900">{vendor.name}</div>
-                    <div className="text-sm text-gray-500">{vendor.contactEmail}</div>
+                    <div className="text-sm font-medium text-foreground">{vendor.name}</div>
+                    <div className="text-sm text-muted-foreground">{vendor.contactEmail}</div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{vendor.category}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">{vendor.category}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(vendor.status)}`}>
+                  <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(vendor.status)}`}>
                     {vendor.status}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-sm font-semibold rounded-full ${getScoreColor(vendor.overallScore)}`}>
+                  <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getScoreColor(vendor.overallScore)}`}>
                     {vendor.overallScore.toFixed(1)}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{vendor.assessmentDate}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">{vendor.assessmentDate}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <button
                       onClick={() => {
                         setCurrentVendor(vendor);
@@ -713,7 +722,8 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
                         setIsEditing(false);
                         setActiveTab(0);
                       }}
-                      className="text-blue-600 hover:text-blue-900"
+                      className="text-primary hover:text-primary/80 transition-colors duration-150"
+                      title="View Vendor"
                     >
                       <Eye size={16} />
                     </button>
@@ -724,13 +734,14 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
                         setIsEditing(true);
                         setActiveTab(0);
                       }}
-                      className="text-green-600 hover:text-green-900"
+                      className="text-success hover:text-success/80 transition-colors duration-150"
+                      title="Edit Vendor"
                     >
                       <Edit2 size={16} />
                     </button>
                     <button
                       onClick={() => handleDeleteVendor(vendor.id)}
-                      className="text-red-600 hover:text-red-800"
+                      className="text-destructive hover:text-destructive/80 transition-colors duration-150"
                       title="Delete Vendor"
                     >
                       <Trash2 size={16} />
@@ -744,19 +755,19 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
       </div>
 
       {filteredVendors.length === 0 && (
-        <div className="text-center py-12">
-          <Users className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No vendors found</h3>
-          <p className="mt-1 text-sm text-gray-500">Get started by adding a new vendor to assess.</p>
-          <div className="mt-6">
-            <button
-              onClick={addVendor}
-              className="flex items-center gap-2 mx-auto bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-            >
-              <Plus size={16} />
-              Add your first vendor
-            </button>
+        <div className="text-center py-16">
+          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+            <Users className="h-8 w-8 text-muted-foreground" />
           </div>
+          <h3 className="text-lg font-semibold text-foreground mb-2">No vendors found</h3>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">Get started by adding a new vendor to assess.</p>
+          <button
+            onClick={addVendor}
+            className="flex items-center gap-2 mx-auto bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-primary-foreground px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-200 font-medium"
+          >
+            <Plus size={16} />
+            Add your first vendor
+          </button>
         </div>
       )}
     </div>
@@ -765,18 +776,18 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
   const renderDashboard = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Assessment Dashboard</h2>
-        <div className="flex gap-2">
+        <h2 className="text-2xl font-bold text-foreground">Assessment Dashboard</h2>
+        <div className="flex gap-3">
           <button
             onClick={addVendor}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-primary-foreground px-6 py-2.5 rounded-xl hover:shadow-lg transition-all duration-200 font-medium"
           >
             <Plus size={16} />
             Add Vendor
           </button>
           <button
             onClick={() => setViewMode('list')}
-            className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+            className="flex items-center gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground px-6 py-2.5 rounded-xl hover:shadow-lg transition-all duration-200 font-medium"
           >
             <Users size={16} />
             View All Vendors
@@ -785,85 +796,85 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-card p-6 rounded-2xl shadow-sm border border-border hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Vendors</p>
-              <p className="text-2xl font-bold text-gray-900">{vendors.length}</p>
+              <p className="text-sm font-medium text-muted-foreground">Total Vendors</p>
+              <p className="text-2xl font-bold text-foreground">{vendors.length}</p>
             </div>
-            <div className="p-3 bg-blue-100 rounded-full">
-              <Users size={24} className="text-blue-600" />
+            <div className="p-3 bg-primary/10 rounded-full">
+              <Users size={24} className="text-primary" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-card p-6 rounded-2xl shadow-sm border border-border hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Approved</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-sm font-medium text-muted-foreground">Approved</p>
+              <p className="text-2xl font-bold text-success">
                 {vendors.filter(v => v.status === 'Approved').length}
               </p>
             </div>
-            <div className="p-3 bg-green-100 rounded-full">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-3 bg-success/10 rounded-full">
+              <svg className="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-card p-6 rounded-2xl shadow-sm border border-border hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">In Assessment</p>
-              <p className="text-2xl font-bold text-blue-600">
+              <p className="text-sm font-medium text-muted-foreground">In Assessment</p>
+              <p className="text-2xl font-bold text-primary">
                 {vendors.filter(v => v.status === 'In Assessment').length}
               </p>
             </div>
-            <div className="p-3 bg-blue-100 rounded-full">
-              <BarChart3 size={24} className="text-blue-600" />
+            <div className="p-3 bg-primary/10 rounded-full">
+              <BarChart3 size={24} className="text-primary" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-card p-6 rounded-2xl shadow-sm border border-border hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Average Score</p>
-              <p className="text-2xl font-bold text-purple-600">
+              <p className="text-sm font-medium text-muted-foreground">Average Score</p>
+              <p className="text-2xl font-bold text-primary">
                 {vendors.length > 0 ? 
                   (vendors.reduce((sum, v) => sum + v.overallScore, 0) / vendors.length).toFixed(1) : 
                   '0.0'
                 }
               </p>
             </div>
-            <div className="p-3 bg-purple-100 rounded-full">
-              <BarChart3 size={24} className="text-purple-600" />
+            <div className="p-3 bg-primary/10 rounded-full">
+              <BarChart3 size={24} className="text-primary" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Vendors by Category Section - always visible */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Vendors by Category</h3>
+      <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
+        <h3 className="text-lg font-semibold text-foreground mb-6">Vendors by Category</h3>
         <div className="space-y-4">
           {categories.map(category => {
             const approvedVendors = vendors.filter(v => v.category === category && v.status === 'Approved');
             if (approvedVendors.length === 0) return null;
             return (
               <div key={category} className="mb-4">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="font-medium text-gray-900">{category}</span>
-                  <span className="text-sm text-green-600 font-semibold">{approvedVendors.length} approved</span>
+                <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
+                  <span className="font-medium text-foreground">{category}</span>
+                  <span className="text-sm text-success font-semibold">{approvedVendors.length} approved</span>
                 </div>
-                <ul className="ml-6 mt-2 space-y-1">
+                <ul className="ml-6 mt-3 space-y-2">
                   {approvedVendors.map(vendor => (
                     <li key={vendor.id} className="flex justify-between items-center">
-                      <span className="text-gray-800">{vendor.name}</span>
-                      <span className="text-blue-600 font-medium">Score: {vendor.overallScore.toFixed(1)}</span>
+                      <span className="text-foreground">{vendor.name}</span>
+                      <span className="text-primary font-medium">Score: {vendor.overallScore.toFixed(1)}</span>
                     </li>
                   ))}
                 </ul>
@@ -872,17 +883,26 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
           })}
           {/* If no approved vendors in any category, show a message */}
           {categories.every(category => vendors.filter(v => v.category === category && v.status === 'Approved').length === 0) && (
-            <div className="text-center text-gray-500 py-8">No approved vendors by category yet.</div>
+            <div className="text-center text-muted-foreground py-12">No approved vendors by category yet.</div>
           )}
         </div>
       </div>
     </div>
   );
 
+  // Don't render until mounted and data is loaded to prevent hydration mismatch
+  if (!isReady) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -890,8 +910,8 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
   if (error) {
     console.error('VendorAssessment error:', error);
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <div className="text-red-800">
+      <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-6">
+        <div className="text-destructive font-medium">
           Error: {error && error !== "null" && error !== "undefined" ? error : "An unexpected error occurred. Please try again."}
         </div>
       </div>
@@ -900,6 +920,18 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
 
   return (
     <div className="space-y-6 fade-in">
+      {/* Page Header */}
+      <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent leading-tight">
+              Vendor Assessment
+            </h1>
+            <p className="text-muted-foreground mt-3 text-lg">Evaluate and manage AI vendor partnerships</p>
+          </div>
+        </div>
+      </div>
+
       {viewMode === 'list' && renderVendorList()}
       {viewMode === 'form' && renderVendorForm()}
       {viewMode === 'dashboard' && renderDashboard()}

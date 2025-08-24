@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
+  ArrowLeft,
   Loader2, 
   AlertTriangle, 
   Shield, 
@@ -23,6 +24,7 @@ import {
   ChevronUp
 } from "lucide-react";
 import { calculateRiskScores, getRiskLevel, type StepsData } from '@/lib/risk-calculations';
+import Link from 'next/link';
 
 // Simple date formatting function to avoid external dependency
 const formatDate = (dateString: string) => {
@@ -235,7 +237,7 @@ export default function RiskManagementPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'OPEN': return 'bg-red-100 text-red-800';
-      case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800';
+      case 'IN_PROGRESS': return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200';
       case 'MITIGATED': return 'bg-green-100 text-green-800';
       case 'ACCEPTED': return 'bg-purple-100 text-purple-800';
       case 'CLOSED': return 'bg-gray-100 text-gray-800';
@@ -246,7 +248,7 @@ export default function RiskManagementPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-gray-600 dark:text-gray-400" />
         <span className="ml-2 text-lg text-gray-600">Loading risk data...</span>
       </div>
     );
@@ -263,18 +265,19 @@ export default function RiskManagementPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Risk Management</h1>
+          <Link href="/dashboard/governance">
+                <Button variant="outline" size="sm" className="text-dark">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Governance
+                </Button>
+              </Link>
+            <h1 className="text-3xl font-bold text-foreground mb-2 py-4">Risk Management</h1>
             <p className="text-gray-600">
               AIUC-{useCase?.aiucId} - {useCase?.title}
             </p>
           </div>
           <div className="flex gap-3">
-            <Button
-              onClick={() => router.push(`/dashboard/governance`)}
-              variant="outline"
-            >
-              Back to Governance
-            </Button>
+            
             <Button
               onClick={() => setCreatingRisk(true)}
               className="flex items-center gap-2"
@@ -304,9 +307,9 @@ export default function RiskManagementPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">In Progress</p>
-                <p className="text-2xl font-bold text-blue-600">{inProgressRisks}</p>
+                <p className="text-2xl font-bold text-gray-600 dark:text-gray-400">{inProgressRisks}</p>
               </div>
-              <Clock className="h-8 w-8 text-blue-200" />
+              <Clock className="h-8 w-8 text-gray-200 dark:text-gray-400" />
             </div>
           </CardContent>
         </Card>
@@ -561,7 +564,7 @@ export default function RiskManagementPage() {
 
       {/* Create Risk Modal */}
       {creatingRisk && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
           <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <CardHeader>
               <CardTitle>Create New Risk</CardTitle>
@@ -649,6 +652,7 @@ export default function RiskManagementPage() {
                 <div className="flex justify-end gap-3 pt-4">
                   <Button
                     variant="outline"
+                    className="text-dark"
                     onClick={() => {
                       setCreatingRisk(false);
                       setFormData({});

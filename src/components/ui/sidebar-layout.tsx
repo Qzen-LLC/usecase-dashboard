@@ -22,6 +22,7 @@ import { Button } from './button';
 import { UserButton, useUser } from '@clerk/nextjs';
 import Image from 'next/image';
 import { useUserData } from '@/contexts/UserContext';
+import ThemeToggle from './theme-toggle';
 
 interface NavigationItem {
   title: string;
@@ -91,6 +92,7 @@ interface SidebarLayoutProps {
 function SidebarLayoutContent({ children }: SidebarLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [dataReady, setDataReady] = useState(false);
   const pathname = usePathname();
   const { user, isSignedIn } = useUser();
   const { userData } = useUserData();
@@ -98,6 +100,11 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
   // Prevent hydration mismatch by only rendering after mount
   useEffect(() => {
     setMounted(true);
+    // Wait a bit for user data to be loaded
+    const timer = setTimeout(() => {
+      setDataReady(true);
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   const toggleSidebar = () => {
@@ -126,21 +133,21 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
     ...navigationItems
   ];
 
-  // Don't render until mounted to prevent hydration mismatch
-  if (!mounted) {
+  // Don't render until mounted and data is ready to prevent hydration mismatch
+  if (!mounted || !dataReady) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-background text-foreground">
       {/* Sidebar */}
-      <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 shadow-sm transition-all duration-300 ease-in-out flex flex-col`}>
+      <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-card border-r border-border shadow-sm transition-all duration-300 ease-in-out flex flex-col`}>
         {/* Logo and Brand */}
-        <div className="border-b border-gray-200">
+        <div className="border-b border-border">
           {isCollapsed ? (
             <div className="flex flex-col items-center p-4 gap-3">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md bg-white">
@@ -150,28 +157,28 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
                 variant="ghost"
                 size="sm"
                 onClick={toggleSidebar}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-muted rounded-lg transition-colors"
               >
-                <ChevronRight className="w-4 h-4 text-gray-600" />
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </Button>
             </div>
           ) : (
             <div className="flex items-center gap-3 p-4">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-white">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-card">
                 <Image src="https://vgwacd4qotpurdv6.public.blob.vercel-storage.com/logo/logo.png" alt="Logo" width={40} height={40} className="object-contain" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-extrabold text-gray-900 leading-tight">QUBE</span>
-                <span className="text-xs text-gray-500 leading-tight">AI Platform</span>
+                <span className="text-xl font-extrabold text-foreground leading-tight">QUBE</span>
+                <span className="text-xs text-muted-foreground leading-tight">AI Platform</span>
               </div>
               <div className="flex-1 flex justify-end">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={toggleSidebar}
-                  className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-1.5 hover:bg-muted rounded-lg transition-colors"
                 >
-                  <ChevronLeft className="w-4 h-4 text-gray-600" />
+                  <ChevronLeft className="w-4 h-4 text-muted-foreground" />
                 </Button>
               </div>
             </div>
@@ -190,19 +197,19 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
                   ${isCollapsed ? 'flex flex-col items-center justify-center p-2' : 'flex items-center gap-3 px-3 py-2.5'} 
                   rounded-lg transition-all duration-200 group
                   ${isActive 
-                    ? 'bg-blue-50 text-blue-600 shadow-sm border-l-3 border-blue-600 font-medium' 
+                    ? 'bg-primary/10 text-primary shadow-sm border-l-4 border-primary font-medium' 
                     : item.isAdmin 
-                      ? 'bg-purple-50 text-purple-700 border-l-3 border-purple-400 hover:bg-purple-100 hover:text-purple-800'
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-sm'
+                      ? 'bg-accent/10 text-accent-foreground border-l-4 border-accent hover:bg-accent/20'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground hover:shadow-sm'
                   }
                 `}>
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-blue-600' : item.isAdmin ? 'text-purple-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary' : item.isAdmin ? 'text-accent-foreground' : 'text-muted-foreground group-hover:text-foreground'}`} />
                   {!isCollapsed && (
                     <div className="flex flex-col">
                       <span className="text-sm font-medium leading-tight">{item.title}</span>
-                      <span className="text-xs text-gray-500 leading-tight">{item.description}</span>
+                      <span className="text-xs text-muted-foreground leading-tight">{item.description}</span>
                       {item.isAdmin && (
-                        <span className="text-xs text-purple-600 font-medium">Admin Only</span>
+                        <span className="text-xs text-accent-foreground font-medium">Admin Only</span>
                       )}
                     </div>
                   )}
@@ -216,10 +223,10 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Navigation Bar */}
-        <header className="bg-white border-b border-gray-200 shadow-sm">
+        <header className="bg-card border-b border-border shadow-sm">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4">
-              <h1 className="text-xl font-semibold text-gray-900">
+              <h1 className="text-xl font-semibold text-foreground">
                 {sidebarItems.find(item => {
                   const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
                   return isActive;
@@ -227,19 +234,20 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
               </h1>
             </div>
             <div className="flex items-center gap-4">
+              <ThemeToggle />
               {isSignedIn ? (
                 <div className="flex items-center gap-2">
                   <UserButton afterSignOutUrl="/" />
-                  <span className="text-sm text-gray-700 font-medium">
+                  <span className="text-sm text-muted-foreground font-medium">
                     {user.fullName || user.emailAddresses[0]?.emailAddress}
                   </span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                    <Users className="w-4 h-4 text-gray-600" />
+                  <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                    <Users className="w-4 h-4 text-muted-foreground" />
                   </div>
-                  <span className="text-sm text-gray-700">Guest</span>
+                  <span className="text-sm text-muted-foreground">Guest</span>
                 </div>
               )}
             </div>
@@ -247,7 +255,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto bg-gray-50">
+        <main className="flex-1 overflow-auto bg-background">
           <div className="min-h-full">
             {children}
           </div>

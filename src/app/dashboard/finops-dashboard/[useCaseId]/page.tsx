@@ -70,6 +70,7 @@ export default function FinancialDashboard() {
   const [loading, setLoading] = useState<boolean>(true);
   const [showFormulae, setShowFormulae] = useState(false);
   const [useCaseDetails, setUseCaseDetails] = useState<{ title: string; aiucId: number } | null>(null);
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
     if (!useCaseId) return;
@@ -106,6 +107,44 @@ export default function FinancialDashboard() {
         setLoading(false);
       });
   }, [useCaseId]);
+
+  // Track theme to make charts dark-mode aware
+  useEffect(() => {
+    const getIsDark = () => {
+      try {
+        const saved = (localStorage.getItem('theme') || 'system') as 'light' | 'dark' | 'system';
+        const systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        return (
+          saved === 'dark' ||
+          (saved === 'system' && systemDark) ||
+          document.documentElement.classList.contains('dark') ||
+          document.body.classList.contains('dark')
+        );
+      } catch {
+        return false;
+      }
+    };
+
+    const update = () => setIsDark(getIsDark());
+    update();
+
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    media.addEventListener('change', update);
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'theme') update();
+    };
+    window.addEventListener('storage', onStorage);
+
+    const mo = new MutationObserver(update);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+    return () => {
+      media.removeEventListener('change', update);
+      window.removeEventListener('storage', onStorage);
+      mo.disconnect();
+    };
+  }, []);
 
   const rows = useMemo(() => {
     let cumulativeValue = 0;
@@ -287,10 +326,15 @@ export default function FinancialDashboard() {
     }]
   };
 
+  const axisColors = useMemo(() => ({
+    tick: isDark ? '#e5e7eb' : '#222',
+    grid: isDark ? 'rgba(255,255,255,0.12)' : '#e5e7eb',
+  }), [isDark]);
+
   const roiOptions = {
     responsive: true,
     plugins: {
-      legend: { position: 'bottom' as const },
+      legend: { position: 'bottom' as const, labels: { color: axisColors.tick } },
       tooltip: {
         callbacks: {
           label: (ctx: any) => `ROI: ${formatPercent(ctx.parsed.y)}`,
@@ -303,8 +347,13 @@ export default function FinancialDashboard() {
         ticks: {
           callback: function(this: Scale<CoreScaleOptions>, tickValue: string | number) {
             return formatPercent(Number(tickValue));
-          }
-        }
+          },
+          color: axisColors.tick,
+        },
+        grid: { color: axisColors.grid },
+      },
+      x: {
+        grid: { color: axisColors.grid },
       }
     }
   } as const;
@@ -351,7 +400,7 @@ export default function FinancialDashboard() {
   const costBreakdownOptions = {
     responsive: true,
     plugins: {
-      legend: { position: 'bottom' as const },
+      legend: { position: 'bottom' as const, labels: { color: axisColors.tick } },
       tooltip: {
         callbacks: {
           label: (ctx: any) => `${ctx.dataset.label}: ${formatCurrency(ctx.parsed.y)}`,
@@ -364,8 +413,13 @@ export default function FinancialDashboard() {
         ticks: {
           callback: function(this: Scale<CoreScaleOptions>, tickValue: string | number) {
             return formatK(Number(tickValue));
-          }
-        }
+          },
+          color: axisColors.tick,
+        },
+        grid: { color: axisColors.grid },
+      },
+      x: {
+        grid: { color: axisColors.grid },
       }
     }
   } as const;
@@ -384,7 +438,7 @@ export default function FinancialDashboard() {
   const profitLossOptions = {
     responsive: true,
     plugins: {
-      legend: { position: 'bottom' as const },
+      legend: { position: 'bottom' as const, labels: { color: axisColors.tick } },
       tooltip: {
         callbacks: {
           label: (ctx: any) => `${ctx.dataset.label}: ${formatCurrency(ctx.parsed.y)}`,
@@ -397,8 +451,13 @@ export default function FinancialDashboard() {
         ticks: {
           callback: function(this: Scale<CoreScaleOptions>, tickValue: string | number) {
             return formatK(Number(tickValue));
-          }
-        }
+          },
+          color: axisColors.tick,
+        },
+        grid: { color: axisColors.grid },
+      },
+      x: {
+        grid: { color: axisColors.grid },
       }
     }
   } as const;
@@ -407,7 +466,7 @@ export default function FinancialDashboard() {
     responsive: true,
     interaction: { mode: 'index' as const, intersect: false },
     plugins: {
-      legend: { position: 'bottom' as const, labels: { usePointStyle: true } },
+      legend: { position: 'bottom' as const, labels: { usePointStyle: true, color: axisColors.tick } },
       tooltip: {
         callbacks: {
           title: (ctx: any) => `Month ${ctx[0].label}`,
@@ -438,69 +497,72 @@ export default function FinancialDashboard() {
           callback: function(this: Scale<CoreScaleOptions>, tickValue: string | number) {
             return formatK(Number(tickValue));
           },
-          color: '#222',
+          color: axisColors.tick,
           font: { weight: 'bold' as const },
         },
         title: { display: false },
-        grid: { color: '#e5e7eb' },
+        grid: { color: axisColors.grid },
       },
       x: {
         type: 'linear' as const,
-        grid: { color: '#e5e7eb' },
+        grid: { color: axisColors.grid },
       },
     },
   } as const;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-8">
-      <div className="w-full max-w-7xl bg-white rounded-2xl shadow-2xl border border-gray-200 mt-6 mb-6 p-0 relative">
-        {/* Back Button */}
-        <button
-          onClick={() => router.push('/dashboard/finops-dashboard')}
-          className="absolute top-4 left-4 px-4 py-2 text-sm bg-white text-blue-700 border border-blue-200 rounded-lg shadow hover:bg-blue-50 transition-all duration-200 flex items-center gap-2 font-medium z-10"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
-        </button>
+    <div className="min-h-screen bg-background text-foreground flex flex-col items-center py-8">
+      <div className="w-full max-w-7xl bg-card rounded-2xl shadow-2xl border border-border mt-6 mb-6 p-0 relative">
+        {/* Header with Back Button and Formula Button */}
+        <div className="flex flex-col items-center bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 dark:from-blue-950/40 dark:via-blue-900/30 dark:to-blue-950/40 rounded-t-2xl border-b border-blue-100 dark:border-border shadow-lg relative">
+          {/* Back Button */}
+          <button
+            onClick={() => router.push('/dashboard/finops-dashboard')}
+            className="absolute top-4 left-4 px-4 py-2 text-sm bg-card text-primary border border-border rounded-lg shadow hover:bg-accent transition-all duration-200 flex items-center gap-2 font-medium z-10"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </button>
 
-        {/* Show Formulae Button */}
-        <button
-          className="absolute top-4 right-4 px-3 py-1 text-xs bg-white text-blue-700 border border-blue-200 rounded-lg shadow hover:bg-blue-50 transition-all duration-200 z-10 font-medium"
-          onClick={() => setShowFormulae(true)}
-        >
-          Formula
-        </button>
-        {/* Formulae Modal */}
-        {showFormulae && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full relative">
-              <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl" onClick={() => setShowFormulae(false)}>&times;</button>
-              <h2 className="text-xl font-bold mb-4 text-gray-700">Financial Formula Used</h2>
-              <ul className="text-sm text-gray-700 space-y-2">
-                <li><b>API Cost Growth:</b> <code>monthlyApiCost(month) = baseApiCost × 1.12<sup>month/12</sup></code></li>
-                <li><b>Infrastructure Cost Growth:</b> <code>monthlyInfraCost(month) = baseInfraCost × 1.05<sup>month/12</sup></code></li>
-                <li><b>Operations Cost Growth:</b> <code>monthlyOpCost(month) = baseOpCost × 1.08<sup>month/12</sup></code></li>
-                <li><b>Total Monthly Operating Cost:</b> <code>totalMonthlyCost(month) = monthlyApiCost + monthlyInfraCost + monthlyOpCost</code></li>
-                <li><b>Monthly Value Growth:</b> <code>monthlyValue(month) = baseMonthlyValue × (1 + valueGrowthRate)<sup>month/12</sup></code></li>
-                <li><b>Cumulative Value:</b> <code>cumulativeValue(month) = Σ monthlyValue(i) for i = 1 to month</code></li>
-                <li><b>Cumulative Operating Costs:</b> <code>cumulativeOpCosts(month) = Σ totalMonthlyCost(i) for i = 1 to month</code></li>
-                <li><b>Total Investment:</b> <code>totalInvestment(month) = initialDevCost + cumulativeOpCosts(month)</code></li>
-                <li><b>Monthly Profit/Loss:</b> <code>monthlyProfit(month) = monthlyValue(month) - totalMonthlyCost(month)</code></li>
-                <li><b>Net Value (Cumulative Profit):</b> <code>netValue(month) = cumulativeValue(month) - totalInvestment(month)</code></li>
-                <li><b>Return on Investment:</b> <code>ROI(month) = (netValue(month) / totalInvestment(month)) × 100</code></li>
-                <li><b>Break-even Detection:</b> <code>breakEven = first month where netValue(month) ≥ 0</code></li>
-              </ul>
+          {/* Show Formulae Button */}
+          <button
+            className="absolute top-4 right-4 px-3 py-1 text-xs bg-card text-primary border border-border rounded-lg shadow hover:bg-accent transition-all duration-200 z-10 font-medium"
+            onClick={() => setShowFormulae(true)}
+          >
+            Formula
+          </button>
+          
+          {/* Formulae Modal */}
+          {showFormulae && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-40">
+              <div className="bg-card rounded-xl shadow-2xl p-8 max-w-lg w-full relative border border-border">
+                <button className="absolute top-2 right-2 text-muted-foreground hover:text-foreground text-xl" onClick={() => setShowFormulae(false)}>&times;</button>
+                <h2 className="text-xl font-bold mb-4 text-foreground">Financial Formula Used</h2>
+                <ul className="text-sm text-muted-foreground space-y-2">
+                  <li><b>API Cost Growth:</b> <code>monthlyApiCost(month) = baseApiCost × 1.12<sup>month/12</sup></code></li>
+                  <li><b>Infrastructure Cost Growth:</b> <code>monthlyInfraCost(month) = baseInfraCost × 1.05<sup>month/12</sup></code></li>
+                  <li><b>Operations Cost Growth:</b> <code>monthlyOpCost(month) = baseOpCost × 1.08<sup>month/12</sup></code></li>
+                  <li><b>Total Monthly Operating Cost:</b> <code>totalMonthlyCost(month) = monthlyApiCost + monthlyInfraCost + monthlyOpCost</code></li>
+                  <li><b>Monthly Value Growth:</b> <code>monthlyValue(month) = baseMonthlyValue × (1 + valueGrowthRate)<sup>month/12</sup></code></li>
+                  <li><b>Cumulative Value:</b> <code>cumulativeValue(month) = Σ monthlyValue(i) for i = 1 to month</code></li>
+                  <li><b>Cumulative Operating Costs:</b> <code>cumulativeOpCosts(month) = Σ totalMonthlyCost(i) for i = 1 to month</code></li>
+                  <li><b>Total Investment:</b> <code>totalInvestment(month) = initialDevCost + cumulativeOpCosts(month)</code></li>
+                  <li><b>Monthly Profit/Loss:</b> <code>monthlyProfit(month) = monthlyValue(month) - totalMonthlyCost(month)</code></li>
+                  <li><b>Net Value (Cumulative Profit):</b> <code>netValue(month) = cumulativeValue(month) - totalInvestment(month)</code></li>
+                  <li><b>Return on Investment:</b> <code>ROI(month) = (netValue(month) / totalInvestment(month)) × 100</code></li>
+                  <li><b>Break-even Detection:</b> <code>breakEven = first month where netValue(month) ≥ 0</code></li>
+                </ul>
+              </div>
             </div>
-          </div>
-        )}
-        {/* Header */}
-        <div className="flex flex-col items-center bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 rounded-t-2xl border-b border-blue-100 shadow-lg">
-          <div className="flex items-center gap-3 justify-center py-6">
-            <div className="bg-white rounded-2xl shadow-lg flex items-center gap-3 px-6 py-3">
-              <span className="text-3xl font-extrabold text-blue-900 font-sans tracking-tight">
+          )}
+          
+          {/* Title Content with proper spacing */}
+          <div className="flex items-center gap-3 justify-center py-6 mt-8">
+            <div className="bg-card rounded-2xl shadow-lg flex items-center gap-3 px-6 py-3 border border-border">
+              <span className="text-3xl font-extrabold text-foreground font-sans tracking-tight">
                 {useCaseDetails ? (
                   <>
-                    <span className="font-mono text-gray-600 mr-3">AIUC-{useCaseDetails.aiucId}</span>
+                    <span className="font-mono text-muted-foreground mr-3">AIUC-{useCaseDetails.aiucId}</span>
                     {useCaseDetails.title}
                   </>
                 ) : (
@@ -510,37 +572,37 @@ export default function FinancialDashboard() {
             </div>
           </div>
           <div className="w-full flex justify-center pb-6">
-            <p className="text-blue-900 text-lg text-center font-medium tracking-wide whitespace-nowrap overflow-x-auto">Enter your base values and growth rate to forecast financials</p>
+            <p className="text-muted-foreground text-lg text-center font-medium tracking-wide whitespace-nowrap overflow-x-auto">Enter your base values and growth rate to forecast financials</p>
           </div>
         </div>
         {/* Main Content */}
         <div className="p-8">
-          {error && <div className="text-red-500 mb-2">{error}</div>}
-          {loading && <div className="text-blue-500 mb-4">Loading saved data...</div>}
-          <Card className="mb-8 p-6 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border border-blue-100 shadow-md rounded-xl">
+          {error && <div className="text-danger-500 mb-2">{error}</div>}
+          {loading && <div className="text-primary mb-4">Loading saved data...</div>}
+          <Card className="mb-8 p-6 bg-card border border-border shadow-md rounded-xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="font-semibold text-blue-900">Initial Dev Cost</label>
+                <label className="font-semibold text-foreground">Initial Dev Cost</label>
                 <Input type="number" value={initialDevCost} min={0} onChange={e => setInitialDevCost(Number(e.target.value))} className="w-full" />
               </div>
               <div>
-                <label className="font-semibold text-blue-900">Monthly API Cost</label>
+                <label className="font-semibold text-foreground">Monthly API Cost</label>
                 <Input type="number" value={baseApiCost} min={0} onChange={e => setBaseApiCost(Number(e.target.value))} className="w-full" />
               </div>
               <div>
-                <label className="font-semibold text-blue-900">Monthly Infrastructure</label>
+                <label className="font-semibold text-foreground">Monthly Infrastructure</label>
                 <Input type="number" value={baseInfraCost} min={0} onChange={e => setBaseInfraCost(Number(e.target.value))} className="w-full" />
               </div>
               <div>
-                <label className="font-semibold text-blue-900">Monthly Operations</label>
+                <label className="font-semibold text-foreground">Monthly Operations</label>
                 <Input type="number" value={baseOpCost} min={0} onChange={e => setBaseOpCost(Number(e.target.value))} className="w-full" />
               </div>
               <div>
-                <label className="font-semibold text-blue-900">Monthly Value Generated</label>
+                <label className="font-semibold text-foreground">Monthly Value Generated</label>
                 <Input type="number" value={baseMonthlyValue} min={0} onChange={e => setBaseMonthlyValue(Number(e.target.value))} className="w-full" />
               </div>
               <div>
-                <label className="font-semibold text-blue-900">Value Growth Rate (%)</label>
+                <label className="font-semibold text-foreground">Value Growth Rate (%)</label>
                 <Input type="number" value={valueGrowthRate * 100} min={0} max={100} onChange={e => setValueGrowthRate(Number(e.target.value) / 100)} className="w-full" />
               </div>
             </div>
@@ -572,34 +634,34 @@ export default function FinancialDashboard() {
               value: formatCurrency(summary.netValue),
               label: 'Net Value (Forecast)'
             }].map((item, idx) => (
-              <div key={idx} className="bg-white rounded-xl shadow border border-gray-100 p-6 flex flex-col items-center">
-                <div className="text-3xl font-extrabold mb-1 text-gray-700">{item.value}</div>
-                <div className="font-medium text-base text-gray-600">{item.label}</div>
+              <div key={idx} className="bg-card rounded-xl shadow border border-border p-6 flex flex-col items-center">
+                <div className="text-3xl font-extrabold mb-1 text-foreground">{item.value}</div>
+                <div className="font-medium text-base text-muted-foreground">{item.label}</div>
               </div>
             ))}
           </div>
           {/* Graphs */}
           <div className="flex flex-col gap-10 w-full justify-center items-center">
-            <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border border-gray-200 shadow-md rounded-xl">
-              <h2 className="font-semibold mb-6 text-[#23235b] text-2xl">Cumulative Financial View</h2>
+            <Card className="w-full max-w-7xl mx-auto p-10 bg-card border border-border shadow-md rounded-xl">
+              <h2 className="font-semibold mb-6 text-foreground text-2xl">Cumulative Financial View</h2>
               <div className="flex justify-center" style={{ height: 420 }}>
                 <Line data={cumulativeChartData} options={cumulativeChartOptions} />
               </div>
             </Card>
-            <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border border-gray-200 shadow-md rounded-xl">
-              <h2 className="font-semibold mb-6 text-[#23235b] text-2xl">ROI Trend</h2>
+            <Card className="w-full max-w-7xl mx-auto p-10 bg-card border border-border shadow-md rounded-xl">
+              <h2 className="font-semibold mb-6 text-foreground text-2xl">ROI Trend</h2>
               <div className="flex justify-center" style={{ height: 420 }}>
                 <Line data={roiChart} options={roiOptions} />
               </div>
             </Card>
-            <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border border-gray-200 shadow-md rounded-xl">
-              <h2 className="font-semibold mb-6 text-[#23235b] text-2xl">Monthly Cost Breakdown</h2>
+            <Card className="w-full max-w-7xl mx-auto p-10 bg-card border border-border shadow-md rounded-xl">
+              <h2 className="font-semibold mb-6 text-foreground text-2xl">Monthly Cost Breakdown</h2>
               <div className="flex justify-center" style={{ height: 420 }}>
                 <Line data={costBreakdownChart} options={costBreakdownOptions} />
               </div>
             </Card>
-            <Card className="w-full max-w-7xl mx-auto p-10 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border border-gray-200 shadow-md rounded-xl">
-              <h2 className="font-semibold mb-6 text-[#23235b] text-2xl">Monthly Profit/Loss</h2>
+            <Card className="w-full max-w-7xl mx-auto p-10 bg-card border border-border shadow-md rounded-xl">
+              <h2 className="font-semibold mb-6 text-foreground text-2xl">Monthly Profit/Loss</h2>
               <div className="flex justify-center" style={{ height: 420 }}>
                 <Bar data={profitLossChart} options={profitLossOptions} />
               </div>
@@ -607,8 +669,8 @@ export default function FinancialDashboard() {
           </div>
           {/* Cost Structure Verification (Month 12) */}
           <div className="mt-10">
-            <Card className="p-8 bg-white border border-gray-200 shadow-md rounded-xl">
-              <h2 className="font-semibold text-xl text-[#23235b] mb-6">Cost Structure Verification (Month 12)</h2>
+            <Card className="p-8 bg-card border border-border shadow-md rounded-xl">
+              <h2 className="font-semibold text-xl text-foreground mb-6">Cost Structure Verification (Month 12)</h2>
               {(() => {
                 const m12 = rows[11];
                 if (!m12) return null;
@@ -620,23 +682,23 @@ export default function FinancialDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
                     <div>
                       <div className="text-3xl font-extrabold text-red-500">{formatCurrency(m12.apiCost)}</div>
-                      <div className="font-semibold text-gray-700 mt-1">API Costs</div>
+                      <div className="font-semibold text-foreground mt-1">API Costs</div>
                       <div className="text-sm text-red-400 mt-1">{apiPct.toFixed(1)}%</div>
                     </div>
                     <div>
                       <div className="text-3xl font-extrabold text-orange-500">{formatCurrency(m12.infraCost)}</div>
-                      <div className="font-semibold text-gray-700 mt-1">Infrastructure</div>
+                      <div className="font-semibold text-foreground mt-1">Infrastructure</div>
                       <div className="text-sm text-orange-400 mt-1">{infraPct.toFixed(1)}%</div>
                     </div>
                     <div>
                       <div className="text-3xl font-extrabold text-yellow-700">{formatCurrency(m12.opCost)}</div>
-                      <div className="font-semibold text-gray-700 mt-1">Operations</div>
+                      <div className="font-semibold text-foreground mt-1">Operations</div>
                       <div className="text-sm text-yellow-600 mt-1">{opPct.toFixed(1)}%</div>
                     </div>
                     <div>
-                      <div className="text-3xl font-extrabold text-gray-800">{formatCurrency(total)}</div>
-                      <div className="font-semibold text-gray-700 mt-1">Total Monthly</div>
-                      <div className="text-sm text-gray-500 mt-1">100%</div>
+                      <div className="text-3xl font-extrabold text-foreground">{formatCurrency(total)}</div>
+                      <div className="font-semibold text-foreground mt-1">Total Monthly</div>
+                      <div className="text-sm text-muted-foreground mt-1">100%</div>
                     </div>
                   </div>
                 );
