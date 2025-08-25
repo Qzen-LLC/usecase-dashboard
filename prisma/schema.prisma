@@ -33,7 +33,7 @@ model UseCase {
   updatedAt                DateTime            @updatedAt
   priority                 String?
   stage                    String?
-  businessFunction         String
+  businessFunction         String?
   aiucId                   Int
   estimatedTimelineMonths  String?             @default("")
   initialCost              String?             @default("")
@@ -46,8 +46,9 @@ model UseCase {
   euAiActAssessments       EuAiActAssessment?
   finopsData               FinOps?
   iso42001Assessments      Iso42001Assessment?
-  uaeAiAssessments         UaeAiAssessment?
+  promptTemplates           PromptTemplate[]
   risks                    Risk[]
+  uaeAiAssessments         UaeAiAssessment?
   organization             Organization?       @relation(fields: [organizationId], references: [id])
   user                     User?               @relation(fields: [userId], references: [id])
 
@@ -413,49 +414,49 @@ model Iso42001AnnexInstance {
 }
 
 model UaeAiControl {
-  id              String                @id @default(uuid())
-  controlId       String                @unique
-  title           String
-  description     String
-  legalBasis      String
-  evidenceTypes   String[]
-  orderIndex      Int
-  instances       UaeAiControlInstance[]
+  id            String                 @id @default(uuid())
+  controlId     String                 @unique
+  title         String
+  description   String
+  legalBasis    String
+  evidenceTypes String[]
+  orderIndex    Int
+  instances     UaeAiControlInstance[]
 
   @@index([orderIndex])
 }
 
 model UaeAiControlInstance {
-  id               String         @id @default(uuid())
-  assessmentId     String
-  controlId        String
-  implementation   String?
-  evidenceFiles    String[]
-  score            Int            @default(0) @db.SmallInt
-  notes            String?
-  status           String         @default("pending")
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  assessment       UaeAiAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  control          UaeAiControl    @relation(fields: [controlId], references: [controlId])
+  id             String          @id @default(uuid())
+  assessmentId   String
+  controlId      String
+  implementation String?
+  evidenceFiles  String[]
+  score          Int             @default(0) @db.SmallInt
+  notes          String?
+  status         String          @default("pending")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  assessment     UaeAiAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  control        UaeAiControl    @relation(fields: [controlId], references: [controlId])
 
   @@unique([assessmentId, controlId])
   @@index([assessmentId])
 }
 
 model UaeAiAssessment {
-  id               String                 @id @default(uuid())
-  useCaseId        String                 @unique
-  status           String                 @default("in_progress")
-  progress         Float                  @default(0)
-  totalScore       Float                  @default(0)
-  weightedScore    Float                  @default(0)
-  maturityLevel    String                 @default("not_assessed")
-  riskImpactLevel  String                 @default("low")
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
-  useCase          UseCase                @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
-  controls         UaeAiControlInstance[]
+  id              String                 @id @default(uuid())
+  useCaseId       String                 @unique
+  status          String                 @default("in_progress")
+  progress        Float                  @default(0)
+  totalScore      Float                  @default(0)
+  weightedScore   Float                  @default(0)
+  maturityLevel   String                 @default("not_assessed")
+  riskImpactLevel String                 @default("low")
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  useCase         UseCase                @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  controls        UaeAiControlInstance[]
 
   @@index([status])
   @@index([maturityLevel])
@@ -463,20 +464,26 @@ model UaeAiAssessment {
 }
 
 model User {
-  id             String        @id @default(uuid())
-  clerkId        String        @unique
-  email          String        @unique
-  firstName      String?
-  lastName       String?
-  role           UserRole      @default(USER)
-  organizationId String?
-  isActive       Boolean       @default(true)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  invitations    Invitation[]  @relation("InvitedBy")
-  useCases       UseCase[]
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  vendors        Vendor[]
+  id                                              String                @id @default(uuid())
+  clerkId                                         String                @unique
+  email                                           String                @unique
+  firstName                                       String?
+  lastName                                        String?
+  role                                            UserRole              @default(USER)
+  organizationId                                  String?
+  isActive                                        Boolean               @default(true)
+  createdAt                                       DateTime              @default(now())
+  updatedAt                                       DateTime              @updatedAt
+  invitations                                     Invitation[]          @relation("InvitedBy")
+  LLMApiConfiguration                             LLMApiConfiguration[]
+  PromptDeployment                                PromptDeployment[]
+  PromptTemplate_PromptTemplate_createdByIdToUser PromptTemplate[]      @relation("PromptTemplate_createdByIdToUser")
+  PromptTemplate_PromptTemplate_userIdToUser      PromptTemplate[]      @relation("PromptTemplate_userIdToUser")
+  PromptTestRun                                   PromptTestRun[]
+  PromptVersion                                   PromptVersion[]
+  useCases                                        UseCase[]
+  organization                                    Organization?         @relation(fields: [organizationId], references: [id])
+  vendors                                         Vendor[]
 
   @@index([email])
   @@index([organizationId])
@@ -484,16 +491,17 @@ model User {
 }
 
 model Organization {
-  id          String       @id @default(uuid())
-  name        String
-  domain      String?      @unique
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  invitations Invitation[] @relation("OrganizationInvitations")
-  useCases    UseCase[]
-  users       User[]
-  vendors     Vendor[]
+  id             String           @id @default(uuid())
+  name           String
+  domain         String?          @unique
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  invitations    Invitation[]     @relation("OrganizationInvitations")
+  PromptTemplate PromptTemplate[]
+  useCases       UseCase[]
+  users          User[]
+  vendors        Vendor[]
 
   @@index([name])
   @@index([domain])
@@ -561,6 +569,116 @@ model Risk {
   @@index([createdAt])
 }
 
+model LLMApiConfiguration {
+  id        String   @id
+  service   String
+  endpoint  String?
+  model     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  apiKey    String
+  userId    String
+  User      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, service])
+  @@index([userId, isActive])
+}
+
+model PromptDeployment {
+  id             String         @id
+  environment    String
+  templateId     String
+  versionId      String
+  deployedAt     DateTime       @default(now())
+  deployedById   String
+  isActive       Boolean        @default(true)
+  User           User           @relation(fields: [deployedById], references: [id])
+  PromptTemplate PromptTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  PromptVersion  PromptVersion  @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, environment])
+  @@index([deployedAt])
+  @@index([environment, isActive])
+}
+
+model PromptTemplate {
+  id                                    String             @id
+  name                                  String
+  description                           String?
+  content                               Json
+  variables                             String[]
+  settings                              Json
+  type                                  String
+  service                               String
+  useCaseId                             String
+  organizationId                        String?
+  userId                                String?
+  createdAt                             DateTime           @default(now())
+  updatedAt                             DateTime
+  createdById                           String
+  tags                                  String[]           @default([])
+  PromptDeployment                      PromptDeployment[]
+  User_PromptTemplate_createdByIdToUser User               @relation("PromptTemplate_createdByIdToUser", fields: [createdById], references: [id])
+  Organization                          Organization?      @relation(fields: [organizationId], references: [id])
+  UseCase                               UseCase            @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  User_PromptTemplate_userIdToUser      User?              @relation("PromptTemplate_userIdToUser", fields: [userId], references: [id])
+  PromptTestRun                         PromptTestRun[]
+  PromptVersion                         PromptVersion[]
+
+  @@index([createdAt])
+  @@index([organizationId])
+  @@index([useCaseId])
+  @@index([userId])
+}
+
+model PromptTestRun {
+  id               String         @id
+  versionId        String
+  variables        Json
+  tokensUsed       Int            @default(0)
+  cost             Float          @default(0)
+  latencyMs        Int            @default(0)
+  status           String
+  error            String?
+  createdAt        DateTime       @default(now())
+  model            String
+  promptTemplateId String
+  requestContent   Json
+  responseContent  String
+  service          String
+  settings         Json
+  userId           String
+  PromptTemplate   PromptTemplate @relation(fields: [promptTemplateId], references: [id], onDelete: Cascade)
+  User             User           @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([promptTemplateId])
+  @@index([status])
+  @@index([userId])
+  @@index([versionId])
+}
+
+model PromptVersion {
+  id               String             @id
+  versionSha       String             @unique
+  versionNumber    Int
+  content          Json
+  settings         Json
+  variables        String[]
+  commitMessage    String
+  templateId       String
+  createdAt        DateTime           @default(now())
+  createdById      String
+  versionNotes     String?
+  PromptDeployment PromptDeployment[]
+  User             User               @relation(fields: [createdById], references: [id])
+  PromptTemplate   PromptTemplate     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([templateId, versionNumber])
+}
+
 enum RiskStatus {
   OPEN
   IN_PROGRESS
@@ -608,93 +726,4 @@ enum InvitationStatus {
   ACCEPTED
   EXPIRED
   CANCELLED
-}
-
-
-model PromptVersion {
-  id            String   @id @default(uuid())
-  versionSha    String   @unique // SHA-256 hash for version tracking
-  versionNumber Int // Sequential version number: 1, 2, 3...
-  content       Json // Prompt content at this version
-  settings      Json // Model settings at this version
-  variables     String[] // Variables detected at this version
-  commitMessage String // Description of changes
-  versionNotes  String? // NEW: Optional notes about this version
-  templateId    String
-  createdAt     DateTime @default(now())
-  createdById   String
-
-  // Relations
-  template    PromptTemplate     @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  createdBy   User               @relation(fields: [createdById], references: [id])
-  deployments PromptDeployment[]
-
-  @@index([templateId, versionNumber])
-  @@index([createdAt])
-}
-
-model PromptDeployment {
-  id           String   @id @default(uuid())
-  environment  String // "DEV" | "STAGING" | "PRODUCTION"
-  templateId   String
-  versionId    String
-  deployedAt   DateTime @default(now())
-  deployedById String
-  isActive     Boolean  @default(true)
-
-  // Relations
-  template   PromptTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  version    PromptVersion  @relation(fields: [versionId], references: [id], onDelete: Cascade)
-  deployedBy User           @relation(fields: [deployedById], references: [id])
-
-  @@unique([templateId, environment]) // Only one active deployment per environment
-  @@index([environment, isActive])
-  @@index([deployedAt])
-}
-
-model PromptTestRun {
-  id               String   @id @default(uuid())
-  promptTemplateId String // The prompt template ID
-  versionId        String // Version ID if available
-  service          String // "OPENAI" | "AZURE" | "ANTHROPIC" | "GEMINI"
-  model            String // Model identifier (gpt-4, claude-3, etc.)
-  variables        Json // Input variables used for test
-  requestContent   Json // Full request content sent to LLM
-  responseContent  String // LLM response text
-  settings         Json // Model settings (temperature, maxTokens, etc.)
-  tokensUsed       Int      @default(0) // Token count
-  cost             Float    @default(0) // Estimated cost in USD
-  latencyMs        Int      @default(0) // Response time in milliseconds
-  status           String // "SUCCESS" | "ERROR"
-  error            String? // Error message if failed
-  userId           String // User who ran the test
-  createdAt        DateTime @default(now())
-
-  // Relations
-  promptTemplate PromptTemplate @relation(fields: [promptTemplateId], references: [id], onDelete: Cascade)
-  user           User           @relation("UserPromptTestRuns", fields: [userId], references: [id])
-
-  @@index([promptTemplateId])
-  @@index([versionId])
-  @@index([status])
-  @@index([createdAt])
-  @@index([userId])
-}
-
-model LLMApiConfiguration {
-  id        String   @id @default(uuid())
-  service   String // "OPENAI" | "AZURE" | "ANTHROPIC" | "GEMINI"
-  apiKey    String // API key (stored encrypted in practice)
-  endpoint  String? // Custom endpoint (for Azure)
-  model     String? // Default model identifier
-  userId    String // User who owns this configuration
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  user User @relation("UserLLMConfigs", fields: [userId], references: [id])
-
-  @@unique([userId, service])
-  @@index([userId, isActive])
 }
