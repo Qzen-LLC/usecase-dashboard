@@ -80,7 +80,7 @@ export async function POST(req: Request) {
             plannedStartDate: plannedStartDate || '',
             estimatedTimelineMonths: estimatedTimelineMonths || '',
             requiredResources: requiredResources || '',
-            businessFunction: businessFunction || '',
+            businessFunction: Array.isArray(businessFunction) ? businessFunction[0] || '' : (businessFunction || ''),
             stage: stage || 'discovery',
             priority: priority || 'MEDIUM',
             updatedAt: new Date(),
