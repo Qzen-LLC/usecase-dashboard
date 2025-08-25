@@ -346,9 +346,7 @@ const Dashboard = () => {
   }, []);
 
   const handleEdit = (id: string) => {
-    // Add timestamp to force refresh when editing the same usecase
-    const timestamp = Date.now();
-    router.push(`/edit-usecase/${id}?t=${timestamp}`);
+    router.push(`/edit-usecase/${id}`);
   }
 
   const handleView = (id: string) => {
@@ -875,9 +873,7 @@ const Dashboard = () => {
                       onClick={() => {
                         const useCase = filteredUseCases.find(uc => uc.title === validationError.useCaseTitle);
                         if (useCase) {
-                          // Add timestamp to force refresh when editing the same usecase
-                          const timestamp = Date.now();
-                          router.push(`/edit-usecase/${useCase.id}?t=${timestamp}`);
+                          router.push(`/edit-usecase/${useCase.id}`);
                         }
                         setValidationError({ show: false, fields: [], useCaseTitle: '' });
                       }}
