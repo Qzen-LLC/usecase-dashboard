@@ -195,16 +195,20 @@ export async function POST(request: NextRequest) {
             data: {
               versionId: promptTemplate.versions[0].id,
               variables: variables || {},
-              request: {
+              requestContent: {
                 content,
                 settings,
               },
-              response: { content: response },
+              responseContent: response || '',
               tokensUsed,
               cost,
               latencyMs,
               status: 'SUCCESS',
-              createdById: userRecord.id,
+              userId: userRecord.id,
+              service: service,
+              model: settings.model || 'unknown',
+              promptTemplateId: promptId,
+              settings: settings || {},
             },
           });
         }
@@ -238,14 +242,21 @@ export async function POST(request: NextRequest) {
             data: {
               versionId: promptTemplate.versions[0].id,
               variables: variables || {},
-              request: {
+              requestContent: {
                 content,
                 settings,
               },
-              response: {},
-              status: 'FAILED',
+              responseContent: '',
+              tokensUsed: 0,
+              cost: 0,
+              latencyMs: Date.now() - startTime,
+              status: 'ERROR',
               error: error.message,
-              createdById: userRecord.id,
+              userId: userRecord.id,
+              service: service,
+              model: settings?.model || 'unknown',
+              promptTemplateId: promptId,
+              settings: settings || {},
             },
           });
         }
