@@ -87,7 +87,7 @@ model Assess {
   useCaseId String   @id
   createdAt DateTime @default(now())
   stepsData Json
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
   UseCase   UseCase  @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
 }
 
@@ -570,13 +570,13 @@ model Risk {
 }
 
 model LLMApiConfiguration {
-  id        String   @id
+  id        String   @id @default(uuid())
   service   String
   endpoint  String?
   model     String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
   apiKey    String
   userId    String
   User      User     @relation(fields: [userId], references: [id])
@@ -586,7 +586,7 @@ model LLMApiConfiguration {
 }
 
 model PromptDeployment {
-  id             String         @id
+  id             String         @id @default(uuid())
   environment    String
   templateId     String
   versionId      String
@@ -603,7 +603,7 @@ model PromptDeployment {
 }
 
 model PromptTemplate {
-  id                                    String             @id
+  id                                    String             @id @default(uuid())
   name                                  String
   description                           String?
   content                               Json
@@ -615,7 +615,7 @@ model PromptTemplate {
   organizationId                        String?
   userId                                String?
   createdAt                             DateTime           @default(now())
-  updatedAt                             DateTime
+  updatedAt                             DateTime           @updatedAt
   createdById                           String
   tags                                  String[]           @default([])
   PromptDeployment                      PromptDeployment[]
@@ -633,7 +633,7 @@ model PromptTemplate {
 }
 
 model PromptTestRun {
-  id               String         @id
+  id               String         @id @default(uuid())
   versionId        String
   variables        Json
   tokensUsed       Int            @default(0)
@@ -660,7 +660,7 @@ model PromptTestRun {
 }
 
 model PromptVersion {
-  id               String             @id
+  id               String             @id @default(uuid())
   versionSha       String             @unique
   versionNumber    Int
   content          Json
