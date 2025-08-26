@@ -58,25 +58,28 @@ export default function RootLayout({
             dangerouslySetInnerHTML={{
               __html: `
               try {
-                const saved = localStorage.getItem('theme') || 'system';
-                const systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-                const isDark = saved === 'dark' || (saved === 'system' && systemDark);
-                
-                console.log('Theme initialization:', { saved, systemDark, isDark });
-                
-                if(isDark){
-                  document.documentElement.classList.add('dark');
-                  document.body.classList.add('dark');
-                  console.log('Dark mode applied to document and body');
+                const applyTheme = () => {
+                  const saved = localStorage.getItem('theme') || 'system';
+                  const systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  const isDark = saved === 'dark' || (saved === 'system' && systemDark);
+                  const root = document.documentElement;
+                  const body = document.body;
+
+                  // Always toggle on root; toggle on body only if it exists
+                  root.classList.toggle('dark', isDark);
+                  if (body) {
+                    body.classList.toggle('dark', isDark);
+                  }
+
+                  // Mark theme readiness
+                  root.setAttribute('data-theme-ready', 'true');
+                };
+
+                if (!document.body && document.readyState === 'loading') {
+                  document.addEventListener('DOMContentLoaded', applyTheme);
                 } else {
-                  document.documentElement.classList.remove('dark');
-                  document.body.classList.remove('dark');
-                  console.log('Light mode applied to document and body');
+                  applyTheme();
                 }
-                
-                // Add a flag to indicate theme is ready
-                document.documentElement.setAttribute('data-theme-ready', 'true');
-                
               } catch(e) {
                 console.error('Theme initialization error:', e);
               }

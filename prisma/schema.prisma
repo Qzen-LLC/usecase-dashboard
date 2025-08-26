@@ -33,7 +33,6 @@ model UseCase {
   updatedAt                DateTime            @updatedAt
   priority                 String?
   stage                    String?
-  businessFunction         String?
   aiucId                   Int
   estimatedTimelineMonths  String?             @default("")
   initialCost              String?             @default("")
@@ -41,12 +40,13 @@ model UseCase {
   plannedStartDate         String?             @default("")
   organizationId           String?
   userId                   String?
+  businessFunction         String[]
   Approval                 Approval?
   assessData               Assess?
   euAiActAssessments       EuAiActAssessment?
   finopsData               FinOps?
   iso42001Assessments      Iso42001Assessment?
-  promptTemplates           PromptTemplate[]
+  promptTemplates          PromptTemplate[]
   risks                    Risk[]
   uaeAiAssessments         UaeAiAssessment?
   organization             Organization?       @relation(fields: [organizationId], references: [id])

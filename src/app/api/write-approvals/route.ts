@@ -47,10 +47,18 @@ export async function POST(req: Request) {
       }
     }
 
+    // Coerce fields that must be strings (some clients may submit arrays)
+    const cleanedUpdate = {
+      ...rest,
+      businessFunction: Array.isArray((rest as any).businessFunction)
+        ? (rest as any).businessFunction[0] ?? ''
+        : (rest as any).businessFunction ?? '',
+    };
+
     const res = await prismaClient.approval.upsert({
       where: { useCaseId },
-      update: rest,
-      create: { useCaseId, ...rest },
+      update: cleanedUpdate,
+      create: { useCaseId, ...cleanedUpdate },
     });
     return NextResponse.json(res);
   } catch (error) {

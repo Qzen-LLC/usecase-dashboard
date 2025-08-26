@@ -36,14 +36,21 @@ interface UseCase {
 interface PromptTemplate {
   id: string;
   name: string;
-  description: string;
-  content: any;
+  description?: string;
+  content?: any;
   variables: string[];
   type: string;
   service: string;
   createdAt: string;
   updatedAt: string;
   versions?: any[];
+  tags?: string[];
+  createdBy?: {
+    firstName?: string;
+    lastName?: string;
+    email: string;
+  };
+  deployments?: any[];
 }
 
 export default function UseCasePromptManagement() {
@@ -58,6 +65,13 @@ export default function UseCasePromptManagement() {
   const [activeTab, setActiveTab] = useState('prompts');
   const [loading, setLoading] = useState(true);
   const [showEditor, setShowEditor] = useState(false);
+
+  useEffect(() => {
+    if (showEditor) {
+      // eslint-disable-next-line no-console
+      console.log('Rendering PromptEditorV2 with prompt:', selectedPrompt);
+    }
+  }, [showEditor, selectedPrompt]);
 
   useEffect(() => {
     if (useCaseId) {
@@ -255,7 +269,6 @@ export default function UseCasePromptManagement() {
 
         {showEditor && (
           <TabsContent value="editor">
-            {console.log('Rendering PromptEditorV2 with prompt:', selectedPrompt)}
             <PromptEditorV2
               prompt={selectedPrompt}
               useCaseId={useCaseId}

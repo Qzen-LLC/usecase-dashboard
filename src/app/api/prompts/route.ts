@@ -90,11 +90,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Fetch prompts for this use case
-    const prompts = await prismaClient.promptTemplate.findMany({
+    // Fetch prompts for this use case using actual Prisma relation field names
+    const rawPrompts = await prismaClient.promptTemplate.findMany({
       where: { useCaseId },
       include: {
-        createdBy: {
+        User_PromptTemplate_createdByIdToUser: {
           select: {
             id: true,
             email: true,
@@ -102,16 +102,44 @@ export async function GET(request: NextRequest) {
             lastName: true,
           }
         },
-        versions: {
+        PromptVersion: {
           orderBy: { createdAt: 'desc' },
-          take: 1, // Get latest version
+          take: 1,
         },
-        deployments: {
+        PromptDeployment: {
           where: { isActive: true },
         }
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    // Map to API shape expected by frontend
+    const prompts = rawPrompts.map(p => ({
+      id: p.id,
+      name: p.name,
+      description: p.description ?? undefined,
+      tags: p.tags ?? [],
+      content: p.content as any,
+      type: p.type,
+      service: p.service,
+      variables: p.variables,
+      settings: p.settings,
+      useCaseId: p.useCaseId,
+      organizationId: p.organizationId,
+      userId: p.userId ?? undefined,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      createdBy: p.User_PromptTemplate_createdByIdToUser
+        ? {
+            id: p.User_PromptTemplate_createdByIdToUser.id,
+            email: p.User_PromptTemplate_createdByIdToUser.email,
+            firstName: p.User_PromptTemplate_createdByIdToUser.firstName ?? undefined,
+            lastName: p.User_PromptTemplate_createdByIdToUser.lastName ?? undefined,
+          }
+        : undefined,
+      versions: p.PromptVersion,
+      deployments: p.PromptDeployment,
+    }));
 
     return NextResponse.json(prompts);
   } catch (error) {

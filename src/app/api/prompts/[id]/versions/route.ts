@@ -56,7 +56,7 @@ export async function GET(
     const versions = await prismaClient.promptVersion.findMany({
       where: { templateId: params.id },
       include: {
-        createdBy: {
+        User: {
           select: {
             id: true,
             email: true,
@@ -68,7 +68,18 @@ export async function GET(
       orderBy: { versionNumber: 'desc' },
     });
 
-    return NextResponse.json(versions);
+    // Map relation alias to createdBy for frontend
+    return NextResponse.json(
+      versions.map(v => ({
+        ...v,
+        createdBy: v.User ? {
+          id: v.User.id,
+          email: v.User.email,
+          firstName: v.User.firstName ?? undefined,
+          lastName: v.User.lastName ?? undefined,
+        } : undefined,
+      }))
+    );
   } catch (error) {
     console.error('Error fetching versions:', error);
     return NextResponse.json(

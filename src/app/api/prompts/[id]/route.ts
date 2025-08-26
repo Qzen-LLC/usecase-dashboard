@@ -67,7 +67,7 @@ export async function GET(
     const prompt = await prismaClient.promptTemplate.findUnique({
       where: { id: params.id },
       include: {
-        createdBy: {
+        User_PromptTemplate_createdByIdToUser: {
           select: {
             id: true,
             email: true,
@@ -75,10 +75,10 @@ export async function GET(
             lastName: true,
           }
         },
-        versions: {
+        PromptVersion: {
           orderBy: { createdAt: 'desc' },
         },
-        deployments: {
+        PromptDeployment: {
           where: { isActive: true },
         }
       }
@@ -98,7 +98,19 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    return NextResponse.json(prompt);
+    return NextResponse.json({
+      ...prompt,
+      createdBy: (prompt as any).User_PromptTemplate_createdByIdToUser
+        ? {
+            id: (prompt as any).User_PromptTemplate_createdByIdToUser.id,
+            email: (prompt as any).User_PromptTemplate_createdByIdToUser.email,
+            firstName: (prompt as any).User_PromptTemplate_createdByIdToUser.firstName ?? undefined,
+            lastName: (prompt as any).User_PromptTemplate_createdByIdToUser.lastName ?? undefined,
+          }
+        : undefined,
+      versions: (prompt as any).PromptVersion,
+      deployments: (prompt as any).PromptDeployment,
+    });
   } catch (error) {
     console.error('Error fetching prompt:', error);
     return NextResponse.json(
