@@ -46,6 +46,7 @@ export async function POST(
         updatedByEmail: userRecord.email,
       }
     });
+    console.log('[CRUD_LOG] Risk closed:', { id: params.riskId, useCaseId: params.useCaseId, closedAt: risk.closedAt, updatedAt: risk.updatedAt });
 
     return NextResponse.json(risk);
   } catch (error) {

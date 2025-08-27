@@ -57,8 +57,7 @@ export async function PATCH(
         updatedAt: new Date()
       }
     });
-
-
+    console.log('[CRUD_LOG] EU AI Act Assessment progress updated:', { id: assessmentId, progress, updatedAt: updatedAssessment.updatedAt });
 
     return NextResponse.json(updatedAssessment);
   } catch (error) {

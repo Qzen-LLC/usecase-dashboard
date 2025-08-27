@@ -124,6 +124,7 @@ export async function POST(
           notes: data.notes
         }
       });
+      console.log('[CRUD_LOG] Risk created:', { id: risk.id, useCaseId: params.useCaseId, category: data.category, riskLevel: data.riskLevel, status: risk.status, createdAt: risk.createdAt });
 
       return NextResponse.json(risk);
     } catch (dbError) {

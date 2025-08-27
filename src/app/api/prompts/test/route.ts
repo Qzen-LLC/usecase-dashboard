@@ -211,6 +211,7 @@ export async function POST(request: NextRequest) {
               settings: settings || {},
             },
           });
+          console.log('[CRUD_LOG] Prompt Test Run created:', { templateId: promptId, versionId: promptTemplate.versions[0].id, model: settings.model || 'unknown', tokensUsed, cost });
         }
       }
 
@@ -259,6 +260,7 @@ export async function POST(request: NextRequest) {
               settings: settings || {},
             },
           });
+          console.log('[CRUD_LOG] Prompt Test Run created (error):', { templateId: promptId, versionId: promptTemplate.versions[0].id, model: settings?.model || 'unknown', error: error.message });
         }
       }
 

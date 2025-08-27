@@ -46,6 +46,7 @@ async function main() {
     const user = await prismaClient.user.create({
       data: userData,
     });
+    console.log('[CRUD_LOG] User created (script):', { id: user.id, email: user.email, role: user.role });
     console.log('Created user:', user.email, 'with role:', user.role);
   }
 

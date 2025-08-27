@@ -103,6 +103,7 @@ export async function GET(
           }
         }
       });
+      console.log('[CRUD_LOG] EU AI Act Assessment created:', { id: assessment.id, useCaseId, status: assessment.status, progress: assessment.progress });
     }
 
     return NextResponse.json(assessment);

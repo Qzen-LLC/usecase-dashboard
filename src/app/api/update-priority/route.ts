@@ -60,6 +60,7 @@ export async function POST(request: Request) {
         updatedAt: new Date() 
       },
     });
+    console.log('[CRUD_LOG] UseCase priority updated:', { id: useCaseId, priority, updatedAt: updatedUseCase.updatedAt });
 
     return NextResponse.json(updatedUseCase);
   } catch (error) {

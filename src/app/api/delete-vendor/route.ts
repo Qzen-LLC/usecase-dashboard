@@ -10,6 +10,7 @@ export async function DELETE(req: Request) {
     }
 
     await prismaClient.vendor.delete({ where: { id } });
+    console.log('[CRUD_LOG] Vendor deleted:', { id });
 
     return NextResponse.json({ success: true });
   } catch (error) {

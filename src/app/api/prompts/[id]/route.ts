@@ -193,6 +193,7 @@ export async function PUT(
         service,
       },
     });
+    console.log('[CRUD_LOG] Prompt Template updated:', { id: params.id, name: updatedPrompt.name, updatedAt: updatedPrompt.updatedAt });
 
     // Create new version if content or settings changed
     const lastVersion = existingPrompt.versions[0];
@@ -216,6 +217,7 @@ export async function PUT(
           createdById: userRecord.id,
         },
       });
+      console.log('[CRUD_LOG] Prompt Version created:', { templateId: params.id, versionNumber: newVersionNumber, commitMessage: versionNotes || `Update prompt - v${newVersionNumber}` });
     }
 
     return NextResponse.json(updatedPrompt);
@@ -270,6 +272,7 @@ export async function DELETE(
     await prismaClient.promptTemplate.delete({
       where: { id: params.id },
     });
+    console.log('[CRUD_LOG] Prompt Template deleted:', { id: params.id });
 
     return NextResponse.json({ success: true });
   } catch (error) {

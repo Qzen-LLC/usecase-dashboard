@@ -135,6 +135,7 @@ export async function POST(req: Request) {
           isActive: true,
         },
       });
+      console.log('[CRUD_LOG] User created:', { id: newUser.id, email: newUser.email, role: newUser.role, organizationId: newUser.organizationId });
 
       return NextResponse.json({
         success: true,

@@ -333,6 +333,7 @@ export async function POST(request: NextRequest) {
           createdById: userRecord.id,
         },
       });
+      console.log('[CRUD_LOG] Prompt Test Run created:', { templateId: promptTemplate.id, versionId: versionToUse.id, model: settings.model, tokensUsed: tokensUsed, cost: cost });
 
       // Return structured response
       return NextResponse.json({
@@ -377,6 +378,7 @@ export async function POST(request: NextRequest) {
           createdById: userRecord.id,
         },
       });
+      console.log('[CRUD_LOG] Prompt Test Run created (error):', { templateId: promptTemplate.id, versionId: versionToUse.id, model: settings.model, error: error.message });
 
       return NextResponse.json(
         {

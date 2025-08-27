@@ -90,6 +90,7 @@ export async function POST(
         control: true
       }
     });
+    console.log('[CRUD_LOG] UAE AI Control Instance upserted:', { id: controlInstance.id, assessmentId, controlId, status: controlInstance.status, score: controlInstance.score });
 
     console.log('✅ Control instance saved successfully:', {
       id: controlInstance.id,
@@ -157,6 +158,7 @@ async function updateAssessmentScores(assessmentId: string) {
         status: progress === 100 ? 'completed' : 'in_progress'
       }
     });
+    console.log('[CRUD_LOG] UAE AI Assessment scores recalculated:', { id: assessmentId, totalScore: maturityData.totalScore, weightedScore: maturityData.weightedScore, maturityLevel: maturityData.maturityLevel, updatedAt: new Date() });
   } catch (error) {
     console.error('Error updating assessment scores:', error);
   }

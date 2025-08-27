@@ -106,6 +106,8 @@ export async function POST(
       evidenceFilesCount: updatedInstance.evidenceFiles.length
     });
 
+    console.log('[CRUD_LOG] ISO 42001 Subclause Instance upserted:', { id: updatedInstance.id, subclauseId, assessmentId, status: updatedInstance.status });
+
     return NextResponse.json(updatedInstance);
   } catch (error) {
     console.error('Error saving ISO 42001 subclause:', error);

@@ -204,6 +204,7 @@ export const vendorServiceServer = {
           organizationId: vendorData.organizationId || null
         }
       });
+      console.log('[CRUD_LOG] Vendor created:', { id: vendor.id, name: vendor.name, category: vendor.category, status: vendor.status });
       // Initialize approval areas for the new vendor
       await this.initializeApprovalAreas(vendor.id);
       return { data: vendor, error: null };
@@ -230,6 +231,7 @@ export const vendorServiceServer = {
           notes: vendorData.notes || null
         }
       });
+      console.log('[CRUD_LOG] Vendor updated:', { id: vendorId, name: vendor.name, category: vendor.category, status: vendor.status, updatedAt: vendor.updatedAt });
 
       return { data: vendor, error: null };
     } catch (error: any) {
@@ -244,6 +246,7 @@ export const vendorServiceServer = {
       await prisma.vendor.delete({
         where: { id: vendorId }
       });
+      console.log('[CRUD_LOG] Vendor deleted:', { id: vendorId });
 
       return { error: null };
     } catch (error: any) {
@@ -275,6 +278,7 @@ export const vendorServiceServer = {
           comment: comment || null
         }
       });
+      console.log('[CRUD_LOG] Vendor assessment score upserted:', { vendorId, category, subcategory, score });
 
       return { data: true, error: null };
     } catch (error: any) {
@@ -309,6 +313,7 @@ export const vendorServiceServer = {
         where: { id: vendorId },
         data: { overallScore: average }
       });
+      console.log('[CRUD_LOG] Vendor overall score updated:', { id: vendorId, overallScore: average });
 
       return { data: average, error: null };
     } catch (error: any) {
@@ -340,6 +345,7 @@ export const vendorServiceServer = {
       );
 
       await Promise.all(createPromises);
+      console.log('[CRUD_LOG] Vendor approval areas initialized:', { vendorId, areas: approvalAreas });
 
       return { error: null };
     } catch (error: any) {
@@ -378,6 +384,7 @@ export const vendorServiceServer = {
           ...updateData
         }
       });
+      console.log('[CRUD_LOG] Vendor approval area updated:', { vendorId, area, status: dbStatus, approvedBy: updateData.approvedBy });
 
       // Check if all areas are approved and update vendor status
       await this.checkAndUpdateVendorStatus(vendorId);
@@ -410,6 +417,7 @@ export const vendorServiceServer = {
         where: { id: vendorId },
         data: { status: newStatus }
       });
+      console.log('[CRUD_LOG] Vendor status updated:', { id: vendorId, status: newStatus });
 
       return { error: null };
     } catch (error: any) {

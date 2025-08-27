@@ -118,6 +118,7 @@ export async function POST(req: Request) {
                 where: { id },
                 data,
             });
+            console.log('[CRUD_LOG] UseCase updated:', { id: useCase.id, title: useCase.title, updatedAt: useCase.updatedAt });
         } else {
             // For new use cases, calculate the next aiucId for this user/organization
             let nextAiucId = 1;
@@ -147,6 +148,7 @@ export async function POST(req: Request) {
                     createdAt: new Date(),
                 },
             });
+            console.log('[CRUD_LOG] UseCase created:', { id: useCase.id, title: useCase.title, aiucId: useCase.aiucId, createdAt: useCase.createdAt });
         }
 
         return NextResponse.json({ success: true, useCase });

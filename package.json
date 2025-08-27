@@ -39,7 +39,8 @@
     "setup-complete-database": "tsx scripts/setup-complete-database.ts",
     "seed-complete-iso-42001-data": "tsx scripts/seed-complete-iso-42001-data.ts",
     "seed-users-from-csv": "tsx scripts/seed-users-from-csv.ts",
-    "test-vercel-blob": "tsx scripts/test-vercel-blob.ts"
+    "test-vercel-blob": "tsx scripts/test-vercel-blob.ts",
+    "test-audit-log": "node -r ./otel.js scripts/test-audit-log.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.60.0",

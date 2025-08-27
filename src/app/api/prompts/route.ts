@@ -226,6 +226,7 @@ export async function POST(request: NextRequest) {
         createdById: userRecord.id,
       },
     });
+    console.log('[CRUD_LOG] Prompt Template created:', { id: promptTemplate.id, name: promptTemplate.name, type: promptTemplate.type, useCaseId: promptTemplate.useCaseId });
 
     // Create initial version
     const versionSha = generateVersionSha(content, settings);
@@ -242,6 +243,7 @@ export async function POST(request: NextRequest) {
         createdById: userRecord.id,
       },
     });
+    console.log('[CRUD_LOG] Prompt Version created:', { templateId: promptTemplate.id, versionNumber: 1, commitMessage: 'Initial version' });
 
     return NextResponse.json(promptTemplate);
   } catch (error) {

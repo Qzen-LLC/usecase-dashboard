@@ -50,6 +50,7 @@ export async function PATCH(
       where: { id: assessmentId },
       data: { riskImpactLevel }
     });
+    console.log('[CRUD_LOG] UAE AI Assessment risk impact updated:', { id: assessmentId, riskImpactLevel, updatedAt: new Date() });
 
     // Recalculate scores with new risk impact level
     await recalculateAssessmentScores(assessmentId, riskImpactLevel);
@@ -109,6 +110,7 @@ async function recalculateAssessmentScores(assessmentId: string, riskImpactLevel
         riskImpactLevel
       }
     });
+    console.log('[CRUD_LOG] UAE AI Assessment scores updated:', { id: assessmentId, totalScore: maturityData.totalScore, weightedScore: maturityData.weightedScore, maturityLevel: maturityData.maturityLevel, updatedAt: new Date() });
   } catch (error) {
     console.error('Error recalculating assessment scores:', error);
   }
