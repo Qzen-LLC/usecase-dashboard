@@ -63,6 +63,7 @@ async function addMissingUsers() {
               where: { id: existingUser.id },
               data: { clerkId: userData.clerkId }
             });
+            console.log('[CRUD_LOG] User updated with clerk ID (script):', { id: existingUser.id, email: existingUser.email, clerkId: userData.clerkId });
             console.log(`🔄 Updated Clerk ID for ${userData.email}`);
           }
         } else {
@@ -85,6 +86,7 @@ async function addMissingUsers() {
             }
           });
           
+          console.log('[CRUD_LOG] User upserted (script):', { id: newUser.id, email: newUser.email, role: newUser.role, clerkId: newUser.clerkId });
           console.log(`✅ Added user: ${userData.email} (${userData.role})`);
           addedCount++;
         }

@@ -100,6 +100,7 @@ export async function POST(
         subcontrolStruct: true
       }
     });
+    console.log('[CRUD_LOG] EU AI Act Subcontrol upserted:', { id: subcontrol.id, subcontrolId, controlId, status: subcontrol.status });
 
     return NextResponse.json(subcontrol);
   } catch (error) {

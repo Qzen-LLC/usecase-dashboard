@@ -1,4 +1,4 @@
-// otel.js - Complete OpenTelemetry preload with console interception
+// otel.js - Complete OpenTelemetry preload with console interception and audit log service
 const { NodeSDK } = require("@opentelemetry/sdk-node");
 const { OTLPTraceExporter } = require("@opentelemetry/exporter-trace-otlp-http");
 const { OTLPMetricExporter } = require("@opentelemetry/exporter-metrics-otlp-http");
@@ -63,7 +63,7 @@ try {
 }
 
 // --- Console Interceptor Setup ---
-console.log("🚀 Setting up console interceptor for LGTM backend...");
+console.log("🚀 Setting up console interceptor for LGTM backend and audit log service...");
 
 // Store original console methods
 const originalConsole = {
@@ -74,7 +74,7 @@ const originalConsole = {
   debug: console.debug,
 };
 
-// Function to send log to LGTM backend
+// Function to send log to LGTM backend (usecase-dashboard service)
 async function sendLogToLGTM(severity, message, args = []) {
   try {
     const logData = {
@@ -117,14 +117,88 @@ async function sendLogToLGTM(severity, message, args = []) {
   }
 }
 
+// Function to send CRUD logs to audit-log service
+async function sendCrudLogToAuditLog(message, args = []) {
+  try {
+    // Check if message starts with [CRUD_LOG]
+    if (!message.startsWith('[CRUD_LOG]')) {
+      return;
+    }
+
+    // Extract the entity and operation from the message
+    // Format: [CRUD_LOG] Entity Operation: { details }
+    const match = message.match(/\[CRUD_LOG\]\s+([^:]+):\s+(.+)/);
+    if (!match) {
+      return;
+    }
+
+    const [, operation, detailsStr] = match;
+    
+    // Parse the details object
+    let details = {};
+    try {
+      details = JSON.parse(detailsStr);
+    } catch (e) {
+      // If JSON parsing fails, store as raw string
+      details = { rawDetails: detailsStr };
+    }
+
+    // Extract entity from operation (e.g., "UseCase created" -> "UseCase")
+    const entityMatch = operation.match(/^([A-Za-z]+)/);
+    const entity = entityMatch ? entityMatch[1] : 'Unknown';
+
+    const logData = {
+      resourceLogs: [
+        {
+          resource: {
+            attributes: [
+              { key: "service.name", value: { stringValue: "audit-log" } },
+              { key: "service.version", value: { stringValue: "1.0.0" } }
+            ]
+          },
+          scopeLogs: [
+            {
+              logRecords: [
+                {
+                  timeUnixNano: Date.now() * 1000000,
+                  severityText: "INFO",
+                  body: { stringValue: message },
+                  attributes: [
+                    { key: "entity", value: { stringValue: entity } },
+                    { key: "operation", value: { stringValue: operation.trim() } },
+                    { key: "details", value: { stringValue: JSON.stringify(details) } },
+                    { key: "level", value: { stringValue: "INFO" } },
+                    { key: "timestamp", value: { stringValue: new Date().toISOString() } }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    };
+
+    await fetch("http://localhost:4318/v1/logs", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(logData)
+    });
+  } catch (error) {
+    // Don't log to console to avoid infinite loops, just silently fail
+  }
+}
+
 // Intercept console.log
 console.log = (...args) => {
   const message = args.map(arg => 
     typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
   ).join(' ');
   
-  // Send to LGTM backend
+  // Send to LGTM backend (usecase-dashboard service)
   sendLogToLGTM("INFO", message, args);
+  
+  // Send to audit-log service if it's a CRUD log
+  sendCrudLogToAuditLog(message, args);
   
   // Call original console.log
   originalConsole.log(...args);
@@ -136,8 +210,11 @@ console.error = (...args) => {
     typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
   ).join(' ');
   
-  // Send to LGTM backend
+  // Send to LGTM backend (usecase-dashboard service)
   sendLogToLGTM("ERROR", message, args);
+  
+  // Send to audit-log service if it's a CRUD log
+  sendCrudLogToAuditLog(message, args);
   
   // Call original console.error
   originalConsole.error(...args);
@@ -149,8 +226,11 @@ console.warn = (...args) => {
     typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
   ).join(' ');
   
-  // Send to LGTM backend
+  // Send to LGTM backend (usecase-dashboard service)
   sendLogToLGTM("WARN", message, args);
+  
+  // Send to audit-log service if it's a CRUD log
+  sendCrudLogToAuditLog(message, args);
   
   // Call original console.warn
   originalConsole.warn(...args);
@@ -162,8 +242,11 @@ console.info = (...args) => {
     typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
   ).join(' ');
   
-  // Send to LGTM backend
+  // Send to LGTM backend (usecase-dashboard service)
   sendLogToLGTM("INFO", message, args);
+  
+  // Send to audit-log service if it's a CRUD log
+  sendCrudLogToAuditLog(message, args);
   
   // Call original console.info
   originalConsole.info(...args);
@@ -175,14 +258,17 @@ console.debug = (...args) => {
     typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
   ).join(' ');
   
-  // Send to LGTM backend
+  // Send to LGTM backend (usecase-dashboard service)
   sendLogToLGTM("DEBUG", message, args);
+  
+  // Send to audit-log service if it's a CRUD log
+  sendCrudLogToAuditLog(message, args);
   
   // Call original console.debug
   originalConsole.debug(...args);
 };
 
-console.log("✅ Console interceptor initialized - all logs will be sent to LGTM backend");
+console.log("✅ Console interceptor initialized - all logs will be sent to LGTM backend and CRUD logs to audit-log service");
 
 // Ensure clean shutdown
 process.on("SIGTERM", async () => {

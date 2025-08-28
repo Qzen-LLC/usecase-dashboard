@@ -79,6 +79,7 @@ export async function POST(req: Request) {
                 createdAt: now,
             },
         });
+        console.log('[CRUD_LOG] Assess data upserted:', { useCaseId, stepsDataKeys: Object.keys(assessData), updatedAt: now });
 
         return NextResponse.json({ success: true, data: result });
     } catch (error) {

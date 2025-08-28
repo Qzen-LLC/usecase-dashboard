@@ -93,6 +93,7 @@ export async function GET(
           }
         }
       });
+      console.log('[CRUD_LOG] ISO 42001 Assessment created:', { id: assessment.id, useCaseId, status: assessment.status, progress: assessment.progress });
     }
 
     return NextResponse.json(assessment);

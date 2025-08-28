@@ -90,7 +90,7 @@ export async function POST(req: Request) {
                 budgetRange,
             },
         });
-
+        console.log('[CRUD_LOG] FinOps data upserted:', { useCaseId, ROI, netValue, totalInvestment });
 
 
         return NextResponse.json({ success: true });

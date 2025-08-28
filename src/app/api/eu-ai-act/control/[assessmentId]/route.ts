@@ -93,6 +93,7 @@ export async function POST(
         }
       }
     });
+    console.log('[CRUD_LOG] EU AI Act Control upserted:', { id: control.id, assessmentId, controlId, status: control.status });
 
     return NextResponse.json(control);
   } catch (error) {

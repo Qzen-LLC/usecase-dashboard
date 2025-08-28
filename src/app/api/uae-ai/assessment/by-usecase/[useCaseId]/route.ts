@@ -86,6 +86,7 @@ export async function GET(
           }
         }
       });
+      console.log('[CRUD_LOG] UAE AI Assessment created:', { id: assessment.id, useCaseId, status: assessment.status, progress: assessment.progress });
     }
 
     return NextResponse.json(assessment);

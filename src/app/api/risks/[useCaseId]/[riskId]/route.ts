@@ -52,6 +52,7 @@ export async function PUT(
       where: { id: params.riskId },
       data: updateData
     });
+    console.log('[CRUD_LOG] Risk updated:', { id: params.riskId, useCaseId: params.useCaseId, status: data.status, updatedAt: risk.updatedAt });
 
     return NextResponse.json(risk);
   } catch (error) {
@@ -77,6 +78,7 @@ export async function DELETE(
     await prismaClient.risk.delete({
       where: { id: params.riskId }
     });
+    console.log('[CRUD_LOG] Risk deleted:', { id: params.riskId, useCaseId: params.useCaseId });
 
     return NextResponse.json({ success: true });
   } catch (error) {
