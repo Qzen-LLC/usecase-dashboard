@@ -24,7 +24,7 @@ import ReadOnlyBudgetPlanning from '@/components/ReadOnlyBudgetPlanning';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { useStableRender } from '@/hooks/useStableRender';
 import { useLock } from '@/hooks/useLock';
-import LockIndicator from '@/components/LockIndicator';
+
 
 interface UseCase {
   title: string;
@@ -425,18 +425,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         {/* Removed 'Back to Pipeline' button */}
       </div>
 
-      {/* Lock Indicator */}
-      <div className="px-8 py-4 border-b border-border bg-muted">
-        <LockIndicator
-          lockInfo={lockInfo}
-          isExclusiveLocked={isExclusiveLocked}
-          isSharedLocked={false}
-          onAcquireExclusiveLock={acquireExclusiveLock}
-          onReleaseLock={releaseLock}
-          loading={lockLoading}
-          error={lockError}
-        />
-      </div>
+
 
       {/* Assessment Steps Navigation */}
       <div className="px-8 py-4 border-b border-border bg-muted overflow-x-auto">

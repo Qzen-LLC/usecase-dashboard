@@ -17,6 +17,8 @@ import { useUseCases, useUpdateUseCaseStage, useDeleteUseCase, type MappedUseCas
 import OrganizationUserManagement from '@/components/OrganizationUserManagement';
 import { useUserData } from '@/contexts/UserContext';
 import ClerkInvitationHandler from '@/components/ClerkInvitationHandler';
+import LockModal from '@/components/LockModal';
+import { useLock } from '@/hooks/useLock';
 import {
   Sheet,
   SheetContent,
@@ -253,6 +255,10 @@ const Dashboard = () => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [deletingUseCaseId, setDeletingUseCaseId] = useState<string | null>(null);
   const [deletedUseCaseIds, setDeletedUseCaseIds] = useState<Set<string>>(new Set());
+  
+  // Lock modal state
+  const [isLockModalOpen, setIsLockModalOpen] = useState(false);
+  const [selectedUseCaseForLock, setSelectedUseCaseForLock] = useState<string | null>(null);
 
   // Get user data from context
   const { userData, loading: userLoading, error: userError, refetch: refetchUser } = useUserData();
@@ -261,6 +267,18 @@ const Dashboard = () => {
   const { data: useCases = [], error, isLoading, refetch, updateUseCase } = useUseCases();
   const updateStageMutation = useUpdateUseCaseStage();
   const deleteUseCaseMutation = useDeleteUseCase();
+  
+  // Lock hook for the selected use case
+  const {
+    lockInfo,
+    isLocked,
+    isExclusiveLocked,
+    acquireExclusiveLock,
+    releaseLock,
+    refreshLockStatus,
+    loading: lockLoading,
+    error: lockError
+  } = useLock(selectedUseCaseForLock || '');
 
   // Check if user is authenticated
   if (!isLoaded) {
@@ -353,8 +371,32 @@ const Dashboard = () => {
     router.push(`/view-usecase/${id}`);
   }
 
-  const handleAssess = (id: string) => {
-    router.push(`/dashboard/${id}/assess`);
+  const handleAssess = async (id: string) => {
+    setSelectedUseCaseForLock(id);
+    // Wait a bit for the useLock hook to initialize with the new ID
+    setTimeout(async () => {
+      await refreshLockStatus();
+      setIsLockModalOpen(true);
+    }, 100);
+  }
+
+  const handleLockModalClose = () => {
+    setIsLockModalOpen(false);
+    setSelectedUseCaseForLock(null);
+  }
+
+  const handleProceedToAssessment = () => {
+    if (selectedUseCaseForLock) {
+      router.push(`/dashboard/${selectedUseCaseForLock}/assess`);
+    }
+    handleLockModalClose();
+  }
+
+  const handleViewLockedUseCase = () => {
+    if (selectedUseCaseForLock) {
+      router.push(`/view-usecase/${selectedUseCaseForLock}`);
+    }
+    handleLockModalClose();
   }
 
   const handleDelete = async (id: string) => {
@@ -1080,6 +1122,18 @@ const Dashboard = () => {
           </SheetContent>
         </Sheet>
       </div>
+
+      {/* Lock Modal */}
+      <LockModal
+        isOpen={isLockModalOpen}
+        onClose={handleLockModalClose}
+        lockInfo={lockInfo}
+        onAcquireExclusiveLock={acquireExclusiveLock}
+        onProceedToAssessment={handleProceedToAssessment}
+        onViewLockedUseCase={handleViewLockedUseCase}
+        loading={lockLoading}
+        error={lockError}
+      />
     </div>
   );
 };
