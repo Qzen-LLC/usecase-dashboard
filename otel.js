@@ -13,7 +13,6 @@ const resource = resourceFromAttributes({
   "service.version": "1.0.0",
 });
 
-console.log("🔍 OTEL Preload: initializing...");
 
 // --- Trace exporter ---
 const traceExporter = new OTLPTraceExporter({
@@ -50,7 +49,6 @@ const sdk = new NodeSDK({
 // Start the SDK before app code
 try {
   sdk.start();
-  console.log("✅ OTEL SDK started");
 
   // Optional test log
   const logger = loggerProvider.getLogger("my-app-logger");
@@ -61,9 +59,6 @@ try {
 } catch (err) {
   console.error("❌ Failed to start OTEL SDK:", err);
 }
-
-// --- Console Interceptor Setup ---
-console.log("🚀 Setting up console interceptor for LGTM backend and audit log service...");
 
 // Store original console methods
 const originalConsole = {
@@ -268,15 +263,12 @@ console.debug = (...args) => {
   originalConsole.debug(...args);
 };
 
-console.log("✅ Console interceptor initialized - all logs will be sent to LGTM backend and CRUD logs to audit-log service");
-
 // Ensure clean shutdown
 process.on("SIGTERM", async () => {
   try {
     await sdk.shutdown();
-    console.log("🛑 OTEL SDK shut down");
   } catch (err) {
-    console.error("❌ Error during OTEL shutdown", err);
+    console.error("Error during OTEL shutdown", err);
   } finally {
     process.exit(0);
   }
