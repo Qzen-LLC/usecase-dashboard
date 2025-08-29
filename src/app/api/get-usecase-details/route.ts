@@ -19,6 +19,7 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const useCaseId = searchParams.get('useCaseId');
+    const acquireSharedLock = searchParams.get('acquireSharedLock') === 'true';
     
     if (!useCaseId) {
       return NextResponse.json({ error: 'Missing useCaseId' }, { status: 400 });
@@ -83,7 +84,65 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Use case not found' }, { status: 404 });
     }
 
-    const response = NextResponse.json(useCase);
+    // Check for locks if acquireSharedLock is requested
+    let lockInfo = null;
+    if (acquireSharedLock) {
+      // Clean up expired locks first
+      await prismaClient.lock.updateMany({
+        where: {
+          expiresAt: { lt: new Date() },
+          isActive: true
+        },
+        data: { isActive: false }
+      });
+
+            // Check for existing locks
+      const existingLocks = await prismaClient.lock.findMany({
+        where: {
+          useCaseId,
+          isActive: true
+        },
+        include: {
+          User: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true
+            }
+          }
+        }
+      });
+
+      const exclusiveLocks = existingLocks.filter(lock => lock.type === 'EXCLUSIVE');
+      
+      if (exclusiveLocks.length > 0) {
+        // Exclusive lock exists - someone is editing, everyone else is read-only
+        const exclusiveLock = exclusiveLocks[0];
+        lockInfo = {
+          hasExclusiveLock: true,
+          exclusiveLockDetails: {
+            type: exclusiveLock.type,
+            acquiredBy: `${exclusiveLock.User.firstName} ${exclusiveLock.User.lastName}`,
+            acquiredAt: exclusiveLock.acquiredAt,
+            expiresAt: exclusiveLock.expiresAt
+          }
+        };
+      } else {
+        // No exclusive lock - anyone can view, and can request to edit
+        lockInfo = {
+          hasExclusiveLock: false,
+          canEdit: true,
+          message: 'No exclusive lock - available for editing'
+        };
+      }
+    }
+
+    const responseData = {
+      ...useCase,
+      lockInfo
+    };
+
+    const response = NextResponse.json(responseData);
     // Add caching headers for use case details (cache for 30 seconds)
     response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
     return response;

@@ -46,6 +46,7 @@ model UseCase {
   euAiActAssessments       EuAiActAssessment?
   finopsData               FinOps?
   iso42001Assessments      Iso42001Assessment?
+  Lock                     Lock[]
   promptTemplates          PromptTemplate[]
   risks                    Risk[]
   uaeAiAssessments         UaeAiAssessment?
@@ -476,6 +477,7 @@ model User {
   updatedAt                                       DateTime              @updatedAt
   invitations                                     Invitation[]          @relation("InvitedBy")
   LLMApiConfiguration                             LLMApiConfiguration[]
+  Lock                                            Lock[]
   PromptDeployment                                PromptDeployment[]
   PromptTemplate_PromptTemplate_createdByIdToUser PromptTemplate[]      @relation("PromptTemplate_createdByIdToUser")
   PromptTemplate_PromptTemplate_userIdToUser      PromptTemplate[]      @relation("PromptTemplate_userIdToUser")
@@ -679,6 +681,25 @@ model PromptVersion {
   @@index([templateId, versionNumber])
 }
 
+model Lock {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  useCaseId  String
+  userId     String
+  type       LockType
+  acquiredAt DateTime @default(now())
+  expiresAt  DateTime
+  isActive   Boolean  @default(true)
+  UseCase    UseCase  @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  User       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([useCaseId, userId, type])
+  @@index([expiresAt])
+  @@index([isActive])
+  @@index([type])
+  @@index([useCaseId])
+  @@index([userId])
+}
+
 enum RiskStatus {
   OPEN
   IN_PROGRESS
@@ -726,4 +747,9 @@ enum InvitationStatus {
   ACCEPTED
   EXPIRED
   CANCELLED
+}
+
+enum LockType {
+  SHARED
+  EXCLUSIVE
 }

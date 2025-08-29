@@ -14,8 +14,17 @@ import RoadmapPosition from "@/components/RoadmapPosition";
 import DataReadiness from "@/components/DataReadiness";
 import FinancialDashboard from './financial-dashboard/page';
 import ApprovalsPage from '@/components/ApprovalsPage';
+import ReadOnlyTechnicalFeasibility from '@/components/ReadOnlyTechnicalFeasibility';
+import ReadOnlyBusinessFeasibility from '@/components/ReadOnlyBusinessFeasibility';
+import ReadOnlyEthicalImpact from '@/components/ReadOnlyEthicalImpact';
+import ReadOnlyRiskAssessment from '@/components/ReadOnlyRiskAssessment';
+import ReadOnlyDataReadiness from '@/components/ReadOnlyDataReadiness';
+import ReadOnlyRoadmapPosition from '@/components/ReadOnlyRoadmapPosition';
+import ReadOnlyBudgetPlanning from '@/components/ReadOnlyBudgetPlanning';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { useStableRender } from '@/hooks/useStableRender';
+import { useLock } from '@/hooks/useLock';
+import LockIndicator from '@/components/LockIndicator';
 
 interface UseCase {
   title: string;
@@ -41,6 +50,47 @@ export default function AssessmentPage() {
 
   // Use global stable render hook
   const { isReady } = useStableRender();
+  
+  // Use lock hook
+  const {
+    lockInfo,
+    isLocked,
+    isExclusiveLocked,
+    acquireExclusiveLock,
+    releaseLock,
+    refreshLockStatus,
+    loading: lockLoading,
+    error: lockError
+  } = useLock(useCaseId);
+
+  // Determine if current user can edit
+  // User can edit if: no exclusive lock exists OR current user has the exclusive lock
+  const canEdit = !lockInfo?.hasExclusiveLock || isExclusiveLocked;
+  const isReadOnly = !canEdit;
+
+  // Cleanup effect to release lock when leaving the page
+  useEffect(() => {
+    return () => {
+      // Release lock when component unmounts (user navigates away)
+      if (isExclusiveLocked) {
+        releaseLock('EXCLUSIVE').catch(console.error);
+      }
+    };
+  }, [isExclusiveLocked, releaseLock]);
+
+  // Warn user before leaving if they have an exclusive lock
+  useEffect(() => {
+    if (!isExclusiveLocked) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+      return 'You have unsaved changes. Are you sure you want to leave?';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isExclusiveLocked]);
 
   // Memoize assessment steps to prevent unnecessary re-renders
   const assessmentSteps = useMemo(() => [
@@ -82,7 +132,7 @@ export default function AssessmentPage() {
       availabilityRequirement: '',
       responseTimeRequirement: '',
       concurrentUsers: '',
-      revenueImpactType: '',
+      revenueImpactType: [],
       estimatedFinancialImpact: '',
       userCategories: [],
       systemCriticality: '',
@@ -175,7 +225,7 @@ export default function AssessmentPage() {
     },
   }), []);
 
-  const [assessmentData, setAssessmentData] = useState(defaultAssessmentData);
+  const [assessmentData, setAssessmentData] = useState<any>(defaultAssessmentData);
 
 const validateAssessmentData = useMemo(() => (data: any) => {
   if (!data) return false;
@@ -202,13 +252,18 @@ const validateAssessmentData = useMemo(() => (data: any) => {
 }, []);
 
   const handleAssessmentChange = useMemo(() => (section: string, data: any) => {
+    // Don't allow changes if there's an exclusive lock
+    if (isExclusiveLocked) {
+      return;
+    }
+    
     setAssessmentData((prevData: any) => {
       return {
         ...prevData,
         [section]: data,
       };
     });
-  }, []);
+  }, [isExclusiveLocked]);
 
   useEffect(() => {
     if (!useCaseId || !isReady) return;
@@ -370,6 +425,19 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         {/* Removed 'Back to Pipeline' button */}
       </div>
 
+      {/* Lock Indicator */}
+      <div className="px-8 py-4 border-b border-border bg-muted">
+        <LockIndicator
+          lockInfo={lockInfo}
+          isExclusiveLocked={isExclusiveLocked}
+          isSharedLocked={false}
+          onAcquireExclusiveLock={acquireExclusiveLock}
+          onReleaseLock={releaseLock}
+          loading={lockLoading}
+          error={lockError}
+        />
+      </div>
+
       {/* Assessment Steps Navigation */}
       <div className="px-8 py-4 border-b border-border bg-muted overflow-x-auto">
         <div className="flex items-center space-x-4">
@@ -377,9 +445,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
             <div key={step.id} className="flex items-center">
               <button
                 type="button"
-                className={`flex items-center justify-center w-10 h-10 rounded-full focus:outline-none transition-colors duration-150 ${currentStep === step.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}
-                style={{ cursor: 'pointer' }}
-                onClick={() => setCurrentStep(step.id)}
+                className={`flex items-center justify-center w-10 h-10 rounded-full focus:outline-none transition-colors duration-150 ${currentStep === step.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"} ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                style={{ cursor: isReadOnly ? 'not-allowed' : 'pointer' }}
+                onClick={() => !isReadOnly && setCurrentStep(step.id)}
+                disabled={isReadOnly}
                 aria-current={currentStep === step.id ? 'step' : undefined}
               >
                 {step.title[0]}
@@ -447,41 +516,69 @@ const validateAssessmentData = useMemo(() => (data: any) => {
           )}
         <CardContent>
           {currentStep === 1 ? (
-            <TechnicalFeasibility
-              value={assessmentData.technicalFeasibility}
-              onChange={data => handleAssessmentChange('technicalFeasibility', data)}
-            />
+            isReadOnly ? (
+              <ReadOnlyTechnicalFeasibility data={assessmentData.technicalFeasibility} />
+            ) : (
+              <TechnicalFeasibility
+                value={assessmentData.technicalFeasibility}
+                onChange={data => handleAssessmentChange('technicalFeasibility', data)}
+              />
+            )
           ) : currentStep === 2 ? (
-            <BusinessFeasibility
-              value={assessmentData.businessFeasibility}
-              onChange={data => handleAssessmentChange('businessFeasibility', data)}
-            />
+            isReadOnly ? (
+              <ReadOnlyBusinessFeasibility data={assessmentData.businessFeasibility} />
+            ) : (
+              <BusinessFeasibility
+                value={assessmentData.businessFeasibility}
+                onChange={data => handleAssessmentChange('businessFeasibility', data)}
+              />
+            )
           ) : currentStep === 3 ? (
-            <EthicalImpact
-              value={assessmentData.ethicalImpact}
-              onChange={data => handleAssessmentChange('ethicalImpact', data)}
-            />
+            isReadOnly ? (
+              <ReadOnlyEthicalImpact data={assessmentData.ethicalImpact} />
+            ) : (
+              <EthicalImpact
+                value={assessmentData.ethicalImpact}
+                onChange={data => handleAssessmentChange('ethicalImpact', data)}
+              />
+            )
           ) : currentStep === 4 ? (
-            <RiskAssessment
-              value={assessmentData.riskAssessment}
-              onChange={data => handleAssessmentChange('riskAssessment', data)}
-            />
+            isReadOnly ? (
+              <ReadOnlyRiskAssessment data={assessmentData.riskAssessment} />
+            ) : (
+              <RiskAssessment
+                value={assessmentData.riskAssessment}
+                onChange={data => handleAssessmentChange('riskAssessment', data)}
+              />
+            )
           ) : currentStep === 5 ? (
-            <DataReadiness
-              value={assessmentData.dataReadiness}
-              onChange={data => handleAssessmentChange('dataReadiness', data)}
-            />
+            isReadOnly ? (
+              <ReadOnlyDataReadiness data={assessmentData.dataReadiness} />
+            ) : (
+              <DataReadiness
+                value={assessmentData.dataReadiness}
+                onChange={data => handleAssessmentChange('dataReadiness', data)}
+              />
+            )
           ) : currentStep === 6 ? (
-            <RoadmapPosition
-              value={assessmentData.roadmapPosition}
-              onChange={data => handleAssessmentChange('roadmapPosition', data)}
-            />
+            isReadOnly ? (
+              <ReadOnlyRoadmapPosition data={assessmentData.roadmapPosition} />
+            ) : (
+              <RoadmapPosition
+                value={assessmentData.roadmapPosition}
+                onChange={data => handleAssessmentChange('roadmapPosition', data)}
+              />
+            )
           ) : currentStep === 7 ? (
-            <BudgetPlanning
-              ref={budgetPlanningRef}
-              value={assessmentData.budgetPlanning}
-              onChange={data => handleAssessmentChange('budgetPlanning', data)}
-            />
+            isReadOnly ? (
+              <ReadOnlyBudgetPlanning data={assessmentData.budgetPlanning} />
+            ) : (
+              <BudgetPlanning
+                ref={budgetPlanningRef}
+                value={assessmentData.budgetPlanning}
+                onChange={data => handleAssessmentChange('budgetPlanning', data)}
+              />
+            )
           ) : currentStep === 8 ? (
             <FinancialDashboard />
           ) : currentStep === 9 ? (
@@ -498,8 +595,8 @@ const validateAssessmentData = useMemo(() => (data: any) => {
       {/* Bottom Navigation Buttons */}
       <div className="px-8 py-6 border-t border-border bg-card flex justify-between items-center">
         <button
-          className={`flex items-center px-4 py-2 rounded-md ${isFirstStep ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-gray-600 dark:bg-gray-500 text-white hover:bg-gray-700 dark:hover:bg-gray-600"}`}
-          disabled={isFirstStep}
+          className={`flex items-center px-4 py-2 rounded-md ${isFirstStep ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-gray-600 dark:bg-gray-500 text-white hover:bg-gray-700 dark:hover:bg-gray-600"} ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={isFirstStep || isReadOnly}
           onClick={handlePrev}
         >
           <ChevronLeft className="w-4 h-4 mr-2" />
@@ -514,9 +611,9 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         {currentStep < 8 && (
           <>
             <button
-              className={`px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold flex items-center gap-2 ${saving ? 'opacity-75 cursor-not-allowed' : ''}`}
+              className={`px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold flex items-center gap-2 ${saving ? 'opacity-75 cursor-not-allowed' : ''} ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || isReadOnly}
             >
               {saving ? (
                 <>
@@ -537,8 +634,9 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         )}
         {currentStep < 9 ? (
           <button
-            className={`flex items-center px-4 py-2 rounded-md bg-gray-600 dark:bg-gray-500 text-white hover:bg-gray-700 dark:hover:bg-gray-600`}
+            className={`flex items-center px-4 py-2 rounded-md bg-gray-600 dark:bg-gray-700 text-white hover:bg-gray-700 dark:hover:bg-gray-600 ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={handleNext}
+            disabled={isReadOnly}
           >
             Next
             <ChevronRight className="w-4 h-4 ml-2" />
