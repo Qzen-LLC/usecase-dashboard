@@ -63,6 +63,11 @@ export default function AssessmentPage() {
     error: lockError
   } = useLock(useCaseId);
 
+  // Determine if current user can edit
+  // User can edit if: no exclusive lock exists OR current user has the exclusive lock
+  const canEdit = !lockInfo?.hasExclusiveLock || isExclusiveLocked;
+  const isReadOnly = !canEdit;
+
   // Cleanup effect to release lock when leaving the page
   useEffect(() => {
     return () => {
@@ -440,10 +445,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
             <div key={step.id} className="flex items-center">
               <button
                 type="button"
-                className={`flex items-center justify-center w-10 h-10 rounded-full focus:outline-none transition-colors duration-150 ${currentStep === step.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"} ${isExclusiveLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-                style={{ cursor: isExclusiveLocked ? 'not-allowed' : 'pointer' }}
-                onClick={() => !isExclusiveLocked && setCurrentStep(step.id)}
-                disabled={isExclusiveLocked}
+                className={`flex items-center justify-center w-10 h-10 rounded-full focus:outline-none transition-colors duration-150 ${currentStep === step.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"} ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                style={{ cursor: isReadOnly ? 'not-allowed' : 'pointer' }}
+                onClick={() => !isReadOnly && setCurrentStep(step.id)}
+                disabled={isReadOnly}
                 aria-current={currentStep === step.id ? 'step' : undefined}
               >
                 {step.title[0]}
@@ -511,7 +516,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
           )}
         <CardContent>
           {currentStep === 1 ? (
-            isExclusiveLocked ? (
+            isReadOnly ? (
               <ReadOnlyTechnicalFeasibility data={assessmentData.technicalFeasibility} />
             ) : (
               <TechnicalFeasibility
@@ -520,7 +525,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               />
             )
           ) : currentStep === 2 ? (
-            isExclusiveLocked ? (
+            isReadOnly ? (
               <ReadOnlyBusinessFeasibility data={assessmentData.businessFeasibility} />
             ) : (
               <BusinessFeasibility
@@ -529,7 +534,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               />
             )
           ) : currentStep === 3 ? (
-            isExclusiveLocked ? (
+            isReadOnly ? (
               <ReadOnlyEthicalImpact data={assessmentData.ethicalImpact} />
             ) : (
               <EthicalImpact
@@ -538,7 +543,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               />
             )
           ) : currentStep === 4 ? (
-            isExclusiveLocked ? (
+            isReadOnly ? (
               <ReadOnlyRiskAssessment data={assessmentData.riskAssessment} />
             ) : (
               <RiskAssessment
@@ -547,7 +552,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               />
             )
           ) : currentStep === 5 ? (
-            isExclusiveLocked ? (
+            isReadOnly ? (
               <ReadOnlyDataReadiness data={assessmentData.dataReadiness} />
             ) : (
               <DataReadiness
@@ -556,7 +561,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               />
             )
           ) : currentStep === 6 ? (
-            isExclusiveLocked ? (
+            isReadOnly ? (
               <ReadOnlyRoadmapPosition data={assessmentData.roadmapPosition} />
             ) : (
               <RoadmapPosition
@@ -565,7 +570,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               />
             )
           ) : currentStep === 7 ? (
-            isExclusiveLocked ? (
+            isReadOnly ? (
               <ReadOnlyBudgetPlanning data={assessmentData.budgetPlanning} />
             ) : (
               <BudgetPlanning
@@ -590,8 +595,8 @@ const validateAssessmentData = useMemo(() => (data: any) => {
       {/* Bottom Navigation Buttons */}
       <div className="px-8 py-6 border-t border-border bg-card flex justify-between items-center">
         <button
-          className={`flex items-center px-4 py-2 rounded-md ${isFirstStep ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-gray-600 dark:bg-gray-500 text-white hover:bg-gray-700 dark:hover:bg-gray-600"} ${isExclusiveLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-          disabled={isFirstStep || isExclusiveLocked}
+          className={`flex items-center px-4 py-2 rounded-md ${isFirstStep ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-gray-600 dark:bg-gray-500 text-white hover:bg-gray-700 dark:hover:bg-gray-600"} ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={isFirstStep || isReadOnly}
           onClick={handlePrev}
         >
           <ChevronLeft className="w-4 h-4 mr-2" />
@@ -606,9 +611,9 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         {currentStep < 8 && (
           <>
             <button
-              className={`px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold flex items-center gap-2 ${saving ? 'opacity-75 cursor-not-allowed' : ''} ${isExclusiveLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold flex items-center gap-2 ${saving ? 'opacity-75 cursor-not-allowed' : ''} ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
               onClick={handleSave}
-              disabled={saving || isExclusiveLocked}
+              disabled={saving || isReadOnly}
             >
               {saving ? (
                 <>
@@ -629,9 +634,9 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         )}
         {currentStep < 9 ? (
           <button
-            className={`flex items-center px-4 py-2 rounded-md bg-gray-600 dark:bg-gray-500 text-white hover:bg-gray-700 dark:hover:bg-gray-600 ${isExclusiveLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`flex items-center px-4 py-2 rounded-md bg-gray-600 dark:bg-gray-700 text-white hover:bg-gray-700 dark:hover:bg-gray-600 ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={handleNext}
-            disabled={isExclusiveLocked}
+            disabled={isReadOnly}
           >
             Next
             <ChevronRight className="w-4 h-4 ml-2" />

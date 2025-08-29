@@ -60,6 +60,12 @@ export const useLock = (useCaseId: string): UseLockReturn => {
   const acquireExclusiveLock = useCallback(async (): Promise<boolean> => {
     if (!useCaseId) return false;
 
+    // Don't try to acquire if we already have one
+    if (lockInfo?.hasExclusiveLock) {
+      console.log('Already have exclusive lock, skipping acquisition');
+      return true;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -77,22 +83,24 @@ export const useLock = (useCaseId: string): UseLockReturn => {
 
       const data = await response.json();
 
-      if (!response.ok) {
+            if (!response.ok) {
         if (response.status === 409) {
           // Lock conflict - update lock info
           setLockInfo({
             hasExclusiveLock: true,
             exclusiveLockDetails: data.lockDetails
           });
+          // Don't throw error for lock conflicts - this is expected
+          return false;
         }
         throw new Error(data.error || 'Failed to acquire exclusive lock');
       }
 
-             // Successfully acquired exclusive lock
-       setLockInfo({
-         hasExclusiveLock: false,
-         canEdit: true
-       });
+      // Successfully acquired exclusive lock
+      setLockInfo({
+        hasExclusiveLock: true,
+        canEdit: true
+      });
 
       return true;
     } catch (err) {
@@ -102,7 +110,7 @@ export const useLock = (useCaseId: string): UseLockReturn => {
     } finally {
       setLoading(false);
     }
-  }, [useCaseId]);
+  }, [useCaseId, lockInfo?.hasExclusiveLock]);
 
   const releaseLock = useCallback(async (lockType: 'SHARED' | 'EXCLUSIVE'): Promise<void> => {
     if (!useCaseId) return;
@@ -176,7 +184,7 @@ export const useLock = (useCaseId: string): UseLockReturn => {
     return () => clearTimeout(timeout);
   }, [useCaseId, lockInfo?.hasExclusiveLock]);
 
-  // Auto-release lock when user leaves the page
+  // Auto-release lock only when user navigates to a different page (not when switching tabs)
   useEffect(() => {
     if (!useCaseId) return;
 
@@ -198,31 +206,12 @@ export const useLock = (useCaseId: string): UseLockReturn => {
       }
     };
 
-    const handleVisibilityChange = async () => {
-      // Release lock when page becomes hidden (user switches tabs, minimizes, etc.)
-      if (document.hidden && lockInfo?.hasExclusiveLock) {
-        try {
-          await fetch('/api/locks/release', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ useCaseId, lockType: 'EXCLUSIVE' }),
-          });
-          // Update local state
-          setLockInfo(prev => prev ? { ...prev, hasExclusiveLock: false } : null);
-        } catch (error) {
-          console.error('Failed to release lock on visibility change:', error);
-        }
-      }
-    };
-
-    // Add event listeners
+    // Add event listener for page navigation only
     window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Cleanup function
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       
       // Also try to release lock when component unmounts
       if (lockInfo?.hasExclusiveLock) {

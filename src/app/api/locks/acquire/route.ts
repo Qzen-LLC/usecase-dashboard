@@ -99,23 +99,56 @@ export async function POST(request: NextRequest) {
 
       // If there are shared locks, we can still acquire exclusive lock
       // but we'll notify shared lock holders
-      const lock = await prismaClient.lock.create({
-        data: {
-          useCaseId,
-          userId: userRecord.id,
-          type: 'EXCLUSIVE',
-          expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
-          isActive: true
-        }
-      });
+      try {
+        const lock = await prismaClient.lock.create({
+          data: {
+            useCaseId,
+            userId: userRecord.id,
+            type: 'EXCLUSIVE',
+            expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
+            isActive: true
+          }
+        });
 
-      return NextResponse.json({
-        success: true,
-        lock,
-        message: sharedLocks.length > 0 
-          ? `Exclusive lock acquired. ${sharedLocks.length} shared lock(s) will be notified.`
-          : 'Exclusive lock acquired successfully'
-      });
+        return NextResponse.json({
+          success: true,
+          lock,
+          message: sharedLocks.length > 0 
+            ? `Exclusive lock acquired. ${sharedLocks.length} shared lock(s) will be notified.`
+            : 'Exclusive lock acquired successfully'
+        });
+      } catch (error: any) {
+        // Handle unique constraint violation
+        if (error.code === 'P2002' && error.meta?.target?.includes('useCaseId')) {
+          // Lock already exists, try to reactivate it
+          const existingLock = await prismaClient.lock.findFirst({
+            where: {
+              useCaseId,
+              userId: userRecord.id,
+              type: 'EXCLUSIVE'
+            }
+          });
+
+          if (existingLock) {
+            const updatedLock = await prismaClient.lock.update({
+              where: { id: existingLock.id },
+              data: {
+                expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
+                isActive: true
+              }
+            });
+
+            return NextResponse.json({
+              success: true,
+              lock: updatedLock,
+              message: 'Exclusive lock reactivated successfully'
+            });
+          }
+        }
+        
+        // Re-throw other errors
+        throw error;
+      }
     }
 
     // Handle shared lock acquisition
@@ -156,21 +189,54 @@ export async function POST(request: NextRequest) {
       }
 
       // Create new shared lock
-      const lock = await prismaClient.lock.create({
-        data: {
-          useCaseId,
-          userId: userRecord.id,
-          type: 'SHARED',
-          expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
-          isActive: true
-        }
-      });
+      try {
+        const lock = await prismaClient.lock.create({
+          data: {
+            useCaseId,
+            userId: userRecord.id,
+            type: 'SHARED',
+            expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
+            isActive: true
+          }
+        });
 
-      return NextResponse.json({
-        success: true,
-        lock,
-        message: 'Shared lock acquired successfully'
-      });
+        return NextResponse.json({
+          success: true,
+          lock,
+          message: 'Shared lock acquired successfully'
+        });
+      } catch (error: any) {
+        // Handle unique constraint violation
+        if (error.code === 'P2002' && error.meta?.target?.includes('useCaseId')) {
+          // Lock already exists, try to reactivate it
+          const existingLock = await prismaClient.lock.findFirst({
+            where: {
+              useCaseId,
+              userId: userRecord.id,
+              type: 'SHARED'
+            }
+          });
+
+          if (existingLock) {
+            const updatedLock = await prismaClient.lock.update({
+              where: { id: existingLock.id },
+              data: {
+                expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
+                isActive: true
+              }
+            });
+
+            return NextResponse.json({
+              success: true,
+              lock: updatedLock,
+              message: 'Shared lock reactivated successfully'
+            });
+          }
+        }
+        
+        // Re-throw other errors
+        throw error;
+      }
     }
 
     return NextResponse.json({ error: 'Invalid lock type' }, { status: 400 });

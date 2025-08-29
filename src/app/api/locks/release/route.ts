@@ -45,23 +45,34 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Find and release the user's lock
+    // Find the user's lock (including inactive ones to check if it existed)
     const lock = await prismaClient.lock.findFirst({
       where: {
         useCaseId,
         userId: userRecord.id,
-        type: lockType,
-        isActive: true
+        type: lockType
       }
     });
 
     if (!lock) {
-      return NextResponse.json({ 
-        error: 'No active lock found for this user and use case' 
-      }, { status: 404 });
+      // No lock found at all - this is fine, just return success
+      return NextResponse.json({
+        success: true,
+        message: `No ${lockType} lock found to release`,
+        alreadyReleased: true
+      });
     }
 
-    // Release the lock
+    if (!lock.isActive) {
+      // Lock exists but is already inactive - this is also fine
+      return NextResponse.json({
+        success: true,
+        message: `${lockType} lock was already released`,
+        alreadyReleased: true
+      });
+    }
+
+    // Release the active lock
     await prismaClient.lock.update({
       where: { id: lock.id },
       data: { isActive: false }
@@ -69,7 +80,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `${lockType} lock released successfully`
+      message: `${lockType} lock released successfully`,
+      alreadyReleased: false
     });
 
   } catch (error) {
