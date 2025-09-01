@@ -398,6 +398,79 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     }
   }, [isFirstStep]);
 
+  // Handle cancel button click
+  const handleCancel = async () => {
+    console.log('[ASSESSMENT] Cancel button clicked, checking lock status...');
+    console.log('[ASSESSMENT] isExclusiveLocked:', isExclusiveLocked);
+    console.log('[ASSESSMENT] lockInfo:', lockInfo);
+    
+    try {
+      // Release lock if we have one
+      if (isExclusiveLocked) {
+        console.log('[ASSESSMENT] Releasing EXCLUSIVE lock before cancel...');
+        await releaseLock('EXCLUSIVE');
+        console.log('[ASSESSMENT] Lock released successfully');
+      } else {
+        console.log('[ASSESSMENT] No exclusive lock to release');
+      }
+      // Go back to previous page
+      console.log('[ASSESSMENT] Navigating back...');
+      router.back();
+    } catch (error) {
+      console.error('[ASSESSMENT] Error releasing lock during cancel:', error);
+      // Go back anyway even if lock release fails
+      router.back();
+    }
+  };
+
+  // Handle complete assessment
+  const handleCompleteAssessment = async () => {
+    console.log('[ASSESSMENT] Complete Assessment button clicked, checking lock status...');
+    console.log('[ASSESSMENT] isExclusiveLocked:', isExclusiveLocked);
+    console.log('[ASSESSMENT] lockInfo:', lockInfo);
+    
+    try {
+      // Save filled fields before completing
+      console.log('[ASSESSMENT] Saving assessment data...');
+      await fetch("/api/post-stepdata", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ useCaseId, assessData: assessmentData }),
+      });
+      
+      if (approvalsPageRef.current && approvalsPageRef.current.handleComplete) {
+        console.log('[ASSESSMENT] Calling approvals page handleComplete...');
+        await approvalsPageRef.current.handleComplete();
+      }
+      
+      // Release lock before redirecting
+      if (isExclusiveLocked) {
+        console.log('[ASSESSMENT] Releasing EXCLUSIVE lock before completion...');
+        await releaseLock('EXCLUSIVE');
+        console.log('[ASSESSMENT] Lock released successfully');
+      } else {
+        console.log('[ASSESSMENT] No exclusive lock to release');
+      }
+      
+      // Use router.push instead of window.location.href for proper cleanup
+      console.log('[ASSESSMENT] Navigating to dashboard...');
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('[ASSESSMENT] Error completing assessment:', error);
+      // Try to release lock even if completion fails
+      if (isExclusiveLocked) {
+        try {
+          console.log('[ASSESSMENT] Attempting to release lock after completion failure...');
+          await releaseLock('EXCLUSIVE');
+          console.log('[ASSESSMENT] Lock released after completion failure');
+        } catch (lockError) {
+          console.error('[ASSESSMENT] Error releasing lock after completion failure:', lockError);
+        }
+      }
+      router.push('/dashboard');
+    }
+  };
+
   if (loading || !isReady) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -592,7 +665,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
           Previous
         </button>
         <button
-          onClick={() => router.back()}
+          onClick={handleCancel}
           className={`flex items-center px-4 py-2 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90`}
         >
           Cancel
@@ -633,23 +706,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         ) : (
           <button
             className="px-4 py-2 w-64 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white rounded-xl shadow-lg font-semibold text-lg transition"
-            onClick={async () => {
-              try {
-                // Save filled fields before completing
-                await fetch("/api/post-stepdata", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ useCaseId, assessData: assessmentData }),
-                });
-                if (approvalsPageRef.current && approvalsPageRef.current.handleComplete) {
-                  await approvalsPageRef.current.handleComplete();
-                }
-                window.location.href = '/dashboard';
-              } catch (error) {
-                console.error('Error completing assessment:', error);
-                window.location.href = '/dashboard';
-              }
-            }}
+            onClick={handleCompleteAssessment}
           >
             Complete Assessment
           </button>

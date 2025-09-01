@@ -84,8 +84,12 @@ export async function POST(request: NextRequest) {
 
     // Handle exclusive lock acquisition
     if (lockType === 'EXCLUSIVE') {
+      console.log(`[LOCK ACQUIRE] Attempting to acquire EXCLUSIVE lock for useCaseId: ${useCaseId}, userId: ${userRecord.id}`);
+      console.log(`[LOCK ACQUIRE] Existing exclusive locks: ${exclusiveLocks.length}, shared locks: ${sharedLocks.length}`);
+      
       if (exclusiveLocks.length > 0) {
         const lock = exclusiveLocks[0];
+        console.log(`[LOCK ACQUIRE] Exclusive lock already exists, held by: ${lock.User.firstName} ${lock.User.lastName}`);
         return NextResponse.json({
           error: 'Exclusive lock already exists',
           lockDetails: {
@@ -100,6 +104,8 @@ export async function POST(request: NextRequest) {
       // If there are shared locks, we can still acquire exclusive lock
       // but we'll notify shared lock holders
       try {
+        console.log(`[LOCK ACQUIRE] Creating new EXCLUSIVE lock for useCaseId: ${useCaseId}, userId: ${userRecord.id}`);
+        
         const lock = await prismaClient.lock.create({
           data: {
             useCaseId,
@@ -109,6 +115,8 @@ export async function POST(request: NextRequest) {
             isActive: true
           }
         });
+
+        console.log(`[LOCK ACQUIRE] Successfully created EXCLUSIVE lock with ID: ${lock.id}, isActive: ${lock.isActive}`);
 
         return NextResponse.json({
           success: true,
@@ -120,6 +128,8 @@ export async function POST(request: NextRequest) {
       } catch (error: any) {
         // Handle unique constraint violation
         if (error.code === 'P2002' && error.meta?.target?.includes('useCaseId')) {
+          console.log(`[LOCK ACQUIRE] Unique constraint violation, attempting to reactivate existing lock`);
+          
           // Lock already exists, try to reactivate it
           const existingLock = await prismaClient.lock.findFirst({
             where: {
@@ -130,6 +140,8 @@ export async function POST(request: NextRequest) {
           });
 
           if (existingLock) {
+            console.log(`[LOCK ACQUIRE] Found existing lock with ID: ${existingLock.id}, reactivating...`);
+            
             const updatedLock = await prismaClient.lock.update({
               where: { id: existingLock.id },
               data: {
@@ -137,6 +149,8 @@ export async function POST(request: NextRequest) {
                 isActive: true
               }
             });
+
+            console.log(`[LOCK ACQUIRE] Successfully reactivated lock with ID: ${updatedLock.id}, isActive: ${updatedLock.isActive}`);
 
             return NextResponse.json({
               success: true,

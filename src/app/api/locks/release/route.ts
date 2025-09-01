@@ -45,29 +45,27 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Find the user's lock (including inactive ones to check if it existed)
+    // Find any active lock of the specified type for this use case (not just the current user's lock)
     const lock = await prismaClient.lock.findFirst({
       where: {
         useCaseId,
-        userId: userRecord.id,
-        type: lockType
+        type: lockType,
+        isActive: true
       }
     });
 
-    if (!lock) {
-      // No lock found at all - this is fine, just return success
-      return NextResponse.json({
-        success: true,
-        message: `No ${lockType} lock found to release`,
-        alreadyReleased: true
-      });
-    }
+    console.log(`[LOCK RELEASE] Found lock:`, lock ? {
+      id: lock.id,
+      userId: lock.userId,
+      isActive: lock.isActive
+    } : 'No active lock found');
 
-    if (!lock.isActive) {
-      // Lock exists but is already inactive - this is also fine
+    if (!lock) {
+      // No active lock found - this is fine, just return success
+      console.log(`[LOCK RELEASE] No active ${lockType} lock found to release`);
       return NextResponse.json({
         success: true,
-        message: `${lockType} lock was already released`,
+        message: `No active ${lockType} lock found to release`,
         alreadyReleased: true
       });
     }

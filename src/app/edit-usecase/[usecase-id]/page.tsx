@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { EnhancedRichTextEditor } from "@/components/ui/enhanced-rich-text-editor";
+import { SimpleBulletEditor } from "@/components/ui/simple-bullet-editor";
 
 type FormData = {
   id?: string;
@@ -247,33 +249,33 @@ const AIUseCaseTool = () => {
             onChange={(e) => handleChange("title", e.target.value)}
             className={`${invalidFields.includes('title') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
           />
-          <Label htmlFor="problemStatement" className="text-gray-900 dark:text-white">Problem Statement <span className="text-red-500">*</span></Label>
-          <RichTextEditor
+          <SimpleBulletEditor
             content={formData.problemStatement}
             onChange={(content) => handleChange("problemStatement", content)}
             placeholder="Describe the problem this use case will solve..."
-            className={`${invalidFields.includes('problemStatement') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
+            label="Problem Statement *"
+            type="bullet"
           />
-          <Label htmlFor="proposedAISolution" className="text-gray-900 dark:text-white">Proposed Solution</Label>
-          <RichTextEditor
+          <SimpleBulletEditor
             content={formData.proposedAISolution}
             onChange={(content) => handleChange("proposedAISolution", content)}
             placeholder="Describe your proposed AI solution..."
-            className={`${invalidFields.includes('proposedAISolution') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
+            label="Proposed Solution"
+            type="bullet"
           />
-          <Label htmlFor="keyBenefits" className="text-gray-900 dark:text-white">Key Benefits</Label>
-          <RichTextEditor
+          <SimpleBulletEditor
             content={formData.keyBenefits}
             onChange={(content) => handleChange("keyBenefits", content)}
             placeholder="List the key benefits this solution will provide..."
-            className={`${invalidFields.includes('keyBenefits') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
+            label="Key Benefits"
+            type="bullet"
           />
-          <Label htmlFor="successCriteria" className="text-gray-900 dark:text-white">Success Criteria</Label>
-          <RichTextEditor
+          <SimpleBulletEditor
             content={formData.successCriteria}
             onChange={(content) => handleChange("successCriteria", content)}
             placeholder="Define what success looks like for this use case..."
-            className={`${invalidFields.includes('successCriteria') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
+            label="Success Criteria"
+            type="bullet"
           />
           <Label htmlFor="businessFunction" className="text-gray-900 dark:text-white">Business Function</Label>
           <select
@@ -332,11 +334,12 @@ const AIUseCaseTool = () => {
       <div className="space-y-6">
         <Card className='p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'>
           <Label htmlFor="keyAssumptions" className="text-gray-900 dark:text-white">Key Assumptions</Label>
-          <RichTextEditor
+          <SimpleBulletEditor
             content={formData.keyAssumptions}
             onChange={(content) => handleChange("keyAssumptions", content)}
             placeholder="List your key assumptions for this use case..."
-            className={`${invalidFields.includes('keyAssumptions') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
+            label="Key Assumptions"
+            type="bullet"
           />
           <Label htmlFor="initialCost" className="text-gray-900 dark:text-white">Initial Cost</Label>
           <div className="relative">
@@ -406,11 +409,12 @@ const AIUseCaseTool = () => {
             <option value="36">36 months</option>
           </select>
           <Label htmlFor="requiredResources" className="text-gray-900 dark:text-white">Required Resources</Label>
-          <RichTextEditor
+          <SimpleBulletEditor
             content={formData.requiredResources}
             onChange={(content) => handleChange("requiredResources", content)}
             placeholder="List the required resources for this use case..."
-            className={`${invalidFields.includes('requiredResources') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
+            label="Required Resources"
+            type="bullet"
           />
         </Card>
       </div>
