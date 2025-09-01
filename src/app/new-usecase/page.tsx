@@ -89,7 +89,7 @@ const ArrayInput = ({
         <Input
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
-          className={`${invalid ? 'border-destructive' : ''} bg-background text-foreground border-border h-9`}
+          className={`${invalid ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600 h-9`}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               onAdd(field as ArrayField, inputVal);
