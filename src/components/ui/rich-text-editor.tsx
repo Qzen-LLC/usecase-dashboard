@@ -17,7 +17,28 @@ interface RichTextEditorProps {
 export function RichTextEditor({ content, onChange, placeholder, className }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        bulletList: {
+          HTMLAttributes: {
+            class: 'list-disc list-outside pl-6',
+          },
+        },
+        orderedList: {
+          HTMLAttributes: {
+            class: 'list-decimal list-outside pl-6',
+          },
+        },
+        listItem: {
+          HTMLAttributes: {
+            class: 'text-gray-700 dark:text-gray-300 my-0',
+          },
+        },
+        paragraph: {
+          HTMLAttributes: {
+            class: 'm-0',
+          },
+        },
+      }),
     ],
     content: content,
     immediatelyRender: false,
@@ -131,11 +152,17 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
       </div>
       
       {/* Editor Content */}
-      <EditorContent 
-        editor={editor} 
-        className="min-h-[100px] bg-white dark:bg-gray-700"
-        placeholder={placeholder}
-      />
+      <div className="relative">
+        <EditorContent 
+          editor={editor} 
+          className="min-h-[100px] bg-white dark:bg-gray-700"
+        />
+        {!content && (
+          <div className="absolute top-3 left-3 text-gray-400 pointer-events-none">
+            {placeholder}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

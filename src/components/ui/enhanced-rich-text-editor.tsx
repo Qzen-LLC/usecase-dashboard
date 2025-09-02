@@ -52,17 +52,22 @@ export function EnhancedRichTextEditor({
       StarterKit.configure({
         bulletList: {
           HTMLAttributes: {
-            class: 'list-disc list-inside space-y-1',
+            class: 'list-disc list-outside pl-6',
           },
         },
         orderedList: {
           HTMLAttributes: {
-            class: 'list-decimal list-inside space-y-1',
+            class: 'list-decimal list-outside pl-6',
           },
         },
         listItem: {
           HTMLAttributes: {
-            class: 'text-gray-700 dark:text-gray-300',
+            class: 'text-gray-700 dark:text-gray-300 my-0',
+          },
+        },
+        paragraph: {
+          HTMLAttributes: {
+            class: 'm-0',
           },
         },
       }),
