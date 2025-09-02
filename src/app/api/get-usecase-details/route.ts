@@ -116,10 +116,12 @@ export async function GET(req: Request) {
       const exclusiveLocks = existingLocks.filter(lock => lock.type === 'EXCLUSIVE');
       
       if (exclusiveLocks.length > 0) {
-        // Exclusive lock exists - someone is editing, everyone else is read-only
+        // Exclusive lock exists - check if current user owns it
         const exclusiveLock = exclusiveLocks[0];
+        const heldByCurrentUser = exclusiveLock.userId === userRecord.id;
         lockInfo = {
           hasExclusiveLock: true,
+          canEdit: heldByCurrentUser,
           exclusiveLockDetails: {
             type: exclusiveLock.type,
             acquiredBy: `${exclusiveLock.User.firstName} ${exclusiveLock.User.lastName}`,

@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
 
     let useCaseId: string;
     let lockType: string;
+    let scope: string | undefined;
 
     // Handle both JSON and FormData (for beacon requests)
     const contentType = request.headers.get('content-type');
@@ -26,11 +27,13 @@ export async function POST(request: NextRequest) {
       const body = await request.json();
       useCaseId = body.useCaseId;
       lockType = body.lockType;
+      scope = body.scope;
     } else {
       // Handle FormData from beacon
       const formData = await request.formData();
       useCaseId = formData.get('useCaseId') as string;
       lockType = formData.get('lockType') as string;
+      scope = formData.get('scope') as string | undefined;
     }
 
     if (!useCaseId || !lockType) {
@@ -47,11 +50,12 @@ export async function POST(request: NextRequest) {
 
     // Find any active lock of the specified type for this use case (not just the current user's lock)
     const lock = await prismaClient.lock.findFirst({
-      where: {
+      where: ({
         useCaseId,
-        type: lockType,
+        type: lockType as any,
+        scope: (scope === 'EDIT' ? 'EDIT' : 'ASSESS'),
         isActive: true
-      }
+      } as unknown) as any
     });
 
     console.log(`[LOCK RELEASE] Found lock:`, lock ? {

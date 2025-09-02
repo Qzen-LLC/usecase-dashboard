@@ -40,7 +40,7 @@ model UseCase {
   plannedStartDate         String?             @default("")
   organizationId           String?
   userId                   String?
-  businessFunction         String[]
+  businessFunction         String?
   Approval                 Approval?
   assessData               Assess?
   euAiActAssessments       EuAiActAssessment?
@@ -57,11 +57,9 @@ model UseCase {
   @@unique([aiucId, userId])
   @@index([stage])
   @@index([priority])
-  @@index([businessFunction])
   @@index([createdAt])
   @@index([updatedAt])
   @@index([stage, priority])
-  @@index([businessFunction, stage])
   @@index([organizationId])
   @@index([userId])
   @@index([organizationId, userId])
@@ -682,22 +680,24 @@ model PromptVersion {
 }
 
 model Lock {
-  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  id         String    @id @default(dbgenerated("gen_random_uuid()"))
   useCaseId  String
   userId     String
   type       LockType
-  acquiredAt DateTime @default(now())
+  acquiredAt DateTime  @default(now())
   expiresAt  DateTime
-  isActive   Boolean  @default(true)
-  UseCase    UseCase  @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
-  User       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isActive   Boolean   @default(true)
+  scope      LockScope @default(ASSESS)
+  UseCase    UseCase   @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  User       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([useCaseId, userId, type])
+  @@unique([useCaseId, userId, type, scope])
   @@index([expiresAt])
   @@index([isActive])
   @@index([type])
   @@index([useCaseId])
   @@index([userId])
+  @@index([scope])
 }
 
 enum RiskStatus {
@@ -752,4 +752,9 @@ enum InvitationStatus {
 enum LockType {
   SHARED
   EXCLUSIVE
+}
+
+enum LockScope {
+  ASSESS
+  EDIT
 }

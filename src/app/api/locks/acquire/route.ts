@@ -17,13 +17,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { useCaseId, lockType } = await request.json();
+    const { useCaseId, lockType, scope } = await request.json();
 
     if (!useCaseId || !lockType) {
       return NextResponse.json({ 
         error: 'Missing required fields: useCaseId and lockType' 
       }, { status: 400 });
     }
+    const lockScope = scope === 'EDIT' ? 'EDIT' : 'ASSESS';
 
     if (!['SHARED', 'EXCLUSIVE'].includes(lockType)) {
       return NextResponse.json({ 
@@ -64,23 +65,24 @@ export async function POST(request: NextRequest) {
 
     // Check for existing locks
     const existingLocks = await prismaClient.lock.findMany({
-      where: {
+      where: ({
         useCaseId,
+        scope: lockScope,
         isActive: true
-      },
-              include: {
-          User: {
-            select: {
-              firstName: true,
-              lastName: true,
-              email: true
-            }
+      } as unknown) as any,
+      include: ({
+        User: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true
           }
         }
+      } as unknown) as any
     });
 
-    const exclusiveLocks = existingLocks.filter(lock => lock.type === 'EXCLUSIVE');
-    const sharedLocks = existingLocks.filter(lock => lock.type === 'SHARED');
+    const exclusiveLocks = existingLocks.filter((lock: any) => lock.type === 'EXCLUSIVE');
+    const sharedLocks = existingLocks.filter((lock: any) => lock.type === 'SHARED');
 
     // Handle exclusive lock acquisition
     if (lockType === 'EXCLUSIVE') {
@@ -88,13 +90,22 @@ export async function POST(request: NextRequest) {
       console.log(`[LOCK ACQUIRE] Existing exclusive locks: ${exclusiveLocks.length}, shared locks: ${sharedLocks.length}`);
       
       if (exclusiveLocks.length > 0) {
-        const lock = exclusiveLocks[0];
-        console.log(`[LOCK ACQUIRE] Exclusive lock already exists, held by: ${lock.User.firstName} ${lock.User.lastName}`);
+        const lock: any = exclusiveLocks[0];
+        const heldByCurrentUser = lock.userId === userRecord.id;
+        console.log(`[LOCK ACQUIRE] Exclusive lock already exists, held by: ${lock.User?.firstName ?? ''} ${lock.User?.lastName ?? ''} (currentUser=${heldByCurrentUser})`);
+        if (heldByCurrentUser) {
+          // Treat as success: the caller already owns the lock
+          return NextResponse.json({
+            success: true,
+            lock,
+            message: 'Exclusive lock already owned by current user'
+          });
+        }
         return NextResponse.json({
           error: 'Exclusive lock already exists',
           lockDetails: {
             type: lock.type,
-            acquiredBy: `${lock.User.firstName} ${lock.User.lastName}`,
+            acquiredBy: `${lock.User?.firstName ?? ''} ${lock.User?.lastName ?? ''}`,
             acquiredAt: lock.acquiredAt,
             expiresAt: lock.expiresAt
           }
@@ -107,13 +118,14 @@ export async function POST(request: NextRequest) {
         console.log(`[LOCK ACQUIRE] Creating new EXCLUSIVE lock for useCaseId: ${useCaseId}, userId: ${userRecord.id}`);
         
         const lock = await prismaClient.lock.create({
-          data: {
+          data: ({
             useCaseId,
             userId: userRecord.id,
             type: 'EXCLUSIVE',
-            expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
+            scope: lockScope,
+            expiresAt: new Date(Date.now() + 30 * 60 * 1000),
             isActive: true
-          }
+          } as unknown) as any
         });
 
         console.log(`[LOCK ACQUIRE] Successfully created EXCLUSIVE lock with ID: ${lock.id}, isActive: ${lock.isActive}`);
@@ -132,11 +144,12 @@ export async function POST(request: NextRequest) {
           
           // Lock already exists, try to reactivate it
           const existingLock = await prismaClient.lock.findFirst({
-            where: {
+            where: ({
               useCaseId,
               userId: userRecord.id,
-              type: 'EXCLUSIVE'
-            }
+              type: 'EXCLUSIVE',
+              scope: lockScope
+            } as unknown) as any
           });
 
           if (existingLock) {
@@ -168,12 +181,12 @@ export async function POST(request: NextRequest) {
     // Handle shared lock acquisition
     if (lockType === 'SHARED') {
       if (exclusiveLocks.length > 0) {
-        const lock = exclusiveLocks[0];
+        const lock: any = exclusiveLocks[0];
         return NextResponse.json({
           error: 'Cannot acquire shared lock while exclusive lock exists',
           lockDetails: {
             type: lock.type,
-            acquiredBy: `${lock.User.firstName} ${lock.User.lastName}`,
+            acquiredBy: `${lock.User?.firstName ?? ''} ${lock.User?.lastName ?? ''}`,
             acquiredAt: lock.acquiredAt,
             expiresAt: lock.expiresAt
           }
@@ -181,7 +194,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Check if user already has a shared lock
-      const existingUserLock = existingLocks.find(lock => 
+      const existingUserLock = existingLocks.find((lock: any) => 
         lock.userId === userRecord.id && lock.type === 'SHARED'
       );
 
@@ -205,13 +218,14 @@ export async function POST(request: NextRequest) {
       // Create new shared lock
       try {
         const lock = await prismaClient.lock.create({
-          data: {
+          data: ({
             useCaseId,
             userId: userRecord.id,
             type: 'SHARED',
-            expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
+            scope: lockScope,
+            expiresAt: new Date(Date.now() + 30 * 60 * 1000),
             isActive: true
-          }
+          } as unknown) as any
         });
 
         return NextResponse.json({
@@ -224,11 +238,12 @@ export async function POST(request: NextRequest) {
         if (error.code === 'P2002' && error.meta?.target?.includes('useCaseId')) {
           // Lock already exists, try to reactivate it
           const existingLock = await prismaClient.lock.findFirst({
-            where: {
+            where: ({
               useCaseId,
               userId: userRecord.id,
-              type: 'SHARED'
-            }
+              type: 'SHARED',
+              scope: lockScope
+            } as unknown) as any
           });
 
           if (existingLock) {
