@@ -76,24 +76,6 @@ export async function POST(req: Request) {
             console.error('Error deleting user:', error);
           }
           break;
-        case 'session.ended':
-        case 'session.removed':
-        case 'session.revoked':
-        case 'session.deleted':
-        case 'session.expired': {
-          try {
-            const { user_id: clerkId } = eventData;
-            if (!clerkId) break;
-            const user = await prisma.user.findUnique({ where: { clerkId } });
-            if (user) {
-              const result = await prisma.lock.deleteMany({ where: { userId: user.id } });
-              console.log('Locks cleaned on session end (dev):', { clerkId, deleted: result.count });
-            }
-          } catch (error) {
-            console.error('Error cleaning locks on session end (dev):', error);
-          }
-          break;
-        }
       }
       return NextResponse.json({ success: true });
     } catch (error) {
@@ -252,24 +234,6 @@ export async function POST(req: Request) {
         console.error('Error deleting user:', error);
       }
       break;
-    case 'session.ended':
-    case 'session.removed':
-    case 'session.revoked':
-    case 'session.deleted':
-    case 'session.expired': {
-      try {
-        const clerkId = (evt.data as any).user_id as string | undefined;
-        if (!clerkId) break;
-        const user = await prisma.user.findUnique({ where: { clerkId } });
-        if (user) {
-          const result = await prisma.lock.deleteMany({ where: { userId: user.id } });
-          console.log('Locks cleaned on session end:', { clerkId, deleted: result.count });
-        }
-      } catch (error) {
-        console.error('Error cleaning locks on session end:', error);
-      }
-      break;
-    }
   }
 
   return NextResponse.json({ success: true });
