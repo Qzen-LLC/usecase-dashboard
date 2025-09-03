@@ -1,18 +1,21 @@
 'use client';
 
-// Governance Dashboard with Full Dark Mode Support
+// Governance Dashboard with Full Dark Mode Support and Framework-Specific Lock Management
 // Features:
 // - Dynamic dark mode detection and theme switching
 // - Responsive color schemes for all UI elements
 // - Proper contrast and readability in both light and dark themes
+// - Framework-specific lock management for exclusive editing
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Shield, Users, Building, RefreshCw, AlertTriangle } from "lucide-react";
+import { Loader2, Shield, Users, Building, RefreshCw, AlertTriangle, Lock } from "lucide-react";
 import Link from 'next/link';
 import { calculateRiskScores, getRiskLevel, type StepsData } from '@/lib/risk-calculations';
+import { useGovernanceLock, type GovernanceFramework } from '@/hooks/useGovernanceLock';
+import { GovernanceLockModal } from '@/components/GovernanceLockModal';
 
 interface UseCase {
   useCaseId: string;
@@ -50,6 +53,12 @@ export default function GovernancePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  // Lock management state
+  const [selectedUseCase, setSelectedUseCase] = useState<UseCase | null>(null);
+  const [selectedFramework, setSelectedFramework] = useState<GovernanceFramework | null>(null);
+  const [isLockModalOpen, setIsLockModalOpen] = useState(false);
+  const [isAcquiringLock, setIsAcquiringLock] = useState(false);
 
   // Check for dark mode
   useEffect(() => {
@@ -99,30 +108,16 @@ export default function GovernancePage() {
     try {
       if (isRefresh) {
         setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      
-      // Add cache-busting parameter to force fresh data
-      const timestamp = Date.now();
-      
-      // Fetch governance data (use cases without assessment data)
-      const governanceResponse = await fetch(`/api/governance-data?t=${timestamp}`);
-
-      // Check if response is ok
-      if (!governanceResponse.ok) {
-        const errorData = await governanceResponse.text();
-        console.error('Governance API error:', errorData);
-        throw new Error(`Failed to fetch governance data: ${governanceResponse.status} - ${errorData}`);
       }
 
-      // Parse response
-      const governanceData = await governanceResponse.json();
+      const response = await fetch('/api/governance-data');
+      if (!response.ok) {
+        throw new Error('Failed to fetch governance data');
+      }
 
-      // Set use cases
+      const governanceData = await response.json();
       setUseCases(governanceData);
 
-      // Fetch assessment progress for each use case
       const progressData: { [useCaseId: string]: { euAiAct?: AssessmentProgress; iso42001?: AssessmentProgress; uaeAi?: AssessmentProgress } } = {};
 
       for (const useCase of governanceData) {
@@ -184,6 +179,73 @@ export default function GovernancePage() {
     fetchAllData(true);
   };
 
+  const handleStartAssessment = (useCase: UseCase, framework: GovernanceFramework) => {
+    setSelectedUseCase(useCase);
+    setSelectedFramework(framework);
+    setIsLockModalOpen(true);
+  };
+
+  const handleCloseLockModal = () => {
+    setIsLockModalOpen(false);
+    setSelectedUseCase(null);
+    setSelectedFramework(null);
+    setIsAcquiringLock(false);
+  };
+
+  const handleAcquireLock = async (): Promise<boolean> => {
+    if (!selectedUseCase || !selectedFramework) return false;
+    
+    setIsAcquiringLock(true);
+    
+    try {
+      console.log(`🔒 Attempting to acquire lock for ${selectedFramework} on use case ${selectedUseCase.useCaseId}`);
+      
+      const response = await fetch('/api/locks/acquire', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          useCaseId: selectedUseCase.useCaseId,
+          lockType: 'EXCLUSIVE',
+          scope: selectedFramework
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        if (response.status === 409) {
+          console.log(`❌ Lock already held by another user: ${data.lockDetails?.acquiredBy}`);
+          // The modal will handle showing the lock conflict
+          return false;
+        }
+        throw new Error(data.error || 'Failed to acquire lock');
+      }
+      
+      console.log(`✅ Lock acquired successfully for ${selectedFramework}`);
+      
+      // Navigate to the appropriate assessment page
+      const frameworkRoutes = {
+        'GOVERNANCE_EU_AI_ACT': `/dashboard/${selectedUseCase.useCaseId}/eu-ai-act`,
+        'GOVERNANCE_ISO_42001': `/dashboard/${selectedUseCase.useCaseId}/iso-42001`,
+        'GOVERNANCE_UAE_AI': `/dashboard/${selectedUseCase.useCaseId}/uae-ai`
+      };
+      
+      const route = frameworkRoutes[selectedFramework];
+      if (route) {
+        console.log(`🚀 Navigating to ${route}`);
+        window.location.href = route;
+      }
+      
+      return true;
+    } catch (err) {
+      console.error('Error acquiring lock:', err);
+      setError(err instanceof Error ? err.message : 'Failed to acquire lock');
+      return false;
+    } finally {
+      setIsAcquiringLock(false);
+    }
+  };
+
   const getFrameworkColor = (framework: string) => {
     const colors: { [key: string]: string } = {
       'EU AI Act': 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600',
@@ -196,7 +258,7 @@ export default function GovernancePage() {
     return colors[framework] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700';
   };
 
-  const getStandardColor = (standard: string) => {
+  const getStandardColor = (standard: string): string => {
     const colors: { [key: string]: string } = {
       'ISO 27001 (Information Security)': 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700',
       'ISO 27701 (Privacy)': 'bg-teal-100 dark:bg-teal-900/20 text-teal-800 dark:text-teal-200 border-teal-300 dark:border-teal-700',
@@ -236,9 +298,6 @@ export default function GovernancePage() {
     );
   }
 
-
-
-
   return (
     <div className="bg-background min-h-full">
       <div className="px-6 py-6">
@@ -246,10 +305,11 @@ export default function GovernancePage() {
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
-              
+              <h1 className="text-3xl font-bold text-foreground mb-2">Governance Dashboard</h1>
               <p className="text-muted-foreground">Regulatory frameworks and industry standards for AI systems</p>
             </div>
-                          <Button 
+            <div className="flex items-center gap-3">
+              <Button 
                 onClick={handleRefresh} 
                 variant="outline" 
                 size="sm" 
@@ -264,6 +324,7 @@ export default function GovernancePage() {
                   Updating progress...
                 </div>
               )}
+            </div>
           </div>
         </div>
 
@@ -396,9 +457,14 @@ export default function GovernancePage() {
                           <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${assessmentProgress[item.useCaseId]?.euAiAct?.status === 'completed' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' : 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700'}`}>
                             {assessmentProgress[item.useCaseId]?.euAiAct?.status === 'completed' ? 'Completed' : 'In Progress'}
                           </Badge>
-                          <Link href={`/dashboard/${item.useCaseId}/eu-ai-act`}>
-                            <Button variant="ghost" size="sm" className="text-xs h-6 px-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">Start</Button>
-                          </Link>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-xs h-6 px-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                            onClick={() => handleStartAssessment(item, 'GOVERNANCE_EU_AI_ACT')}
+                          >
+                            Start
+                          </Button>
                         </div>
                       </div>
                       )}
@@ -414,12 +480,17 @@ export default function GovernancePage() {
                           <div className="bg-purple-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${assessmentProgress[item.useCaseId]?.iso42001?.progress || 0}%` }}></div>
                         </div>
                         <div className="flex justify-between items-center">
-                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${assessmentProgress[item.useCaseId]?.iso42001?.status === 'completed' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' : 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700'}`}>
+                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${assessmentProgress[item.useCaseId]?.iso42001?.status === 'completed' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' : 'bg-yellow-100 dark:text-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700'}`}>
                             {assessmentProgress[item.useCaseId]?.iso42001?.status === 'completed' ? 'Completed' : 'In Progress'}
                           </Badge>
-                          <Link href={`/dashboard/${item.useCaseId}/iso-42001`}>
-                            <Button variant="ghost" size="sm" className="text-xs h-6 px-2 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/20">Start</Button>
-                          </Link>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-xs h-6 px-2 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/20"
+                            onClick={() => handleStartAssessment(item, 'GOVERNANCE_ISO_42001')}
+                          >
+                            Start
+                          </Button>
                         </div>
                       </div>
                       )}
@@ -450,9 +521,14 @@ export default function GovernancePage() {
                           <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${assessmentProgress[item.useCaseId]?.uaeAi?.status === 'completed' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' : 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700'}`}>
                             {assessmentProgress[item.useCaseId]?.uaeAi?.status === 'completed' ? 'Completed' : 'In Progress'}
                           </Badge>
-                          <Link href={`/dashboard/${item.useCaseId}/uae-ai`}>
-                            <Button variant="ghost" size="sm" className="text-xs h-6 px-2 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-100/20">Start</Button>
-                          </Link>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-xs h-6 px-2 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-100/20"
+                            onClick={() => handleStartAssessment(item, 'GOVERNANCE_UAE_AI')}
+                          >
+                            Start
+                          </Button>
                         </div>
                       </div>
                       )}
@@ -465,6 +541,24 @@ export default function GovernancePage() {
           )}
         </div>
       </div>
+
+      {/* Lock Management Modal */}
+      {selectedUseCase && selectedFramework && (
+        <GovernanceLockModal
+          isOpen={isLockModalOpen}
+          onClose={handleCloseLockModal}
+          lockInfo={null} // Will be managed by the hook in the actual assessment pages
+          framework={selectedFramework}
+          useCaseId={selectedUseCase.useCaseId}
+          useCaseName={selectedUseCase.useCaseName}
+          onAcquireLock={handleAcquireLock}
+          onReleaseLock={async () => {
+            // This will be handled by the actual assessment pages
+            handleCloseLockModal();
+          }}
+          loading={isAcquiringLock}
+        />
+      )}
     </div>
   );
 }

@@ -48,19 +48,37 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // Validate scope if provided
+    if (scope) {
+      const validScopes = ['ASSESS', 'EDIT', 'GOVERNANCE_EU_AI_ACT', 'GOVERNANCE_ISO_42001', 'GOVERNANCE_UAE_AI'];
+      if (!validScopes.includes(scope)) {
+        return NextResponse.json({ 
+          error: 'Invalid scope. Must be one of: ASSESS, EDIT, GOVERNANCE_EU_AI_ACT, GOVERNANCE_ISO_42001, GOVERNANCE_UAE_AI' 
+        }, { status: 400 });
+      }
+    }
+
     // Find any active lock of the specified type for this use case (not just the current user's lock)
     const lock = await prismaClient.lock.findFirst({
-      where: ({
+      where: {
         useCaseId,
         type: lockType as any,
-        scope: (scope === 'EDIT' ? 'EDIT' : 'ASSESS'),
+        scope: (scope || 'ASSESS') as any, // Use the actual scope parameter
         isActive: true
-      } as unknown) as any
+      }
     });
 
+    console.log(`[LOCK RELEASE] Searching for lock with:`, {
+      useCaseId,
+      lockType,
+      scope: scope || 'ASSESS',
+      isActive: true
+    });
+    
     console.log(`[LOCK RELEASE] Found lock:`, lock ? {
       id: lock.id,
       userId: lock.userId,
+      scope: lock.scope,
       isActive: lock.isActive
     } : 'No active lock found');
 
@@ -75,10 +93,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Release the active lock
+    console.log(`[LOCK RELEASE] Releasing lock ${lock.id} for user ${lock.userId}`);
+    
     await prismaClient.lock.update({
       where: { id: lock.id },
       data: { isActive: false }
     });
+    
+    console.log(`[LOCK RELEASE] Lock ${lock.id} released successfully`);
 
     return NextResponse.json({
       success: true,

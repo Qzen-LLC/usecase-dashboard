@@ -757,4 +757,7 @@ enum LockType {
 enum LockScope {
   ASSESS
   EDIT
+  GOVERNANCE_EU_AI_ACT
+  GOVERNANCE_ISO_42001
+  GOVERNANCE_UAE_AI
 }
