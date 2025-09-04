@@ -166,23 +166,59 @@ export const useLock = (useCaseId: string, scope: 'ASSESS' | 'EDIT' = 'ASSESS'):
 
   useEffect(() => {
     if (!useCaseId) return;
-    const handleBeforeUnload = async () => {
+    
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (lockInfo?.hasExclusiveLock) {
         console.log('🔒 [useLock] Beforeunload triggered, releasing lock...');
-        try {
-          const response = await fetch('/api/locks/release', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ useCaseId, lockType: 'EXCLUSIVE', scope }), keepalive: true
-          });
-          console.log('🔒 [useLock] Beforeunload release response status:', response.status);
-        } catch (error) {
-          console.error('🔒 [useLock] Failed to release lock on page unload:', error);
-        }
+        // Send beacon to release lock
+        const data = new FormData();
+        data.append('useCaseId', useCaseId);
+        data.append('lockType', 'EXCLUSIVE');
+        data.append('scope', scope);
+        navigator.sendBeacon('/api/locks/release', data);
+        
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return 'You have unsaved changes. Are you sure you want to leave?';
       }
     };
+
+    const handlePageHide = () => {
+      if (lockInfo?.hasExclusiveLock) {
+        console.log('🔒 [useLock] Page hide triggered, releasing lock...');
+        // Send beacon to release lock
+        const data = new FormData();
+        data.append('useCaseId', useCaseId);
+        data.append('lockType', 'EXCLUSIVE');
+        data.append('scope', scope);
+        navigator.sendBeacon('/api/locks/release', data);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && lockInfo?.hasExclusiveLock) {
+        console.log('🔒 [useLock] Visibility change to hidden, releasing lock...');
+        // Send beacon to release lock
+        const data = new FormData();
+        data.append('useCaseId', useCaseId);
+        data.append('lockType', 'EXCLUSIVE');
+        data.append('scope', scope);
+        navigator.sendBeacon('/api/locks/release', data);
+      }
+    };
+
+    // Add event listeners
     window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
+      // Remove event listeners
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Send beacon on cleanup
       if (lockInfo?.hasExclusiveLock) {
         console.log('🔒 [useLock] Component cleanup, sending beacon for lock release...');
         const data = new FormData();

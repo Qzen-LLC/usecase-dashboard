@@ -96,33 +96,73 @@ export default function AssessmentPage() {
   } = useLock(useCaseId);
 
   // Determine if current user can edit
-  // User can edit if: no exclusive lock exists OR current user has the exclusive lock AND readonly is not forced
-  const canEdit = (!lockInfo?.hasExclusiveLock || isExclusiveLocked) && readonlyParam !== 'true';
-  const isReadOnly = !canEdit || readonlyParam === 'true';
+  // Use the same logic as edit use case - rely on lockInfo.canEdit from API
+  const canEdit = useMemo(() => lockInfo?.canEdit === true && readonlyParam !== 'true', [lockInfo?.canEdit, readonlyParam]);
+  const isReadOnly = useMemo(() => !canEdit, [canEdit]);
 
-  // Cleanup effect to release lock when leaving the page
+  // Debug logging for lock status
   useEffect(() => {
-    return () => {
-      // Release lock when component unmounts (user navigates away)
+    console.log('🔒 [ASSESSMENT] Lock status debug:', {
+      lockInfo,
+      isExclusiveLocked,
+      canEdit,
+      isReadOnly,
+      readonlyParam
+    });
+  }, [lockInfo, isExclusiveLocked, canEdit, isReadOnly, readonlyParam]);
+
+  // On unmount / unload, attempt lock release similar to edit use case
+  useEffect(() => {
+    console.log('🔒 [ASSESSMENT] Lock release effect - isExclusiveLocked:', isExclusiveLocked, 'useCaseId:', useCaseId);
+    
+    const beforeUnload = async () => {
       if (isExclusiveLocked) {
-        releaseLock('EXCLUSIVE').catch(console.error);
+        console.log('🔒 [ASSESSMENT] Beforeunload triggered, releasing lock...');
+        try {
+          await fetch('/api/locks/release', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ useCaseId, lockType: 'EXCLUSIVE', scope: 'ASSESS' }),
+            keepalive: true,
+          });
+          console.log('🔒 [ASSESSMENT] Lock release request sent via fetch');
+        } catch (error) {
+          console.error('🔒 [ASSESSMENT] Error releasing lock via fetch:', error);
+        }
       }
     };
-  }, [isExclusiveLocked, releaseLock]);
-
-  // Warn user before leaving if they have an exclusive lock
-  useEffect(() => {
-    if (!isExclusiveLocked) return;
-
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
-      return 'You have unsaved changes. Are you sure you want to leave?';
+    window.addEventListener('beforeunload', beforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', beforeUnload);
+      if (isExclusiveLocked) {
+        console.log('🔒 [ASSESSMENT] Component cleanup, sending beacon for lock release...');
+        const data = new FormData();
+        data.append('useCaseId', useCaseId);
+        data.append('lockType', 'EXCLUSIVE');
+        data.append('scope', 'ASSESS');
+        try { 
+          navigator.sendBeacon('/api/locks/release', data);
+          console.log('🔒 [ASSESSMENT] Beacon sent successfully');
+        } catch (error) {
+          console.error('🔒 [ASSESSMENT] Failed to send beacon for lock release:', error);
+        }
+      }
     };
+  }, [isExclusiveLocked, useCaseId]);
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isExclusiveLocked]);
+  // Attempt to acquire exclusive lock when page mounts (only once)
+  const [hasAttemptedLockAcquisition, setHasAttemptedLockAcquisition] = useState(false);
+  
+  useEffect(() => {
+    if (!useCaseId || hasAttemptedLockAcquisition) return;
+    console.log('🔒 [ASSESSMENT] Attempting to acquire exclusive lock on page mount...');
+    setHasAttemptedLockAcquisition(true);
+    acquireExclusiveLock().then(success => {
+      console.log('🔒 [ASSESSMENT] Lock acquisition result:', success);
+    }).catch(error => {
+      console.error('🔒 [ASSESSMENT] Error acquiring lock:', error);
+    });
+  }, [useCaseId, hasAttemptedLockAcquisition, acquireExclusiveLock]); // Only run once per useCaseId
 
   // Update current step when URL parameters change
   useEffect(() => {
@@ -294,8 +334,9 @@ const validateAssessmentData = useMemo(() => (data: any) => {
 }, []);
 
   const handleAssessmentChange = useMemo(() => (section: string, data: any) => {
-    // Don't allow changes if there's an exclusive lock
-    if (isExclusiveLocked) {
+    // Don't allow changes if user cannot edit
+    if (!canEdit) {
+      console.log('🔒 [ASSESSMENT] Blocking change - user cannot edit');
       return;
     }
     
@@ -305,7 +346,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         [section]: data,
       };
     });
-  }, [isExclusiveLocked]);
+  }, [canEdit]);
 
   useEffect(() => {
     if (!useCaseId || !isReady) return;
@@ -442,38 +483,29 @@ const validateAssessmentData = useMemo(() => (data: any) => {
 
   // Handle cancel button click
   const handleCancel = async () => {
-    console.log('[ASSESSMENT] Cancel button clicked, checking lock status...');
-    console.log('[ASSESSMENT] isExclusiveLocked:', isExclusiveLocked);
-    console.log('[ASSESSMENT] lockInfo:', lockInfo);
-    
+    console.log('🔒 [ASSESSMENT] Cancel button clicked - releasing lock and navigating back');
     try {
-      // Release lock if we have one
       if (isExclusiveLocked) {
-        console.log('[ASSESSMENT] Releasing EXCLUSIVE lock before cancel...');
+        console.log('🔒 [ASSESSMENT] Releasing EXCLUSIVE lock...');
         await releaseLock('EXCLUSIVE');
-        console.log('[ASSESSMENT] Lock released successfully');
+        console.log('🔒 [ASSESSMENT] Lock released successfully');
       } else {
-        console.log('[ASSESSMENT] No exclusive lock to release');
+        console.log('🔒 [ASSESSMENT] No exclusive lock to release');
       }
-      // Go back to previous page
-      console.log('[ASSESSMENT] Navigating back...');
-      router.back();
     } catch (error) {
-      console.error('[ASSESSMENT] Error releasing lock during cancel:', error);
-      // Go back anyway even if lock release fails
-      router.back();
+      console.error('🔒 [ASSESSMENT] Error releasing lock:', error);
     }
+    console.log('🔒 [ASSESSMENT] Navigating back...');
+    router.back();
   };
 
   // Handle complete assessment
   const handleCompleteAssessment = async () => {
-    console.log('[ASSESSMENT] Complete Assessment button clicked, checking lock status...');
-    console.log('[ASSESSMENT] isExclusiveLocked:', isExclusiveLocked);
-    console.log('[ASSESSMENT] lockInfo:', lockInfo);
+    console.log('🔒 [ASSESSMENT] Complete Assessment button clicked');
     
     try {
       // Save filled fields before completing
-      console.log('[ASSESSMENT] Saving assessment data...');
+      console.log('🔒 [ASSESSMENT] Saving assessment data...');
       await fetch("/api/post-stepdata", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -481,32 +513,30 @@ const validateAssessmentData = useMemo(() => (data: any) => {
       });
       
       if (approvalsPageRef.current && approvalsPageRef.current.handleComplete) {
-        console.log('[ASSESSMENT] Calling approvals page handleComplete...');
+        console.log('🔒 [ASSESSMENT] Calling approvals page handleComplete...');
         await approvalsPageRef.current.handleComplete();
       }
       
       // Release lock before redirecting
-      if (isExclusiveLocked) {
-        console.log('[ASSESSMENT] Releasing EXCLUSIVE lock before completion...');
-        await releaseLock('EXCLUSIVE');
-        console.log('[ASSESSMENT] Lock released successfully');
-      } else {
-        console.log('[ASSESSMENT] No exclusive lock to release');
+      try {
+        if (isExclusiveLocked) {
+          await releaseLock('EXCLUSIVE');
+        }
+      } catch (error) {
+        console.error('🔒 [ASSESSMENT] Error releasing lock after completion:', error);
       }
       
       // Use router.push instead of window.location.href for proper cleanup
-      console.log('[ASSESSMENT] Navigating to dashboard...');
+      console.log('🔒 [ASSESSMENT] Navigating to dashboard...');
       router.push('/dashboard');
     } catch (error) {
-      console.error('[ASSESSMENT] Error completing assessment:', error);
+      console.error('🔒 [ASSESSMENT] Error completing assessment:', error);
       // Try to release lock even if completion fails
       if (isExclusiveLocked) {
         try {
-          console.log('[ASSESSMENT] Attempting to release lock after completion failure...');
           await releaseLock('EXCLUSIVE');
-          console.log('[ASSESSMENT] Lock released after completion failure');
         } catch (lockError) {
-          console.error('[ASSESSMENT] Error releasing lock after completion failure:', lockError);
+          console.error('🔒 [ASSESSMENT] Error releasing lock after completion failure:', lockError);
         }
       }
       router.push('/dashboard');
@@ -519,10 +549,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-foreground font-medium">Loading Assessment Dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+              </div>
+    </div>
+  );
+}
   if (error || !useCase) {
     return <div className="min-h-screen flex items-center justify-center text-lg text-destructive">{error || "Use case not found"}</div>;
   }
@@ -759,6 +789,8 @@ const validateAssessmentData = useMemo(() => (data: any) => {
            </button>
          )}
       </div>
+      
+
     </div>
   );
 }
