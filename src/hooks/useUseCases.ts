@@ -23,6 +23,7 @@ export interface UseCase {
   implementationComplexity?: number;
   estimatedTimeline?: string;
   requiredResources?: string[];
+  businessFunction?: string;
   createdAt?: string;
   updatedAt?: string;
   user?: {

@@ -249,6 +249,7 @@ const Dashboard = () => {
   const { user, isSignedIn, isLoaded } = useUser();
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>(''); // '' means All Organizations
+  const [selectedBusinessFunction, setSelectedBusinessFunction] = useState<string>(''); // '' means All Business Functions
   const [modalUseCase, setModalUseCase] = useState<MappedUseCase | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [validationError, setValidationError] = useState<{ show: boolean; fields: string[]; useCaseTitle: string }>({ show: false, fields: [], useCaseTitle: '' });
@@ -256,6 +257,27 @@ const Dashboard = () => {
   const [deletingUseCaseId, setDeletingUseCaseId] = useState<string | null>(null);
   const [deletedUseCaseIds, setDeletedUseCaseIds] = useState<Set<string>>(new Set());
   
+  const businessFunctions = [
+    'Sales',
+    'Marketing', 
+    'Product Development',
+    'Operations',
+    'Customer Support',
+    'HR',
+    'Finance',
+    'IT',
+    'Legal',
+    'Procurement',
+    'Facilities',
+    'Strategy',
+    'Communications',
+    'Risk & Audit',
+    'Innovation Office',
+    'ESG',
+    'Data Office',
+    'PMO'
+  ];
+
   // Lock modal state
   const [isLockModalOpen, setIsLockModalOpen] = useState(false);
   const [selectedUseCaseForLock, setSelectedUseCaseForLock] = useState<string | null>(null);
@@ -265,6 +287,7 @@ const Dashboard = () => {
 
   // React Query hooks for optimized data fetching
   const { data: useCases = [], error, isLoading, refetch, updateUseCase } = useUseCases();
+  console.log('useCases', useCases);
   const updateStageMutation = useUpdateUseCaseStage();
   const deleteUseCaseMutation = useDeleteUseCase();
   
@@ -372,12 +395,52 @@ const Dashboard = () => {
   }
 
   const handleAssess = async (id: string) => {
-    setSelectedUseCaseForLock(id);
-    // Wait a bit for the useLock hook to initialize with the new ID
-    setTimeout(async () => {
-      await refreshLockStatus();
+    try {
+      // Check lock status directly from the API
+      const response = await fetch(`/api/get-usecase-details?useCaseId=${id}&acquireSharedLock=true&scope=ASSESS`);
+      if (!response.ok) {
+        throw new Error('Failed to check lock status');
+      }
+      
+      const data = await response.json();
+      const lockStatus = data.lockInfo;
+      
+      // Check if the assessment is already locked
+      if (lockStatus?.hasExclusiveLock) {
+        // Assessment is locked, set the use case ID and show the lock modal
+        setSelectedUseCaseForLock(id);
+        setIsLockModalOpen(true);
+      } else {
+        // Assessment is free, automatically acquire the lock and proceed
+        console.log('🔒 Assessment is free, automatically acquiring lock...');
+        
+        const lockResponse = await fetch('/api/locks/acquire', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            useCaseId: id, 
+            lockType: 'EXCLUSIVE', 
+            scope: 'ASSESS' 
+          })
+        });
+        
+        if (lockResponse.ok) {
+          // Lock acquired successfully, proceed to assessment
+          router.push(`/dashboard/${id}/assess`);
+        } else {
+          // Failed to acquire lock, show error or fallback
+          console.error('Failed to automatically acquire lock');
+          // Fallback: set the use case ID and show the lock modal
+          setSelectedUseCaseForLock(id);
+          setIsLockModalOpen(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error in handleAssess:', error);
+      // Fallback: set the use case ID and show the lock modal
+      setSelectedUseCaseForLock(id);
       setIsLockModalOpen(true);
-    }, 100);
+    }
   }
 
   const handleLockModalClose = () => {
@@ -448,12 +511,16 @@ const Dashboard = () => {
     }
   };
 
-  // Add organization filtering to use cases
+  // Add organization and business function filtering to use cases
   const orgFilteredUseCases = selectedOrgId
     ? useCases.filter((uc: any) => uc.organizationId === selectedOrgId)
     : useCases;
+    
+  const businessFunctionFilteredUseCases = selectedBusinessFunction
+    ? useCases.filter((uc: any) => uc.businessFunction === selectedBusinessFunction)
+    : useCases;
 
-  const filteredUseCases = orgFilteredUseCases.filter(useCase => {
+  const filteredUseCases = businessFunctionFilteredUseCases.filter(useCase => {
     // Skip deleted use cases
     if (deletedUseCaseIds.has(useCase.id)) {
       return false;
@@ -861,15 +928,28 @@ const Dashboard = () => {
               <option value="medium">Medium</option>
               <option value="low">Low</option>
             </select>
+            {(userData?.role === 'QZEN_ADMIN') && (
             <select
               value={selectedOrgId}
               onChange={e => setSelectedOrgId(e.target.value)}
               className="select-standard"
               style={{ minWidth: 180 }}
             >
-              <option value="">All Departments</option>
+              <option value="">All Organizations</option>
               {organizations.map(org => (
                 <option key={org.id} value={org.id}>{org.name}</option>
+              ))}
+            </select>
+            )}
+            <select
+              value={selectedBusinessFunction}
+              onChange={e => setSelectedBusinessFunction(e.target.value)}
+              className="select-standard"
+              style={{ minWidth: 180 }}
+            >
+              <option value="">All Business Functions</option>
+              {businessFunctions.map(func => (
+                <option key={func} value={func}>{func}</option>
               ))}
             </select>
             <Button onClick={() => router.push('/new-usecase')} className="btn-primary flex items-center gap-2">
@@ -969,7 +1049,7 @@ const Dashboard = () => {
                           {idx === 3 && <Clock className="text-warning w-6 h-6" />}
                           {idx === 4 && <Zap className="text-primary w-6 h-6" />}
                           {idx === 5 && <Users className="text-primary w-6 h-6" />}
-                          {idx === 6 && <User className="text-primary w-6 h-6" />}
+                                                     {idx === 6 && <User className="text-primary w-6 h-6" />}
                           {idx === 7 && <Clock className="text-destructive w-6 h-6" />}
                         </div>
                         <div className="font-semibold text-muted-foreground text-sm group-hover:text-primary transition-colors mb-1">{stage.title}</div>
