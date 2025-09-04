@@ -249,6 +249,7 @@ const Dashboard = () => {
   const { user, isSignedIn, isLoaded } = useUser();
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>(''); // '' means All Organizations
+  const [selectedBusinessFunction, setSelectedBusinessFunction] = useState<string>(''); // '' means All Business Functions
   const [modalUseCase, setModalUseCase] = useState<MappedUseCase | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [validationError, setValidationError] = useState<{ show: boolean; fields: string[]; useCaseTitle: string }>({ show: false, fields: [], useCaseTitle: '' });
@@ -256,6 +257,27 @@ const Dashboard = () => {
   const [deletingUseCaseId, setDeletingUseCaseId] = useState<string | null>(null);
   const [deletedUseCaseIds, setDeletedUseCaseIds] = useState<Set<string>>(new Set());
   
+  const businessFunctions = [
+    'Sales',
+    'Marketing', 
+    'Product Development',
+    'Operations',
+    'Customer Support',
+    'HR',
+    'Finance',
+    'IT',
+    'Legal',
+    'Procurement',
+    'Facilities',
+    'Strategy',
+    'Communications',
+    'Risk & Audit',
+    'Innovation Office',
+    'ESG',
+    'Data Office',
+    'PMO'
+  ];
+
   // Lock modal state
   const [isLockModalOpen, setIsLockModalOpen] = useState(false);
   const [selectedUseCaseForLock, setSelectedUseCaseForLock] = useState<string | null>(null);
@@ -265,6 +287,7 @@ const Dashboard = () => {
 
   // React Query hooks for optimized data fetching
   const { data: useCases = [], error, isLoading, refetch, updateUseCase } = useUseCases();
+  console.log('useCases', useCases);
   const updateStageMutation = useUpdateUseCaseStage();
   const deleteUseCaseMutation = useDeleteUseCase();
   
@@ -488,12 +511,16 @@ const Dashboard = () => {
     }
   };
 
-  // Add organization filtering to use cases
+  // Add organization and business function filtering to use cases
   const orgFilteredUseCases = selectedOrgId
     ? useCases.filter((uc: any) => uc.organizationId === selectedOrgId)
     : useCases;
+    
+  const businessFunctionFilteredUseCases = selectedBusinessFunction
+    ? useCases.filter((uc: any) => uc.businessFunction === selectedBusinessFunction)
+    : useCases;
 
-  const filteredUseCases = orgFilteredUseCases.filter(useCase => {
+  const filteredUseCases = businessFunctionFilteredUseCases.filter(useCase => {
     // Skip deleted use cases
     if (deletedUseCaseIds.has(useCase.id)) {
       return false;
@@ -907,9 +934,20 @@ const Dashboard = () => {
               className="select-standard"
               style={{ minWidth: 180 }}
             >
-              <option value="">All Departments</option>
+              <option value="">All Organizations</option>
               {organizations.map(org => (
                 <option key={org.id} value={org.id}>{org.name}</option>
+              ))}
+            </select>
+            <select
+              value={selectedBusinessFunction}
+              onChange={e => setSelectedBusinessFunction(e.target.value)}
+              className="select-standard"
+              style={{ minWidth: 180 }}
+            >
+              <option value="">All Business Functions</option>
+              {businessFunctions.map(func => (
+                <option key={func} value={func}>{func}</option>
               ))}
             </select>
             <Button onClick={() => router.push('/new-usecase')} className="btn-primary flex items-center gap-2">
