@@ -928,6 +928,7 @@ const Dashboard = () => {
               <option value="medium">Medium</option>
               <option value="low">Low</option>
             </select>
+            {(userData?.role === 'QZEN_ADMIN') && (
             <select
               value={selectedOrgId}
               onChange={e => setSelectedOrgId(e.target.value)}
@@ -939,6 +940,7 @@ const Dashboard = () => {
                 <option key={org.id} value={org.id}>{org.name}</option>
               ))}
             </select>
+            )}
             <select
               value={selectedBusinessFunction}
               onChange={e => setSelectedBusinessFunction(e.target.value)}
