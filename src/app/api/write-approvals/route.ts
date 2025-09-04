@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       update: cleanedUpdate,
       create: { useCaseId, ...cleanedUpdate },
     });
-    console.log('[CRUD_LOG] Approval data upserted:', { useCaseId, approvalId: res.id, updatedAt: res.updatedAt });
+    console.log('[CRUD_LOG] Approval data upserted:', { useCaseId, approvalId: res.id, updatedAt: res.updatedAt, authoredBy: userRecord.id });
     return NextResponse.json(res);
   } catch (error) {
     console.error('Error writing approvals:', error);

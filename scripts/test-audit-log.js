@@ -10,26 +10,26 @@ console.log('[CRUD_LOG] UseCase created:', {
   id: 'test-123', 
   title: 'Test Use Case', 
   aiucId: 1, 
-  createdAt: new Date().toISOString() 
+  createdAt: new Date().toISOString(), authoredBy: 'test-user-123' 
 });
 
 console.log('[CRUD_LOG] User updated:', { 
   id: 'user-456', 
   email: 'test@example.com', 
   role: 'USER', 
-  updatedAt: new Date().toISOString() 
+  updatedAt: new Date().toISOString(), authoredBy: 'test-user-123' 
 });
 
 console.log('[CRUD_LOG] Risk deleted:', { 
   id: 'risk-789', 
-  useCaseId: 'test-123' 
+  useCaseId: 'test-123', authoredBy: 'test-user-123' 
 });
 
 console.log('[CRUD_LOG] FinOps data upserted:', { 
   useCaseId: 'test-123', 
   ROI: 150, 
   netValue: 50000, 
-  totalInvestment: 25000 
+  totalInvestment: 25000, authoredBy: 'test-user-123' 
 });
 
 // Test non-CRUD logs (should not be sent to Loki)
@@ -41,19 +41,19 @@ console.warn('This is a warning message');
 console.log('[CRUD_LOG] Vendor created:', { 
   id: 'vendor-001', 
   name: 'Test Vendor', 
-  category: 'AI Platform' 
+  category: 'AI Platform', authoredBy: 'test-user-123' 
 });
 
 console.log('[CRUD_LOG] Assessment progress updated:', { 
   id: 'assessment-001', 
   progress: 75, 
-  status: 'in_progress' 
+  status: 'in_progress', authoredBy: 'test-user-123' 
 });
 
 console.log('[CRUD_LOG] Prompt Template created:', { 
   id: 'prompt-001', 
   name: 'Test Prompt', 
-  type: 'completion' 
+  type: 'completion', authoredBy: 'test-user-123' 
 });
 
 console.log("✅ Audit log tests completed!");

@@ -58,7 +58,7 @@ export async function POST(request: Request) {
         id: useCaseId,
       },
     });
-    console.log('[CRUD_LOG] UseCase deleted:', { id: useCaseId, title: useCase.title });
+    console.log('[CRUD_LOG] UseCase deleted:', { id: useCaseId, title: useCase.title, authoredBy: userRecord.id });
 
     return NextResponse.json({ message: 'Use case deleted successfully' });
   } catch (error) {

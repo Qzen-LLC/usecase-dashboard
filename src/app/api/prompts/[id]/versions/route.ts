@@ -171,7 +171,7 @@ export async function POST(
       }
     });
 
-    console.log('[CRUD_LOG] Prompt Version created:', { id: newVersion.id, templateId: params.id, versionNumber: newVersion.versionNumber, commitMessage: newVersion.commitMessage });
+    console.log('[CRUD_LOG] Prompt Version created:', { id: newVersion.id, templateId: params.id, versionNumber: newVersion.versionNumber, commitMessage: newVersion.commitMessage, authoredBy: userRecord.id });
 
     return NextResponse.json(newVersion);
   } catch (error) {

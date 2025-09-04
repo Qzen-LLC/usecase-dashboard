@@ -70,7 +70,7 @@ export async function POST(req: Request) {
           organizationId: organizationId,
         },
       });
-      console.log('[CRUD_LOG] User created:', { id: userRecord.id, email: userRecord.email, role: userRecord.role, organizationId: userRecord.organizationId });
+      console.log('[CRUD_LOG] User created:', { id: userRecord.id, email: userRecord.email, role: userRecord.role, organizationId: userRecord.organizationId, authoredBy: userRecord.id });
     } else {
       // Update existing user with organization and role
       console.log('[Invitation Accept] Updating existing user:', userRecord.id, 'with organizationId:', organizationId);
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
           organizationId: organizationId,
         },
       });
-      console.log('[CRUD_LOG] User updated:', { id: userRecord.id, role: userRecord.role, organizationId: userRecord.organizationId });
+      console.log('[CRUD_LOG] User updated:', { id: userRecord.id, role: userRecord.role, organizationId: userRecord.organizationId, authoredBy: userRecord.id });
     }
 
     // Mark invitation as accepted
@@ -92,7 +92,7 @@ export async function POST(req: Request) {
         acceptedAt: new Date(),
       },
     });
-    console.log('[CRUD_LOG] Invitation Accepted:', { id: invitation.id, status: 'ACCEPTED', acceptedAt: new Date() });
+    console.log('[CRUD_LOG] Invitation Accepted:', { id: invitation.id, status: 'ACCEPTED', acceptedAt: new Date(), authoredBy: userRecord.id });
 
     return NextResponse.json({
       success: true,

@@ -52,7 +52,7 @@ export async function PUT(
       where: { id: params.riskId },
       data: updateData
     });
-    console.log('[CRUD_LOG] Risk updated:', { id: params.riskId, useCaseId: params.useCaseId, status: data.status, updatedAt: risk.updatedAt });
+    console.log('[CRUD_LOG] Risk updated:', { id: params.riskId, useCaseId: params.useCaseId, status: data.status, updatedAt: risk.updatedAt, authoredBy: userRecord.id });
 
     return NextResponse.json(risk);
   } catch (error) {
@@ -74,11 +74,17 @@ export async function DELETE(
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId: user.id },
+    });
+    if (!userRecord) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
 
     await prismaClient.risk.delete({
       where: { id: params.riskId }
     });
-    console.log('[CRUD_LOG] Risk deleted:', { id: params.riskId, useCaseId: params.useCaseId });
+    console.log('[CRUD_LOG] Risk deleted:', { id: params.riskId, useCaseId: params.useCaseId, authoredBy: userRecord.id });
 
     return NextResponse.json({ success: true });
   } catch (error) {

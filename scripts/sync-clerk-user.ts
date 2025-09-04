@@ -61,7 +61,7 @@ async function syncClerkUser() {
           isActive: true
         }
       });
-      console.log('[CRUD_LOG] User created (script):', { id: newUser.id, email: newUser.email, role: newUser.role });
+      console.log('[CRUD_LOG] User created (script):', { id: newUser.id, email: newUser.email, role: newUser.role, authoredBy: newUser.id });
 
       console.log("✅ Created user in database:");
       console.log(`   ID: ${newUser.id}`);

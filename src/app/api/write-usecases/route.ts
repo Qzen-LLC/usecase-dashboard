@@ -118,7 +118,7 @@ export async function POST(req: Request) {
                 where: { id },
                 data,
             });
-            console.log('[CRUD_LOG] UseCase updated:', { id: useCase.id, title: useCase.title, updatedAt: useCase.updatedAt });
+            console.log('[CRUD_LOG] UseCase updated:', { id: useCase.id, title: useCase.title, updatedAt: useCase.updatedAt, authoredBy: userRecord.id });
         } else {
             // For new use cases, calculate the next aiucId for this user/organization
             let nextAiucId = 1;
@@ -148,7 +148,7 @@ export async function POST(req: Request) {
                     createdAt: new Date(),
                 },
             });
-            console.log('[CRUD_LOG] UseCase created:', { id: useCase.id, title: useCase.title, aiucId: useCase.aiucId, createdAt: useCase.createdAt });
+            console.log('[CRUD_LOG] UseCase created:', { id: useCase.id, title: useCase.title, aiucId: useCase.aiucId, createdAt: useCase.createdAt, authoredBy: userRecord.id });
         }
 
         return NextResponse.json({ success: true, useCase });

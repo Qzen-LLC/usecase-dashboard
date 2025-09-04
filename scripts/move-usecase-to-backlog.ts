@@ -38,7 +38,7 @@ async function moveUseCaseToBacklog() {
         where: { id: useCase.id },
         data: { stage: 'backlog' }
       });
-      console.log('[CRUD_LOG] UseCase moved to backlog (script):', { id: useCase.id, title: useCase.title, stage: updated.stage });
+      console.log('[CRUD_LOG] UseCase moved to backlog (script):', { id: useCase.id, title: useCase.title, stage: updated.stage, authoredBy: useCase.userId });
       console.log(`✅ Successfully moved use case "${updated.title}" to backlog stage`);
       console.log(`   This use case will now appear in the Use Case Development section`);
     }

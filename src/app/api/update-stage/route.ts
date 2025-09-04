@@ -54,7 +54,7 @@ export async function POST(req: Request) {
                 stage: newStage,
             }
         });
-        console.log('[CRUD_LOG] UseCase stage updated:', { id: useCaseId, stage: newStage, updatedAt: new Date() });
+        console.log('[CRUD_LOG] UseCase stage updated:', { id: useCaseId, stage: newStage, updatedAt: new Date(), authoredBy: userRecord.id });
 
         return NextResponse.json({ success: true });
     } catch (error) {

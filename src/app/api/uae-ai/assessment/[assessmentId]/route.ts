@@ -50,7 +50,7 @@ export async function PATCH(
       where: { id: assessmentId },
       data: { riskImpactLevel }
     });
-    console.log('[CRUD_LOG] UAE AI Assessment risk impact updated:', { id: assessmentId, riskImpactLevel, updatedAt: new Date() });
+    console.log('[CRUD_LOG] UAE AI Assessment risk impact updated:', { id: assessmentId, riskImpactLevel, updatedAt: new Date(), authoredBy: userRecord.id });
 
     // Recalculate scores with new risk impact level
     await recalculateAssessmentScores(assessmentId, riskImpactLevel);
@@ -78,6 +78,18 @@ export async function PATCH(
 
 async function recalculateAssessmentScores(assessmentId: string, riskImpactLevel: string) {
   try {
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId: user.id },
+    });
+    if (!userRecord) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
     // Get all control instances for this assessment
     const controlInstances = await prismaClient.uaeAiControlInstance.findMany({
       where: { assessmentId }
@@ -110,7 +122,7 @@ async function recalculateAssessmentScores(assessmentId: string, riskImpactLevel
         riskImpactLevel
       }
     });
-    console.log('[CRUD_LOG] UAE AI Assessment scores updated:', { id: assessmentId, totalScore: maturityData.totalScore, weightedScore: maturityData.weightedScore, maturityLevel: maturityData.maturityLevel, updatedAt: new Date() });
+    console.log('[CRUD_LOG] UAE AI Assessment scores updated:', { id: assessmentId, totalScore: maturityData.totalScore, weightedScore: maturityData.weightedScore, maturityLevel: maturityData.maturityLevel, updatedAt: new Date(), authoredBy: userRecord.id });
   } catch (error) {
     console.error('Error recalculating assessment scores:', error);
   }

@@ -57,7 +57,7 @@ async function testUseCaseDevelopment() {
           data: { stage: 'backlog' }
         });
         
-        console.log('[CRUD_LOG] UseCase stage updated (script):', { id: firstUseCase.id, title: firstUseCase.title, stage: 'backlog' });
+        console.log('[CRUD_LOG] UseCase stage updated (script):', { id: firstUseCase.id, title: firstUseCase.title, stage: 'backlog', authoredBy: firstUseCase.userId });
         console.log(`   ✅ Moved to backlog! This use case will now appear in Use Case Development`);
       }
     }

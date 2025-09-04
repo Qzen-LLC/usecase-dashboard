@@ -106,7 +106,7 @@ export async function POST(
       evidenceFilesCount: updatedInstance.evidenceFiles.length
     });
 
-    console.log('[CRUD_LOG] ISO 42001 Subclause Instance upserted:', { id: updatedInstance.id, subclauseId, assessmentId, status: updatedInstance.status });
+    console.log('[CRUD_LOG] ISO 42001 Subclause Instance upserted:', { id: updatedInstance.id, subclauseId, assessmentId, status: updatedInstance.status, authoredBy: userRecord.id });
 
     return NextResponse.json(updatedInstance);
   } catch (error) {

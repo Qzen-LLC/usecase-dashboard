@@ -111,7 +111,7 @@ export async function POST(
     const risks = await prismaClient.$transaction(
       risksToCreate.map(risk => prismaClient.risk.create({ data: risk }))
     );
-    console.log('[CRUD_LOG] Risks auto-created:', { count: risks.length, useCaseId: params.useCaseId, riskIds: risks.map(r => r.id) });
+    console.log('[CRUD_LOG] Risks auto-created:', { count: risks.length, useCaseId: params.useCaseId, riskIds: risks.map(r => r.id), authoredBy: userRecord.id });
 
     return NextResponse.json(risks);
   } catch (error) {

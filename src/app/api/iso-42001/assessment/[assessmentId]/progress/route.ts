@@ -57,7 +57,7 @@ export async function PATCH(
         updatedAt: new Date()
       }
     });
-    console.log('[CRUD_LOG] ISO 42001 Assessment progress updated:', { id: assessmentId, progress, updatedAt: updatedAssessment.updatedAt });
+    console.log('[CRUD_LOG] ISO 42001 Assessment progress updated:', { id: assessmentId, progress, updatedAt: updatedAssessment.updatedAt, authoredBy: userRecord.id });
 
     return NextResponse.json(updatedAssessment);
   } catch (error) {

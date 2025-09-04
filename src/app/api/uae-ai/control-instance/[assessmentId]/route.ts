@@ -90,7 +90,7 @@ export async function POST(
         control: true
       }
     });
-    console.log('[CRUD_LOG] UAE AI Control Instance upserted:', { id: controlInstance.id, assessmentId, controlId, status: controlInstance.status, score: controlInstance.score });
+    console.log('[CRUD_LOG] UAE AI Control Instance upserted:', { id: controlInstance.id, assessmentId, controlId, status: controlInstance.status, score: controlInstance.score, authoredBy: userRecord.id });
 
     console.log('✅ Control instance saved successfully:', {
       id: controlInstance.id,
@@ -118,6 +118,17 @@ export async function POST(
 
 async function updateAssessmentScores(assessmentId: string) {
   try {
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId: user.id },
+    });
+    if (!userRecord) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
     // Get all control instances for this assessment
     const controlInstances = await prismaClient.uaeAiControlInstance.findMany({
       where: { assessmentId },
@@ -158,7 +169,7 @@ async function updateAssessmentScores(assessmentId: string) {
         status: progress === 100 ? 'completed' : 'in_progress'
       }
     });
-    console.log('[CRUD_LOG] UAE AI Assessment scores recalculated:', { id: assessmentId, totalScore: maturityData.totalScore, weightedScore: maturityData.weightedScore, maturityLevel: maturityData.maturityLevel, updatedAt: new Date() });
+    console.log('[CRUD_LOG] UAE AI Assessment scores recalculated:', { id: assessmentId, totalScore: maturityData.totalScore, weightedScore: maturityData.weightedScore, maturityLevel: maturityData.maturityLevel, updatedAt: new Date(), authoredBy: userRecord.id });
   } catch (error) {
     console.error('Error updating assessment scores:', error);
   }
