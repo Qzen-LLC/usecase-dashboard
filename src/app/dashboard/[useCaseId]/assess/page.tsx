@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import TechnicalFeasibility from '@/components/TechnicalFeasibility';
 import EthicalImpact from '@/components/EthicalImpact';
 import RiskAssessment from '@/components/RiskAssessment';
@@ -26,7 +26,6 @@ import { useStableRender } from '@/hooks/useStableRender';
 import { useLock } from '@/hooks/useLock';
 
 
-
 interface UseCase {
   title: string;
   department: string;
@@ -38,8 +37,14 @@ interface UseCase {
 export default function AssessmentPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const useCaseId = params.useCaseId as string;
-  const [currentStep, setCurrentStep] = useState(1);
+  
+  // Get step and readonly from URL parameters
+  const stepParam = searchParams.get('step');
+  const readonlyParam = searchParams.get('readonly');
+  
+  const [currentStep, setCurrentStep] = useState(stepParam ? parseInt(stepParam) : 1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [useCase, setUseCase] = useState<UseCase | null>(null);
@@ -48,6 +53,32 @@ export default function AssessmentPage() {
   const budgetPlanningRef = useRef<any>(null);
   const approvalsPageRef = useRef<any>(null);
   const pageTopRef = useRef<HTMLDivElement>(null);
+
+  // Add readonly styles to the document when in readonly mode
+  useEffect(() => {
+    if (readonlyParam === 'true') {
+      const style = document.createElement('style');
+      style.id = 'readonly-styles';
+      style.textContent = `
+        .readonly-mode input, .readonly-mode select, .readonly-mode textarea, .readonly-mode button:not(.cancel-btn) {
+          pointer-events: none !important;
+          opacity: 0.6 !important;
+          cursor: not-allowed !important;
+        }
+        .readonly-mode .editable-content {
+          background-color: #f5f5f5 !important;
+        }
+      `;
+      document.head.appendChild(style);
+      
+      return () => {
+        const existingStyle = document.getElementById('readonly-styles');
+        if (existingStyle) {
+          existingStyle.remove();
+        }
+      };
+    }
+  }, [readonlyParam]);
 
   // Use global stable render hook
   const { isReady } = useStableRender();
@@ -64,134 +95,44 @@ export default function AssessmentPage() {
     error: lockError
   } = useLock(useCaseId);
 
-  // Expose state for debugging
-  useEffect(() => {
-    (window as any).__reactState = {
-      isExclusiveLocked,
-      lockInfo,
-      useCaseId,
-      loading: lockLoading,
-      error: lockError
-    };
-  }, [isExclusiveLocked, lockInfo, useCaseId, lockLoading, lockError]);
-
-  // Auto-acquire lock when component mounts
-  useEffect(() => {
-    if (useCaseId && !lockLoading) {
-      // Only try to acquire lock if we don't already have edit access
-      if (!lockInfo?.canEdit) {
-        console.log('[ASSESSMENT] Auto-acquiring lock on component mount...');
-        acquireExclusiveLock();
-      } else {
-        console.log('[ASSESSMENT] Already have edit access, skipping lock acquisition');
-      }
-    }
-  }, [useCaseId, lockLoading, lockInfo?.canEdit, acquireExclusiveLock]);
-
-
-
   // Determine if current user can edit
-  // User can edit if the API says they can edit (they own the lock or no lock exists)
-  const canEdit = lockInfo?.canEdit === true;
-  const isReadOnly = !canEdit;
+  // User can edit if: no exclusive lock exists OR current user has the exclusive lock AND readonly is not forced
+  const canEdit = (!lockInfo?.hasExclusiveLock || isExclusiveLocked) && readonlyParam !== 'true';
+  const isReadOnly = !canEdit || readonlyParam === 'true';
 
   // Cleanup effect to release lock when leaving the page
   useEffect(() => {
     return () => {
       // Release lock when component unmounts (user navigates away)
       if (isExclusiveLocked) {
-        console.log('[ASSESSMENT] Component unmounting, releasing lock...');
-        // Use both beacon and synchronous fetch for maximum reliability
-        try {
-          // Send a beacon request for immediate lock release
-          const data = new FormData();
-          data.append('useCaseId', useCaseId);
-          data.append('lockType', 'EXCLUSIVE');
-          data.append('scope', 'ASSESS');
-          const beaconResult = navigator.sendBeacon('/api/locks/release', data);
-          console.log('[ASSESSMENT] Beacon sent for lock release, result:', beaconResult);
-          
-          // Also try a synchronous fetch as backup
-          if (!beaconResult) {
-            console.log('[ASSESSMENT] Beacon failed, trying synchronous fetch...');
-            // Use a synchronous XMLHttpRequest as fallback
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/api/locks/release', false); // synchronous
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.send(JSON.stringify({ useCaseId, lockType: 'EXCLUSIVE', scope: 'ASSESS' }));
-            console.log('[ASSESSMENT] Synchronous fetch completed, status:', xhr.status);
-          }
-        } catch (error) {
-          console.error('[ASSESSMENT] Error releasing lock during cleanup:', error);
-        }
+        releaseLock('EXCLUSIVE').catch(console.error);
       }
     };
-  }, [isExclusiveLocked, useCaseId]);
+  }, [isExclusiveLocked, releaseLock]);
 
-  // Handle navigation and page events for lock release
+  // Warn user before leaving if they have an exclusive lock
   useEffect(() => {
     if (!isExclusiveLocked) return;
 
-    let lockReleased = false;
-
-    const releaseLockSafely = () => {
-      if (lockReleased) return; // Prevent multiple releases
-      lockReleased = true;
-      console.log('[ASSESSMENT] Releasing lock safely...');
-      
-      try {
-        // Try beacon first
-        const data = new FormData();
-        data.append('useCaseId', useCaseId);
-        data.append('lockType', 'EXCLUSIVE');
-        data.append('scope', 'ASSESS');
-        const beaconResult = navigator.sendBeacon('/api/locks/release', data);
-        console.log('[ASSESSMENT] Beacon result:', beaconResult);
-        
-        // If beacon fails, try synchronous request
-        if (!beaconResult) {
-          console.log('[ASSESSMENT] Beacon failed, trying synchronous request...');
-          const xhr = new XMLHttpRequest();
-          xhr.open('POST', '/api/locks/release', false);
-          xhr.setRequestHeader('Content-Type', 'application/json');
-          xhr.send(JSON.stringify({ useCaseId, lockType: 'EXCLUSIVE', scope: 'ASSESS' }));
-          console.log('[ASSESSMENT] Synchronous request status:', xhr.status);
-        }
-      } catch (error) {
-        console.error('[ASSESSMENT] Error in releaseLockSafely:', error);
-      }
-    };
-
-    // Add a global function that can be called from anywhere
-    (window as any).__releaseLockOnNavigation = releaseLockSafely;
-
-    // Simple beforeunload handler
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      console.log('[ASSESSMENT] Beforeunload triggered');
-      releaseLockSafely();
+      e.preventDefault();
+      e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+      return 'You have unsaved changes. Are you sure you want to leave?';
     };
 
-    // Simple pagehide handler
-    const handlePageHide = (e: PageTransitionEvent) => {
-      console.log('[ASSESSMENT] Pagehide triggered');
-      releaseLockSafely();
-    };
-
-    // Add event listeners
     window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('pagehide', handlePageHide);
-    
-    return () => {
-      console.log('[ASSESSMENT] Cleaning up event listeners');
-      releaseLockSafely(); // Always try to release lock on cleanup
-      
-      // Clean up global function
-      delete (window as any).__releaseLockOnNavigation;
-      
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('pagehide', handlePageHide);
-    };
-  }, [isExclusiveLocked, useCaseId]);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isExclusiveLocked]);
+
+  // Update current step when URL parameters change
+  useEffect(() => {
+    if (stepParam) {
+      const step = parseInt(stepParam);
+      if (step >= 1 && step <= 9) {
+        setCurrentStep(step);
+      }
+    }
+  }, [stepParam]);
 
   // Memoize assessment steps to prevent unnecessary re-renders
   const assessmentSteps = useMemo(() => [
@@ -353,8 +294,8 @@ const validateAssessmentData = useMemo(() => (data: any) => {
 }, []);
 
   const handleAssessmentChange = useMemo(() => (section: string, data: any) => {
-    // Don't allow changes if user can't edit
-    if (!canEdit) {
+    // Don't allow changes if there's an exclusive lock
+    if (isExclusiveLocked) {
       return;
     }
     
@@ -364,7 +305,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         [section]: data,
       };
     });
-  }, [canEdit]);
+  }, [isExclusiveLocked]);
 
   useEffect(() => {
     if (!useCaseId || !isReady) return;
@@ -601,7 +542,6 @@ const validateAssessmentData = useMemo(() => (data: any) => {
 
 
 
-
       {/* Assessment Steps Navigation */}
       <div className="px-8 py-4 border-b border-border bg-muted overflow-x-auto">
         <div className="flex items-center space-x-4">
@@ -744,9 +684,13 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               />
             )
           ) : currentStep === 8 ? (
-            <FinancialDashboard />
+            <div className={isReadOnly ? 'readonly-mode' : ''}>
+              <FinancialDashboard />
+            </div>
           ) : currentStep === 9 ? (
-            <ApprovalsPage ref={approvalsPageRef} />
+            <div className={isReadOnly ? 'readonly-mode' : ''}>
+              <ApprovalsPage ref={approvalsPageRef} />
+            </div>
           ) :
             (
               <div className="text-muted-foreground text-lg font-medium">
@@ -766,14 +710,36 @@ const validateAssessmentData = useMemo(() => (data: any) => {
           <ChevronLeft className="w-4 h-4 mr-2" />
           Previous
         </button>
-        
         <button
           onClick={handleCancel}
           className={`flex items-center px-4 py-2 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90`}
         >
           Cancel
         </button>
-        
+        {currentStep < 8 && (
+          <>
+            <button
+              className={`px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold flex items-center gap-2 ${saving ? 'opacity-75 cursor-not-allowed' : ''} ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={handleSave}
+              disabled={saving || isReadOnly}
+            >
+              {saving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Saving...
+                </>
+              ) : (
+                'Save Progress'
+              )}
+            </button>
+            {saveSuccess && (
+              <div className="ml-4 text-green-600 dark:text-green-400 font-semibold">Progress saved!</div>
+            )}
+            {error && (
+              <div className="ml-4 text-red-600 dark:text-red-400 font-semibold">{error}</div>
+            )}
+          </>
+        )}
         {currentStep < 9 ? (
           <button
             className={`flex items-center px-4 py-2 rounded-md bg-gray-600 dark:bg-gray-700 text-white hover:bg-gray-700 dark:hover:bg-gray-600 ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -783,14 +749,15 @@ const validateAssessmentData = useMemo(() => (data: any) => {
             Next
             <ChevronRight className="w-4 h-4 ml-2" />
           </button>
-        ) : (
-          <button
-            className="px-4 py-2 w-64 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white rounded-xl shadow-lg font-semibold text-lg transition"
-            onClick={handleCompleteAssessment}
-          >
-            Complete Assessment
-          </button>
-        )}
+                 ) : (
+           <button
+             className={`px-4 py-2 w-64 rounded-xl shadow-lg font-semibold text-lg transition ${isReadOnly ? 'bg-gray-400 text-gray-200 cursor-not-allowed opacity-50' : 'bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white hover:shadow-xl'}`}
+             onClick={handleCompleteAssessment}
+             disabled={isReadOnly}
+           >
+             Complete Assessment
+           </button>
+         )}
       </div>
     </div>
   );

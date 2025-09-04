@@ -76,7 +76,14 @@ export async function GET(req: Request) {
         priority: true,
         createdAt: true,
         updatedAt: true,
-        assessData: true
+        assessData: true,
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true
+          }
+        }
       }
     });
 

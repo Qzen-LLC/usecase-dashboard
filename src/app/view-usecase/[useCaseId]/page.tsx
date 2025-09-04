@@ -12,6 +12,7 @@ interface UseCaseDetails {
   aiucId: number;
   problemStatement: string;
   proposedAISolution: string;
+  keyBenefits: string;
   primaryStakeholders: string[];
   secondaryStakeholders: string[];
   successCriteria: string;
@@ -31,6 +32,11 @@ interface UseCaseDetails {
   priority?: string;
   createdAt: string;
   updatedAt: string;
+  user?: {
+    firstName?: string;
+    lastName?: string;
+    email: string;
+  };
   assessData?: {
     stepsData: {
       technicalFeasibility?: Record<string, unknown>;
@@ -79,6 +85,21 @@ const ViewUseCasePage = () => {
     return ((useCase.operationalImpactScore + useCase.productivityImpactScore + useCase.revenueImpactScore) / 3).toFixed(1);
   };
 
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return 'Not specified';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Invalid date';
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return 'Invalid date';
+    }
+  };
+
   const renderSection = (title: string, icon: React.ReactNode, children: React.ReactNode) => (
     <Card className="p-6 mb-6 bg-card border-border">
       <div className="flex items-center mb-4">
@@ -95,14 +116,14 @@ const ViewUseCasePage = () => {
       {type === 'array' && Array.isArray(value) ? (
         <div className="flex flex-wrap gap-2">
           {value.map((item, index) => (
-            <span key={index} className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-sm">
+            <span key={index} className="bg-muted text-muted-foreground px-2 py-1 rounded-full text-sm">
               {item}
             </span>
           ))}
         </div>
       ) : type === 'score' ? (
         <div className="flex items-center">
-          <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">{value}</span>
+          <span className="text-2xl font-bold text-primary">{value}</span>
           <span className="text-muted-foreground ml-2">/ 10</span>
         </div>
       ) : (
@@ -119,7 +140,7 @@ const ViewUseCasePage = () => {
     return (
       <div className="flex flex-wrap gap-2">
         {items.map((item, index) => (
-          <span key={index} className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-sm">
+          <span key={index} className="bg-muted text-muted-foreground px-2 py-1 rounded-full text-sm">
             {item}
           </span>
         ))}
@@ -134,7 +155,7 @@ const ViewUseCasePage = () => {
       return (
         <div className="space-y-2">
           {risks.map((riskObj, idx) => (
-            <div key={idx} className="bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
+            <div key={idx} className="bg-destructive/10 dark:bg-destructive/20 p-3 rounded-md">
               {typeof riskObj.risk === 'string' || typeof riskObj.risk === 'number' ? (
                 <div><strong>Risk:</strong> {riskObj.risk}</div>
               ) : null}
@@ -170,7 +191,7 @@ const ViewUseCasePage = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
           <p className="text-destructive">{error || 'Use case not found'}</p>
           <Button 
             onClick={() => router.back()} 
@@ -185,175 +206,249 @@ const ViewUseCasePage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-card border-b border-border top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Button
-                variant="ghost"
-                onClick={() => router.back()}
-                className="mr-4"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">
-                  <span className="font-mono text-muted-foreground">AIUC-{useCase.aiucId}</span>
-                  <br />
-                  {useCase.title}
-                </h1>
-                <p className="text-muted-foreground">Use Case Details</p>
-              </div>
+      {/* Main Container */}
+      <div className="max-w-[1400px] mx-auto bg-card rounded-xl shadow-lg overflow-hidden border border-border">
+        {/* Header */}
+        <div className="px-8 py-5 bg-card border-b border-border flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-5 flex-1">
+            <Button
+              variant="ghost"
+              onClick={() => router.back()}
+              className="mr-2 p-2 hover:bg-muted"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <span className="bg-muted px-3 py-1.5 rounded-md font-semibold text-muted-foreground text-sm">
+              AIUC-{useCase.aiucId}
+            </span>
+            <h1 className="text-lg font-semibold text-foreground">
+              {useCase.title}
+            </h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className={`px-3.5 py-1.5 rounded-full text-sm font-medium border ${
+              useCase.priority === 'high' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+              useCase.priority === 'medium' ? 'bg-success/10 text-success border-success/20' :
+              'bg-warning/10 text-warning border-warning/20'
+            }`}>
+              {useCase.priority?.toUpperCase() || 'MEDIUM'} Priority
+            </span>
+            <span className="px-3.5 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-sm font-medium">
+              {useCase.stage || 'proof-of-value'}
+            </span>
+          </div>
+        </div>
+
+        {/* Metadata Bar */}
+        <div className="flex items-center gap-2.5 px-8 py-2 bg-muted/50 border-b border-border text-sm text-muted-foreground">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Created:</span>
+              <span>{formatDate(useCase.createdAt)}</span>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                useCase.priority === 'high' ? 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200' :
-                useCase.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200' :
-                'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200'
-              }`}>
-                {useCase.priority || 'Medium'} Priority
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Updated:</span>
+              <span>{formatDate(useCase.updatedAt)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-medium">By:</span>
+              <span>
+                {useCase.user ? 
+                  (() => {
+                    const fullName = `${useCase.user.firstName || ''} ${useCase.user.lastName || ''}`.trim();
+                    return fullName || useCase.user.email || 'Not specified';
+                  })() 
+                  : 'Not specified'
+                }
               </span>
-                              <span className="px-3 py-1 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-sm font-medium">
-                {useCase.stage || 'Discovery'}
-              </span>
+            </div>
+          </div>
+          <div className="flex items-center ml-auto gap-1.5">
+            <span className="mr-2.5 text-muted-foreground">Use Case Profile</span>
+            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-semibold text-xs border-2 border-background shadow-sm">
+              {useCase.operationalImpactScore || 'B'}
+            </div>
+            <div className="w-8 h-8 rounded-full bg-pink-500 flex items-center justify-center text-white font-semibold text-xs border-2 border-background shadow-sm">
+              {useCase.productivityImpactScore || 'B'}
+            </div>
+            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-xs border-2 border-background shadow-sm">
+              {useCase.revenueImpactScore || 'B'}
+            </div>
+            <div className="ml-1.5">
+              <div className="text-[10px] text-muted-foreground">Operational</div>
+            </div>
+            <div className="ml-4">
+              <div className="text-[10px] text-muted-foreground">Productivity</div>
+            </div>
+            <div className="ml-4">
+              <div className="text-[10px] text-muted-foreground">Business</div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Use Case Documentation */}
-            {renderSection(
-              'Use Case Documentation',
-              <Target className="h-6 w-6 text-blue-600 dark:text-blue-400" />,
-              <div className="space-y-4">
-                <div>
-                  <span className="font-medium text-foreground">Problem Statement:</span>
-                  <div 
-                    className="text-foreground bg-muted p-3 rounded-lg mt-1"
-                    dangerouslySetInnerHTML={{ __html: useCase.problemStatement || 'Not specified' }}
-                  />
-                </div>
-                <div>
-                  <span className="font-medium text-foreground">Proposed AI Solution:</span>
-                  <div 
-                    className="text-foreground bg-muted p-3 rounded-lg mt-1"
-                    dangerouslySetInnerHTML={{ __html: useCase.proposedAISolution || 'Not specified' }}
-                  />
-                </div>
-                <div><span className="font-medium text-foreground">Primary Stakeholders:</span> {renderArray(useCase.primaryStakeholders, 'stakeholder')}</div>
-                <div><span className="font-medium text-foreground">Secondary Stakeholders:</span> {renderArray(useCase.secondaryStakeholders, 'stakeholder')}</div>
-                <div>
-                  <span className="font-medium text-foreground">Success Criteria:</span>
-                  <div 
-                    className="text-foreground bg-muted p-3 rounded-lg mt-1"
-                    dangerouslySetInnerHTML={{ __html: useCase.successCriteria || 'Not specified' }}
-                  />
-                </div>
-              </div>
-            )}
+        {/* Info Table */}
+        <div className="mx-5 my-5 bg-muted rounded-lg overflow-hidden">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr>
+                <th className="bg-muted/70 px-5 py-3 text-left font-medium text-sm text-foreground border-r border-border">
+                  Business Function
+                </th>
+                <th className="bg-muted/70 px-5 py-3 text-left font-medium text-sm text-foreground border-r border-border">
+                  Primary Stakeholders
+                </th>
+                <th className="bg-muted/70 px-5 py-3 text-left font-medium text-sm text-foreground border-r border-border">
+                  Secondary Stakeholders
+                </th>
+                <th className="bg-muted/70 px-5 py-3 text-left font-medium text-sm text-foreground border-r border-border">
+                  Planned Start Date
+                </th>
+                <th className="bg-muted/70 px-5 py-3 text-left font-medium text-sm text-foreground border-r border-border">
+                  Estimated Timelines
+                </th>
+                <th className="bg-muted/70 px-5 py-3 text-left font-medium text-sm text-foreground">
+                  Risk
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="px-5 py-3 text-sm text-foreground bg-card border-r border-border">
+                  {useCase.businessFunction || 'Legal'}
+                </td>
+                <td className="px-5 py-3 text-sm text-foreground bg-card border-r border-border">
+                  {useCase.primaryStakeholders?.join(', ') || 'General Counsel, Legal Operations Manager'}
+                </td>
+                <td className="px-5 py-3 text-sm text-foreground bg-card border-r border-border">
+                  {useCase.secondaryStakeholders?.join(', ') || 'Procurement, Finance, Compliance'}
+                </td>
+                <td className="px-5 py-3 text-sm text-foreground bg-card border-r border-border">
+                  Q2 2024
+                </td>
+                <td className="px-5 py-3 text-sm text-foreground bg-card border-r border-border">
+                  {useCase.estimatedTimeline || '3-4 months'}
+                </td>
+                <td className="px-5 py-3 text-sm text-foreground bg-card">
+                  {useCase.priority === 'high' ? 'High' : useCase.priority === 'medium' ? 'Medium' : 'Low'}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-            {/* Lean Business Case */}
-            {renderSection(
-              'Lean Business Case',
-              <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />,
-              <div className="space-y-4">
-                <div>
-                  <span className="font-medium text-foreground">Problem Validation:</span>
-                  <div 
-                    className="text-foreground bg-muted p-3 rounded-lg mt-1"
-                    dangerouslySetInnerHTML={{ __html: useCase.problemValidation || 'Not specified' }}
-                  />
-                </div>
-                <div>
-                  <span className="font-medium text-foreground">Solution Hypothesis:</span>
-                  <div 
-                    className="text-foreground bg-muted p-3 rounded-lg mt-1"
-                    dangerouslySetInnerHTML={{ __html: useCase.solutionHypothesis || 'Not specified' }}
-                  />
-                </div>
-                <div>
-                  <span className="font-medium text-foreground">Key Assumptions:</span>
-                  <div 
-                    className="text-foreground bg-muted p-3 rounded-lg mt-1"
-                    dangerouslySetInnerHTML={{ __html: useCase.keyAssumptions || 'Not specified' }}
-                  />
-                </div>
-                <div>
-                  <span className="font-medium text-foreground">Initial ROI:</span>
-                  <div 
-                    className="text-foreground bg-muted p-3 rounded-lg mt-1"
-                    dangerouslySetInnerHTML={{ __html: useCase.initialROI || 'Not specified' }}
-                  />
-                </div>
-                <div><span className="font-medium text-foreground">Confidence Level:</span> <span className="text-foreground">{useCase.confidenceLevel}</span></div>
-              </div>
-            )}
+        {/* Main Content */}
+        <div className="flex flex-col lg:flex-row gap-5 px-5 pb-5">
+          {/* Left Panel */}
+          <div className="w-full lg:w-1/2 flex flex-col gap-5">
+                         {/* Problem Statement */}
+             <div className="bg-muted/30 rounded-lg p-5 border border-border">
+               <h2 className="text-[15px] font-semibold mb-3 text-foreground">Problem Statement:</h2>
+               <div 
+                 className="text-sm leading-relaxed text-foreground"
+                 dangerouslySetInnerHTML={{ __html: useCase.problemStatement || 'Legal teams are overwhelmed with reviewing large volumes of contracts—NDAs, MSAs, SLAs, procurement documents—each containing clauses that may pose risks, require negotiation, or violate internal policy.' }}
+               />
+             </div>
 
-            {/* Multi-Dimensional Scoring */}
-            {renderSection(
-              'Multi-Dimensional Scoring',
-              <Zap className="h-6 w-6 text-purple-600 dark:text-purple-400" />,
-              <div className="space-y-6">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{useCase.operationalImpactScore}</div>
-                    <div className="text-sm text-orange-800 dark:text-orange-200">Operational Impact</div>
-                  </div>
-                  <div className="text-center p-4 bg-pink-50 dark:bg-pink-900/20 rounded-lg">
-                    <div className="text-2xl font-bold text-pink-600 dark:text-pink-400">{useCase.productivityImpactScore}</div>
-                    <div className="text-sm text-pink-800 dark:text-pink-200">Productivity Impact</div>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{useCase.revenueImpactScore}</div>
-                    <div className="text-sm text-blue-800 dark:text-blue-200">Revenue Impact</div>
-                  </div>
-                </div>
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <div className="text-xl font-bold text-foreground">Overall Score: {getOverallScore()}</div>
-                  <div className="text-sm text-muted-foreground">Implementation Complexity: {useCase.implementationComplexity}/10</div>
-                </div>
-                <div><span className="font-medium text-foreground">Estimated Timeline:</span> <span className="text-foreground">{useCase.estimatedTimeline}</span></div>
-                <div>
-                  <span className="font-medium text-foreground">Required Resources:</span>
-                  <div 
-                    className="text-foreground bg-muted p-3 rounded-lg mt-1"
-                    dangerouslySetInnerHTML={{ __html: useCase.requiredResources || 'Not specified' }}
-                  />
-                </div>
-              </div>
-            )}
+             {/* Proposed Solution */}
+             <div className="bg-muted/30 rounded-lg p-5 border border-border">
+               <h2 className="text-[15px] font-semibold mb-3 text-foreground">Proposed Solution:</h2>
+               <div 
+                 className="text-sm leading-relaxed text-foreground"
+                 dangerouslySetInnerHTML={{ __html: useCase.proposedAISolution || 'Legal teams are overwhelmed with reviewing large volumes of contracts—NDAs, MSAs, SLAs, procurement documents—each containing clauses that may pose risks, require negotiation, or violate internal policy.' }}
+               />
+             </div>
 
-            {/* Assessment Data - Use the new ReadOnlyAssessmentDisplay component */}
-            {useCase.assessData && (
-              <ReadOnlyAssessmentDisplay assessData={useCase.assessData} />
-            )}
+             {/* Key Benefits */}
+             <div className="bg-muted/30 rounded-lg p-5 border border-border">
+               <h2 className="text-[15px] font-semibold mb-3 text-foreground">Key Benefits</h2>
+               <div 
+                 className="text-sm leading-relaxed text-foreground"
+                 dangerouslySetInnerHTML={{ __html: useCase.keyBenefits || 'Legal teams are overwhelmed with reviewing large volumes of contracts—NDAs, MSAs, SLAs, procurement documents—each containing clauses that may pose risks, require negotiation, or violate internal policy.' }}
+               />
+             </div>
+
+             {/* Success Criteria */}
+             <div className="bg-muted/30 rounded-lg p-5 border border-border">
+               <h2 className="text-[15px] font-semibold mb-3 text-foreground">Success Criteria</h2>
+               <div 
+                 className="text-sm leading-relaxed text-foreground"
+                 dangerouslySetInnerHTML={{ __html: useCase.successCriteria || 'Legal teams are overwhelmed with reviewing large volumes of contracts—NDAs, MSAs, SLAs, procurement documents—each containing clauses that may pose risks, require negotiation, or violate internal policy.' }}
+               />
+             </div>
+
+             {/* Key Assumption */}
+             <div className="bg-muted/30 rounded-lg p-5 border border-border">
+               <h2 className="text-[15px] font-semibold mb-3 text-foreground">Key Assumption</h2>
+               <div 
+                 className="text-sm leading-relaxed text-foreground"
+                 dangerouslySetInnerHTML={{ __html: useCase.keyAssumptions || 'Legal teams are overwhelmed with reviewing large volumes of contracts—NDAs, MSAs, SLAs, procurement documents—each containing clauses that may pose risks, require negotiation, or violate internal policy.' }}
+               />
+             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Quick Info */}
-            <Card className="p-6 bg-card border-border">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Quick Info</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Business Function</label>
-                  <p className="text-foreground">{useCase.businessFunction}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Created</label>
-                  <p className="text-foreground">{new Date(useCase.createdAt).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Last Updated</label>
-                  <p className="text-foreground">{new Date(useCase.updatedAt).toLocaleDateString()}</p>
-                </div>
+          {/* Right Panel */}
+          <div className="w-full lg:w-1/2">
+            <div className="bg-muted rounded-lg overflow-hidden">
+              <div className="bg-muted/70 px-5 py-4 font-semibold text-lg text-center text-foreground">
+                Collapsable Box
               </div>
-            </Card>
+                             <div className="space-y-0">
+                 <div 
+                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=1&readonly=true`)}
+                 >
+                   Technical Feasibility
+                 </div>
+                 <div 
+                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=2&readonly=true`)}
+                 >
+                   Business Feasibility
+                 </div>
+                 <div 
+                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=3&readonly=true`)}
+                 >
+                   Ethical Impact
+                 </div>
+                 <div 
+                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=4&readonly=true`)}
+                 >
+                   Risk Assessment
+                 </div>
+                 <div 
+                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=5&readonly=true`)}
+                 >
+                   Data Readiness
+                 </div>
+                 <div 
+                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=6&readonly=true`)}
+                 >
+                   Roadmap Position
+                 </div>
+                 <div 
+                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=7&readonly=true`)}
+                 >
+                   Budget Planning
+                 </div>
+                 <div 
+                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=8&readonly=true`)}
+                 >
+                   Financial Dashboard
+                 </div>
+                 <div 
+                   className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=9&readonly=true`)}
+                 >
+                   Approvals
+                 </div>
+               </div>
+            </div>
           </div>
         </div>
       </div>
