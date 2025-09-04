@@ -8,6 +8,7 @@ This document provides step-by-step instructions for setting up ngrok to expose 
 - QZen Use Case Dashboard running locally
 - Clerk account and application configured
 - ngrok account (free tier available)
+- Docker installed (for Grafana OTEL LGTM monitoring)
 
 ## Step 1: Install ngrok
 
@@ -66,6 +67,24 @@ npm run dev
 
 4. Verify the server is running on `http://localhost:3000`
 
+## Step 3.5: Start Grafana OTEL LGTM Monitoring (Optional)
+
+For enhanced monitoring and observability, you can run the Grafana OTEL LGTM stack:
+
+```bash
+docker run -p 4000:3000 -p 4317:4317 -p 4318:4318 --rm -ti grafana/otel-lgtm
+```
+
+This command:
+- Maps port 4000 to 3000 (Grafana UI)
+- Maps port 4317 to 4317 (OTLP HTTP)
+- Maps port 4318 to 4318 (OTLP gRPC)
+- Runs in detached mode with `--rm` flag for cleanup
+- Uses interactive terminal with `-ti` flag
+
+**Access Grafana UI**: `http://localhost:4000`
+**Default credentials**: admin/admin
+
 ## Step 4: Create ngrok Tunnel
 
 1. Open a new terminal window/tab
@@ -102,6 +121,9 @@ Forwarding                    https://abc123.ngrok.io -> http://localhost:3000
      - `user.created`
      - `user.updated`
      - `user.deleted`
+     - `session.created`
+     - `session.ended`
+     - `session.revoked`
    - **Version**: Select the latest version (usually v1)
 
 ### 5.3 Get Webhook Signing Secret
@@ -136,17 +158,30 @@ npm run dev
 3. Select `user.created` event
 4. Click **"Send"**
 5. Check the webhook delivery status
+6. Test session events by selecting `session.created` event
+7. Verify both user and session data are processed correctly
 
 ### 7.2 Test via Application
 1. Go to your ngrok URL: `https://your-ngrok-url.ngrok.io`
 2. Try to sign up a new user
-3. Check the webhook delivery in Clerk Dashboard
-4. Verify the user is created in your database
+3. Sign in with an existing user to test session creation
+4. Check the webhook delivery in Clerk Dashboard
+5. Verify the user is created in your database
+6. Verify session data is properly handled
 
 ### 7.3 Monitor ngrok Traffic
 1. Open ngrok web interface: `http://127.0.0.1:4040`
 2. Go to **"HTTP"** tab
 3. You can see all incoming requests and their responses
+4. Monitor webhook payloads for both user and session events
+
+### 7.4 Monitor with Grafana (If Using OTEL LGTM)
+1. Access Grafana UI: `http://localhost:4000`
+2. Login with admin/admin
+3. Navigate to **"Explore"** to view telemetry data
+4. Check **"Logs"** for webhook processing logs
+5. Monitor **"Metrics"** for application performance
+6. View **"Traces"** for request flow analysis
 
 ## Step 8: Production Deployment
 
@@ -172,6 +207,7 @@ When deploying to production, update the webhook URL in Clerk Dashboard:
 - **Verify URL**: Make sure the webhook URL in Clerk matches your ngrok URL
 - **Check logs**: Monitor ngrok web interface for incoming requests
 - **Test endpoint**: Visit `https://your-ngrok-url.ngrok.io/api/webhook/clerk` directly
+- **Verify events**: Ensure both user and session events are selected in Clerk webhook configuration
 
 #### 2. 404 Errors
 - **Verify route**: Ensure the webhook route exists at `/api/webhook/clerk`
@@ -187,6 +223,7 @@ When deploying to production, update the webhook URL in Clerk Dashboard:
 - **Secret mismatch**: Ensure the signing secret in `.env.local` matches Clerk Dashboard
 - **Request format**: Verify the webhook payload format
 - **Headers**: Check that all required headers are present
+- **Event types**: Verify your webhook handler supports both user and session events
 
 ### Debug Commands
 
@@ -206,6 +243,18 @@ curl -X POST https://your-ngrok-url.ngrok.io/api/webhook/clerk \
 ```bash
 # Open ngrok web interface
 open http://127.0.0.1:4040
+```
+
+#### Monitor Grafana OTEL LGTM
+```bash
+# Check if Docker container is running
+docker ps | grep grafana/otel-lgtm
+
+# View container logs
+docker logs <container_id>
+
+# Access Grafana UI
+open http://localhost:4000
 ```
 
 ## Security Considerations
@@ -236,10 +285,11 @@ open http://127.0.0.1:4040
 6. Monitor ngrok traffic for debugging
 
 ### 2. Testing Strategy
-- Test webhook events individually
+- Test webhook events individually (user and session events)
 - Verify database operations
 - Check error handling
 - Monitor performance
+- Test session lifecycle (creation, updates, termination)
 
 ### 3. Production Checklist
 - [ ] Update webhook URL to production domain
@@ -247,13 +297,18 @@ open http://127.0.0.1:4040
 - [ ] Test webhook functionality in production
 - [ ] Monitor webhook delivery status
 - [ ] Set up error monitoring
+- [ ] Configure session event handling
+- [ ] Set up Grafana OTEL LGTM for production monitoring (optional)
 
 ## Additional Resources
 
 - [ngrok Documentation](https://ngrok.com/docs)
 - [Clerk Webhooks Documentation](https://clerk.com/docs/webhooks)
+- [Clerk Session Management](https://clerk.com/docs/sessions)
 - [Next.js API Routes](https://nextjs.org/docs/api-routes/introduction)
 - [Prisma Database](https://www.prisma.io/docs)
+- [Grafana OTEL LGTM Documentation](https://grafana.com/docs/grafana-cloud/quickstart/otlp/)
+- [OpenTelemetry Documentation](https://opentelemetry.io/docs/)
 
 ## Support
 
