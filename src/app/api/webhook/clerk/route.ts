@@ -18,6 +18,34 @@ export async function POST(req: Request) {
       const eventData = payload.data;
       console.log(`Processing webhook event: ${eventType}`);
       switch (eventType) {
+        case 'session.ended':
+        case 'session.revoked':
+        case 'user.signed_out': {
+          try {
+            const clerkUserId = eventData?.user_id || eventData?.id;
+            if (!clerkUserId) break;
+            const userRecord = await prisma.user.findUnique({ where: { clerkId: clerkUserId } });
+            if (!userRecord) break;
+            const result = await prisma.lock.deleteMany({ where: { userId: userRecord.id, isActive: false } });
+            console.log('🧹 Cleanup inactive locks (dev):', { clerkUserId, deleted: result.count });
+          } catch (cleanupErr) {
+            console.error('Failed cleaning inactive locks on session end (dev):', cleanupErr);
+          }
+          break;
+        }
+        case 'session.removed': {
+          try {
+            const clerkUserId = eventData?.user_id || eventData?.id;
+            if (!clerkUserId) break;
+            const userRecord = await prisma.user.findUnique({ where: { clerkId: clerkUserId } });
+            if (!userRecord) break;
+            const result = await prisma.lock.deleteMany({ where: { userId: userRecord.id, isActive: false } });
+            console.log('🧹 Cleanup inactive locks on session removed (dev):', { clerkUserId, deleted: result.count });
+          } catch (cleanupErr) {
+            console.error('Failed cleaning inactive locks on session removed (dev):', cleanupErr);
+          }
+          break;
+        }
         case 'user.created':
           try {
             const { id: clerkId, email_addresses, first_name, last_name, public_metadata } = eventData;
@@ -133,6 +161,22 @@ export async function POST(req: Request) {
 
   // Handle the webhook
   switch (eventType) {
+    case 'session.ended':
+    case 'session.revoked':
+    case 'session.removed':
+      try {
+        const clerkUserId: string | undefined = (evt.data as any)?.user_id || (evt.data as any)?.id;
+        if (clerkUserId) {
+          const userRecord = await prisma.user.findUnique({ where: { clerkId: clerkUserId } });
+          if (userRecord) {
+            const result = await prisma.lock.deleteMany({ where: { userId: userRecord.id, isActive: false } });
+            console.log('🧹 Cleanup inactive locks on session end:', { clerkUserId, deleted: result.count });
+          }
+        }
+      } catch (error) {
+        console.error('Error cleaning inactive locks on session end:', error);
+      }
+      break;
     case 'user.created':
       try {
         const { id: clerkId, email_addresses, first_name, last_name, public_metadata } = evt.data;

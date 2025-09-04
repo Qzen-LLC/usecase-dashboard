@@ -14,8 +14,18 @@ import RoadmapPosition from "@/components/RoadmapPosition";
 import DataReadiness from "@/components/DataReadiness";
 import FinancialDashboard from './financial-dashboard/page';
 import ApprovalsPage from '@/components/ApprovalsPage';
+import ReadOnlyTechnicalFeasibility from '@/components/ReadOnlyTechnicalFeasibility';
+import ReadOnlyBusinessFeasibility from '@/components/ReadOnlyBusinessFeasibility';
+import ReadOnlyEthicalImpact from '@/components/ReadOnlyEthicalImpact';
+import ReadOnlyRiskAssessment from '@/components/ReadOnlyRiskAssessment';
+import ReadOnlyDataReadiness from '@/components/ReadOnlyDataReadiness';
+import ReadOnlyRoadmapPosition from '@/components/ReadOnlyRoadmapPosition';
+import ReadOnlyBudgetPlanning from '@/components/ReadOnlyBudgetPlanning';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { useStableRender } from '@/hooks/useStableRender';
+import { useLock } from '@/hooks/useLock';
+
+
 
 interface UseCase {
   title: string;
@@ -41,6 +51,147 @@ export default function AssessmentPage() {
 
   // Use global stable render hook
   const { isReady } = useStableRender();
+  
+  // Use lock hook
+  const {
+    lockInfo,
+    isLocked,
+    isExclusiveLocked,
+    acquireExclusiveLock,
+    releaseLock,
+    refreshLockStatus,
+    loading: lockLoading,
+    error: lockError
+  } = useLock(useCaseId);
+
+  // Expose state for debugging
+  useEffect(() => {
+    (window as any).__reactState = {
+      isExclusiveLocked,
+      lockInfo,
+      useCaseId,
+      loading: lockLoading,
+      error: lockError
+    };
+  }, [isExclusiveLocked, lockInfo, useCaseId, lockLoading, lockError]);
+
+  // Auto-acquire lock when component mounts
+  useEffect(() => {
+    if (useCaseId && !lockLoading) {
+      // Only try to acquire lock if we don't already have edit access
+      if (!lockInfo?.canEdit) {
+        console.log('[ASSESSMENT] Auto-acquiring lock on component mount...');
+        acquireExclusiveLock();
+      } else {
+        console.log('[ASSESSMENT] Already have edit access, skipping lock acquisition');
+      }
+    }
+  }, [useCaseId, lockLoading, lockInfo?.canEdit, acquireExclusiveLock]);
+
+
+
+  // Determine if current user can edit
+  // User can edit if the API says they can edit (they own the lock or no lock exists)
+  const canEdit = lockInfo?.canEdit === true;
+  const isReadOnly = !canEdit;
+
+  // Cleanup effect to release lock when leaving the page
+  useEffect(() => {
+    return () => {
+      // Release lock when component unmounts (user navigates away)
+      if (isExclusiveLocked) {
+        console.log('[ASSESSMENT] Component unmounting, releasing lock...');
+        // Use both beacon and synchronous fetch for maximum reliability
+        try {
+          // Send a beacon request for immediate lock release
+          const data = new FormData();
+          data.append('useCaseId', useCaseId);
+          data.append('lockType', 'EXCLUSIVE');
+          data.append('scope', 'ASSESS');
+          const beaconResult = navigator.sendBeacon('/api/locks/release', data);
+          console.log('[ASSESSMENT] Beacon sent for lock release, result:', beaconResult);
+          
+          // Also try a synchronous fetch as backup
+          if (!beaconResult) {
+            console.log('[ASSESSMENT] Beacon failed, trying synchronous fetch...');
+            // Use a synchronous XMLHttpRequest as fallback
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/locks/release', false); // synchronous
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify({ useCaseId, lockType: 'EXCLUSIVE', scope: 'ASSESS' }));
+            console.log('[ASSESSMENT] Synchronous fetch completed, status:', xhr.status);
+          }
+        } catch (error) {
+          console.error('[ASSESSMENT] Error releasing lock during cleanup:', error);
+        }
+      }
+    };
+  }, [isExclusiveLocked, useCaseId]);
+
+  // Handle navigation and page events for lock release
+  useEffect(() => {
+    if (!isExclusiveLocked) return;
+
+    let lockReleased = false;
+
+    const releaseLockSafely = () => {
+      if (lockReleased) return; // Prevent multiple releases
+      lockReleased = true;
+      console.log('[ASSESSMENT] Releasing lock safely...');
+      
+      try {
+        // Try beacon first
+        const data = new FormData();
+        data.append('useCaseId', useCaseId);
+        data.append('lockType', 'EXCLUSIVE');
+        data.append('scope', 'ASSESS');
+        const beaconResult = navigator.sendBeacon('/api/locks/release', data);
+        console.log('[ASSESSMENT] Beacon result:', beaconResult);
+        
+        // If beacon fails, try synchronous request
+        if (!beaconResult) {
+          console.log('[ASSESSMENT] Beacon failed, trying synchronous request...');
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', '/api/locks/release', false);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.send(JSON.stringify({ useCaseId, lockType: 'EXCLUSIVE', scope: 'ASSESS' }));
+          console.log('[ASSESSMENT] Synchronous request status:', xhr.status);
+        }
+      } catch (error) {
+        console.error('[ASSESSMENT] Error in releaseLockSafely:', error);
+      }
+    };
+
+    // Add a global function that can be called from anywhere
+    (window as any).__releaseLockOnNavigation = releaseLockSafely;
+
+    // Simple beforeunload handler
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      console.log('[ASSESSMENT] Beforeunload triggered');
+      releaseLockSafely();
+    };
+
+    // Simple pagehide handler
+    const handlePageHide = (e: PageTransitionEvent) => {
+      console.log('[ASSESSMENT] Pagehide triggered');
+      releaseLockSafely();
+    };
+
+    // Add event listeners
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
+    
+    return () => {
+      console.log('[ASSESSMENT] Cleaning up event listeners');
+      releaseLockSafely(); // Always try to release lock on cleanup
+      
+      // Clean up global function
+      delete (window as any).__releaseLockOnNavigation;
+      
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
+    };
+  }, [isExclusiveLocked, useCaseId]);
 
   // Memoize assessment steps to prevent unnecessary re-renders
   const assessmentSteps = useMemo(() => [
@@ -82,7 +233,7 @@ export default function AssessmentPage() {
       availabilityRequirement: '',
       responseTimeRequirement: '',
       concurrentUsers: '',
-      revenueImpactType: '',
+      revenueImpactType: [],
       estimatedFinancialImpact: '',
       userCategories: [],
       systemCriticality: '',
@@ -175,7 +326,7 @@ export default function AssessmentPage() {
     },
   }), []);
 
-  const [assessmentData, setAssessmentData] = useState(defaultAssessmentData);
+  const [assessmentData, setAssessmentData] = useState<any>(defaultAssessmentData);
 
 const validateAssessmentData = useMemo(() => (data: any) => {
   if (!data) return false;
@@ -202,13 +353,18 @@ const validateAssessmentData = useMemo(() => (data: any) => {
 }, []);
 
   const handleAssessmentChange = useMemo(() => (section: string, data: any) => {
+    // Don't allow changes if user can't edit
+    if (!canEdit) {
+      return;
+    }
+    
     setAssessmentData((prevData: any) => {
       return {
         ...prevData,
         [section]: data,
       };
     });
-  }, []);
+  }, [canEdit]);
 
   useEffect(() => {
     if (!useCaseId || !isReady) return;
@@ -343,6 +499,79 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     }
   }, [isFirstStep]);
 
+  // Handle cancel button click
+  const handleCancel = async () => {
+    console.log('[ASSESSMENT] Cancel button clicked, checking lock status...');
+    console.log('[ASSESSMENT] isExclusiveLocked:', isExclusiveLocked);
+    console.log('[ASSESSMENT] lockInfo:', lockInfo);
+    
+    try {
+      // Release lock if we have one
+      if (isExclusiveLocked) {
+        console.log('[ASSESSMENT] Releasing EXCLUSIVE lock before cancel...');
+        await releaseLock('EXCLUSIVE');
+        console.log('[ASSESSMENT] Lock released successfully');
+      } else {
+        console.log('[ASSESSMENT] No exclusive lock to release');
+      }
+      // Go back to previous page
+      console.log('[ASSESSMENT] Navigating back...');
+      router.back();
+    } catch (error) {
+      console.error('[ASSESSMENT] Error releasing lock during cancel:', error);
+      // Go back anyway even if lock release fails
+      router.back();
+    }
+  };
+
+  // Handle complete assessment
+  const handleCompleteAssessment = async () => {
+    console.log('[ASSESSMENT] Complete Assessment button clicked, checking lock status...');
+    console.log('[ASSESSMENT] isExclusiveLocked:', isExclusiveLocked);
+    console.log('[ASSESSMENT] lockInfo:', lockInfo);
+    
+    try {
+      // Save filled fields before completing
+      console.log('[ASSESSMENT] Saving assessment data...');
+      await fetch("/api/post-stepdata", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ useCaseId, assessData: assessmentData }),
+      });
+      
+      if (approvalsPageRef.current && approvalsPageRef.current.handleComplete) {
+        console.log('[ASSESSMENT] Calling approvals page handleComplete...');
+        await approvalsPageRef.current.handleComplete();
+      }
+      
+      // Release lock before redirecting
+      if (isExclusiveLocked) {
+        console.log('[ASSESSMENT] Releasing EXCLUSIVE lock before completion...');
+        await releaseLock('EXCLUSIVE');
+        console.log('[ASSESSMENT] Lock released successfully');
+      } else {
+        console.log('[ASSESSMENT] No exclusive lock to release');
+      }
+      
+      // Use router.push instead of window.location.href for proper cleanup
+      console.log('[ASSESSMENT] Navigating to dashboard...');
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('[ASSESSMENT] Error completing assessment:', error);
+      // Try to release lock even if completion fails
+      if (isExclusiveLocked) {
+        try {
+          console.log('[ASSESSMENT] Attempting to release lock after completion failure...');
+          await releaseLock('EXCLUSIVE');
+          console.log('[ASSESSMENT] Lock released after completion failure');
+        } catch (lockError) {
+          console.error('[ASSESSMENT] Error releasing lock after completion failure:', lockError);
+        }
+      }
+      router.push('/dashboard');
+    }
+  };
+
   if (loading || !isReady) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -370,6 +599,9 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         {/* Removed 'Back to Pipeline' button */}
       </div>
 
+
+
+
       {/* Assessment Steps Navigation */}
       <div className="px-8 py-4 border-b border-border bg-muted overflow-x-auto">
         <div className="flex items-center space-x-4">
@@ -377,9 +609,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
             <div key={step.id} className="flex items-center">
               <button
                 type="button"
-                className={`flex items-center justify-center w-10 h-10 rounded-full focus:outline-none transition-colors duration-150 ${currentStep === step.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}
-                style={{ cursor: 'pointer' }}
-                onClick={() => setCurrentStep(step.id)}
+                className={`flex items-center justify-center w-10 h-10 rounded-full focus:outline-none transition-colors duration-150 ${currentStep === step.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"} ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                style={{ cursor: isReadOnly ? 'not-allowed' : 'pointer' }}
+                onClick={() => !isReadOnly && setCurrentStep(step.id)}
+                disabled={isReadOnly}
                 aria-current={currentStep === step.id ? 'step' : undefined}
               >
                 {step.title[0]}
@@ -447,41 +680,69 @@ const validateAssessmentData = useMemo(() => (data: any) => {
           )}
         <CardContent>
           {currentStep === 1 ? (
-            <TechnicalFeasibility
-              value={assessmentData.technicalFeasibility}
-              onChange={data => handleAssessmentChange('technicalFeasibility', data)}
-            />
+            isReadOnly ? (
+              <ReadOnlyTechnicalFeasibility data={assessmentData.technicalFeasibility} />
+            ) : (
+              <TechnicalFeasibility
+                value={assessmentData.technicalFeasibility}
+                onChange={data => handleAssessmentChange('technicalFeasibility', data)}
+              />
+            )
           ) : currentStep === 2 ? (
-            <BusinessFeasibility
-              value={assessmentData.businessFeasibility}
-              onChange={data => handleAssessmentChange('businessFeasibility', data)}
-            />
+            isReadOnly ? (
+              <ReadOnlyBusinessFeasibility data={assessmentData.businessFeasibility} />
+            ) : (
+              <BusinessFeasibility
+                value={assessmentData.businessFeasibility}
+                onChange={data => handleAssessmentChange('businessFeasibility', data)}
+              />
+            )
           ) : currentStep === 3 ? (
-            <EthicalImpact
-              value={assessmentData.ethicalImpact}
-              onChange={data => handleAssessmentChange('ethicalImpact', data)}
-            />
+            isReadOnly ? (
+              <ReadOnlyEthicalImpact data={assessmentData.ethicalImpact} />
+            ) : (
+              <EthicalImpact
+                value={assessmentData.ethicalImpact}
+                onChange={data => handleAssessmentChange('ethicalImpact', data)}
+              />
+            )
           ) : currentStep === 4 ? (
-            <RiskAssessment
-              value={assessmentData.riskAssessment}
-              onChange={data => handleAssessmentChange('riskAssessment', data)}
-            />
+            isReadOnly ? (
+              <ReadOnlyRiskAssessment data={assessmentData.riskAssessment} />
+            ) : (
+              <RiskAssessment
+                value={assessmentData.riskAssessment}
+                onChange={data => handleAssessmentChange('riskAssessment', data)}
+              />
+            )
           ) : currentStep === 5 ? (
-            <DataReadiness
-              value={assessmentData.dataReadiness}
-              onChange={data => handleAssessmentChange('dataReadiness', data)}
-            />
+            isReadOnly ? (
+              <ReadOnlyDataReadiness data={assessmentData.dataReadiness} />
+            ) : (
+              <DataReadiness
+                value={assessmentData.dataReadiness}
+                onChange={data => handleAssessmentChange('dataReadiness', data)}
+              />
+            )
           ) : currentStep === 6 ? (
-            <RoadmapPosition
-              value={assessmentData.roadmapPosition}
-              onChange={data => handleAssessmentChange('roadmapPosition', data)}
-            />
+            isReadOnly ? (
+              <ReadOnlyRoadmapPosition data={assessmentData.roadmapPosition} />
+            ) : (
+              <RoadmapPosition
+                value={assessmentData.roadmapPosition}
+                onChange={data => handleAssessmentChange('roadmapPosition', data)}
+              />
+            )
           ) : currentStep === 7 ? (
-            <BudgetPlanning
-              ref={budgetPlanningRef}
-              value={assessmentData.budgetPlanning}
-              onChange={data => handleAssessmentChange('budgetPlanning', data)}
-            />
+            isReadOnly ? (
+              <ReadOnlyBudgetPlanning data={assessmentData.budgetPlanning} />
+            ) : (
+              <BudgetPlanning
+                ref={budgetPlanningRef}
+                value={assessmentData.budgetPlanning}
+                onChange={data => handleAssessmentChange('budgetPlanning', data)}
+              />
+            )
           ) : currentStep === 8 ? (
             <FinancialDashboard />
           ) : currentStep === 9 ? (
@@ -498,47 +759,26 @@ const validateAssessmentData = useMemo(() => (data: any) => {
       {/* Bottom Navigation Buttons */}
       <div className="px-8 py-6 border-t border-border bg-card flex justify-between items-center">
         <button
-          className={`flex items-center px-4 py-2 rounded-md ${isFirstStep ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-gray-600 dark:bg-gray-500 text-white hover:bg-gray-700 dark:hover:bg-gray-600"}`}
-          disabled={isFirstStep}
+          className={`flex items-center px-4 py-2 rounded-md ${isFirstStep ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-gray-600 dark:bg-gray-500 text-white hover:bg-gray-700 dark:hover:bg-gray-600"} ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={isFirstStep || isReadOnly}
           onClick={handlePrev}
         >
           <ChevronLeft className="w-4 h-4 mr-2" />
           Previous
         </button>
+        
         <button
-          onClick={() => router.back()}
+          onClick={handleCancel}
           className={`flex items-center px-4 py-2 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90`}
         >
           Cancel
         </button>
-        {currentStep < 8 && (
-          <>
-            <button
-              className={`px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold flex items-center gap-2 ${saving ? 'opacity-75 cursor-not-allowed' : ''}`}
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Saving...
-                </>
-              ) : (
-                'Save Progress'
-              )}
-            </button>
-            {saveSuccess && (
-              <div className="ml-4 text-green-600 dark:text-green-400 font-semibold">Progress saved!</div>
-            )}
-            {error && (
-              <div className="ml-4 text-red-600 dark:text-red-400 font-semibold">{error}</div>
-            )}
-          </>
-        )}
+        
         {currentStep < 9 ? (
           <button
-            className={`flex items-center px-4 py-2 rounded-md bg-gray-600 dark:bg-gray-500 text-white hover:bg-gray-700 dark:hover:bg-gray-600`}
+            className={`flex items-center px-4 py-2 rounded-md bg-gray-600 dark:bg-gray-700 text-white hover:bg-gray-700 dark:hover:bg-gray-600 ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={handleNext}
+            disabled={isReadOnly}
           >
             Next
             <ChevronRight className="w-4 h-4 ml-2" />
@@ -546,23 +786,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         ) : (
           <button
             className="px-4 py-2 w-64 bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white rounded-xl shadow-lg font-semibold text-lg transition"
-            onClick={async () => {
-              try {
-                // Save filled fields before completing
-                await fetch("/api/post-stepdata", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ useCaseId, assessData: assessmentData }),
-                });
-                if (approvalsPageRef.current && approvalsPageRef.current.handleComplete) {
-                  await approvalsPageRef.current.handleComplete();
-                }
-                window.location.href = '/dashboard';
-              } catch (error) {
-                console.error('Error completing assessment:', error);
-                window.location.href = '/dashboard';
-              }
-            }}
+            onClick={handleCompleteAssessment}
           >
             Complete Assessment
           </button>

@@ -6,9 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, FileText, CheckCircle, AlertCircle, Clock, Upload, Save, ChevronRight, ChevronDown, HelpCircle, Shield, ListChecks, Loader2 } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle, AlertCircle, Clock, Upload, Save, ChevronRight, ChevronDown, HelpCircle, Shield, ListChecks, Loader2, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { FileUpload } from '@/components/ui/file-upload';
+import { useGovernanceLock } from '@/hooks/useGovernanceLock';
+import { GovernanceLockModal } from '@/components/GovernanceLockModal';
 
 interface Question {
   id: string;
@@ -127,6 +129,19 @@ export default function EuAiActAssessmentPage() {
   const [expandedSubtopics, setExpandedSubtopics] = useState<Set<string>>(new Set());
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isLockModalOpen, setIsLockModalOpen] = useState(false);
+
+  // Lock management system
+  const {
+    lockInfo,
+    isLocked,
+    canEdit,
+    acquireLock,
+    releaseLock,
+    refreshLockStatus,
+    loading: lockLoading,
+    error: lockError
+  } = useGovernanceLock(useCaseId, 'GOVERNANCE_EU_AI_ACT');
 
   // Check for dark mode
   useEffect(() => {
@@ -148,6 +163,66 @@ export default function EuAiActAssessmentPage() {
   useEffect(() => {
     fetchAssessmentData();
   }, [useCaseId]);
+
+  // Lock management effects
+  useEffect(() => {
+    console.log('🔒 Lock management effect:', { 
+      lockInfo, 
+      canEdit, 
+      lockLoading, 
+      isLockModalOpen,
+      lockDetails: lockInfo?.lockDetails,
+      isOwnedByCurrentUser: lockInfo?.lockDetails?.isOwnedByCurrentUser
+    });
+    
+    // Show lock modal if user doesn't have edit access
+    if (lockInfo && !canEdit && !lockLoading) {
+      console.log('🔒 Showing lock modal - user cannot edit');
+      setIsLockModalOpen(true);
+    }
+    
+    // Auto-acquire lock if user can edit but doesn't have a lock
+    if (lockInfo && canEdit && !lockInfo.hasLock && !lockLoading) {
+      console.log('🔒 Auto-acquiring lock for user');
+      handleStartAssessment();
+    }
+    
+    // Note: We don't auto-close the modal when user has edit access
+    // because they might have manually opened it to see lock info
+  }, [lockInfo, canEdit, lockLoading]);
+
+  // Auto-refresh lock status
+  useEffect(() => {
+    if (useCaseId) {
+      const interval = setInterval(() => {
+        refreshLockStatus();
+      }, 30000); // Every 30 seconds
+      
+      return () => clearInterval(interval);
+    }
+  }, [useCaseId, refreshLockStatus]);
+
+  // Cleanup: Release lock when component unmounts or user navigates away
+  useEffect(() => {
+    return () => {
+      // Release lock when component unmounts
+      if (lockInfo?.hasLock && canEdit) {
+        console.log('🔒 Component unmounting, releasing lock...');
+        // Use sendBeacon for reliable delivery during navigation
+        const data = new FormData();
+        data.append('useCaseId', useCaseId);
+        data.append('lockType', 'EXCLUSIVE');
+        data.append('scope', 'GOVERNANCE_EU_AI_ACT');
+        
+        try {
+          navigator.sendBeacon('/api/locks/release', data);
+          console.log('🔒 Lock release beacon sent');
+        } catch (error) {
+          console.error('🔒 Failed to send lock release beacon:', error);
+        }
+      }
+    };
+  }, [useCaseId, lockInfo?.hasLock, canEdit]);
 
   // Monitor assessment state changes for debugging
   useEffect(() => {
@@ -226,7 +301,7 @@ export default function EuAiActAssessmentPage() {
       
       console.log('INITIAL DATA LOAD - Assessment controls:', {
         totalControls: assessmentData.controls?.length || 0,
-        controlsWithFiles: assessmentData.controls?.filter(c => c.evidenceFiles?.length > 0).length || 0,
+        controlsWithFiles: assessmentData.controls?.filter((c: any) => c.evidenceFiles?.length > 0).length || 0,
         sampleControl: assessmentData.controls?.[0] ? {
           id: assessmentData.controls[0].id,
           controlId: assessmentData.controls[0].controlStruct?.controlId,
@@ -256,6 +331,12 @@ export default function EuAiActAssessmentPage() {
   };
 
   const handleAnswerChange = (questionId: string, answer: string) => {
+    console.log('🔒 handleAnswerChange called:', { questionId, canEdit, hasLock: lockInfo?.hasLock });
+    if (!canEdit) {
+      console.log('🔒 User cannot edit, preventing answer change');
+      return; // Prevent changes if user doesn't have edit access
+    }
+    
     setTopics(prevTopics => 
       prevTopics.map(topic => ({
         ...topic,
@@ -405,6 +486,75 @@ export default function EuAiActAssessmentPage() {
       setError(err instanceof Error ? err.message : 'Failed to save answer');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Lock management functions
+  const handleStartAssessment = async () => {
+    const success = await acquireLock();
+    if (success) {
+      setIsLockModalOpen(false);
+      // Lock acquired successfully, user can now edit
+    }
+    return success;
+  };
+
+  const handleCloseLockModal = async () => {
+    console.log('🔒 [EU-AI-ACT] handleCloseLockModal called, checking lock status...');
+    console.log('🔒 [EU-AI-ACT] canEdit:', canEdit, 'lockInfo:', lockInfo);
+    
+    try {
+      // Release lock if we have one
+      if (lockInfo?.hasLock && canEdit) {
+        console.log('🔒 [EU-AI-ACT] Releasing EXCLUSIVE lock before closing modal...');
+        await releaseLock();
+        console.log('🔒 [EU-AI-ACT] Lock released successfully');
+      } else {
+        console.log('🔒 [EU-AI-ACT] No exclusive lock to release');
+      }
+      
+      setIsLockModalOpen(false);
+      
+      // If user can't edit, redirect back to governance dashboard
+      if (!canEdit) {
+        console.log('🔒 [EU-AI-ACT] Navigating back to governance dashboard...');
+        router.push('/dashboard/governance');
+      }
+      // If user can edit, they can continue working on the assessment
+      // The modal will close and they can continue editing
+    } catch (error) {
+      console.error('🔒 [EU-AI-ACT] Error releasing lock during modal close:', error);
+      // Close modal and navigate anyway even if lock release fails
+      setIsLockModalOpen(false);
+      if (!canEdit) {
+        router.push('/dashboard/governance');
+      }
+    }
+  };
+
+  const handleContinueEditing = () => {
+    setIsLockModalOpen(false);
+    // User wants to continue editing, just close the modal
+    // They already have edit access, so they can continue working
+  };
+
+  const handleReleaseLock = async () => {
+    console.log('🔒 handleReleaseLock called, releasing lock...');
+    try {
+      await releaseLock();
+      console.log('🔒 Lock released successfully');
+      
+      // Refresh lock status after release
+      await refreshLockStatus();
+      
+      // Close modal if it's open
+      if (isLockModalOpen) {
+        setIsLockModalOpen(false);
+      }
+      
+      console.log('🔒 Lock release process completed');
+    } catch (error) {
+      console.error('🔒 Failed to release lock:', error);
     }
   };
 
@@ -1272,13 +1422,86 @@ export default function EuAiActAssessmentPage() {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-6">
-            <div className="flex items-center gap-4 mb-4">
-              <Link href="/dashboard/governance">
-                <Button variant="outline" size="sm" className="text-dark">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Governance
-                </Button>
-              </Link>
+            <div className="flex items-center justify-between mb-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-dark"
+                onClick={async () => {
+                  console.log('🔒 [EU-AI-ACT] Back to Governance button clicked, releasing lock...');
+                  try {
+                    // Release lock if we have one
+                    if (lockInfo?.hasLock && canEdit) {
+                      console.log('🔒 [EU-AI-ACT] Releasing EXCLUSIVE lock before navigation...');
+                      await releaseLock();
+                      console.log('🔒 [EU-AI-ACT] Lock released successfully');
+                    } else {
+                      console.log('🔒 [EU-AI-ACT] No exclusive lock to release');
+                    }
+                    
+                    // Navigate back to governance
+                    console.log('🔒 [EU-AI-ACT] Navigating back to governance dashboard...');
+                    router.push('/dashboard/governance');
+                  } catch (error) {
+                    console.error('🔒 [EU-AI-ACT] Error releasing lock during navigation:', error);
+                    // Navigate anyway even if lock release fails
+                    router.push('/dashboard/governance');
+                  }
+                }}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Governance
+              </Button>
+              
+              {/* Lock Status Indicator */}
+              {lockInfo && (
+                <div className="flex items-center gap-2">
+                  {canEdit ? (
+                    <div className="flex items-center gap-2">
+                      <div className="px-3 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-300 dark:border-green-700 rounded-lg">
+                        <Lock className="h-4 w-4" />
+                        <span className="text-sm font-medium">You have edit access</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            await refreshLockStatus();
+                            setIsLockModalOpen(true);
+                          }}
+                          className="text-xs"
+                        >
+                          Lock Info
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={async () => {
+                            console.log('🔒 [EU-AI-ACT] Release Lock button clicked...');
+                            try {
+                              await handleReleaseLock();
+                              console.log('🔒 [EU-AI-ACT] Lock released, navigating back to governance...');
+                              router.push('/dashboard/governance');
+                            } catch (error) {
+                              console.error('🔒 [EU-AI-ACT] Error releasing lock:', error);
+                            }
+                          }}
+                          disabled={lockLoading}
+                          className="text-xs"
+                        >
+                          Release Lock
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 px-3 py-1 bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-300 dark:border-red-700 rounded-lg">
+                      <Lock className="h-4 w-4" />
+                      <span className="text-sm font-medium">Locked by another user</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
             {assessment && (
@@ -1457,9 +1680,10 @@ export default function EuAiActAssessmentPage() {
                                         <textarea
                                           value={question.answer?.answer || ''}
                                           onChange={(e) => handleAnswerChange(question.questionId, e.target.value)}
-                                          placeholder="Provide your detailed answer here..."
-                                          className="w-full p-3 border border-input rounded-lg resize-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors bg-background text-foreground"
+                                          placeholder={canEdit ? "Provide your detailed answer here..." : "Assessment is locked by another user"}
+                                          className="w-full p-3 border border-input rounded-lg resize-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                                           rows={4}
+                                          disabled={!canEdit}
                                         />
                                         
                                         <div className="mt-4">
@@ -1470,7 +1694,7 @@ export default function EuAiActAssessmentPage() {
                                               onChange={(files) => handleEvidenceChange(question.questionId, files)}
                                               maxFiles={5}
                                               maxSize={10}
-                                              disabled={savingFiles.has(`question-${question.questionId}`)}
+                                              disabled={!canEdit || savingFiles.has(`question-${question.questionId}`)}
                                               useCaseId={params.useCaseId as string}
                                               frameworkType="eu-ai-act"
                                             />
@@ -1491,7 +1715,7 @@ export default function EuAiActAssessmentPage() {
                                           </div>
                                           <Button
                                             onClick={() => handleSaveAnswer(question.questionId)}
-                                            disabled={saving}
+                                            disabled={!canEdit || saving}
                                             size="sm"
                                             className="flex items-center gap-2"
                                           >
@@ -1634,7 +1858,7 @@ export default function EuAiActAssessmentPage() {
                                           onChange={(files) => handleControlEvidenceChange(control.controlId, files)}
                                           maxFiles={5}
                                           maxSize={10}
-                                          disabled={savingFiles.has(`control-${control.controlId}`)}
+                                          disabled={!canEdit || savingFiles.has(`control-${control.controlId}`)}
                                           useCaseId={params.useCaseId as string}
                                           frameworkType="eu-ai-act"
                                         />
@@ -1650,7 +1874,7 @@ export default function EuAiActAssessmentPage() {
                                     <div className="flex items-center justify-end pt-3 border-t border-border">
                                       <Button
                                         onClick={() => handleSaveControl(control.controlId)}
-                                        disabled={saving}
+                                        disabled={!canEdit || saving}
                                         size="sm"
                                         className="flex items-center gap-2"
                                       >
@@ -1692,7 +1916,8 @@ export default function EuAiActAssessmentPage() {
                                                     <select
                                                       value={assessmentSubcontrol?.status || 'pending'}
                                                       onChange={(e) => handleSubcontrolStatusChange(control.controlId, subcontrol.subcontrolId, e.target.value, assessmentSubcontrol?.notes || '')}
-                                                      className="w-full p-2 border border-input rounded-lg text-sm focus:ring-2 focus:ring-ring focus:border-ring bg-background text-foreground"
+                                                      className="w-full p-2 border border-input rounded-lg text-sm focus:ring-2 focus:ring-ring focus:border-ring bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                                                      disabled={!canEdit}
                                                     >
                                                       <option value="pending">Pending</option>
                                                       <option value="reviewed">Reviewed</option>
@@ -1704,9 +1929,10 @@ export default function EuAiActAssessmentPage() {
                                                     <textarea
                                                       value={assessmentSubcontrol?.notes || ''}
                                                       onChange={(e) => handleSubcontrolStatusChange(control.controlId, subcontrol.subcontrolId, assessmentSubcontrol?.status || 'pending', e.target.value)}
-                                                      placeholder="Implementation notes..."
-                                                      className="w-full p-2 border border-input rounded-lg text-sm resize-none focus:ring-2 focus:ring-ring focus:border-ring bg-background text-foreground"
+                                                      placeholder={canEdit ? "Implementation notes..." : "Assessment is locked by another user"}
+                                                      className="w-full p-2 border border-input rounded-lg text-sm resize-none focus:ring-2 focus:ring-ring focus:border-ring bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                                                       rows={2}
+                                                      disabled={!canEdit}
                                                     />
                                                   </div>
                                                   
@@ -1718,7 +1944,7 @@ export default function EuAiActAssessmentPage() {
                                                         onChange={(files) => handleSubcontrolEvidenceChange(control.controlId, subcontrol.subcontrolId, files)}
                                                         maxFiles={5}
                                                         maxSize={10}
-                                                        disabled={savingFiles.has(`subcontrol-${subcontrol.subcontrolId}`)}
+                                                        disabled={!canEdit || savingFiles.has(`subcontrol-${subcontrol.subcontrolId}`)}
                                                         useCaseId={params.useCaseId as string}
                                                         frameworkType="eu-ai-act"
                                                       />
@@ -1734,7 +1960,7 @@ export default function EuAiActAssessmentPage() {
                                                   <div className="flex justify-end">
                                                     <Button
                                                       onClick={() => handleSaveSubcontrol(control.controlId, subcontrol.subcontrolId)}
-                                                      disabled={saving}
+                                                      disabled={!canEdit || saving}
                                                       size="sm"
                                                       variant="outline"
                                                     >
@@ -1764,6 +1990,19 @@ export default function EuAiActAssessmentPage() {
           </div>
         </div>
       </div>
+
+      {/* Lock Management Modal */}
+      <GovernanceLockModal
+        isOpen={isLockModalOpen}
+        onClose={handleCloseLockModal}
+        lockInfo={lockInfo}
+        framework="GOVERNANCE_EU_AI_ACT"
+        useCaseId={useCaseId}
+        useCaseName={`AIUC-${useCaseId}`}
+        onAcquireLock={handleStartAssessment}
+        onReleaseLock={handleReleaseLock}
+        loading={lockLoading}
+      />
     </div>
   );
 }

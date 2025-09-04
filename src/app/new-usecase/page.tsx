@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { EnhancedRichTextEditor } from "@/components/ui/enhanced-rich-text-editor";
+
 
 type FormData = {
   id?: string;
@@ -87,7 +89,7 @@ const ArrayInput = ({
         <Input
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
-          className={`${invalid ? 'border-destructive' : ''} bg-background text-foreground border-border h-9`}
+          className={`${invalid ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600 h-9`}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               onAdd(field as ArrayField, inputVal);
@@ -252,28 +254,28 @@ const AIUseCaseToolContent = () => {
             content={formData.problemStatement}
             onChange={(content) => handleChange("problemStatement", content)}
             placeholder="Describe the problem this use case will solve..."
-            className={`${invalidFields.includes('problemStatement') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
+            className="mb-4"
           />
           <Label htmlFor="proposedAISolution" className="text-gray-900 dark:text-white">Proposed Solution</Label>
           <RichTextEditor
             content={formData.proposedAISolution}
             onChange={(content) => handleChange("proposedAISolution", content)}
             placeholder="Describe your proposed AI solution..."
-            className={`${invalidFields.includes('proposedAISolution') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
+            className="mb-4"
           />
           <Label htmlFor="keyBenefits" className="text-gray-900 dark:text-white">Key Benefits</Label>
           <RichTextEditor
             content={formData.keyBenefits}
             onChange={(content) => handleChange("keyBenefits", content)}
             placeholder="List the key benefits this solution will provide..."
-            className={`${invalidFields.includes('keyBenefits') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
+            className="mb-4"
           />
           <Label htmlFor="successCriteria" className="text-gray-900 dark:text-white">Success Criteria</Label>
           <RichTextEditor
             content={formData.successCriteria}
             onChange={(content) => handleChange("successCriteria", content)}
             placeholder="Define what success looks like for this use case..."
-            className={`${invalidFields.includes('successCriteria') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
+            className="mb-4"
           />
           <Label htmlFor="businessFunction" className="text-gray-900 dark:text-white">Business Function</Label>
           <select
@@ -336,7 +338,7 @@ const AIUseCaseToolContent = () => {
             content={formData.keyAssumptions}
             onChange={(content) => handleChange("keyAssumptions", content)}
             placeholder="List your key assumptions for this use case..."
-            className={`${invalidFields.includes('keyAssumptions') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
+            className="mb-4"
           />
           <Label htmlFor="initialCost" className="text-gray-900 dark:text-white">Initial Cost</Label>
           <div className="relative">
@@ -410,7 +412,7 @@ const AIUseCaseToolContent = () => {
             content={formData.requiredResources}
             onChange={(content) => handleChange("requiredResources", content)}
             placeholder="List the required resources for this use case..."
-            className={`${invalidFields.includes('requiredResources') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
+            className="mb-4"
           />
         </Card>
       </div>

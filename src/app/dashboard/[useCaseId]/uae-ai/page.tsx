@@ -13,10 +13,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, FileText, CheckCircle, AlertCircle, Clock, Upload, Save, ChevronRight, ChevronDown, Shield, Loader2, Star } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle, AlertCircle, Clock, Upload, Save, ChevronRight, ChevronDown, Shield, Loader2, Star, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { FileUpload } from '@/components/ui/file-upload';
 import { uaeAiScoringSystem, getMaturityLevelDetails, getRiskImpactLevelDetails, getScoreLevelDetails } from '@/lib/framework-data/uae-ai-scoring';
+import { useGovernanceLock } from '@/hooks/useGovernanceLock';
+import { GovernanceLockModal } from '@/components/GovernanceLockModal';
 
 interface ControlInstance {
   id: string;
@@ -63,6 +65,19 @@ export default function UaeAiAssessmentPage() {
   const router = useRouter();
   const useCaseId = params.useCaseId as string;
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isLockModalOpen, setIsLockModalOpen] = useState(false);
+
+  // Lock management system
+  const {
+    lockInfo,
+    isLocked,
+    canEdit,
+    acquireLock,
+    releaseLock,
+    refreshLockStatus,
+    loading: lockLoading,
+    error: lockError
+  } = useGovernanceLock(useCaseId, 'GOVERNANCE_UAE_AI');
 
   // Check for dark mode
   useEffect(() => {
@@ -95,6 +110,23 @@ export default function UaeAiAssessmentPage() {
     fetchAssessmentData();
   }, [useCaseId]);
 
+  // Cleanup: Release lock when component unmounts or user navigates away
+  useEffect(() => {
+    return () => {
+      if (lockInfo?.hasLock && canEdit) {
+        try {
+          const data = new FormData();
+          data.append('useCaseId', useCaseId);
+          data.append('lockType', 'EXCLUSIVE');
+          data.append('scope', 'GOVERNANCE_UAE_AI');
+          navigator.sendBeacon('/api/locks/release', data);
+        } catch (e) {
+          // noop
+        }
+      }
+    };
+  }, [useCaseId, lockInfo?.hasLock, canEdit]);
+
   const fetchAssessmentData = async () => {
     try {
       setLoading(true);
@@ -125,6 +157,7 @@ export default function UaeAiAssessmentPage() {
   };
 
   const handleControlImplementationChange = (controlId: string, implementation: string) => {
+    if (!canEdit) return;
     if (!assessment) return;
 
     const existingInstance = assessment.controls.find(c => c.control.controlId === controlId);
@@ -164,6 +197,7 @@ export default function UaeAiAssessmentPage() {
   };
 
   const handleControlScoreChange = async (controlId: string, score: number) => {
+    if (!canEdit) return;
     if (!assessment) return;
 
     setSavingControls(prev => new Set(prev).add(controlId));
@@ -215,6 +249,7 @@ export default function UaeAiAssessmentPage() {
 
   const handleEvidenceChange = async (controlId: string, evidenceFiles: string[]) => {
     console.log('🔄 handleEvidenceChange START:', { controlId, evidenceFiles });
+    if (!canEdit) return;
     if (!assessment) return;
 
     const existingInstance = assessment.controls.find(c => c.control.controlId === controlId);
@@ -422,6 +457,7 @@ export default function UaeAiAssessmentPage() {
   };
 
   const handleRiskImpactLevelChange = async (newLevel: string) => {
+    if (!canEdit) return;
     if (!assessment) return;
 
     try {
@@ -443,6 +479,7 @@ export default function UaeAiAssessmentPage() {
   };
 
   const handleSaveControl = async (controlId: string) => {
+    if (!canEdit) return;
     const controlInstance = assessment?.controls.find(c => c.control.controlId === controlId);
     if (!controlInstance || !assessment) return;
 
@@ -529,13 +566,61 @@ export default function UaeAiAssessmentPage() {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-6">
-            <div className="flex items-center gap-4 mb-4">
-              <Link href="/dashboard/governance">
-                <Button variant="outline" size="sm" className="text-dark">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Governance
-                </Button>
-              </Link>
+            <div className="flex items-center justify-between mb-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-dark"
+                onClick={async () => {
+                  try {
+                    if (lockInfo?.hasLock && canEdit) {
+                      await releaseLock();
+                    }
+                  } finally {
+                    router.push('/dashboard/governance');
+                  }
+                }}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Governance
+              </Button>
+
+              {lockInfo && (
+                <div className="flex items-center gap-2">
+                  {canEdit ? (
+                    <div className="flex items-center gap-2">
+                      <div className="px-3 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-300 dark:border-green-700 rounded-lg">
+                        <Lock className="h-4 w-4" />
+                        <span className="text-sm font-medium">You have edit access</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => { await refreshLockStatus(); setIsLockModalOpen(true); }}
+                          className="text-xs"
+                        >
+                          Lock Info
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={async () => { await releaseLock(); router.push('/dashboard/governance'); }}
+                          disabled={lockLoading}
+                          className="text-xs"
+                        >
+                          Release Lock
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 px-3 py-1 bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-300 dark:border-red-700 rounded-lg">
+                      <Lock className="h-4 w-4" />
+                      <span className="text-sm font-medium">Locked by another user</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           
           {assessment && (
@@ -713,7 +798,7 @@ export default function UaeAiAssessmentPage() {
                             <Select 
                               value={instance?.score?.toString() || "0"} 
                               onValueChange={(value) => handleControlScoreChange(control.controlId, parseInt(value))}
-                              disabled={savingControls.has(control.controlId)}
+                              disabled={!canEdit || savingControls.has(control.controlId)}
                             >
                               <SelectTrigger className="w-32">
                                 <SelectValue />
@@ -738,14 +823,15 @@ export default function UaeAiAssessmentPage() {
                         <textarea
                           value={instance?.implementation || ''}
                           onChange={(e) => handleControlImplementationChange(control.controlId, e.target.value)}
-                          placeholder="Describe how this control is implemented in your organization...
+                          placeholder={canEdit ? `Describe how this control is implemented in your organization...
 
 • What specific measures are in place?
 • Who is responsible for this control?
 • What processes and procedures exist?
-• How is effectiveness monitored?"
-                          className="w-full p-3 border border-input rounded-lg resize-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors bg-background text-foreground"
+• How is effectiveness monitored?` : 'Assessment is locked by another user'}
+                          className="w-full p-3 border border-input rounded-lg resize-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                           rows={5}
+                          disabled={!canEdit}
                         />
                         
                         <div className="mt-4">
@@ -756,7 +842,7 @@ export default function UaeAiAssessmentPage() {
                               onChange={(files) => handleEvidenceChange(control.controlId, files)}
                               maxFiles={5}
                               maxSize={10}
-                              disabled={savingFiles.has(`control-${control.controlId}`)}
+                              disabled={!canEdit || savingFiles.has(`control-${control.controlId}`)}
                               useCaseId={params.useCaseId as string}
                               frameworkType="uae-ai"
                             />
@@ -775,7 +861,7 @@ export default function UaeAiAssessmentPage() {
                           </div>
                           <Button
                             onClick={() => handleSaveControl(control.controlId)}
-                            disabled={saving}
+                            disabled={!canEdit || saving}
                             size="sm"
                             className="flex items-center gap-2"
                           >
@@ -871,6 +957,23 @@ export default function UaeAiAssessmentPage() {
           )}
         </div>
       </div>
+      {/* Lock Management Modal */}
+      <GovernanceLockModal
+        isOpen={isLockModalOpen}
+        onClose={async () => {
+          if (lockInfo?.hasLock && canEdit) {
+            try { await releaseLock(); } catch {}
+          }
+          setIsLockModalOpen(false);
+        }}
+        lockInfo={lockInfo}
+        framework="GOVERNANCE_UAE_AI"
+        useCaseId={useCaseId}
+        useCaseName={`AIUC-${useCaseId}`}
+        onAcquireLock={async () => { const ok = await acquireLock(); if (ok) setIsLockModalOpen(false); return ok; }}
+        onReleaseLock={async () => { await releaseLock(); await refreshLockStatus(); setIsLockModalOpen(false); }}
+        loading={lockLoading}
+      />
     </div>
   );
 }

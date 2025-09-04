@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams, useSearchParams } from "next/navigation";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, ChevronLeft, Target, TrendingUp, Zap, DollarSign, Plus, Minus } from 'lucide-react';
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { EnhancedRichTextEditor } from "@/components/ui/enhanced-rich-text-editor";
+ 
+import { useLock } from '@/hooks/useLock';
 
 type FormData = {
   id?: string;
@@ -143,12 +146,27 @@ const AIUseCaseTool = () => {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [invalidFields, setInvalidFields] = useState<string[]>([]);
   const [showError, setShowError] = useState(false);
+  const [hasRedirectedForLock, setHasRedirectedForLock] = useState(false);
   const [_saving, setSaving] = useState(false);
   const router = useRouter();
 
   const params = useParams();
   const searchParams = useSearchParams();
   const completeForBusinessCase = searchParams.get('completeForBusinessCase') === '1';
+
+  // Concurrency control: replicate assess dashboard locking behavior
+  const useCaseId = params["usecase-id"] as string;
+  const {
+    lockInfo,
+    isExclusiveLocked,
+    releaseLock,
+    refreshLockStatus,
+    acquireExclusiveLock,
+  } = useLock(useCaseId || "", 'EDIT');
+
+  // Determine editability consistent with assess page
+  const canEdit = useMemo(() => lockInfo?.canEdit === true, [lockInfo?.canEdit]);
+  const isReadOnly = useMemo(() => !canEdit, [canEdit]);
 
   useEffect(() => {
     const fetchAndFill = async () => {
@@ -196,6 +214,18 @@ const AIUseCaseTool = () => {
     fetchAndFill();
   }, [params]);
 
+  // If another user holds an exclusive lock, alert and redirect to view page
+  useEffect(() => {
+    if (!useCaseId) return;
+    if (hasRedirectedForLock) return;
+    if (lockInfo?.hasExclusiveLock && lockInfo?.canEdit !== true) {
+      const lockedBy = lockInfo.exclusiveLockDetails?.acquiredBy || 'another user';
+      alert(`${lockedBy} is currently editing this use case. Redirecting to view mode.`);
+      setHasRedirectedForLock(true);
+      try { router.push(`/view-usecase/${useCaseId}`); } catch (_) {}
+    }
+  }, [lockInfo?.hasExclusiveLock, lockInfo?.canEdit, lockInfo?.exclusiveLockDetails?.acquiredBy, useCaseId, hasRedirectedForLock, router]);
+
   const steps = [
     { id: 1, title: 'Use Case Documentation', icon: Target },
     { id: 2, title: 'Lean Business Case', icon: TrendingUp },
@@ -203,6 +233,7 @@ const AIUseCaseTool = () => {
   ];
 
   const handleArrayAdd = (field: ArrayField, value: string) => {
+    if (!canEdit) return;
     if (value.trim()) {
       setFormData(prev => ({
         ...prev,
@@ -212,6 +243,7 @@ const AIUseCaseTool = () => {
   };
 
   const handleArrayRemove = (field: ArrayField, index: number) => {
+    if (!canEdit) return;
     setFormData(prev => ({
       ...prev,
       [field]: prev[field].filter((_: string, i: number) => i !== index)
@@ -219,6 +251,7 @@ const AIUseCaseTool = () => {
   };
 
   const handleChange = (field: keyof FormData, val: string | number | string[]) => {
+    if (!canEdit) return;
     setFormData((prev) => ({ ...prev, [field]: val }));
   };
 
@@ -252,28 +285,28 @@ const AIUseCaseTool = () => {
             content={formData.problemStatement}
             onChange={(content) => handleChange("problemStatement", content)}
             placeholder="Describe the problem this use case will solve..."
-            className={`${invalidFields.includes('problemStatement') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
+            className="mb-4"
           />
           <Label htmlFor="proposedAISolution" className="text-gray-900 dark:text-white">Proposed Solution</Label>
           <RichTextEditor
             content={formData.proposedAISolution}
             onChange={(content) => handleChange("proposedAISolution", content)}
             placeholder="Describe your proposed AI solution..."
-            className={`${invalidFields.includes('proposedAISolution') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
+            className="mb-4"
           />
           <Label htmlFor="keyBenefits" className="text-gray-900 dark:text-white">Key Benefits</Label>
           <RichTextEditor
             content={formData.keyBenefits}
             onChange={(content) => handleChange("keyBenefits", content)}
             placeholder="List the key benefits this solution will provide..."
-            className={`${invalidFields.includes('keyBenefits') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
+            className="mb-4"
           />
           <Label htmlFor="successCriteria" className="text-gray-900 dark:text-white">Success Criteria</Label>
           <RichTextEditor
             content={formData.successCriteria}
             onChange={(content) => handleChange("successCriteria", content)}
             placeholder="Define what success looks like for this use case..."
-            className={`${invalidFields.includes('successCriteria') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
+            className="mb-4"
           />
           <Label htmlFor="businessFunction" className="text-gray-900 dark:text-white">Business Function</Label>
           <select
@@ -336,7 +369,7 @@ const AIUseCaseTool = () => {
             content={formData.keyAssumptions}
             onChange={(content) => handleChange("keyAssumptions", content)}
             placeholder="List your key assumptions for this use case..."
-            className={`${invalidFields.includes('keyAssumptions') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
+            className="mb-4"
           />
           <Label htmlFor="initialCost" className="text-gray-900 dark:text-white">Initial Cost</Label>
           <div className="relative">
@@ -410,7 +443,7 @@ const AIUseCaseTool = () => {
             content={formData.requiredResources}
             onChange={(content) => handleChange("requiredResources", content)}
             placeholder="List the required resources for this use case..."
-            className={`${invalidFields.includes('requiredResources') ? 'border-red-500' : ''} bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600`}
+            className="mb-4"
           />
         </Card>
       </div>
@@ -549,6 +582,7 @@ const AIUseCaseTool = () => {
   );
 
   const handleSave = async () => {
+    if (!canEdit) return; // Block save when locked by someone else
     if (!formData.title.trim()) {
       setInvalidFields(['title']);
       setShowError(true);
@@ -562,7 +596,8 @@ const AIUseCaseTool = () => {
         ...formData,
         // Convert timeline back to full format
         estimatedTimeline: formData.estimatedTimelineMonths ? `${formData.estimatedTimelineMonths} months` : '',
-        stage: 'discovery',
+        // Preserve the current stage when saving as draft
+        stage: formData.stage || 'discovery',
       };
       
       const res = await fetch("/api/write-usecases", {
@@ -575,6 +610,14 @@ const AIUseCaseTool = () => {
       
       if (res.ok) {
         alert("Use case saved successfully!");
+        // Release lock before navigation
+        try {
+          if (isExclusiveLocked) {
+            await releaseLock('EXCLUSIVE');
+          }
+        } catch (error) {
+          console.error('Error releasing lock after save:', error);
+        }
         router.push('/dashboard');
       } else {
         const errorData = await res.text();
@@ -590,6 +633,7 @@ const AIUseCaseTool = () => {
   };
 
   const handleGoToPipeline = async () => {
+    if (!canEdit) return; // Block when locked by someone else
     if (validateForm()) {
       try {
         setSaving(true);
@@ -611,6 +655,15 @@ const AIUseCaseTool = () => {
           throw new Error('Failed to save use case');
         }
 
+        // Release lock before navigation
+        try {
+          if (isExclusiveLocked) {
+            await releaseLock('EXCLUSIVE');
+          }
+        } catch (error) {
+          console.error('Error releasing lock after pipeline navigation:', error);
+        }
+
         router.push('/dashboard');
       } catch(error) {
         console.error("Error saving use case:", error);
@@ -620,6 +673,61 @@ const AIUseCaseTool = () => {
       }
     }
   };
+
+  // Release any active lock when navigating away via Cancel button
+  const handleCancel = async () => {
+    console.log('🔒 [EDIT-USECASE] Cancel button clicked - releasing lock and navigating back');
+    try {
+      if (isExclusiveLocked) {
+        console.log('🔒 [EDIT-USECASE] Releasing EXCLUSIVE lock...');
+        await releaseLock('EXCLUSIVE');
+        console.log('🔒 [EDIT-USECASE] Lock released successfully');
+      } else {
+        console.log('🔒 [EDIT-USECASE] No exclusive lock to release');
+      }
+    } catch (error) {
+      console.error('🔒 [EDIT-USECASE] Error releasing lock:', error);
+    }
+    console.log('🔒 [EDIT-USECASE] Navigating back...');
+    router.back();
+  };
+
+  // On unmount / unload, attempt lock release similar to assess page
+  useEffect(() => {
+    const beforeUnload = async () => {
+      if (isExclusiveLocked) {
+        try {
+          await fetch('/api/locks/release', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ useCaseId, lockType: 'EXCLUSIVE', scope: 'EDIT' }),
+            keepalive: true,
+          });
+        } catch (_) {}
+      }
+    };
+    window.addEventListener('beforeunload', beforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', beforeUnload);
+      if (isExclusiveLocked) {
+        const data = new FormData();
+        data.append('useCaseId', useCaseId || '');
+        data.append('lockType', 'EXCLUSIVE');
+        data.append('scope', 'EDIT');
+        try { navigator.sendBeacon('/api/locks/release', data); } catch (_) {}
+      }
+    };
+  }, [isExclusiveLocked, useCaseId]);
+
+  // Attempt to acquire exclusive lock when page mounts (only once)
+  const [hasAttemptedLockAcquisition, setHasAttemptedLockAcquisition] = useState(false);
+  
+  useEffect(() => {
+    if (!useCaseId || hasAttemptedLockAcquisition) return;
+    console.log('🔒 [EDIT-USECASE] Attempting to acquire exclusive lock on page mount...');
+    setHasAttemptedLockAcquisition(true);
+    acquireExclusiveLock();
+  }, [useCaseId, hasAttemptedLockAcquisition]); // Only run once per useCaseId
 
   return (
     <div className="min-h-screen flex justify-center items-start bg-gray-50 dark:bg-gray-900 p-0 sm:p-4">
@@ -686,7 +794,7 @@ const AIUseCaseTool = () => {
                 Previous
               </Button>
               <Button
-                onClick={() => router.push('/dashboard')}
+                onClick={handleCancel}
                 variant="outline"
                 className="flex items-center gap-2 border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800"
               >

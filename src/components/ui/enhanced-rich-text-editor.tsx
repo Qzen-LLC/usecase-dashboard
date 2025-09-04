@@ -1,20 +1,52 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import { Bold, Italic, List, ListOrdered, Quote, Undo, Redo } from 'lucide-react'
+import { Bold, Italic, List, ListOrdered, Quote, Undo, Redo, CheckSquare, Square } from 'lucide-react'
 import { Button } from './button'
 import { cn } from '@/lib/utils'
+import { BulletListEditor } from './bullet-list-editor'
 
-interface RichTextEditorProps {
+interface EnhancedRichTextEditorProps {
   content: string
   onChange: (content: string) => void
   placeholder?: string
   className?: string
+  label?: string
+  mode?: 'rich' | 'bullet' | 'auto'
 }
 
-export function RichTextEditor({ content, onChange, placeholder, className }: RichTextEditorProps) {
+export function EnhancedRichTextEditor({ 
+  content, 
+  onChange, 
+  placeholder = "Enter content...", 
+  className,
+  label,
+  mode = 'auto'
+ }: EnhancedRichTextEditorProps) {
+  const [editorMode, setEditorMode] = useState<'rich' | 'bullet'>(mode === 'auto' ? 'rich' : mode)
+  const [showModeToggle, setShowModeToggle] = useState(false)
+
+  // Auto-detect if content looks like bullet points
+  useEffect(() => {
+    if (mode === 'auto' && content) {
+      const hasBulletContent = content.includes('<ul>') || 
+                              content.includes('<li>') || 
+                              content.includes('•') ||
+                              content.includes('-') ||
+                              content.includes('*') ||
+                              content.split('\n').filter(line => line.trim()).length > 3
+      
+      if (hasBulletContent && editorMode === 'rich') {
+        setEditorMode('bullet')
+      } else if (!hasBulletContent && editorMode === 'bullet') {
+        setEditorMode('rich')
+      }
+    }
+  }, [content, mode]) // Removed editorMode dependency to prevent infinite loop
+
+  // TipTap editor configuration
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -53,11 +85,66 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
   })
 
   // Update editor content when prop changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content, false)
+      editor.commands.setContent(content)
     }
   }, [editor, content])
+
+  // Handle content change for bullet mode
+  const handleBulletChange = (newContent: string) => {
+    onChange(newContent)
+  }
+
+  // Toggle between rich text and bullet list modes
+  const toggleMode = () => {
+    setEditorMode(editorMode === 'rich' ? 'bullet' : 'rich')
+  }
+
+  // Show mode toggle if content suggests it might be useful
+  useEffect(() => {
+    if (mode === 'auto') {
+      const hasMixedContent = Boolean(content && (
+        content.includes('<ul>') || 
+        content.includes('<li>') || 
+        content.includes('<p>') ||
+        content.includes('<strong>') ||
+        content.includes('<em>')
+      ))
+      setShowModeToggle(hasMixedContent)
+    }
+  }, [content, mode])
+
+  if (editorMode === 'bullet') {
+    return (
+      <div className={cn('space-y-3', className)}>
+        {label && (
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {label}
+            </label>
+            {showModeToggle && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={toggleMode}
+                className="text-xs text-blue-600 hover:text-blue-800"
+              >
+                Switch to Rich Text
+              </Button>
+            )}
+          </div>
+        )}
+        <BulletListEditor
+          content={content}
+          onChange={handleBulletChange}
+          placeholder={placeholder}
+          className="border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 p-3"
+        />
+      </div>
+    )
+  }
 
   if (!editor) {
     return null
@@ -135,7 +222,7 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
           size="sm"
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
-          className="h-8 w-8 p-0 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-8 w-8 p-0 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
         >
           <Undo className="h-4 w-4" />
         </Button>
@@ -145,18 +232,31 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
           size="sm"
           onClick={() => editor.chain().focus().redo().run()}
           disabled={!editor.can().redo()}
-          className="h-8 w-8 p-0 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-8 w-8 p-0 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
         >
           <Redo className="h-4 w-4" />
         </Button>
+        
+        {/* Mode toggle button */}
+        {showModeToggle && (
+          <>
+            <div className="w-px h-6 bg-gray-300 dark:bg-gray-500 mx-1" />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={toggleMode}
+              className="h-8 px-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            >
+              Switch to Bullet List
+            </Button>
+          </>
+        )}
       </div>
-      
-      {/* Editor Content */}
+
+      {/* Editor content */}
       <div className="relative">
-        <EditorContent 
-          editor={editor} 
-          className="min-h-[100px] bg-white dark:bg-gray-700"
-        />
+        <EditorContent editor={editor} />
         {!content && (
           <div className="absolute top-3 left-3 text-gray-400 pointer-events-none">
             {placeholder}
