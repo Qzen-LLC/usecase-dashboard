@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { WebhookEvent } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@/generated/prisma';
+import { validateUserRole } from '@/utils/role-validation';
 
 const prisma = new PrismaClient();
 
@@ -50,13 +51,21 @@ export async function POST(req: Request) {
           try {
             const { id: clerkId, email_addresses, first_name, last_name, public_metadata } = eventData;
             const email = email_addresses?.[0]?.email_address;
-            // Only allow valid UserRole values
-            const validRoles = ['QZEN_ADMIN', 'ORG_ADMIN', 'ORG_USER', 'USER'] as const;
-            let role = (public_metadata && typeof public_metadata.role === 'string' && validRoles.includes(public_metadata.role as any)) ? public_metadata.role : 'USER';
             const organizationId = typeof public_metadata?.organizationId === 'string' ? public_metadata.organizationId : null;
             
-            // Type assertion for Prisma UserRole
-            const userRole = role as 'QZEN_ADMIN' | 'ORG_ADMIN' | 'ORG_USER' | 'USER';
+            // Use validation function to ensure correct role assignment
+            const userRole = validateUserRole(
+              public_metadata?.role as string || 'USER',
+              organizationId
+            );
+            
+            console.log('🔧 Webhook - Processing user.created event:', {
+              email,
+              role: userRole,
+              organizationId: organizationId || 'No organization',
+              clerkId
+            });
+            
             if (email) {
               await prisma.user.create({
                 data: {
@@ -179,15 +188,15 @@ export async function POST(req: Request) {
       break;
     case 'user.created':
       try {
-        const { id: clerkId, email_addresses, first_name, last_name, public_metadata } = evt.data;
+                const { id: clerkId, email_addresses, first_name, last_name, public_metadata } = evt.data;
         const email = email_addresses?.[0]?.email_address;
-        // Only allow valid UserRole values
-        const validRoles = ['QZEN_ADMIN', 'ORG_ADMIN', 'ORG_USER', 'USER'] as const;
-        let role = (public_metadata && typeof public_metadata.role === 'string' && validRoles.includes(public_metadata.role as any)) ? public_metadata.role : 'USER';
         const organizationId = typeof public_metadata?.organizationId === 'string' ? public_metadata.organizationId : null;
         
-        // Type assertion for Prisma UserRole
-        const userRole = role as 'QZEN_ADMIN' | 'ORG_ADMIN' | 'ORG_USER' | 'USER';
+        // Use validation function to ensure correct role assignment
+        const userRole = validateUserRole(
+          public_metadata?.role as string || 'USER',
+          organizationId
+        );
         
         console.log('🔧 Webhook - Processing user.created event:', {
           email,

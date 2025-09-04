@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { PrismaClient } from '@/generated/prisma';
+import { validateUserRole } from '@/utils/role-validation';
 
 const prisma = new PrismaClient();
 
@@ -57,6 +58,9 @@ export async function POST(req: Request) {
       where: { clerkId: user.id },
     });
 
+    // Validate and correct role if needed
+    const validatedRole = validateUserRole(invitation.role, organizationId);
+    
     if (!userRecord) {
       // Create user record if it doesn't exist
       console.log('[Invitation Accept] Creating new user with organizationId:', organizationId);
@@ -66,7 +70,7 @@ export async function POST(req: Request) {
           email: user.emailAddresses[0]?.emailAddress || '',
           firstName: user.firstName || null,
           lastName: user.lastName || null,
-          role: invitation.role,
+          role: validatedRole,
           organizationId: organizationId,
         },
       });
@@ -77,7 +81,7 @@ export async function POST(req: Request) {
       userRecord = await prisma.user.update({
         where: { id: userRecord.id },
         data: {
-          role: invitation.role,
+          role: validatedRole,
           organizationId: organizationId,
         },
       });

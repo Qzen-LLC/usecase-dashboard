@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { PrismaClient } from '@/generated/prisma';
 import { Clerk } from '@clerk/clerk-sdk-node';
+import { validateUserRole } from '@/utils/role-validation';
 
 const prisma = new PrismaClient();
 const clerk = new Clerk({ secretKey: process.env.CLERK_SECRET_KEY });
@@ -39,6 +40,9 @@ export async function POST(req: Request) {
       where: { clerkId: user.id },
     });
 
+    // Validate and correct role if needed
+    const validatedRole = validateUserRole(role, organizationId);
+    
     if (!userRecord) {
       // Create user record
       userRecord = await prisma.user.create({
@@ -47,7 +51,7 @@ export async function POST(req: Request) {
           email: user.emailAddresses[0]?.emailAddress || '',
           firstName: user.firstName || null,
           lastName: user.lastName || null,
-          role: role as any,
+          role: validatedRole,
           organizationId: organizationId,
         },
       });
@@ -57,7 +61,7 @@ export async function POST(req: Request) {
       userRecord = await prisma.user.update({
         where: { id: userRecord.id },
         data: {
-          role: role as any,
+          role: validatedRole,
           organizationId: organizationId,
         },
       });
