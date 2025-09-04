@@ -74,12 +74,23 @@ export const GovernanceLockModal: React.FC<GovernanceLockModalProps> = ({
       console.log(`🔍 Checking lock status for useCaseId: ${useCaseId}, scope: ${framework}`);
       
       const response = await fetch(`/api/locks/status?useCaseId=${useCaseId}&scope=${framework}`);
+      console.log(`🔍 Response status:`, response.status);
+      
       if (response.ok) {
         const data = await response.json();
         console.log(`📊 Lock status response:`, data);
         setCurrentLockInfo(data.lockInfo);
       } else {
         console.error('Failed to check lock status:', response.status);
+        // Try to get error details
+        try {
+          const errorData = await response.json();
+          console.error('Error details:', errorData);
+        } catch (parseError) {
+          console.error('Could not parse error response');
+        }
+        
+        // Set default state on error
         setCurrentLockInfo({
           hasLock: false,
           canEdit: true
@@ -87,6 +98,9 @@ export const GovernanceLockModal: React.FC<GovernanceLockModalProps> = ({
       }
     } catch (error) {
       console.error('Error checking lock status:', error);
+      console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+      
+      // Set default state on error
       setCurrentLockInfo({
         hasLock: false,
         canEdit: true

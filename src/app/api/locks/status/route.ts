@@ -4,24 +4,35 @@ import { currentUser } from '@clerk/nextjs/server';
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('[LOCK STATUS] Starting lock status check...');
+    
     const user = await currentUser();
     if (!user) {
+      console.log('[LOCK STATUS] No user found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    console.log('[LOCK STATUS] User found:', user.id);
 
     const userRecord = await prismaClient.user.findUnique({
       where: { clerkId: user.id },
     });
 
     if (!userRecord) {
+      console.log('[LOCK STATUS] User record not found for clerk ID:', user.id);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+
+    console.log('[LOCK STATUS] User record found:', userRecord.id);
 
     const { searchParams } = new URL(request.url);
     const useCaseId = searchParams.get('useCaseId');
     const scope = searchParams.get('scope');
 
+    console.log('[LOCK STATUS] Request parameters:', { useCaseId, scope });
+
     if (!useCaseId || !scope) {
+      console.log('[LOCK STATUS] Missing required parameters');
       return NextResponse.json({ 
         error: 'Missing required parameters: useCaseId and scope' 
       }, { status: 400 });
@@ -30,19 +41,25 @@ export async function GET(request: NextRequest) {
     // Validate scope
     const validScopes = ['ASSESS', 'EDIT', 'GOVERNANCE_EU_AI_ACT', 'GOVERNANCE_ISO_42001', 'GOVERNANCE_UAE_AI'];
     if (!validScopes.includes(scope)) {
+      console.log('[LOCK STATUS] Invalid scope:', scope);
       return NextResponse.json({ 
         error: 'Invalid scope. Must be one of: ASSESS, EDIT, GOVERNANCE_EU_AI_ACT, GOVERNANCE_ISO_42001, GOVERNANCE_UAE_AI' 
       }, { status: 400 });
     }
 
     // Check if use case exists and user has access
+    console.log('[LOCK STATUS] Checking use case:', useCaseId);
+    
     const useCase = await prismaClient.useCase.findUnique({
       where: { id: useCaseId },
     });
 
     if (!useCase) {
+      console.log('[LOCK STATUS] Use case not found:', useCaseId);
       return NextResponse.json({ error: 'Use case not found' }, { status: 404 });
     }
+
+    console.log('[LOCK STATUS] Use case found:', useCase.id);
 
     // Check permissions based on role
     if (userRecord.role !== 'QZEN_ADMIN') {
@@ -58,34 +75,57 @@ export async function GET(request: NextRequest) {
     }
 
     // Clean up expired locks first
-    await prismaClient.lock.updateMany({
-      where: {
-        expiresAt: { lt: new Date() },
-        isActive: true
-      },
-      data: { isActive: false }
-    });
+    console.log('[LOCK STATUS] Cleaning up expired locks...');
+    try {
+      await prismaClient.lock.updateMany({
+        where: {
+          expiresAt: { lt: new Date() },
+          isActive: true
+        },
+        data: { isActive: false }
+      });
+    } catch (cleanupError) {
+      console.error('[LOCK STATUS] Error cleaning up expired locks:', cleanupError);
+      // Continue anyway, this is not critical
+    }
 
     // Check for existing locks on this specific scope
-    const existingLocks = await prismaClient.lock.findMany({
-      where: {
-        useCaseId,
-        scope,
-        isActive: true
-      },
-      include: {
-        User: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true
+    console.log('[LOCK STATUS] Checking for existing locks...');
+    let existingLocks = [];
+    try {
+      existingLocks = await prismaClient.lock.findMany({
+        where: {
+          useCaseId,
+          scope,
+          isActive: true
+        },
+        include: {
+          User: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true
+            }
           }
         }
-      }
-    });
+      });
+    } catch (lockError) {
+      console.error('[LOCK STATUS] Error fetching locks:', lockError);
+      // Return default state if we can't fetch locks
+      return NextResponse.json({ 
+        lockInfo: {
+          hasLock: false,
+          canEdit: true
+        }
+      });
+    }
+
+    console.log('[LOCK STATUS] Found existing locks:', existingLocks.length);
 
     const exclusiveLocks = existingLocks.filter(lock => lock.type === 'EXCLUSIVE');
     const sharedLocks = existingLocks.filter(lock => lock.type === 'SHARED');
+
+    console.log('[LOCK STATUS] Exclusive locks:', exclusiveLocks.length, 'Shared locks:', sharedLocks.length);
 
     let lockInfo = null;
 
@@ -94,14 +134,19 @@ export async function GET(request: NextRequest) {
       const exclusiveLock = exclusiveLocks[0];
       const heldByCurrentUser = exclusiveLock.userId === userRecord.id;
       
+      // Safely handle User data that might be null
+      const userName = exclusiveLock.User 
+        ? `${exclusiveLock.User.firstName || ''} ${exclusiveLock.User.lastName || ''}`.trim() || 'Unknown User'
+        : 'Unknown User';
+      
       lockInfo = {
         hasLock: true,
         canEdit: heldByCurrentUser,
         lockDetails: {
           scope: exclusiveLock.scope as any,
-          acquiredBy: `${exclusiveLock.User.firstName} ${exclusiveLock.User.lastName}`,
-          acquiredAt: exclusiveLock.acquiredAt.toISOString(),
-          expiresAt: exclusiveLock.expiresAt.toISOString(),
+          acquiredBy: userName,
+          acquiredAt: exclusiveLock.acquiredAt?.toISOString() || new Date().toISOString(),
+          expiresAt: exclusiveLock.expiresAt?.toISOString() || new Date().toISOString(),
           isOwnedByCurrentUser: heldByCurrentUser
         }
       };
@@ -115,8 +160,8 @@ export async function GET(request: NextRequest) {
         lockDetails: currentUserSharedLock ? {
           scope: currentUserSharedLock.scope as any,
           acquiredBy: 'You',
-          acquiredAt: currentUserSharedLock.acquiredAt.toISOString(),
-          expiresAt: currentUserSharedLock.expiresAt.toISOString(),
+          acquiredAt: currentUserSharedLock.acquiredAt?.toISOString() || new Date().toISOString(),
+          expiresAt: currentUserSharedLock.expiresAt?.toISOString() || new Date().toISOString(),
           isOwnedByCurrentUser: true
         } : undefined
       };
@@ -128,13 +173,19 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    console.log('[LOCK STATUS] Returning lock info:', lockInfo);
     return NextResponse.json({ lockInfo });
   } catch (error) {
-    console.error('Error checking lock status:', error);
-    return NextResponse.json(
-      { error: 'Failed to check lock status' },
-      { status: 500 }
-    );
+    console.error('[LOCK STATUS] Error checking lock status:', error);
+    console.error('[LOCK STATUS] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // Return a safe default response instead of throwing
+    return NextResponse.json({ 
+      lockInfo: {
+        hasLock: false,
+        canEdit: true
+      }
+    });
   }
 }
 

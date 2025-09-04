@@ -96,10 +96,14 @@ export async function GET(req: Request) {
         data: { isActive: false }
       });
 
-            // Check for existing locks
+      // Get the scope from query parameters (default to ASSESS for backward compatibility)
+      const scope = searchParams.get('scope') || 'ASSESS';
+
+      // Check for existing locks for the specific scope
       const existingLocks = await prismaClient.lock.findMany({
         where: {
           useCaseId,
+          scope,
           isActive: true
         },
         include: {

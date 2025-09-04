@@ -40,17 +40,18 @@ export const useLock = (useCaseId: string, scope: 'ASSESS' | 'EDIT' = 'ASSESS'):
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`/api/get-usecase-details?useCaseId=${useCaseId}&acquireSharedLock=true`);
+      console.log('🔒 [useLock] Checking lock status (not acquiring)...');
+      const response = await fetch(`/api/get-usecase-details?useCaseId=${useCaseId}&acquireSharedLock=true&scope=${scope}`);
       if (!response.ok) {
         throw new Error('Failed to fetch lock status');
       }
       const data = await response.json();
+      console.log('🔒 [useLock] Lock status check result:', data.lockInfo);
       setLockInfo((prev) => {
         const incoming: LockInfo | null = data.lockInfo || null;
         if (!incoming) return null;
-        // Preserve canEdit if we already own the lock
-        const mergedCanEdit = prev?.canEdit === true ? true : (incoming.canEdit ?? false);
-        return { ...incoming, canEdit: mergedCanEdit };
+        // Use the API's canEdit value directly - don't preserve previous state
+        return { ...incoming, canEdit: incoming.canEdit ?? false };
       });
     } catch (err) {
       console.error('Error refreshing lock status:', err);
@@ -62,13 +63,14 @@ export const useLock = (useCaseId: string, scope: 'ASSESS' | 'EDIT' = 'ASSESS'):
 
   const acquireExclusiveLock = useCallback(async (): Promise<boolean> => {
     if (!useCaseId) return false;
-    if (lockInfo?.hasExclusiveLock) {
-      console.log('Already have exclusive lock, skipping acquisition');
+    if (lockInfo?.hasExclusiveLock && lockInfo?.canEdit) {
+      console.log('🔒 [useLock] Already have exclusive lock with edit access, skipping acquisition');
       return true;
     }
     try {
       setLoading(true);
       setError(null);
+      console.log('🔒 [useLock] ACTUALLY acquiring exclusive lock...');
       const response = await fetch('/api/locks/acquire', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,21 +97,29 @@ export const useLock = (useCaseId: string, scope: 'ASSESS' | 'EDIT' = 'ASSESS'):
 
   const releaseLock = useCallback(async (lockType: 'SHARED' | 'EXCLUSIVE'): Promise<void> => {
     if (!useCaseId) return;
+    console.log('🔒 [useLock] releaseLock called with:', { useCaseId, lockType, scope });
     try {
       setLoading(true);
       setError(null);
+      console.log('🔒 [useLock] Making API call to release lock...');
       const response = await fetch('/api/locks/release', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ useCaseId, lockType, scope })
       });
+      console.log('🔒 [useLock] API response status:', response.status);
       if (!response.ok) {
         const data = await response.json();
+        console.error('🔒 [useLock] API error:', data);
         throw new Error(data.error || 'Failed to release lock');
       }
-      await refreshLockStatus();
+      const result = await response.json();
+      console.log('🔒 [useLock] Lock release successful:', result);
+      // Update local state immediately instead of refreshing
+      setLockInfo(prev => prev ? { ...prev, hasExclusiveLock: false, canEdit: false } : null);
+      // Don't refresh immediately to avoid race conditions
     } catch (err) {
-      console.error('Error releasing lock:', err);
+      console.error('🔒 [useLock] Error releasing lock:', err);
       setError(err instanceof Error ? err.message : 'Failed to release lock');
     } finally {
       setLoading(false);
@@ -130,31 +140,43 @@ export const useLock = (useCaseId: string, scope: 'ASSESS' | 'EDIT' = 'ASSESS'):
 
   useEffect(() => {
     if (!useCaseId || !lockInfo?.hasExclusiveLock) return;
+    console.log('🔒 [useLock] Setting up auto-release timer for 30 minutes');
     const timeout = setTimeout(async () => {
+      console.log('🔒 [useLock] Auto-release timer fired, releasing lock...');
       try {
-        await fetch('/api/locks/release', {
+        const response = await fetch('/api/locks/release', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ useCaseId, lockType: 'EXCLUSIVE', scope }),
         });
+        console.log('🔒 [useLock] Auto-release response status:', response.status);
+        if (response.ok) {
+          const result = await response.json();
+          console.log('🔒 [useLock] Auto-release successful:', result);
+        }
         setLockInfo(prev => prev ? { ...prev, hasExclusiveLock: false } : null);
       } catch (error) {
-        console.error('Failed to auto-release lock:', error);
+        console.error('🔒 [useLock] Failed to auto-release lock:', error);
       }
     }, 30 * 60 * 1000);
-    return () => clearTimeout(timeout);
+    return () => {
+      console.log('🔒 [useLock] Clearing auto-release timer');
+      clearTimeout(timeout);
+    };
   }, [useCaseId, lockInfo?.hasExclusiveLock, scope]);
 
   useEffect(() => {
     if (!useCaseId) return;
     const handleBeforeUnload = async () => {
       if (lockInfo?.hasExclusiveLock) {
+        console.log('🔒 [useLock] Beforeunload triggered, releasing lock...');
         try {
-          await fetch('/api/locks/release', {
+          const response = await fetch('/api/locks/release', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ useCaseId, lockType: 'EXCLUSIVE', scope }), keepalive: true
           });
+          console.log('🔒 [useLock] Beforeunload release response status:', response.status);
         } catch (error) {
-          console.error('Failed to release lock on page unload:', error);
+          console.error('🔒 [useLock] Failed to release lock on page unload:', error);
         }
       }
     };
@@ -162,12 +184,16 @@ export const useLock = (useCaseId: string, scope: 'ASSESS' | 'EDIT' = 'ASSESS'):
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       if (lockInfo?.hasExclusiveLock) {
+        console.log('🔒 [useLock] Component cleanup, sending beacon for lock release...');
         const data = new FormData();
         data.append('useCaseId', useCaseId);
         data.append('lockType', 'EXCLUSIVE');
         data.append('scope', scope);
-        try { navigator.sendBeacon('/api/locks/release', data); } catch (error) {
-          console.error('Failed to send beacon for lock release:', error);
+        try { 
+          navigator.sendBeacon('/api/locks/release', data);
+          console.log('🔒 [useLock] Beacon sent successfully');
+        } catch (error) {
+          console.error('🔒 [useLock] Failed to send beacon for lock release:', error);
         }
       }
     };

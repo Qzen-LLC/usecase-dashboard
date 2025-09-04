@@ -596,7 +596,8 @@ const AIUseCaseTool = () => {
         ...formData,
         // Convert timeline back to full format
         estimatedTimeline: formData.estimatedTimelineMonths ? `${formData.estimatedTimelineMonths} months` : '',
-        stage: 'discovery',
+        // Preserve the current stage when saving as draft
+        stage: formData.stage || 'discovery',
       };
       
       const res = await fetch("/api/write-usecases", {
@@ -609,6 +610,14 @@ const AIUseCaseTool = () => {
       
       if (res.ok) {
         alert("Use case saved successfully!");
+        // Release lock before navigation
+        try {
+          if (isExclusiveLocked) {
+            await releaseLock('EXCLUSIVE');
+          }
+        } catch (error) {
+          console.error('Error releasing lock after save:', error);
+        }
         router.push('/dashboard');
       } else {
         const errorData = await res.text();
@@ -646,6 +655,15 @@ const AIUseCaseTool = () => {
           throw new Error('Failed to save use case');
         }
 
+        // Release lock before navigation
+        try {
+          if (isExclusiveLocked) {
+            await releaseLock('EXCLUSIVE');
+          }
+        } catch (error) {
+          console.error('Error releasing lock after pipeline navigation:', error);
+        }
+
         router.push('/dashboard');
       } catch(error) {
         console.error("Error saving use case:", error);
@@ -658,11 +676,19 @@ const AIUseCaseTool = () => {
 
   // Release any active lock when navigating away via Cancel button
   const handleCancel = async () => {
+    console.log('🔒 [EDIT-USECASE] Cancel button clicked - releasing lock and navigating back');
     try {
       if (isExclusiveLocked) {
+        console.log('🔒 [EDIT-USECASE] Releasing EXCLUSIVE lock...');
         await releaseLock('EXCLUSIVE');
+        console.log('🔒 [EDIT-USECASE] Lock released successfully');
+      } else {
+        console.log('🔒 [EDIT-USECASE] No exclusive lock to release');
       }
-    } catch (_) {}
+    } catch (error) {
+      console.error('🔒 [EDIT-USECASE] Error releasing lock:', error);
+    }
+    console.log('🔒 [EDIT-USECASE] Navigating back...');
     router.back();
   };
 
@@ -693,11 +719,15 @@ const AIUseCaseTool = () => {
     };
   }, [isExclusiveLocked, useCaseId]);
 
-  // Attempt to acquire exclusive lock when page mounts
+  // Attempt to acquire exclusive lock when page mounts (only once)
+  const [hasAttemptedLockAcquisition, setHasAttemptedLockAcquisition] = useState(false);
+  
   useEffect(() => {
-    if (!useCaseId) return;
+    if (!useCaseId || hasAttemptedLockAcquisition) return;
+    console.log('🔒 [EDIT-USECASE] Attempting to acquire exclusive lock on page mount...');
+    setHasAttemptedLockAcquisition(true);
     acquireExclusiveLock();
-  }, [useCaseId, acquireExclusiveLock]);
+  }, [useCaseId, hasAttemptedLockAcquisition]); // Only run once per useCaseId
 
   return (
     <div className="min-h-screen flex justify-center items-start bg-gray-50 dark:bg-gray-900 p-0 sm:p-4">
@@ -764,7 +794,7 @@ const AIUseCaseTool = () => {
                 Previous
               </Button>
               <Button
-                onClick={() => router.push('/dashboard')}
+                onClick={handleCancel}
                 variant="outline"
                 className="flex items-center gap-2 border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800"
               >

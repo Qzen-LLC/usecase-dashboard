@@ -499,14 +499,37 @@ export default function EuAiActAssessmentPage() {
     return success;
   };
 
-  const handleCloseLockModal = () => {
-    setIsLockModalOpen(false);
-    // If user can't edit, redirect back to governance dashboard
-    if (!canEdit) {
-      router.push('/dashboard/governance');
+  const handleCloseLockModal = async () => {
+    console.log('🔒 [EU-AI-ACT] handleCloseLockModal called, checking lock status...');
+    console.log('🔒 [EU-AI-ACT] canEdit:', canEdit, 'lockInfo:', lockInfo);
+    
+    try {
+      // Release lock if we have one
+      if (lockInfo?.hasLock && canEdit) {
+        console.log('🔒 [EU-AI-ACT] Releasing EXCLUSIVE lock before closing modal...');
+        await releaseLock();
+        console.log('🔒 [EU-AI-ACT] Lock released successfully');
+      } else {
+        console.log('🔒 [EU-AI-ACT] No exclusive lock to release');
+      }
+      
+      setIsLockModalOpen(false);
+      
+      // If user can't edit, redirect back to governance dashboard
+      if (!canEdit) {
+        console.log('🔒 [EU-AI-ACT] Navigating back to governance dashboard...');
+        router.push('/dashboard/governance');
+      }
+      // If user can edit, they can continue working on the assessment
+      // The modal will close and they can continue editing
+    } catch (error) {
+      console.error('🔒 [EU-AI-ACT] Error releasing lock during modal close:', error);
+      // Close modal and navigate anyway even if lock release fails
+      setIsLockModalOpen(false);
+      if (!canEdit) {
+        router.push('/dashboard/governance');
+      }
     }
-    // If user can edit, they can continue working on the assessment
-    // The modal will close and they can continue editing
   };
 
   const handleContinueEditing = () => {
@@ -1400,12 +1423,35 @@ export default function EuAiActAssessmentPage() {
           {/* Header */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
-              <Link href="/dashboard/governance">
-                <Button variant="outline" size="sm" className="text-dark">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Governance
-                </Button>
-              </Link>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-dark"
+                onClick={async () => {
+                  console.log('🔒 [EU-AI-ACT] Back to Governance button clicked, releasing lock...');
+                  try {
+                    // Release lock if we have one
+                    if (lockInfo?.hasLock && canEdit) {
+                      console.log('🔒 [EU-AI-ACT] Releasing EXCLUSIVE lock before navigation...');
+                      await releaseLock();
+                      console.log('🔒 [EU-AI-ACT] Lock released successfully');
+                    } else {
+                      console.log('🔒 [EU-AI-ACT] No exclusive lock to release');
+                    }
+                    
+                    // Navigate back to governance
+                    console.log('🔒 [EU-AI-ACT] Navigating back to governance dashboard...');
+                    router.push('/dashboard/governance');
+                  } catch (error) {
+                    console.error('🔒 [EU-AI-ACT] Error releasing lock during navigation:', error);
+                    // Navigate anyway even if lock release fails
+                    router.push('/dashboard/governance');
+                  }
+                }}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Governance
+              </Button>
               
               {/* Lock Status Indicator */}
               {lockInfo && (
@@ -1431,7 +1477,16 @@ export default function EuAiActAssessmentPage() {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={handleReleaseLock}
+                          onClick={async () => {
+                            console.log('🔒 [EU-AI-ACT] Release Lock button clicked...');
+                            try {
+                              await handleReleaseLock();
+                              console.log('🔒 [EU-AI-ACT] Lock released, navigating back to governance...');
+                              router.push('/dashboard/governance');
+                            } catch (error) {
+                              console.error('🔒 [EU-AI-ACT] Error releasing lock:', error);
+                            }
+                          }}
                           disabled={lockLoading}
                           className="text-xs"
                         >

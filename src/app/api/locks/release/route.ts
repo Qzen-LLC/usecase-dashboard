@@ -3,11 +3,17 @@ import { prismaClient } from '@/utils/db';
 import { currentUser } from '@clerk/nextjs/server';
 
 export async function POST(request: NextRequest) {
+  console.log('🔒 [API] Lock release endpoint called');
+  console.log('🔒 [API] Request URL:', request.url);
+  console.log('🔒 [API] Request method:', request.method);
+  console.log('🔒 [API] Request headers:', Object.fromEntries(request.headers.entries()));
   try {
     const user = await currentUser();
     if (!user) {
+      console.log('🔒 [API] Unauthorized - no user found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    console.log('🔒 [API] User authenticated:', user.id);
 
     const userRecord = await prismaClient.user.findUnique({
       where: { clerkId: user.id },
@@ -23,17 +29,21 @@ export async function POST(request: NextRequest) {
 
     // Handle both JSON and FormData (for beacon requests)
     const contentType = request.headers.get('content-type');
+    console.log('🔒 [API] Content-Type:', contentType);
+    
     if (contentType?.includes('application/json')) {
       const body = await request.json();
       useCaseId = body.useCaseId;
       lockType = body.lockType;
       scope = body.scope;
+      console.log('🔒 [API] Parsed JSON body:', { useCaseId, lockType, scope });
     } else {
       // Handle FormData from beacon
       const formData = await request.formData();
       useCaseId = formData.get('useCaseId') as string;
       lockType = formData.get('lockType') as string;
       scope = formData.get('scope') as string | undefined;
+      console.log('🔒 [API] Parsed FormData:', { useCaseId, lockType, scope });
     }
 
     if (!useCaseId || !lockType) {
@@ -58,13 +68,31 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Find any active lock of the specified type for this use case (not just the current user's lock)
+    // Find the current user's active lock of the specified type for this use case
+    console.log('🔒 [API] Searching for current user\'s lock with criteria:', {
+      useCaseId,
+      userId: userRecord.id,
+      type: lockType,
+      scope: scope || 'ASSESS',
+      isActive: true
+    });
+    
     const lock = await prismaClient.lock.findFirst({
       where: {
         useCaseId,
+        userId: userRecord.id, // Only look for current user's lock
         type: lockType as any,
-        scope: (scope || 'ASSESS') as any, // Use the actual scope parameter
+        scope: (scope || 'ASSESS') as any,
         isActive: true
+      },
+      include: {
+        User: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true
+          }
+        }
       }
     });
 
@@ -83,11 +111,11 @@ export async function POST(request: NextRequest) {
     } : 'No active lock found');
 
     if (!lock) {
-      // No active lock found - this is fine, just return success
-      console.log(`[LOCK RELEASE] No active ${lockType} lock found to release`);
+      // No active lock found for current user - this is fine, just return success
+      console.log(`[LOCK RELEASE] No active ${lockType} lock found for current user to release`);
       return NextResponse.json({
         success: true,
-        message: `No active ${lockType} lock found to release`,
+        message: `No active ${lockType} lock found for current user to release`,
         alreadyReleased: true
       });
     }
@@ -104,7 +132,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `${lockType} lock released successfully`,
+      message: `${lockType} lock released successfully for current user`,
       alreadyReleased: false
     });
 

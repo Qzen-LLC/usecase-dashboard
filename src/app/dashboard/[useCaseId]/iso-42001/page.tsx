@@ -24,9 +24,12 @@ import {
   ChevronDown,
   BookOpen,
   Loader2,
+  Lock,
 } from "lucide-react";
 import Link from "next/link";
 import { FileUpload } from "@/components/ui/file-upload";
+import { useGovernanceLock } from '@/hooks/useGovernanceLock';
+import { GovernanceLockModal } from '@/components/GovernanceLockModal';
 
 interface SubclauseInstance {
   id: string;
@@ -122,6 +125,19 @@ export default function Iso42001AssessmentPage() {
   );
   const [savingFiles, setSavingFiles] = useState<Set<string>>(new Set());
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isLockModalOpen, setIsLockModalOpen] = useState(false);
+
+  // Lock management system
+  const {
+    lockInfo,
+    isLocked,
+    canEdit,
+    acquireLock,
+    releaseLock,
+    refreshLockStatus,
+    loading: lockLoading,
+    error: lockError
+  } = useGovernanceLock(useCaseId, 'GOVERNANCE_ISO_42001');
 
   // Add debounce mechanism to prevent duplicate API calls (only for subclauses now)
   const [pendingEvidenceChanges, setPendingEvidenceChanges] = useState<
@@ -152,6 +168,28 @@ export default function Iso42001AssessmentPage() {
   useEffect(() => {
     fetchAssessmentData();
   }, [useCaseId]);
+
+  // Cleanup: Release lock when component unmounts or user navigates away
+  useEffect(() => {
+    return () => {
+      // Release lock when component unmounts
+      if (lockInfo?.hasLock && canEdit) {
+        console.log('🔒 Component unmounting, releasing lock...');
+        // Use sendBeacon for reliable delivery during navigation
+        const data = new FormData();
+        data.append('useCaseId', useCaseId);
+        data.append('lockType', 'EXCLUSIVE');
+        data.append('scope', 'GOVERNANCE_ISO_42001');
+        
+        try {
+          navigator.sendBeacon('/api/locks/release', data);
+          console.log('🔒 Lock release beacon sent');
+        } catch (error) {
+          console.error('🔒 Failed to send lock release beacon:', error);
+        }
+      }
+    };
+  }, [useCaseId, lockInfo?.hasLock, canEdit]);
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -277,10 +315,85 @@ export default function Iso42001AssessmentPage() {
     }
   };
 
+  // Lock management functions
+  const handleStartAssessment = async () => {
+    const success = await acquireLock();
+    if (success) {
+      setIsLockModalOpen(false);
+      // Lock acquired successfully, user can now edit
+    }
+    return success;
+  };
+
+  const handleCloseLockModal = async () => {
+    console.log('🔒 [ISO-42001] handleCloseLockModal called, checking lock status...');
+    console.log('🔒 [ISO-42001] canEdit:', canEdit, 'lockInfo:', lockInfo);
+    
+    try {
+      // Release lock if we have one
+      if (lockInfo?.hasLock && canEdit) {
+        console.log('🔒 [ISO-42001] Releasing EXCLUSIVE lock before closing modal...');
+        await releaseLock();
+        console.log('🔒 [ISO-42001] Lock released successfully');
+      } else {
+        console.log('🔒 [ISO-42001] No exclusive lock to release');
+      }
+      
+      setIsLockModalOpen(false);
+      
+      // If user can't edit, redirect back to governance dashboard
+      if (!canEdit) {
+        console.log('🔒 [ISO-42001] Navigating back to governance dashboard...');
+        router.push('/dashboard/governance');
+      }
+      // If user can edit, they can continue working on the assessment
+      // The modal will close and they can continue editing
+    } catch (error) {
+      console.error('🔒 [ISO-42001] Error releasing lock during modal close:', error);
+      // Close modal and navigate anyway even if lock release fails
+      setIsLockModalOpen(false);
+      if (!canEdit) {
+        router.push('/dashboard/governance');
+      }
+    }
+  };
+
+  const handleContinueEditing = () => {
+    setIsLockModalOpen(false);
+    // User wants to continue editing, just close the modal
+    // They already have edit access, so they can continue working
+  };
+
+  const handleReleaseLock = async () => {
+    console.log('🔒 handleReleaseLock called, releasing lock...');
+    try {
+      await releaseLock();
+      console.log('🔒 Lock released successfully');
+      
+      // Refresh lock status after release
+      await refreshLockStatus();
+      
+      // Close modal if it's open
+      if (isLockModalOpen) {
+        setIsLockModalOpen(false);
+      }
+      
+      console.log('🔒 Lock release process completed');
+    } catch (error) {
+      console.error('🔒 Failed to release lock:', error);
+    }
+  };
+
   const handleSubclauseImplementationChange = (
     subclauseId: string,
     implementation: string
   ) => {
+    console.log('🔒 handleSubclauseImplementationChange called:', { subclauseId, canEdit, hasLock: lockInfo?.hasLock });
+    if (!canEdit) {
+      console.log('🔒 User cannot edit, preventing subclause implementation change');
+      return; // Prevent changes if user doesn't have edit access
+    }
+    
     if (!assessment) return;
 
     console.log("ISO 42001 Debug - Implementation change:", {
@@ -331,6 +444,12 @@ export default function Iso42001AssessmentPage() {
     itemId: string,
     implementation: string
   ) => {
+    console.log('🔒 handleAnnexImplementationChange called:', { itemId, canEdit, hasLock: lockInfo?.hasLock });
+    if (!canEdit) {
+      console.log('🔒 User cannot edit, preventing annex implementation change');
+      return; // Prevent changes if user doesn't have edit access
+    }
+    
     if (!assessment) return;
 
     // Clear any pending timeout for this annex
@@ -526,6 +645,12 @@ export default function Iso42001AssessmentPage() {
     subclauseId: string,
     evidenceFiles: string[]
   ) => {
+    console.log('🔒 handleSubclauseEvidenceChange called:', { subclauseId, canEdit, hasLock: lockInfo?.hasLock });
+    if (!canEdit) {
+      console.log('🔒 User cannot edit, preventing subclause evidence change');
+      return; // Prevent changes if user doesn't have edit access
+    }
+    
     if (!assessment) return;
 
     // Clear any pending timeout for this subclause
@@ -716,6 +841,12 @@ export default function Iso42001AssessmentPage() {
     itemId: string,
     evidenceFiles: string[]
   ) => {
+    console.log('🔒 handleAnnexEvidenceChange called:', { itemId, canEdit, hasLock: lockInfo?.hasLock });
+    if (!canEdit) {
+      console.log('🔒 User cannot edit, preventing annex evidence change');
+      return; // Prevent changes if user doesn't have edit access
+    }
+    
     if (!assessment) return;
 
     const existingInstance = assessment.annexes.find(
@@ -758,6 +889,12 @@ export default function Iso42001AssessmentPage() {
   };
 
   const handleSaveSubclause = async (subclauseId: string) => {
+    console.log('🔒 handleSaveSubclause called:', { subclauseId, canEdit, hasLock: lockInfo?.hasLock });
+    if (!canEdit) {
+      console.log('🔒 User cannot edit, preventing subclause save');
+      return; // Prevent changes if user doesn't have edit access
+    }
+    
     const subclauseInstance = assessment?.subclauses.find(
       (sc) => sc.subclause.subclauseId === subclauseId
     );
@@ -793,6 +930,12 @@ export default function Iso42001AssessmentPage() {
   };
 
   const handleSaveAnnex = async (itemId: string) => {
+    console.log('🔒 handleSaveAnnex called:', { itemId, canEdit, hasLock: lockInfo?.hasLock });
+    if (!canEdit) {
+      console.log('🔒 User cannot edit, preventing annex save');
+      return; // Prevent changes if user doesn't have edit access
+    }
+    
     const annexInstance = assessment?.annexes.find(
       (ann) => ann.item.itemId === itemId
     );
@@ -989,13 +1132,86 @@ export default function Iso42001AssessmentPage() {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-6">
-            <div className="flex items-center gap-4 mb-4">
-              <Link href="/dashboard/governance">
-                <Button variant="outline" size="sm" className="text-dark">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Governance
-                </Button>
-              </Link>
+            <div className="flex items-center justify-between mb-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-dark"
+                onClick={async () => {
+                  console.log('🔒 [ISO-42001] Back to Governance button clicked, releasing lock...');
+                  try {
+                    // Release lock if we have one
+                    if (lockInfo?.hasLock && canEdit) {
+                      console.log('🔒 [ISO-42001] Releasing EXCLUSIVE lock before navigation...');
+                      await releaseLock();
+                      console.log('🔒 [ISO-42001] Lock released successfully');
+                    } else {
+                      console.log('🔒 [ISO-42001] No exclusive lock to release');
+                    }
+                    
+                    // Navigate back to governance
+                    console.log('🔒 [ISO-42001] Navigating back to governance dashboard...');
+                    router.push('/dashboard/governance');
+                  } catch (error) {
+                    console.error('🔒 [ISO-42001] Error releasing lock during navigation:', error);
+                    // Navigate anyway even if lock release fails
+                    router.push('/dashboard/governance');
+                  }
+                }}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Governance
+              </Button>
+              
+              {/* Lock Status Indicator */}
+              {lockInfo && (
+                <div className="flex items-center gap-2">
+                  {canEdit ? (
+                    <div className="flex items-center gap-2">
+                      <div className="px-3 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-300 dark:border-green-700 rounded-lg">
+                        <Lock className="h-4 w-4" />
+                        <span className="text-sm font-medium">You have edit access</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            await refreshLockStatus();
+                            setIsLockModalOpen(true);
+                          }}
+                          className="text-xs"
+                        >
+                          Lock Info
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={async () => {
+                            console.log('🔒 [ISO-42001] Release Lock button clicked...');
+                            try {
+                              await handleReleaseLock();
+                              console.log('🔒 [ISO-42001] Lock released, navigating back to governance...');
+                              router.push('/dashboard/governance');
+                            } catch (error) {
+                              console.error('🔒 [ISO-42001] Error releasing lock:', error);
+                            }
+                          }}
+                          disabled={lockLoading}
+                          className="text-xs"
+                        >
+                          Release Lock
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 px-3 py-1 bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-300 dark:border-red-700 rounded-lg">
+                      <Lock className="h-4 w-4" />
+                      <span className="text-sm font-medium">Locked by another user</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {assessment && (
@@ -1399,14 +1615,15 @@ export default function Iso42001AssessmentPage() {
                                               }
                                             );
                                           }}
-                                          placeholder="Describe how this requirement is implemented in your organization...
+                                          placeholder={canEdit ? `Describe how this requirement is implemented in your organization...
 
 • What processes are in place?
 • Who is responsible?
 • What documentation exists?
-• How is compliance monitored?"
-                                          className="w-full p-3 border border-input rounded-lg resize-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors bg-background text-foreground"
+• How is compliance monitored?` : "Assessment is locked by another user"}
+                                          className="w-full p-3 border border-input rounded-lg resize-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                                           rows={5}
+                                          disabled={!canEdit}
                                         />
                                       </div>
 
@@ -1425,7 +1642,7 @@ export default function Iso42001AssessmentPage() {
                                             }
                                             maxFiles={5}
                                             maxSize={10}
-                                            disabled={savingFiles.has(
+                                            disabled={!canEdit || savingFiles.has(
                                               `subclause-${subclause.subclauseId}`
                                             )}
                                             useCaseId={
@@ -1458,7 +1675,7 @@ export default function Iso42001AssessmentPage() {
                                               subclause.subclauseId
                                             )
                                           }
-                                          disabled={saving}
+                                          disabled={!canEdit || saving}
                                           size="sm"
                                           className={`flex items-center gap-2 transition-colors ${
                                             isCompleted
@@ -1641,14 +1858,15 @@ export default function Iso42001AssessmentPage() {
                                               e.target.value
                                             )
                                           }
-                                          placeholder="Describe how this control is implemented in your organization...
+                                          placeholder={canEdit ? `Describe how this control is implemented in your organization...
 
 • What specific measures are in place?
 • Who is responsible for this control?
 • What processes and procedures exist?
-• How is effectiveness monitored?"
-                                          className="w-full p-3 border border-input rounded-lg resize-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors bg-background text-foreground"
+• How is effectiveness monitored?` : "Assessment is locked by another user"}
+                                          className="w-full p-3 border border-input rounded-lg resize-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                                           rows={5}
+                                          disabled={!canEdit}
                                         />
                                       </div>
 
@@ -1667,6 +1885,7 @@ export default function Iso42001AssessmentPage() {
                                             }
                                             maxFiles={5}
                                             maxSize={10}
+                                            disabled={!canEdit}
                                             useCaseId={
                                               params.useCaseId as string
                                             }
@@ -1687,7 +1906,7 @@ export default function Iso42001AssessmentPage() {
                                           onClick={() =>
                                             handleSaveAnnex(item.itemId)
                                           }
-                                          disabled={saving}
+                                          disabled={!canEdit || saving}
                                           size="sm"
                                           className={`flex items-center gap-2 transition-colors ${
                                             isCompleted
@@ -1714,6 +1933,19 @@ export default function Iso42001AssessmentPage() {
             })}
         </div>
       </div>
+
+      {/* Lock Management Modal */}
+      <GovernanceLockModal
+        isOpen={isLockModalOpen}
+        onClose={handleCloseLockModal}
+        lockInfo={lockInfo}
+        framework="GOVERNANCE_ISO_42001"
+        useCaseId={useCaseId}
+        useCaseName={`AIUC-${useCaseId}`}
+        onAcquireLock={handleStartAssessment}
+        onReleaseLock={handleReleaseLock}
+        loading={lockLoading}
+      />
     </div>
   );
 }

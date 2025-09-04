@@ -198,49 +198,66 @@ export const useGovernanceLock = (
   // Handle page unload and navigation
   useEffect(() => {
     if (!useCaseId || !lockInfo?.hasLock || !lockInfo?.canEdit) return;
-    
-    const handleBeforeUnload = async () => {
-      try {
-        // Use sendBeacon for more reliable delivery
-        const data = new FormData();
-        data.append('useCaseId', useCaseId);
-        data.append('lockType', 'EXCLUSIVE');
-        data.append('scope', framework);
-        
-        navigator.sendBeacon('/api/locks/release', data);
-      } catch (error) {
-        console.error('Failed to release lock on page unload:', error);
-      }
-    };
-    
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        // Page is being hidden (navigation, tab switch, etc.)
-        handleBeforeUnload();
-      }
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+
+    let lockReleased = false;
+
+    const releaseLockSafely = () => {
+      if (lockReleased) return; // Prevent multiple releases
+      lockReleased = true;
+      console.log(`🔒 [GOVERNANCE] Releasing lock safely for ${framework}...`);
       
-      // Also try to release lock when component unmounts
-      if (lockInfo?.hasLock && lockInfo?.canEdit) {
+      try {
+        // Try beacon first
         const data = new FormData();
         data.append('useCaseId', useCaseId);
         data.append('lockType', 'EXCLUSIVE');
         data.append('scope', framework);
+        const beaconResult = navigator.sendBeacon('/api/locks/release', data);
+        console.log(`🔒 [GOVERNANCE] Beacon result for ${framework}:`, beaconResult);
         
-        try {
-          navigator.sendBeacon('/api/locks/release', data);
-        } catch (error) {
-          console.error('Failed to send beacon for lock release:', error);
+        // If beacon fails, try synchronous request
+        if (!beaconResult) {
+          console.log(`🔒 [GOVERNANCE] Beacon failed for ${framework}, trying synchronous request...`);
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', '/api/locks/release', false);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.send(JSON.stringify({ useCaseId, lockType: 'EXCLUSIVE', scope: framework }));
+          console.log(`🔒 [GOVERNANCE] Synchronous request status for ${framework}:`, xhr.status);
         }
+      } catch (error) {
+        console.error(`🔒 [GOVERNANCE] Error in releaseLockSafely for ${framework}:`, error);
       }
     };
+
+    // Add a global function that can be called from anywhere
+    (window as any).__releaseGovernanceLockOnNavigation = releaseLockSafely;
+
+    // Simple beforeunload handler
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      console.log(`🔒 [GOVERNANCE] Beforeunload triggered for ${framework}`);
+      releaseLockSafely();
+    };
+
+    // Simple pagehide handler
+    const handlePageHide = (e: PageTransitionEvent) => {
+      console.log(`🔒 [GOVERNANCE] Pagehide triggered for ${framework}`);
+      releaseLockSafely();
+    };
+
+              // Add event listeners
+          window.addEventListener('beforeunload', handleBeforeUnload);
+          window.addEventListener('pagehide', handlePageHide);
+    
+              return () => {
+            console.log(`🔒 [GOVERNANCE] Cleaning up event listeners for ${framework}`);
+            releaseLockSafely(); // Always try to release lock on cleanup
+            
+            // Clean up global function
+            delete (window as any).__releaseGovernanceLockOnNavigation;
+            
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            window.removeEventListener('pagehide', handlePageHide);
+          };
   }, [useCaseId, framework, lockInfo?.hasLock, lockInfo?.canEdit]);
 
   return {
