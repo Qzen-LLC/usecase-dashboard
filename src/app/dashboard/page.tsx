@@ -372,12 +372,52 @@ const Dashboard = () => {
   }
 
   const handleAssess = async (id: string) => {
-    setSelectedUseCaseForLock(id);
-    // Wait a bit for the useLock hook to initialize with the new ID
-    setTimeout(async () => {
-      await refreshLockStatus();
+    try {
+      // Check lock status directly from the API
+      const response = await fetch(`/api/get-usecase-details?useCaseId=${id}&acquireSharedLock=true&scope=ASSESS`);
+      if (!response.ok) {
+        throw new Error('Failed to check lock status');
+      }
+      
+      const data = await response.json();
+      const lockStatus = data.lockInfo;
+      
+      // Check if the assessment is already locked
+      if (lockStatus?.hasExclusiveLock) {
+        // Assessment is locked, set the use case ID and show the lock modal
+        setSelectedUseCaseForLock(id);
+        setIsLockModalOpen(true);
+      } else {
+        // Assessment is free, automatically acquire the lock and proceed
+        console.log('🔒 Assessment is free, automatically acquiring lock...');
+        
+        const lockResponse = await fetch('/api/locks/acquire', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            useCaseId: id, 
+            lockType: 'EXCLUSIVE', 
+            scope: 'ASSESS' 
+          })
+        });
+        
+        if (lockResponse.ok) {
+          // Lock acquired successfully, proceed to assessment
+          router.push(`/dashboard/${id}/assess`);
+        } else {
+          // Failed to acquire lock, show error or fallback
+          console.error('Failed to automatically acquire lock');
+          // Fallback: set the use case ID and show the lock modal
+          setSelectedUseCaseForLock(id);
+          setIsLockModalOpen(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error in handleAssess:', error);
+      // Fallback: set the use case ID and show the lock modal
+      setSelectedUseCaseForLock(id);
       setIsLockModalOpen(true);
-    }, 100);
+    }
   }
 
   const handleLockModalClose = () => {
@@ -969,7 +1009,7 @@ const Dashboard = () => {
                           {idx === 3 && <Clock className="text-warning w-6 h-6" />}
                           {idx === 4 && <Zap className="text-primary w-6 h-6" />}
                           {idx === 5 && <Users className="text-primary w-6 h-6" />}
-                          {idx === 6 && <User className="text-primary w-6 h-6" />}
+                                                     {idx === 6 && <User className="text-primary w-6 h-6" />}
                           {idx === 7 && <Clock className="text-destructive w-6 h-6" />}
                         </div>
                         <div className="font-semibold text-muted-foreground text-sm group-hover:text-primary transition-colors mb-1">{stage.title}</div>
