@@ -1163,55 +1163,6 @@ export default function Iso42001AssessmentPage() {
                 Back to Governance
               </Button>
               
-              {/* Lock Status Indicator */}
-              {lockInfo && (
-                <div className="flex items-center gap-2">
-                  {canEdit ? (
-                    <div className="flex items-center gap-2">
-                      <div className="px-3 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-300 dark:border-green-700 rounded-lg">
-                        <Lock className="h-4 w-4" />
-                        <span className="text-sm font-medium">You have edit access</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={async () => {
-                            await refreshLockStatus();
-                            setIsLockModalOpen(true);
-                          }}
-                          className="text-xs"
-                        >
-                          Lock Info
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={async () => {
-                            console.log('🔒 [ISO-42001] Release Lock button clicked...');
-                            try {
-                              await handleReleaseLock();
-                              console.log('🔒 [ISO-42001] Lock released, navigating back to governance...');
-                              router.push('/dashboard/governance');
-                            } catch (error) {
-                              console.error('🔒 [ISO-42001] Error releasing lock:', error);
-                            }
-                          }}
-                          disabled={lockLoading}
-                          className="text-xs"
-                        >
-                          Release Lock
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 px-3 py-1 bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-300 dark:border-red-700 rounded-lg">
-                      <Lock className="h-4 w-4" />
-                      <span className="text-sm font-medium">Locked by another user</span>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
 
             {assessment && (

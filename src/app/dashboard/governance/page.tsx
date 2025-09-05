@@ -14,8 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Shield, Users, Building, RefreshCw, AlertTriangle, Lock } from "lucide-react";
 import Link from 'next/link';
 import { calculateRiskScores, getRiskLevel, type StepsData } from '@/lib/risk-calculations';
-import { useGovernanceLock, type GovernanceFramework } from '@/hooks/useGovernanceLock';
-import { GovernanceLockModal } from '@/components/GovernanceLockModal';
+import { type GovernanceFramework } from '@/hooks/useGovernanceLock';
 
 interface UseCase {
   useCaseId: string;
@@ -57,8 +56,6 @@ export default function GovernancePage() {
   // Lock management state
   const [selectedUseCase, setSelectedUseCase] = useState<UseCase | null>(null);
   const [selectedFramework, setSelectedFramework] = useState<GovernanceFramework | null>(null);
-  const [isLockModalOpen, setIsLockModalOpen] = useState(false);
-  const [isAcquiringLock, setIsAcquiringLock] = useState(false);
 
   // Check for dark mode
   useEffect(() => {
@@ -179,34 +176,21 @@ export default function GovernancePage() {
     fetchAllData(true);
   };
 
-  const handleStartAssessment = (useCase: UseCase, framework: GovernanceFramework) => {
+  const handleStartAssessment = async (useCase: UseCase, framework: GovernanceFramework) => {
     setSelectedUseCase(useCase);
     setSelectedFramework(framework);
-    setIsLockModalOpen(true);
-  };
-
-  const handleCloseLockModal = () => {
-    setIsLockModalOpen(false);
-    setSelectedUseCase(null);
-    setSelectedFramework(null);
-    setIsAcquiringLock(false);
-  };
-
-  const handleAcquireLock = async (): Promise<boolean> => {
-    if (!selectedUseCase || !selectedFramework) return false;
     
-    setIsAcquiringLock(true);
-    
+    // Automatically acquire lock without showing modal
     try {
-      console.log(`🔒 Attempting to acquire lock for ${selectedFramework} on use case ${selectedUseCase.useCaseId}`);
+      console.log(`🔒 Automatically acquiring lock for ${framework} on use case ${useCase.useCaseId}`);
       
       const response = await fetch('/api/locks/acquire', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          useCaseId: selectedUseCase.useCaseId,
+          useCaseId: useCase.useCaseId,
           lockType: 'EXCLUSIVE',
-          scope: selectedFramework
+          scope: framework
         })
       });
       
@@ -215,36 +199,39 @@ export default function GovernancePage() {
       if (!response.ok) {
         if (response.status === 409) {
           console.log(`❌ Lock already held by another user: ${data.lockDetails?.acquiredBy}`);
-          // The modal will handle showing the lock conflict
-          return false;
+          // Show error message for lock conflict
+          setError(`This framework is currently being edited by ${data.lockDetails?.acquiredBy}. Please try again later.`);
+          return;
         }
         throw new Error(data.error || 'Failed to acquire lock');
       }
       
-      console.log(`✅ Lock acquired successfully for ${selectedFramework}`);
+      console.log(`✅ Lock acquired successfully for ${framework}`);
       
       // Navigate to the appropriate assessment page
       const frameworkRoutes = {
-        'GOVERNANCE_EU_AI_ACT': `/dashboard/${selectedUseCase.useCaseId}/eu-ai-act`,
-        'GOVERNANCE_ISO_42001': `/dashboard/${selectedUseCase.useCaseId}/iso-42001`,
-        'GOVERNANCE_UAE_AI': `/dashboard/${selectedUseCase.useCaseId}/uae-ai`
+        'GOVERNANCE_EU_AI_ACT': `/dashboard/${useCase.useCaseId}/eu-ai-act`,
+        'GOVERNANCE_ISO_42001': `/dashboard/${useCase.useCaseId}/iso-42001`,
+        'GOVERNANCE_UAE_AI': `/dashboard/${useCase.useCaseId}/uae-ai`
       };
       
-      const route = frameworkRoutes[selectedFramework];
+      const route = frameworkRoutes[framework];
       if (route) {
         console.log(`🚀 Navigating to ${route}`);
         window.location.href = route;
       }
       
-      return true;
     } catch (err) {
       console.error('Error acquiring lock:', err);
       setError(err instanceof Error ? err.message : 'Failed to acquire lock');
-      return false;
     } finally {
-      setIsAcquiringLock(false);
+      // Reset state
+      setSelectedUseCase(null);
+      setSelectedFramework(null);
     }
   };
+
+
 
   const getFrameworkColor = (framework: string) => {
     const colors: { [key: string]: string } = {
@@ -542,23 +529,6 @@ export default function GovernancePage() {
         </div>
       </div>
 
-      {/* Lock Management Modal */}
-      {selectedUseCase && selectedFramework && (
-        <GovernanceLockModal
-          isOpen={isLockModalOpen}
-          onClose={handleCloseLockModal}
-          lockInfo={null} // Will be managed by the hook in the actual assessment pages
-          framework={selectedFramework}
-          useCaseId={selectedUseCase.useCaseId}
-          useCaseName={selectedUseCase.useCaseName}
-          onAcquireLock={handleAcquireLock}
-          onReleaseLock={async () => {
-            // This will be handled by the actual assessment pages
-            handleCloseLockModal();
-          }}
-          loading={isAcquiringLock}
-        />
-      )}
     </div>
   );
 }
