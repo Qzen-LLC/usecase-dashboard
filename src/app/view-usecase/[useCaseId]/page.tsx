@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Target, TrendingUp, Zap, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Target, TrendingUp, Zap, AlertTriangle, ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import ReadOnlyAssessmentDisplay from '@/components/ReadOnlyAssessmentDisplay';
@@ -389,63 +389,69 @@ const ViewUseCasePage = () => {
           {/* Right Panel */}
           <div className="w-full lg:w-1/2">
             <div className="bg-muted rounded-lg overflow-hidden">
-              <div className="bg-muted/70 px-5 py-4 font-semibold text-lg text-center text-foreground">
-                Collapsable Box
-              </div>
-                             <div className="space-y-0">
+              <div className="space-y-0">
                  <div 
-                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
                    onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=1&readonly=true`)}
                  >
-                   Technical Feasibility
+                   <span>Technical Feasibility</span>
+                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                  </div>
                  <div 
-                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
                    onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=2&readonly=true`)}
                  >
-                   Business Feasibility
+                   <span>Business Feasibility</span>
+                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                  </div>
                  <div 
-                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
                    onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=3&readonly=true`)}
                  >
-                   Ethical Impact
+                   <span>Ethical Impact</span>
+                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                  </div>
                  <div 
-                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
                    onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=4&readonly=true`)}
                  >
-                   Risk Assessment
+                   <span>Risk Assessment</span>
+                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                  </div>
                  <div 
-                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
                    onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=5&readonly=true`)}
                  >
-                   Data Readiness
+                   <span>Data Readiness</span>
+                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                  </div>
                  <div 
-                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
                    onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=6&readonly=true`)}
                  >
-                   Roadmap Position
+                   <span>Roadmap Position</span>
+                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                  </div>
                  <div 
-                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
                    onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=7&readonly=true`)}
                  >
-                   Budget Planning
+                   <span>Budget Planning</span>
+                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                  </div>
                  <div 
-                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
                    onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=8&readonly=true`)}
                  >
-                   Financial Dashboard
+                   <span>Financial Dashboard</span>
+                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                  </div>
                  <div 
-                   className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors"
+                   className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
                    onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=9&readonly=true`)}
                  >
-                   Approvals
+                   <span>Approvals</span>
+                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                  </div>
                </div>
             </div>
