@@ -520,7 +520,18 @@ const Dashboard = () => {
     ? useCases.filter((uc: any) => uc.businessFunction === selectedBusinessFunction)
     : useCases;
 
-  const filteredUseCases = businessFunctionFilteredUseCases.filter(useCase => {
+  // Apply additive filtering - both organization AND business function filters can be active
+  let baseFilteredUseCases = useCases;
+  
+  if (selectedOrgId) {
+    baseFilteredUseCases = baseFilteredUseCases.filter((uc: any) => uc.organizationId === selectedOrgId);
+  }
+  
+  if (selectedBusinessFunction) {
+    baseFilteredUseCases = baseFilteredUseCases.filter((uc: any) => uc.businessFunction === selectedBusinessFunction);
+  }
+
+  const filteredUseCases = baseFilteredUseCases.filter(useCase => {
     // Skip deleted use cases
     if (deletedUseCaseIds.has(useCase.id)) {
       return false;

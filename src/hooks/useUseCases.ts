@@ -25,6 +25,7 @@ export interface UseCase {
   requiredResources?: string[];
   createdAt?: string;
   updatedAt?: string;
+  businessFunction?: string;
   user?: {
     firstName?: string;
     lastName?: string;
