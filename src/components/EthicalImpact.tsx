@@ -4,7 +4,72 @@ import isEqual from 'lodash.isequal';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Brain, Shield, Settings, Heart } from 'lucide-react';
+import { Brain, Shield, Settings, Heart, AlertCircle, Bot } from 'lucide-react';
+
+// Gen AI Specific Constants
+const CONTENT_GENERATION_RISKS = [
+  "Misinformation/Disinformation",
+  "Harmful Content Generation",
+  "Biased Outputs",
+  "Copyright Infringement",
+  "Personal Information Leakage",
+  "Inappropriate Content for Minors",
+  "Hate Speech Generation",
+  "Medical/Legal Misinformation",
+];
+
+const HALLUCINATION_TOLERANCE = [
+  "Zero Tolerance",
+  "Low (<5%)",
+  "Medium (5-15%)",
+  "Acceptable (>15%)",
+];
+
+const ATTRIBUTION_REQUIREMENTS = [
+  "AI Disclosure Required",
+  "Source Attribution Needed",
+  "Watermarking Required",
+  "Human Review Mandatory",
+  "Content Labeling",
+  "Confidence Scores Shown",
+];
+
+const PROMPT_SAFETY_MEASURES = [
+  "Prompt Injection Prevention",
+  "Jailbreak Protection",
+  "Content Filtering",
+  "Output Validation",
+  "Input Sanitization",
+  "System Prompt Protection",
+  "Adversarial Input Detection",
+];
+
+const BEHAVIORAL_BOUNDARIES = [
+  "Cannot Make Financial Transactions",
+  "Cannot Access Personal Data",
+  "Cannot Make Irreversible Changes",
+  "Cannot Communicate Externally",
+  "Must Log All Actions",
+  "Cannot Override Safety Limits",
+  "Must Respect User Consent",
+];
+
+const TRANSPARENCY_LEVELS = [
+  "Always Disclose AI Nature",
+  "Disclose When Asked",
+  "Disclose in Documentation",
+  "No Disclosure Required",
+];
+
+const HUMAN_OVERSIGHT_TRIGGERS = [
+  "High-stake Decisions",
+  "Uncertain Outputs",
+  "User Request",
+  "Error Conditions",
+  "Ethical Concerns",
+  "Anomaly Detection",
+  "Compliance Requirements",
+];
 
 type Props = {
   value: {
@@ -36,6 +101,18 @@ type Props = {
     ethicalConsiderations: {
       potentialHarmAreas: string[];
       vulnerablePopulations: string[];
+    };
+    // Gen AI specific fields
+    contentGeneration?: {
+      risks: string[];
+      hallucinationTolerance: string;
+      attributionRequirements: string[];
+      promptSafety: string[];
+    };
+    agentBehavior?: {
+      behavioralBoundaries: string[];
+      transparencyLevel: string;
+      humanOversightTriggers: string[];
     };
   };
   onChange: (data: Props['value']) => void;
@@ -731,6 +808,233 @@ export default function EthicalImpact({ value, onChange }: Props) {
                 />
                 <span className="text-sm text-foreground">Data anonymization</span>
               </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Content Safety & Generation Ethics Section */}
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-6 h-6 text-yellow-500" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Content Safety & Generation Ethics</h3>
+              <p className="text-sm text-muted-foreground">Manage content generation risks and safety measures for AI systems</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-8">
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Content Generation Risks</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {CONTENT_GENERATION_RISKS.map((risk) => (
+                <label key={risk} className="flex items-center space-x-2 hover:bg-accent p-2 rounded border border-border transition-colors">
+                  <Checkbox
+                    checked={value.contentGeneration?.risks?.includes(risk) || false}
+                    onCheckedChange={(checked) => {
+                      const currentRisks = value.contentGeneration?.risks || [];
+                      const newRisks = checked 
+                        ? [...currentRisks, risk]
+                        : currentRisks.filter(r => r !== risk);
+                      onChange({
+                        ...value,
+                        contentGeneration: {
+                          ...value.contentGeneration,
+                          risks: newRisks,
+                          hallucinationTolerance: value.contentGeneration?.hallucinationTolerance || '',
+                          attributionRequirements: value.contentGeneration?.attributionRequirements || [],
+                          promptSafety: value.contentGeneration?.promptSafety || []
+                        }
+                      });
+                    }}
+                  />
+                  <span className="text-sm text-foreground">{risk}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Hallucination Tolerance</Label>
+            <RadioGroup 
+              value={value.contentGeneration?.hallucinationTolerance || ''} 
+              onValueChange={(newValue) => onChange({ 
+                ...value, 
+                contentGeneration: {
+                  ...value.contentGeneration,
+                  risks: value.contentGeneration?.risks || [],
+                  hallucinationTolerance: newValue,
+                  attributionRequirements: value.contentGeneration?.attributionRequirements || [],
+                  promptSafety: value.contentGeneration?.promptSafety || []
+                }
+              })}
+              className="grid grid-cols-1 md:grid-cols-2 gap-2"
+            >
+              {HALLUCINATION_TOLERANCE.map((tolerance) => (
+                <div key={tolerance} className="flex items-center space-x-2 hover:bg-accent p-2 rounded border border-border transition-colors">
+                  <RadioGroupItem value={tolerance} id={`hallucination-${tolerance}`} />
+                  <Label htmlFor={`hallucination-${tolerance}`} className="text-sm text-foreground cursor-pointer">{tolerance}</Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
+
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Attribution Requirements</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {ATTRIBUTION_REQUIREMENTS.map((req) => (
+                <label key={req} className="flex items-center space-x-2 hover:bg-accent p-2 rounded border border-border transition-colors">
+                  <Checkbox
+                    checked={value.contentGeneration?.attributionRequirements?.includes(req) || false}
+                    onCheckedChange={(checked) => {
+                      const currentReqs = value.contentGeneration?.attributionRequirements || [];
+                      const newReqs = checked 
+                        ? [...currentReqs, req]
+                        : currentReqs.filter(r => r !== req);
+                      onChange({
+                        ...value,
+                        contentGeneration: {
+                          ...value.contentGeneration,
+                          risks: value.contentGeneration?.risks || [],
+                          hallucinationTolerance: value.contentGeneration?.hallucinationTolerance || '',
+                          attributionRequirements: newReqs,
+                          promptSafety: value.contentGeneration?.promptSafety || []
+                        }
+                      });
+                    }}
+                  />
+                  <span className="text-sm text-foreground">{req}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Prompt Safety Measures</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {PROMPT_SAFETY_MEASURES.map((measure) => (
+                <label key={measure} className="flex items-center space-x-2 hover:bg-accent p-2 rounded border border-border transition-colors">
+                  <Checkbox
+                    checked={value.contentGeneration?.promptSafety?.includes(measure) || false}
+                    onCheckedChange={(checked) => {
+                      const currentMeasures = value.contentGeneration?.promptSafety || [];
+                      const newMeasures = checked 
+                        ? [...currentMeasures, measure]
+                        : currentMeasures.filter(m => m !== measure);
+                      onChange({
+                        ...value,
+                        contentGeneration: {
+                          ...value.contentGeneration,
+                          risks: value.contentGeneration?.risks || [],
+                          hallucinationTolerance: value.contentGeneration?.hallucinationTolerance || '',
+                          attributionRequirements: value.contentGeneration?.attributionRequirements || [],
+                          promptSafety: newMeasures
+                        }
+                      });
+                    }}
+                  />
+                  <span className="text-sm text-foreground">{measure}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Agent Behavior Governance Section */}
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Bot className="w-6 h-6 text-blue-500" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Agent Behavior Governance</h3>
+              <p className="text-sm text-muted-foreground">Define behavioral boundaries and oversight requirements for AI agents</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-8">
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Behavioral Boundaries</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {BEHAVIORAL_BOUNDARIES.map((boundary) => (
+                <label key={boundary} className="flex items-center space-x-2 hover:bg-accent p-2 rounded border border-border transition-colors">
+                  <Checkbox
+                    checked={value.agentBehavior?.behavioralBoundaries?.includes(boundary) || false}
+                    onCheckedChange={(checked) => {
+                      const currentBoundaries = value.agentBehavior?.behavioralBoundaries || [];
+                      const newBoundaries = checked 
+                        ? [...currentBoundaries, boundary]
+                        : currentBoundaries.filter(b => b !== boundary);
+                      onChange({
+                        ...value,
+                        agentBehavior: {
+                          ...value.agentBehavior,
+                          behavioralBoundaries: newBoundaries,
+                          transparencyLevel: value.agentBehavior?.transparencyLevel || '',
+                          humanOversightTriggers: value.agentBehavior?.humanOversightTriggers || []
+                        }
+                      });
+                    }}
+                  />
+                  <span className="text-sm text-foreground">{boundary}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Transparency Requirements</Label>
+            <RadioGroup 
+              value={value.agentBehavior?.transparencyLevel || ''} 
+              onValueChange={(newValue) => onChange({ 
+                ...value, 
+                agentBehavior: {
+                  ...value.agentBehavior,
+                  behavioralBoundaries: value.agentBehavior?.behavioralBoundaries || [],
+                  transparencyLevel: newValue,
+                  humanOversightTriggers: value.agentBehavior?.humanOversightTriggers || []
+                }
+              })}
+              className="grid grid-cols-1 md:grid-cols-2 gap-2"
+            >
+              {TRANSPARENCY_LEVELS.map((level) => (
+                <div key={level} className="flex items-center space-x-2 hover:bg-accent p-2 rounded border border-border transition-colors">
+                  <RadioGroupItem value={level} id={`transparency-${level}`} />
+                  <Label htmlFor={`transparency-${level}`} className="text-sm text-foreground cursor-pointer">{level}</Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
+
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Human Oversight Triggers</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {HUMAN_OVERSIGHT_TRIGGERS.map((trigger) => (
+                <label key={trigger} className="flex items-center space-x-2 hover:bg-accent p-2 rounded border border-border transition-colors">
+                  <Checkbox
+                    checked={value.agentBehavior?.humanOversightTriggers?.includes(trigger) || false}
+                    onCheckedChange={(checked) => {
+                      const currentTriggers = value.agentBehavior?.humanOversightTriggers || [];
+                      const newTriggers = checked 
+                        ? [...currentTriggers, trigger]
+                        : currentTriggers.filter(t => t !== trigger);
+                      onChange({
+                        ...value,
+                        agentBehavior: {
+                          ...value.agentBehavior,
+                          behavioralBoundaries: value.agentBehavior?.behavioralBoundaries || [],
+                          transparencyLevel: value.agentBehavior?.transparencyLevel || '',
+                          humanOversightTriggers: newTriggers
+                        }
+                      });
+                    }}
+                  />
+                  <span className="text-sm text-foreground">{trigger}</span>
+                </label>
+              ))}
             </div>
           </div>
         </div>

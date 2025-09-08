@@ -4,7 +4,8 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import isEqual from 'lodash.isequal';
-import { AlertTriangle, Globe, Shield, Award, ClipboardCheck, TrendingUp } from 'lucide-react';
+import { AlertTriangle, Globe, Shield, Award, ClipboardCheck, TrendingUp, Sparkles } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
 
 
 const RISK_LEVELS = {
@@ -36,6 +37,10 @@ type Props = {
     complianceReporting?: string;
     riskTolerance?: string;
     aiExperience?: string;
+    // Gen AI specific fields
+    modelRisks?: { [key: string]: number };
+    agentRisks?: { [key: string]: number };
+    dependencyRisks?: string[];
   };
   onChange?: (data: Props['value']) => void;
 };
@@ -148,6 +153,34 @@ const AI_EXPERIENCE_OPTIONS = [
   'Moderate Experience',
   'Extensive Experience',
   'AI-First Organization',
+];
+
+// Gen AI Specific Risk Options
+const MODEL_RISKS = [
+  'Model Hallucination Impact',
+  'Prompt Injection Vulnerability',
+  'Data Poisoning Risk',
+  'Model Inversion Attacks',
+  'Adversarial Inputs',
+  'Model Drift/Degradation',
+];
+
+const AGENT_RISKS = [
+  'Unauthorized Actions',
+  'Infinite Loops/Recursion',
+  'Resource Exhaustion',
+  'Multi-agent Conflicts',
+  'Cascading Failures',
+  'Goal Misalignment',
+];
+
+const DEPENDENCY_RISKS = [
+  'Model Provider Outage',
+  'API Rate Limiting',
+  'Token Cost Overrun',
+  'Context Window Overflow',
+  'Knowledge Base Corruption',
+  'Third-party Service Failure',
 ];
 
 
@@ -663,6 +696,96 @@ export default function RiskAssessment({ value, onChange }: Props) {
                 </label>
               ))}
             </RadioGroup>
+          </div>
+        </div>
+      </div>
+
+      {/* Gen AI Specific Risks Section */}
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Sparkles className="w-6 h-6 text-purple-500" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Gen AI Specific Risks</h3>
+              <p className="text-sm text-muted-foreground">Assess risks specific to generative AI and agent systems</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-8">
+          <div>
+            <h4 className="font-semibold text-foreground mb-4">Model Risks (Severity 1-5)</h4>
+            <div className="space-y-4">
+              {MODEL_RISKS.map((risk) => (
+                <div key={risk} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">{risk}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {value.modelRisks?.[risk] || 1}/5
+                    </span>
+                  </div>
+                  <Slider
+                    min={1}
+                    max={5}
+                    step={1}
+                    value={[value.modelRisks?.[risk] || 1]}
+                    onValueChange={([val]) => {
+                      const newModelRisks = { ...value.modelRisks, [risk]: val };
+                      onChange?.({ ...value, modelRisks: newModelRisks });
+                    }}
+                    className="w-full"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-foreground mb-4">Agent Risks (Severity 1-5)</h4>
+            <div className="space-y-4">
+              {AGENT_RISKS.map((risk) => (
+                <div key={risk} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">{risk}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {value.agentRisks?.[risk] || 1}/5
+                    </span>
+                  </div>
+                  <Slider
+                    min={1}
+                    max={5}
+                    step={1}
+                    value={[value.agentRisks?.[risk] || 1]}
+                    onValueChange={([val]) => {
+                      const newAgentRisks = { ...value.agentRisks, [risk]: val };
+                      onChange?.({ ...value, agentRisks: newAgentRisks });
+                    }}
+                    className="w-full"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-foreground mb-4">Dependency Risks</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {DEPENDENCY_RISKS.map((risk) => (
+                <label key={risk} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <Checkbox
+                    checked={value.dependencyRisks?.includes(risk) || false}
+                    onCheckedChange={(checked) => {
+                      const currentRisks = value.dependencyRisks || [];
+                      const newRisks = checked 
+                        ? [...currentRisks, risk]
+                        : currentRisks.filter(r => r !== risk);
+                      onChange?.({ ...value, dependencyRisks: newRisks });
+                    }}
+                  />
+                  <span className="text-sm text-foreground">{risk}</span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
       </div>

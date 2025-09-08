@@ -14,6 +14,11 @@ type StepsData = {
     crossBorderTransfer?: boolean;
     multiJurisdictionHandling?: boolean;
     dataRetention?: string;
+    // Gen AI specific fields
+    trainingDataTypes?: string[];
+    dataQualityScore?: number;
+    promptEngineering?: string[];
+    knowledgeSources?: string[];
   };
   technicalFeasibility?: {
     modelUpdateFrequency?: string;
@@ -22,17 +27,36 @@ type StepsData = {
     integrationPoints?: string[];
     technicalComplexity?: number;
     modelTypes?: string[];
+    // Gen AI specific fields
+    modelProvider?: string;
+    contextWindowSize?: number;
+    tokenUsage?: {
+      estimatedDaily?: number;
+      estimatedMonthly?: number;
+    };
+    agentArchitecture?: string;
+    agentCapabilities?: string[];
   };
   businessFeasibility?: {
     userCategories?: string[];
     systemCriticality?: string;
     failureImpact?: string;
+    // Gen AI specific fields
+    genAIUseCase?: string;
+    interactionPattern?: string;
+    successMetrics?: string[];
+    minAcceptableAccuracy?: number;
+    maxHallucinationRate?: number;
   };
   riskAssessment?: {
     dataProtection?: {
       jurisdictions?: string[];
     };
     sectorSpecific?: string | { [key: string]: boolean };
+    // Gen AI specific fields
+    modelRisks?: { [key: string]: number };
+    agentRisks?: { [key: string]: number };
+    dependencyRisks?: string[];
   };
   ethicalImpact?: {
     modelCharacteristics?: {
@@ -44,6 +68,16 @@ type StepsData = {
     };
     aiGovernance?: {
       humanOversightLevel?: string;
+    };
+    // Gen AI specific fields
+    contentGeneration?: {
+      risks: string[];
+      hallucinationTolerance: string;
+      attributionRequirements: string[];
+    };
+    agentBehavior?: {
+      boundaries: string[];
+      overrideCapability: boolean;
     };
   };
   metadata?: Record<string, unknown>;
@@ -522,6 +556,94 @@ const calculateOperationalRisk = (stepsData: StepsData) => {
   };
 }
 
+const calculateGenAIRisk = (stepsData: StepsData) => {
+  let score = 1; // Base score
+  const factors = [];
+  const infoMessages: string[] = [];
+  const weights = {
+    hallucination: 2.5,
+    agentAutonomy: 2,
+    promptInjection: 1.8,
+    dataLeakage: 2.2,
+    modelDrift: 1.5,
+    tokenCosts: 1,
+    contentModeration: 1.7
+  };
+
+  // Check if Gen AI is being used
+  const isGenAI = stepsData?.technicalFeasibility?.modelTypes && (
+    stepsData.technicalFeasibility.modelTypes.includes("Generative AI") ||
+    stepsData.technicalFeasibility.modelTypes.includes("Large Language Model (LLM)") ||
+    stepsData.technicalFeasibility.modelTypes.includes("Multi-modal Models")
+  );
+
+  if (!isGenAI) {
+    return {
+      score: 0,
+      factors: [],
+      formula: "N/A - Not a Gen AI use case",
+      infoMessages: []
+    };
+  }
+
+  // Hallucination risk
+  if (!stepsData?.businessFeasibility?.maxHallucinationRate || stepsData.businessFeasibility.maxHallucinationRate > 5) {
+    score += weights.hallucination;
+    factors.push(`Hallucination risk (+${weights.hallucination})`);
+    if (!stepsData?.businessFeasibility?.maxHallucinationRate) {
+      infoMessages.push("No hallucination rate threshold specified. Please define acceptable hallucination limits.");
+    }
+  }
+
+  // Agent autonomy risk
+  if (stepsData?.technicalFeasibility?.agentArchitecture && 
+      ["Multi-agent System", "Hierarchical Agents", "Swarm Intelligence"].includes(stepsData.technicalFeasibility.agentArchitecture)) {
+    score += weights.agentAutonomy;
+    factors.push(`Complex agent autonomy (+${weights.agentAutonomy})`);
+  }
+
+  // Prompt injection vulnerability
+  if (stepsData?.businessFeasibility?.userCategories?.includes("General Public")) {
+    score += weights.promptInjection;
+    factors.push(`Prompt injection risk (+${weights.promptInjection})`);
+    infoMessages.push("Public-facing Gen AI system. Ensure prompt injection safeguards are in place.");
+  }
+
+  // Data leakage through model
+  if (stepsData?.dataReadiness?.dataTypes?.includes("Confidential Business Data") ||
+      stepsData?.dataReadiness?.dataTypes?.includes("Trade Secrets")) {
+    score += weights.dataLeakage;
+    factors.push(`Data leakage risk (+${weights.dataLeakage})`);
+  }
+
+  // Model drift for continuous learning
+  if (stepsData?.technicalFeasibility?.modelUpdateFrequency === "Real-time/Continuous") {
+    score += weights.modelDrift;
+    factors.push(`Model drift risk (+${weights.modelDrift})`);
+  }
+
+  // Token cost overrun
+  if (stepsData?.technicalFeasibility?.tokenUsage?.estimatedMonthly && 
+      stepsData.technicalFeasibility.tokenUsage.estimatedMonthly > 10000000) {
+    score += weights.tokenCosts;
+    factors.push(`High token costs (+${weights.tokenCosts})`);
+  }
+
+  // Content moderation needs
+  if (stepsData?.ethicalImpact?.contentGeneration?.risks && 
+      stepsData.ethicalImpact.contentGeneration.risks.length > 2) {
+    score += weights.contentModeration;
+    factors.push(`Content moderation complexity (+${weights.contentModeration})`);
+  }
+
+  return {
+    score: Math.min(score, 10),
+    factors,
+    formula: `Base(1) + ${factors.map(f => f.match(/\+(\d+\.?\d*)/)?.[1]).join(' + ')} = ${Math.min(score, 10)}`,
+    infoMessages
+  };
+};
+
 const calculateReputationRisk = (stepsData: StepsData) => {
   let score = 1; // Base score
   const factors = [];
@@ -571,8 +693,23 @@ const calculateReputationRisk = (stepsData: StepsData) => {
 }
 
 const RiskCalculation = (stepsData: StepsData) => {
-  // Regulatory and data-focused weights
-  const weights = {
+  // Check if Gen AI use case
+  const isGenAI = stepsData?.technicalFeasibility?.modelTypes && (
+    stepsData.technicalFeasibility.modelTypes.includes("Generative AI") ||
+    stepsData.technicalFeasibility.modelTypes.includes("Large Language Model (LLM)") ||
+    stepsData.technicalFeasibility.modelTypes.includes("Multi-modal Models")
+  );
+
+  // Regulatory and data-focused weights (adjusted for Gen AI if applicable)
+  const weights = isGenAI ? {
+    dataPrivacy: 0.20,
+    security: 0.15,
+    regulatory: 0.25,
+    ethical: 0.10,
+    operational: 0.10,
+    reputational: 0.05,
+    genAI: 0.15
+  } : {
     dataPrivacy: 0.25,
     security: 0.20,
     regulatory: 0.30,
@@ -580,12 +717,14 @@ const RiskCalculation = (stepsData: StepsData) => {
     operational: 0.10,
     reputational: 0.05
   };
+
   const dataPrivacyRisk = calculateDataPrivacyRisk(stepsData);
   const securityRisk = calculateSecurityRisk(stepsData);
   const regulatoryRisk = calculateRegulatoryRisk(stepsData);
   const ethicalRisk = calculateEthicalRisk(stepsData);
   const operationalRisk = calculateOperationalRisk(stepsData);
   const reputationRisk = calculateReputationRisk(stepsData);
+  const genAIRisk = isGenAI ? calculateGenAIRisk(stepsData) : null;
 
   const chartData = [
     {month: "Data Privacy", desktop: dataPrivacyRisk.score},
@@ -594,9 +733,27 @@ const RiskCalculation = (stepsData: StepsData) => {
     {month: "Ethical", desktop: ethicalRisk.score},
     {month: "Operational", desktop: operationalRisk.score},
     {month: "Reputational", desktop: reputationRisk.score}
-  ]
+  ];
+
+  if (isGenAI && genAIRisk) {
+    chartData.push({month: "Gen AI", desktop: genAIRisk.score});
+  }
+
   // Calculate weighted average
-  const weightedScore = dataPrivacyRisk.score * weights.dataPrivacy + securityRisk.score * weights.security + regulatoryRisk.score * weights.regulatory + ethicalRisk.score * weights.ethical + operationalRisk.score * weights.operational + reputationRisk.score * weights.reputational;
+  const weightedScore = isGenAI && genAIRisk ? 
+    dataPrivacyRisk.score * weights.dataPrivacy + 
+    securityRisk.score * weights.security + 
+    regulatoryRisk.score * weights.regulatory + 
+    ethicalRisk.score * weights.ethical + 
+    operationalRisk.score * weights.operational + 
+    reputationRisk.score * weights.reputational + 
+    genAIRisk.score * weights.genAI :
+    dataPrivacyRisk.score * weights.dataPrivacy + 
+    securityRisk.score * weights.security + 
+    regulatoryRisk.score * weights.regulatory + 
+    ethicalRisk.score * weights.ethical + 
+    operationalRisk.score * weights.operational + 
+    reputationRisk.score * weights.reputational;
 
   // Determine risk tier
   let riskTier: string;
@@ -614,19 +771,25 @@ const RiskCalculation = (stepsData: StepsData) => {
     chartData,
     score: parseFloat(weightedScore.toFixed(1)),
     riskTier,
-    formula: `(0.25×${dataPrivacyRisk.score} + 0.20×${securityRisk.score} + 0.30×${regulatoryRisk.score} + 0.10×${ethicalRisk.score} + 0.10×${operationalRisk.score} + 0.05×${reputationRisk.score})`,
-    calculation: `(0.25×Privacy + 0.20×Security + 0.30×Regulatory + 0.10×Ethical + 0.10×Operational + 0.05×Reputational)`,
+    formula: isGenAI && genAIRisk ? 
+      `(0.20×${dataPrivacyRisk.score} + 0.15×${securityRisk.score} + 0.25×${regulatoryRisk.score} + 0.10×${ethicalRisk.score} + 0.10×${operationalRisk.score} + 0.05×${reputationRisk.score} + 0.15×${genAIRisk.score})` :
+      `(0.25×${dataPrivacyRisk.score} + 0.20×${securityRisk.score} + 0.30×${regulatoryRisk.score} + 0.10×${ethicalRisk.score} + 0.10×${operationalRisk.score} + 0.05×${reputationRisk.score})`,
+    calculation: isGenAI ? 
+      `(0.20×Privacy + 0.15×Security + 0.25×Regulatory + 0.10×Ethical + 0.10×Operational + 0.05×Reputational + 0.15×GenAI)` :
+      `(0.25×Privacy + 0.20×Security + 0.30×Regulatory + 0.10×Ethical + 0.10×Operational + 0.05×Reputational)`,
     regulatoryWarnings: regulatoryRisk.regulatoryWarnings,
     dataPrivacyInfo: dataPrivacyRisk.infoMessages,
     securityInfo: securityRisk.infoMessages,
     operationalInfo: operationalRisk.infoMessages,
     ethicalInfo: ethicalRisk.infoMessages,
+    genAIInfo: genAIRisk?.infoMessages || [],
     dataPrivacyFactors: dataPrivacyRisk.factors,
     securityFactors: securityRisk.factors,
     regulatoryFactors: regulatoryRisk.factors,
     ethicalFactors: ethicalRisk.factors,
     operationalFactors: operationalRisk.factors,
-    reputationalFactors: reputationRisk.factors
+    reputationalFactors: reputationRisk.factors,
+    genAIFactors: genAIRisk?.factors || []
   };
 }
 
@@ -661,6 +824,16 @@ const ApprovalsPage = forwardRef((props, ref) => {
     businessStatus: "",
     businessComment: "",
     finalQualification: "",
+    // AI-specific approval fields
+    aiGovernanceName: "",
+    aiGovernanceStatus: "",
+    aiGovernanceComment: "",
+    modelValidationName: "",
+    modelValidationStatus: "",
+    modelValidationComment: "",
+    aiEthicsName: "",
+    aiEthicsStatus: "",
+    aiEthicsComment: "",
   });
   const [_loading, setLoading] = useState(false);
   const [_saving, setSaving] = useState(false);
@@ -909,6 +1082,15 @@ const ApprovalsPage = forwardRef((props, ref) => {
                       </div>
                     </div>
                   )}
+                  {riskResult.genAIInfo && riskResult.genAIInfo.length > 0 && (
+                    <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-900 dark:text-purple-100 rounded flex items-start gap-2 border border-purple-200 dark:border-purple-600">
+                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-purple-400 flex-shrink-0" />
+                      <div>
+                        <div className="font-semibold mb-1">Gen AI Specific:</div>
+                        {riskResult.genAIInfo.map((w, i) => <div key={i}>{w}</div>)}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -925,6 +1107,16 @@ const ApprovalsPage = forwardRef((props, ref) => {
                 { label: 'Operational', score: riskResult.chartData[4]?.desktop || 0, info: riskResult.operationalInfo, factors: riskResult.operationalFactors },
                 { label: 'Reputational', score: riskResult.chartData[5]?.desktop || 0, info: [], factors: riskResult.reputationalFactors },
               ];
+              
+              // Add Gen AI risk if applicable
+              if (riskResult.chartData[6]) {
+                riskScores.push({ 
+                  label: 'Gen AI', 
+                  score: riskResult.chartData[6]?.desktop || 0, 
+                  info: riskResult.genAIInfo || [], 
+                  factors: riskResult.genAIFactors || [] 
+                });
+              }
               // Sort by score descending
               const topRisks = riskScores.sort((a, b) => b.score - a.score).slice(0, 3);
               return (
@@ -1011,6 +1203,51 @@ const ApprovalsPage = forwardRef((props, ref) => {
             <Input placeholder="Comments" value={form.businessComment} onChange={e => setForm(f => ({ ...f, businessComment: e.target.value }))} />
           </Card>
         </div>
+
+        {/* AI-Specific Approvals Section */}
+        {stepsData?.technicalFeasibility?.modelTypes && (
+          stepsData.technicalFeasibility.modelTypes.includes("Generative AI") || 
+          stepsData.technicalFeasibility.modelTypes.includes("Large Language Model (LLM)") ||
+          stepsData.technicalFeasibility.modelTypes.includes("Multi-modal Models")
+        ) && (
+          <>
+            <h3 className="text-xl font-bold mb-4 text-purple-600 dark:text-purple-400">AI-Specific Approvals</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* AI Governance */}
+              <Card className="mb-6 p-6">
+                <h3 className="font-semibold text-lg mb-4">AI Governance</h3>
+                <Input placeholder="Approver Name" value={form.aiGovernanceName} onChange={e => setForm(f => ({ ...f, aiGovernanceName: e.target.value }))} className="mb-2" />
+                <select value={form.aiGovernanceStatus} onChange={e => setForm(f => ({ ...f, aiGovernanceStatus: e.target.value }))} className="mb-2 border rounded px-3 py-2">
+                  <option value="">Select Status</option>
+                  {statusOptions.map(opt => <option key={opt}>{opt}</option>)}
+                </select>
+                <Input placeholder="Comments" value={form.aiGovernanceComment} onChange={e => setForm(f => ({ ...f, aiGovernanceComment: e.target.value }))} />
+              </Card>
+              
+              {/* Model Validation */}
+              <Card className="mb-6 p-6">
+                <h3 className="font-semibold text-lg mb-4">Model Validation</h3>
+                <Input placeholder="Approver Name" value={form.modelValidationName} onChange={e => setForm(f => ({ ...f, modelValidationName: e.target.value }))} className="mb-2" />
+                <select value={form.modelValidationStatus} onChange={e => setForm(f => ({ ...f, modelValidationStatus: e.target.value }))} className="mb-2 border rounded px-3 py-2">
+                  <option value="">Select Status</option>
+                  {statusOptions.map(opt => <option key={opt}>{opt}</option>)}
+                </select>
+                <Input placeholder="Comments" value={form.modelValidationComment} onChange={e => setForm(f => ({ ...f, modelValidationComment: e.target.value }))} />
+              </Card>
+              
+              {/* AI Ethics Review */}
+              <Card className="mb-6 p-6 md:col-span-2">
+                <h3 className="font-semibold text-lg mb-4">AI Ethics Review</h3>
+                <Input placeholder="Approver Name" value={form.aiEthicsName} onChange={e => setForm(f => ({ ...f, aiEthicsName: e.target.value }))} className="mb-2" />
+                <select value={form.aiEthicsStatus} onChange={e => setForm(f => ({ ...f, aiEthicsStatus: e.target.value }))} className="mb-2 border rounded px-3 py-2">
+                  <option value="">Select Status</option>
+                  {statusOptions.map(opt => <option key={opt}>{opt}</option>)}
+                </select>
+                <Input placeholder="Comments" value={form.aiEthicsComment} onChange={e => setForm(f => ({ ...f, aiEthicsComment: e.target.value }))} />
+              </Card>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

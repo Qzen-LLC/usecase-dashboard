@@ -5,6 +5,8 @@ import { Card, CardHeader } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useParams } from 'next/navigation';
+import { Checkbox } from '@/components/ui/checkbox';
+import { DollarSign, Coins } from 'lucide-react';
 
 interface BudgetPlanningProps {
   value: {
@@ -17,6 +19,20 @@ interface BudgetPlanningProps {
     budgetRange: string;
     error?: string;
     loading?: boolean;
+    // Gen AI specific fields
+    inputTokenPrice?: number;
+    outputTokenPrice?: number;
+    embeddingTokenPrice?: number;
+    finetuningTokenPrice?: number;
+    monthlyTokenBudget?: number;
+    avgTokensPerUser?: number;
+    peakTokenUsage?: number;
+    optimizationStrategies?: string[];
+    vectorDbCost?: number;
+    gpuInferenceCost?: number;
+    monitoringToolsCost?: number;
+    safetyApiCost?: number;
+    backupModelCost?: number;
   };
   onChange: (data: BudgetPlanningProps['value']) => void;
 }
@@ -27,6 +43,17 @@ const BUDGET_RANGES = [
   '$500K - $1M',
   '$1M - $5M',
   '> $5M',
+];
+
+const OPTIMIZATION_STRATEGIES = [
+  'Prompt Compression',
+  'Response Caching',
+  'Model Routing',
+  'Batch Processing',
+  'Context Window Management',
+  'Semantic Caching',
+  'Token Budgeting',
+  'Fallback Models',
 ];
 
 const BudgetPlanning = forwardRef<{ saveFinops: () => Promise<void> }, BudgetPlanningProps>(({ value, onChange }, ref) => {
@@ -176,6 +203,188 @@ const BudgetPlanning = forwardRef<{ saveFinops: () => Promise<void> }, BudgetPla
         <div>
                           <label className="font-semibold text-[#23235b] dark:text-blue-200">Value Growth Rate (%)</label>
           <Input type="number" value={value.valueGrowthRate * 100} min={0} max={100} onChange={e => onChange({ ...value, valueGrowthRate: Number(e.target.value) / 100 })} className="w-full" />
+        </div>
+      </div>
+
+      {/* Token Economics Section */}
+      <div className="mt-8 border-t pt-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Coins className="w-5 h-5 text-yellow-500" />
+          <h3 className="text-lg font-semibold text-foreground">Token Economics</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <label className="font-semibold text-[#23235b] dark:text-blue-200">Input Token Price ($/1K tokens)</label>
+            <Input 
+              type="number" 
+              value={value.inputTokenPrice || ''} 
+              min={0} 
+              step={0.001}
+              onChange={e => onChange({ ...value, inputTokenPrice: Number(e.target.value) })} 
+              className="w-full" 
+              placeholder="e.g., 0.01"
+            />
+          </div>
+          <div>
+            <label className="font-semibold text-[#23235b] dark:text-blue-200">Output Token Price ($/1K tokens)</label>
+            <Input 
+              type="number" 
+              value={value.outputTokenPrice || ''} 
+              min={0} 
+              step={0.001}
+              onChange={e => onChange({ ...value, outputTokenPrice: Number(e.target.value) })} 
+              className="w-full" 
+              placeholder="e.g., 0.03"
+            />
+          </div>
+          <div>
+            <label className="font-semibold text-[#23235b] dark:text-blue-200">Embedding Token Price ($/1K tokens)</label>
+            <Input 
+              type="number" 
+              value={value.embeddingTokenPrice || ''} 
+              min={0} 
+              step={0.001}
+              onChange={e => onChange({ ...value, embeddingTokenPrice: Number(e.target.value) })} 
+              className="w-full" 
+              placeholder="e.g., 0.0001"
+            />
+          </div>
+          <div>
+            <label className="font-semibold text-[#23235b] dark:text-blue-200">Fine-tuning Token Price ($/1K tokens)</label>
+            <Input 
+              type="number" 
+              value={value.finetuningTokenPrice || ''} 
+              min={0} 
+              step={0.001}
+              onChange={e => onChange({ ...value, finetuningTokenPrice: Number(e.target.value) })} 
+              className="w-full" 
+              placeholder="e.g., 0.08"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div>
+            <label className="font-semibold text-[#23235b] dark:text-blue-200">Monthly Token Budget ($)</label>
+            <Input 
+              type="number" 
+              value={value.monthlyTokenBudget || ''} 
+              min={0} 
+              onChange={e => onChange({ ...value, monthlyTokenBudget: Number(e.target.value) })} 
+              className="w-full" 
+              placeholder="e.g., 10000"
+            />
+          </div>
+          <div>
+            <label className="font-semibold text-[#23235b] dark:text-blue-200">Avg Tokens per User/Month</label>
+            <Input 
+              type="number" 
+              value={value.avgTokensPerUser || ''} 
+              min={0} 
+              onChange={e => onChange({ ...value, avgTokensPerUser: Number(e.target.value) })} 
+              className="w-full" 
+              placeholder="e.g., 50000"
+            />
+          </div>
+          <div>
+            <label className="font-semibold text-[#23235b] dark:text-blue-200">Peak Token Usage (tokens/min)</label>
+            <Input 
+              type="number" 
+              value={value.peakTokenUsage || ''} 
+              min={0} 
+              onChange={e => onChange({ ...value, peakTokenUsage: Number(e.target.value) })} 
+              className="w-full" 
+              placeholder="e.g., 100000"
+            />
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <label className="font-semibold text-[#23235b] dark:text-blue-200 block mb-3">Optimization Strategies</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {OPTIMIZATION_STRATEGIES.map((strategy) => (
+              <label key={strategy} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                <Checkbox
+                  checked={value.optimizationStrategies?.includes(strategy) || false}
+                  onCheckedChange={(checked) => {
+                    const currentStrategies = value.optimizationStrategies || [];
+                    const newStrategies = checked 
+                      ? [...currentStrategies, strategy]
+                      : currentStrategies.filter(s => s !== strategy);
+                    onChange({ ...value, optimizationStrategies: newStrategies });
+                  }}
+                />
+                <span className="text-sm text-foreground">{strategy}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Gen AI Infrastructure Costs Section */}
+      <div className="mt-8 border-t pt-6">
+        <div className="flex items-center gap-2 mb-4">
+          <DollarSign className="w-5 h-5 text-green-500" />
+          <h3 className="text-lg font-semibold text-foreground">Gen AI Infrastructure Costs</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="font-semibold text-[#23235b] dark:text-blue-200">Vector Database Cost ($/month)</label>
+            <Input 
+              type="number" 
+              value={value.vectorDbCost || ''} 
+              min={0} 
+              onChange={e => onChange({ ...value, vectorDbCost: Number(e.target.value) })} 
+              className="w-full" 
+              placeholder="e.g., 500"
+            />
+          </div>
+          <div>
+            <label className="font-semibold text-[#23235b] dark:text-blue-200">GPU/Inference Cost ($/month)</label>
+            <Input 
+              type="number" 
+              value={value.gpuInferenceCost || ''} 
+              min={0} 
+              onChange={e => onChange({ ...value, gpuInferenceCost: Number(e.target.value) })} 
+              className="w-full" 
+              placeholder="e.g., 2000"
+            />
+          </div>
+          <div>
+            <label className="font-semibold text-[#23235b] dark:text-blue-200">Monitoring Tools ($/month)</label>
+            <Input 
+              type="number" 
+              value={value.monitoringToolsCost || ''} 
+              min={0} 
+              onChange={e => onChange({ ...value, monitoringToolsCost: Number(e.target.value) })} 
+              className="w-full" 
+              placeholder="e.g., 300"
+            />
+          </div>
+          <div>
+            <label className="font-semibold text-[#23235b] dark:text-blue-200">Safety/Moderation APIs ($/month)</label>
+            <Input 
+              type="number" 
+              value={value.safetyApiCost || ''} 
+              min={0} 
+              onChange={e => onChange({ ...value, safetyApiCost: Number(e.target.value) })} 
+              className="w-full" 
+              placeholder="e.g., 150"
+            />
+          </div>
+          <div>
+            <label className="font-semibold text-[#23235b] dark:text-blue-200">Backup Model Cost ($/month)</label>
+            <Input 
+              type="number" 
+              value={value.backupModelCost || ''} 
+              min={0} 
+              onChange={e => onChange({ ...value, backupModelCost: Number(e.target.value) })} 
+              className="w-full" 
+              placeholder="e.g., 1000"
+            />
+          </div>
         </div>
       </div>
     </Card>

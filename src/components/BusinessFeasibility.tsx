@@ -10,10 +10,11 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
-import { BarChart3, Users, AlertTriangle, DollarSign } from 'lucide-react';
+import { BarChart3, Users, AlertTriangle, DollarSign, MessageSquare, Target, Sparkles } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
 // New options for business feasibility fields
 const AVAILABILITY_REQS = [
@@ -96,6 +97,51 @@ const STAKEHOLDER_GROUPS = [
   "Public/Media",
 ];
 
+// Gen AI/LLM Specific Options
+const GEN_AI_USE_CASES = [
+  "Content Generation",
+  "Code Generation",
+  "Customer Service",
+  "Research & Analysis",
+  "Process Automation",
+  "Decision Support",
+  "Creative/Design",
+  "Personal Assistant",
+  "Document Processing",
+  "Data Analysis",
+];
+
+const INTERACTION_PATTERNS = [
+  "Conversational",
+  "Task-based",
+  "Hybrid",
+  "Autonomous",
+];
+
+const USER_INTERACTION_MODES = [
+  "Chat Interface",
+  "Voice Interface",
+  "API Integration",
+  "Email Integration",
+  "Slack/Teams",
+  "Custom UI",
+  "Command Line",
+  "Mobile App",
+];
+
+const SUCCESS_METRICS = [
+  "Task Completion Rate",
+  "Human Handoff Rate",
+  "Content Quality Score",
+  "User Satisfaction (CSAT)",
+  "Time to Resolution",
+  "Automation Percentage",
+  "Cost per Interaction",
+  "Revenue per Conversation",
+  "Error Rate",
+  "Response Relevance",
+];
+
 type Props = {
   value: {
     strategicAlignment: number;
@@ -118,6 +164,17 @@ type Props = {
     failureImpact: string;
     executiveSponsorLevel: string;
     stakeholderGroups: string[];
+    // Gen AI specific fields
+    genAIUseCase?: string;
+    interactionPattern?: string;
+    userInteractionModes?: string[];
+    successMetrics?: string[];
+    minAcceptableAccuracy?: number;
+    maxHallucinationRate?: number;
+    requiredResponseRelevance?: number;
+    conversationsPerMonth?: number;
+    concurrentAgents?: number;
+    peakLoadExpectations?: number;
   };
   onChange: (data: Props['value']) => void;
 };
@@ -152,7 +209,7 @@ export default function BusinessFeasibility({ value, onChange }: Props) {
 
   // Helper for multi-select checkboxes
   function handleMultiSelectChange(field: keyof Props['value'], v: string) {
-    const arr = value[field] as string[];
+    const arr = (value[field] as string[]) || [];
     if (arr.includes(v)) {
       onChange({ ...value, [field]: arr.filter((x) => x !== v) });
     } else {
@@ -293,7 +350,7 @@ export default function BusinessFeasibility({ value, onChange }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {REVENUE_IMPACT_TYPE.map((item) => (
                 <Label key={item} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
-                  <Checkbox checked={value.revenueImpactType.includes(item)} onCheckedChange={(checked) => handleMultiSelectChange('revenueImpactType', item)} />
+                  <Checkbox checked={value.revenueImpactType?.includes(item) || false} onCheckedChange={(checked) => handleMultiSelectChange('revenueImpactType', item)} />
                   <span className="text-sm text-foreground">{item}</span>
                 </Label>
               ))}
@@ -317,7 +374,7 @@ export default function BusinessFeasibility({ value, onChange }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {USER_CATEGORIES.map((item) => (
                 <Label key={item} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
-                  <Checkbox checked={value.userCategories.includes(item)} onCheckedChange={(checked) => handleMultiSelectChange('userCategories', item)} />
+                  <Checkbox checked={value.userCategories?.includes(item) || false} onCheckedChange={(checked) => handleMultiSelectChange('userCategories', item)} />
                   <span className="text-sm text-foreground">{item}</span>
                 </Label>
               ))}
@@ -380,10 +437,190 @@ export default function BusinessFeasibility({ value, onChange }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {STAKEHOLDER_GROUPS.map((group) => (
                 <Label key={group} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
-                  <Checkbox checked={value.stakeholderGroups.includes(group)} onCheckedChange={(checked) => handleMultiSelectChange('stakeholderGroups', group)} />
+                  <Checkbox checked={value.stakeholderGroups?.includes(group) || false} onCheckedChange={(checked) => handleMultiSelectChange('stakeholderGroups', group)} />
                   <span className="text-sm text-foreground">{group}</span>
                 </Label>
               ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Gen AI Use Case Classification Section */}
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Sparkles className="w-6 h-6 text-purple-500" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Gen AI Use Case Classification</h3>
+              <p className="text-sm text-muted-foreground">Define the primary use case type and interaction patterns for AI systems</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-8">
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Primary Use Case Type</Label>
+            <RadioGroup 
+              value={value.genAIUseCase || ''} 
+              onValueChange={(newValue) => onChange({ ...value, genAIUseCase: newValue })} 
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"
+            >
+              {GEN_AI_USE_CASES.map((useCase) => (
+                <Label key={useCase} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                  <RadioGroupItem value={useCase} />
+                  <span className="text-sm text-foreground">{useCase}</span>
+                </Label>
+              ))}
+            </RadioGroup>
+          </div>
+
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Interaction Pattern</Label>
+            <RadioGroup 
+              value={value.interactionPattern || ''} 
+              onValueChange={(newValue) => onChange({ ...value, interactionPattern: newValue })} 
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"
+            >
+              {INTERACTION_PATTERNS.map((pattern) => (
+                <Label key={pattern} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                  <RadioGroupItem value={pattern} />
+                  <span className="text-sm text-foreground">{pattern}</span>
+                </Label>
+              ))}
+            </RadioGroup>
+          </div>
+
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">User Interaction Modes</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {USER_INTERACTION_MODES.map((mode) => (
+                <Label key={mode} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                  <Checkbox 
+                    checked={value.userInteractionModes?.includes(mode) || false} 
+                    onCheckedChange={() => handleMultiSelectChange('userInteractionModes', mode)} 
+                  />
+                  <span className="text-sm text-foreground">{mode}</span>
+                </Label>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Gen AI Business Metrics Section */}
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Target className="w-6 h-6 text-green-500" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Gen AI Business Metrics</h3>
+              <p className="text-sm text-muted-foreground">Define success metrics, quality thresholds, and scale projections</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-8">
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Success Metrics</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {SUCCESS_METRICS.map((metric) => (
+                <Label key={metric} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                  <Checkbox 
+                    checked={value.successMetrics?.includes(metric) || false} 
+                    onCheckedChange={() => handleMultiSelectChange('successMetrics', metric)} 
+                  />
+                  <span className="text-sm text-foreground">{metric}</span>
+                </Label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-foreground mb-4">Quality Thresholds</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <Label className="block font-medium mb-2 text-foreground">Min Acceptable Accuracy (%)</Label>
+                <Slider
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={[value.minAcceptableAccuracy || 80]}
+                  onValueChange={([val]) => onChange({ ...value, minAcceptableAccuracy: val })}
+                  className="w-full"
+                />
+                <div className="text-center mt-2 text-sm text-muted-foreground">
+                  {value.minAcceptableAccuracy || 80}%
+                </div>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-2 text-foreground">Max Hallucination Rate (%)</Label>
+                <Slider
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={[value.maxHallucinationRate || 5]}
+                  onValueChange={([val]) => onChange({ ...value, maxHallucinationRate: val })}
+                  className="w-full"
+                />
+                <div className="text-center mt-2 text-sm text-muted-foreground">
+                  {value.maxHallucinationRate || 5}%
+                </div>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-2 text-foreground">Required Response Relevance (%)</Label>
+                <Slider
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={[value.requiredResponseRelevance || 90]}
+                  onValueChange={([val]) => onChange({ ...value, requiredResponseRelevance: val })}
+                  className="w-full"
+                />
+                <div className="text-center mt-2 text-sm text-muted-foreground">
+                  {value.requiredResponseRelevance || 90}%
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-foreground mb-4">Scale Projections</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <Label className="block font-medium mb-2 text-foreground">Conversations/Month</Label>
+                <Input 
+                  type="number" 
+                  value={value.conversationsPerMonth || ''} 
+                  onChange={(e) => onChange({ ...value, conversationsPerMonth: parseInt(e.target.value) || 0 })}
+                  placeholder="e.g., 10000"
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-2 text-foreground">Concurrent Agents</Label>
+                <Input 
+                  type="number" 
+                  value={value.concurrentAgents || ''} 
+                  onChange={(e) => onChange({ ...value, concurrentAgents: parseInt(e.target.value) || 0 })}
+                  placeholder="e.g., 10"
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-2 text-foreground">Peak Load (req/min)</Label>
+                <Input 
+                  type="number" 
+                  value={value.peakLoadExpectations || ''} 
+                  onChange={(e) => onChange({ ...value, peakLoadExpectations: parseInt(e.target.value) || 0 })}
+                  placeholder="e.g., 100"
+                  className="w-full"
+                />
+              </div>
             </div>
           </div>
         </div>

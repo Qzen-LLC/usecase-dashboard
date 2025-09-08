@@ -50,3 +50,6 @@ next-env.d.ts
 
 # uploaded evidence files
 /public/uploads/evidence/
+
+# Guardrail generation logs
+logs/

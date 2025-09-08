@@ -14,6 +14,9 @@ import RoadmapPosition from "@/components/RoadmapPosition";
 import DataReadiness from "@/components/DataReadiness";
 import FinancialDashboard from './financial-dashboard/page';
 import ApprovalsPage from '@/components/ApprovalsPage';
+import GuardrailsGenerator from '@/components/guardrails/GuardrailsGenerator';
+import EvaluationGenerator from '@/components/evaluations/EvaluationGenerator';
+import GoldenDatasetDashboard from '@/components/golden/GoldenDatasetDashboard';
 import ReadOnlyTechnicalFeasibility from '@/components/ReadOnlyTechnicalFeasibility';
 import ReadOnlyBusinessFeasibility from '@/components/ReadOnlyBusinessFeasibility';
 import ReadOnlyEthicalImpact from '@/components/ReadOnlyEthicalImpact';
@@ -24,6 +27,7 @@ import ReadOnlyBudgetPlanning from '@/components/ReadOnlyBudgetPlanning';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { useStableRender } from '@/hooks/useStableRender';
 import { useLock } from '@/hooks/useLock';
+import { mapUIToTypeDefinition, mapTypeDefinitionToUI, ensureCompatibility } from '@/lib/assessment/field-mapper';
 
 
 interface UseCase {
@@ -185,6 +189,9 @@ export default function AssessmentPage() {
     { id: 7, title: "Budget Planning" },
     { id: 8, title: "Financial Dashboard" },
     { id: 9, title: "Approvals" },
+    { id: 10, title: "AI Guardrails" },
+    { id: 11, title: "AI Evaluations" },
+    { id: 12, title: "Golden Dataset" },
   ], []);
 
   // Memoize default assessment data to prevent unnecessary re-renders
@@ -203,6 +210,32 @@ export default function AssessmentPage() {
       outputTypes: [],
       confidenceScore: '',
       modelUpdateFrequency: '',
+      // Gen AI specific fields
+      modelProvider: '',
+      contextWindowSize: 0,
+      tokenUsage: {
+        estimatedDaily: 0,
+        estimatedMonthly: 0,
+        peakHourly: 0
+      },
+      ragArchitecture: {
+        vectorDatabase: '',
+        embeddingModel: '',
+        chunkSize: 0,
+        overlapSize: 0,
+        retrievalTopK: 0
+      },
+      agentArchitecture: '',
+      agentCapabilities: [],
+      orchestrationPattern: '',
+      memoryManagement: '',
+      toolIntegrations: [],
+      functionCalling: false,
+      streamingEnabled: false,
+      batchProcessing: false,
+      cacheStrategy: '',
+      fallbackModels: [],
+      monitoringTools: []
     },
     businessFeasibility: {
       strategicAlignment: 8,
@@ -221,6 +254,17 @@ export default function AssessmentPage() {
       failureImpact: '',
       executiveSponsorLevel: '',
       stakeholderGroups: [],
+      // Gen AI specific fields
+      genAIUseCase: '',
+      interactionPattern: '',
+      userInteractionModes: [],
+      successMetrics: [],
+      minAcceptableAccuracy: 0,
+      maxHallucinationRate: 0,
+      minResponseRelevance: 0,
+      maxLatency: 0,
+      contentQualityThreshold: 0,
+      userSatisfactionTarget: 0
     },
     ethicalImpact: {
       biasFairness: {
@@ -248,6 +292,21 @@ export default function AssessmentPage() {
         humanOversightLevel: '',
         performanceMonitoring: [],
       },
+      // Gen AI specific fields
+      contentGeneration: {
+        risks: [],
+        hallucinationTolerance: '',
+        attributionRequirements: [],
+        promptSafety: [],
+        contentFiltering: [],
+        outputMonitoring: []
+      },
+      agentBehavior: {
+        boundaries: [],
+        overrideCapability: false,
+        auditTrail: false,
+        decisionExplanation: false
+      },
       ethicalConsiderations: {
         potentialHarmAreas: [],
         vulnerablePopulations: [],
@@ -264,6 +323,24 @@ export default function AssessmentPage() {
         { risk: 'Regulatory changes', probability: 'None', impact: 'None' },
         { risk: 'Competitive response', probability: 'None', impact: 'None' },
       ],
+      // Gen AI specific fields
+      modelRisks: {
+        hallucinationRisk: 5,
+        biasAmplification: 5,
+        promptInjection: 5,
+        dataLeakage: 5,
+        modelInversion: 5
+      },
+      agentRisks: {
+        unexpectedBehavior: 5,
+        goalMisalignment: 5,
+        excessiveAutonomy: 5,
+        cascadingFailures: 5
+      },
+      dependencyRisks: [],
+      vendorLockIn: '',
+      apiStability: '',
+      costOverrun: ''
     },
     dataReadiness: {
       dataTypes: [],
@@ -281,6 +358,19 @@ export default function AssessmentPage() {
       crossBorderTransfer: false,
       dataLocalization: '',
       dataRetention: '',
+      // Gen AI specific fields
+      trainingDataTypes: [],
+      instructionClarityScore: 5,
+      responseQualityScore: 5,
+      diversityScore: 5,
+      biasScore: 5,
+      trainingDataSize: '',
+      finetuningRequired: false,
+      syntheticDataUsage: 0,
+      promptEngineering: [],
+      knowledgeSources: [],
+      knowledgeUpdateFrequency: '',
+      contextSources: []
     },
     roadmapPosition: {
       priority: 'high',
@@ -293,6 +383,12 @@ export default function AssessmentPage() {
         hiring: false,
       },
       metrics: '',
+      // Gen AI specific fields
+      currentAIMaturity: '',
+      targetAIMaturity: '',
+      evolutionPath: [],
+      milestoneCriteria: [],
+      successIndicators: []
     },
     budgetPlanning: {
       initialDevCost: 0,
@@ -304,6 +400,20 @@ export default function AssessmentPage() {
       budgetRange: '',
       error: '',
       loading: false,
+      // Gen AI specific fields
+      inputTokenPrice: 0,
+      outputTokenPrice: 0,
+      embeddingTokenPrice: 0,
+      finetuningTokenPrice: 0,
+      monthlyTokenVolume: 0,
+      peakTokenVolume: 0,
+      tokenOptimizationTarget: 0,
+      optimizationStrategies: [],
+      vectorDbCost: 0,
+      gpuInferenceCost: 0,
+      monitoringToolsCost: 0,
+      safetyApiCost: 0,
+      backupModelCost: 0
     },
   }), []);
 
@@ -351,15 +461,23 @@ const validateAssessmentData = useMemo(() => (data: any) => {
   useEffect(() => {
     if (!useCaseId || !isReady) return;
     setLoading(true);
-    fetch(`/api/get-usecase-details?useCaseId=${useCaseId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setUseCase(data);
+    
+    // Fetch use case details and guardrails in parallel
+    Promise.all([
+      fetch(`/api/get-usecase-details?useCaseId=${useCaseId}`).then((res) => res.json()),
+      fetch(`/api/guardrails/get?useCaseId=${useCaseId}`).then((res) => {
+        if (res.ok) return res.json();
+        return null;
+      })
+    ])
+      .then(([useCaseData, guardrailsData]) => {
+        setUseCase(useCaseData);
 
         // Load saved assessment data if it exists
-        if (data.assessData?.stepsData) {
+        if (useCaseData.assessData?.stepsData) {
           setAssessmentData((prev: any) => {
-            const savedData = data.assessData.stepsData;
+            // Ensure backward compatibility by converting if needed
+            const savedData = ensureCompatibility(useCaseData.assessData.stepsData);
             const mergedData = { ...defaultAssessmentData, ...prev };
 
             // Merge saved data with defaults
@@ -371,6 +489,14 @@ const validateAssessmentData = useMemo(() => (data: any) => {
 
             return mergedData;
           });
+        }
+        
+        // Load guardrails config if it exists
+        if (guardrailsData && guardrailsData.success) {
+          setAssessmentData((prev: any) => ({
+            ...prev,
+            guardrailsConfig: guardrailsData.guardrail
+          }));
         }
 
         setLoading(false);
@@ -447,10 +573,13 @@ const validateAssessmentData = useMemo(() => (data: any) => {
       setError(""); // Clear previous errors
       setSaveSuccess(false); // Reset success message
 
+      // Transform UI data to type definition format before saving
+      const transformedData = mapUIToTypeDefinition(assessmentData);
+      
       await fetch("/api/post-stepdata", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ useCaseId, assessData: assessmentData }),
+        body: JSON.stringify({ useCaseId, assessData: transformedData }),
       });
 
       // Instead of redirecting, just show a success message
@@ -506,10 +635,13 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     try {
       // Save filled fields before completing
       console.log('🔒 [ASSESSMENT] Saving assessment data...');
+      // Transform UI data to type definition format before saving
+      const transformedData = mapUIToTypeDefinition(assessmentData);
+      
       await fetch("/api/post-stepdata", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ useCaseId, assessData: assessmentData }),
+        body: JSON.stringify({ useCaseId, assessData: transformedData }),
       });
       
       if (approvalsPageRef.current && approvalsPageRef.current.handleComplete) {
@@ -642,6 +774,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
           <CardHeader>
             <CardTitle>Approvals</CardTitle>
           </CardHeader>
+        ) : currentStep === 10 ? (
+          <CardHeader>
+            <CardTitle>AI Guardrails Configuration</CardTitle>
+          </CardHeader>
         ) :
           (
             <div className="text-muted-foreground text-lg font-medium">
@@ -721,6 +857,39 @@ const validateAssessmentData = useMemo(() => (data: any) => {
             <div className={isReadOnly ? 'readonly-mode' : ''}>
               <ApprovalsPage ref={approvalsPageRef} />
             </div>
+          ) : currentStep === 10 ? (
+            <div className={isReadOnly ? 'readonly-mode' : ''}>
+              <GuardrailsGenerator 
+                useCaseId={useCaseId}
+                assessmentData={assessmentData}
+                useCase={useCase}  // Pass complete use case object
+                onGuardrailsGenerated={(guardrailsConfig) => {
+                  // Store guardrails in assessment data
+                  setAssessmentData((prev: any) => ({
+                    ...prev,
+                    guardrailsConfig
+                  }));
+                }}
+                onComplete={() => {
+                  // Move to evaluations step
+                  handleNext();
+                }}
+              />
+            </div>
+          ) : currentStep === 11 ? (
+            <div className={isReadOnly ? 'readonly-mode' : ''}>
+              <EvaluationGenerator 
+                useCaseId={useCaseId}
+                guardrailsConfig={assessmentData.guardrailsConfig}
+                assessmentData={assessmentData}
+              />
+            </div>
+          ) : currentStep === 12 ? (
+            <div className={isReadOnly ? 'readonly-mode' : ''}>
+              <GoldenDatasetDashboard 
+                useCaseId={useCaseId}
+              />
+            </div>
           ) :
             (
               <div className="text-muted-foreground text-lg font-medium">
@@ -770,7 +939,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
             )}
           </>
         )}
-        {currentStep < 9 ? (
+        {currentStep < 12 ? (
           <button
             className={`flex items-center px-4 py-2 rounded-md bg-gray-600 dark:bg-gray-700 text-white hover:bg-gray-700 dark:hover:bg-gray-600 ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={handleNext}
@@ -779,15 +948,17 @@ const validateAssessmentData = useMemo(() => (data: any) => {
             Next
             <ChevronRight className="w-4 h-4 ml-2" />
           </button>
-                 ) : (
-           <button
-             className={`px-4 py-2 w-64 rounded-xl shadow-lg font-semibold text-lg transition ${isReadOnly ? 'bg-gray-400 text-gray-200 cursor-not-allowed opacity-50' : 'bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white hover:shadow-xl'}`}
-             onClick={handleCompleteAssessment}
-             disabled={isReadOnly}
-           >
-             Complete Assessment
-           </button>
-         )}
+        ) : currentStep === 10 ? (
+          <button
+            className={`px-4 py-2 w-64 rounded-xl shadow-lg font-semibold text-lg transition ${isReadOnly ? 'bg-gray-400 text-gray-200 cursor-not-allowed opacity-50' : 'bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white hover:shadow-xl'}`}
+            onClick={handleCompleteAssessment}
+            disabled={isReadOnly}
+          >
+            Complete Assessment
+          </button>
+        ) : (
+          <div />
+        )}
       </div>
       
 

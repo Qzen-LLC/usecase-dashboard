@@ -33,6 +33,7 @@ model UseCase {
   updatedAt                DateTime            @updatedAt
   priority                 String?
   stage                    String?
+  businessFunction         String?
   aiucId                   Int
   estimatedTimelineMonths  String?             @default("")
   initialCost              String?             @default("")
@@ -40,11 +41,13 @@ model UseCase {
   plannedStartDate         String?             @default("")
   organizationId           String?
   userId                   String?
-  businessFunction         String?
   Approval                 Approval?
   assessData               Assess?
   euAiActAssessments       EuAiActAssessment?
+  evaluations              Evaluation[]
   finopsData               FinOps?
+  goldenDatasets           GoldenDataset[]
+  guardrails               Guardrail[]
   iso42001Assessments      Iso42001Assessment?
   Lock                     Lock[]
   promptTemplates          PromptTemplate[]
@@ -698,6 +701,146 @@ model Lock {
   @@index([useCaseId])
   @@index([userId])
   @@index([scope])
+}
+
+model GoldenDataset {
+  id               String        @id @default(uuid())
+  useCaseId        String
+  version          String        @default("1.0.0")
+  name             String
+  description      String
+  metadata         Json
+  statistics       Json?
+  qualityMetrics   Json?
+  validationStatus Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  publishedAt      DateTime?
+  useCase          UseCase       @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  entries          GoldenEntry[]
+
+  @@index([useCaseId])
+  @@index([createdAt])
+  @@index([publishedAt])
+}
+
+model GoldenEntry {
+  id               String         @id @default(uuid())
+  datasetId        String
+  category         String
+  inputSpec        Json
+  expectedOutputs  Json
+  metadata         Json
+  quality          Json?
+  version          Int            @default(1)
+  previousVersions Json?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  dataset          GoldenDataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  reviews          GoldenReview[]
+
+  @@index([datasetId])
+  @@index([category])
+  @@index([createdAt])
+}
+
+model GoldenReview {
+  id          String      @id @default(uuid())
+  entryId     String
+  reviewer    String
+  scores      Json
+  decision    String
+  comments    String?
+  suggestions Json?
+  timestamp   DateTime    @default(now())
+  entry       GoldenEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@index([entryId])
+  @@index([reviewer])
+  @@index([timestamp])
+}
+
+model Evaluation {
+  id            String             @id @default(uuid())
+  useCaseId     String
+  name          String
+  description   String?
+  configuration Json
+  status        String             @default("pending")
+  startedAt     DateTime?
+  completedAt   DateTime?
+  summary       Json?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  useCase       UseCase            @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  results       EvaluationResult[]
+
+  @@index([useCaseId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model EvaluationResult {
+  id             String     @id @default(uuid())
+  evaluationId   String
+  category       String
+  testType       String
+  input          Json
+  expectedOutput Json?
+  actualOutput   Json?
+  metrics        Json
+  passed         Boolean
+  severity       String?
+  details        Json?
+  timestamp      DateTime   @default(now())
+  evaluation     Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+
+  @@index([evaluationId])
+  @@index([category])
+  @@index([passed])
+  @@index([timestamp])
+}
+
+model Guardrail {
+  id            String          @id @default(uuid())
+  useCaseId     String
+  name          String
+  description   String?
+  approach      String
+  configuration Json
+  reasoning     Json?
+  confidence    Float?
+  status        String          @default("draft")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  publishedAt   DateTime?
+  useCase       UseCase         @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  rules         GuardrailRule[]
+
+  @@index([useCaseId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model GuardrailRule {
+  id             String    @id @default(uuid())
+  guardrailId    String
+  type           String
+  severity       String
+  rule           String
+  description    String
+  rationale      String?
+  implementation Json
+  conditions     Json?
+  exceptions     Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  guardrail      Guardrail @relation(fields: [guardrailId], references: [id], onDelete: Cascade)
+
+  @@index([guardrailId])
+  @@index([type])
+  @@index([severity])
+  @@index([createdAt])
 }
 
 enum RiskStatus {

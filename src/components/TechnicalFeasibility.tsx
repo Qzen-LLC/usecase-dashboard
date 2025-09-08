@@ -6,7 +6,8 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Brain, Server, Plug, Shield as ShieldIcon } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Brain, Server, Plug, Shield as ShieldIcon, GitBranch, Database, Wrench, Sparkles } from 'lucide-react';
 
 // --- New options for technical complexity fields ---
 const MODEL_TYPES = [
@@ -129,6 +130,180 @@ const MODEL_UPDATE_FREQUENCY = [
   "Real-time/Continuous",
 ];
 
+// --- Gen AI/LLM Specific Options ---
+const MODEL_PROVIDERS = [
+  "OpenAI",
+  "Anthropic",
+  "Google (Vertex AI)",
+  "AWS Bedrock",
+  "Azure OpenAI",
+  "Cohere",
+  "Meta (Llama)",
+  "Mistral AI",
+  "Hugging Face",
+  "Self-hosted",
+  "Custom/Proprietary",
+];
+
+const SPECIFIC_MODELS = [
+  "GPT-4",
+  "GPT-4 Turbo",
+  "GPT-3.5 Turbo",
+  "Claude 3 Opus",
+  "Claude 3 Sonnet",
+  "Claude 3 Haiku",
+  "Gemini Pro",
+  "Gemini Ultra",
+  "Llama 2",
+  "Llama 3",
+  "Mistral Large",
+  "Custom Fine-tuned",
+];
+
+const CONTEXT_WINDOWS = [
+  "< 4K tokens",
+  "4K - 16K tokens",
+  "16K - 32K tokens",
+  "32K - 128K tokens",
+  "> 128K tokens",
+];
+
+const MULTIMODAL_CAPABILITIES = [
+  "Text only",
+  "Text + Vision",
+  "Text + Audio",
+  "Text + Code",
+  "Text + Video",
+  "Text + Documents",
+  "All modalities",
+];
+
+const RESPONSE_FORMATS = [
+  "Streaming",
+  "Batch",
+  "Async/Webhooks",
+  "Real-time",
+  "Cached responses",
+];
+
+// --- Prompt Engineering Options ---
+const PROMPT_ENGINEERING_REQS = [
+  "Zero-shot prompting",
+  "Few-shot examples",
+  "Chain of thought",
+  "Role-based prompting",
+  "Structured output formats",
+  "Dynamic prompt templates",
+  "Context injection",
+  "Prompt chaining",
+  "Self-consistency checking",
+  "Constitutional AI prompting",
+];
+
+// --- Agent Architecture Options ---
+const AGENT_PATTERNS = [
+  "Single agent",
+  "Multi-agent collaborative",
+  "Hierarchical agents",
+  "Competitive agents",
+  "Agent swarm",
+];
+
+const AGENT_AUTONOMY = [
+  "Reactive (responds only)",
+  "Proactive (suggests)",
+  "Semi-autonomous (confirms)",
+  "Fully autonomous",
+];
+
+const MEMORY_TYPES = [
+  "Short-term conversation",
+  "Long-term user memory",
+  "Episodic memory",
+  "Semantic memory",
+  "Working memory",
+  "Vector memory",
+];
+
+const ORCHESTRATION_PATTERNS = [
+  "Linear/Sequential",
+  "Branching/Conditional",
+  "Loop-based",
+  "Event-driven",
+  "Dynamic/Adaptive",
+];
+
+// --- RAG & Knowledge System Options ---
+const VECTOR_DATABASES = [
+  "Pinecone",
+  "Weaviate",
+  "Qdrant",
+  "Chroma",
+  "pgvector",
+  "Elasticsearch",
+  "Milvus",
+  "FAISS",
+  "Custom",
+];
+
+const EMBEDDING_MODELS = [
+  "OpenAI Ada",
+  "OpenAI Text-3",
+  "Cohere Embed",
+  "Sentence Transformers",
+  "BGE Models",
+  "Custom embeddings",
+];
+
+const CHUNKING_STRATEGIES = [
+  "Fixed size",
+  "Semantic chunking",
+  "Sentence-based",
+  "Paragraph-based",
+  "Document-based",
+  "Custom strategy",
+];
+
+const RETRIEVAL_STRATEGIES = [
+  "Similarity search",
+  "Hybrid search",
+  "Re-ranking",
+  "MMR (Max Marginal Relevance)",
+  "Semantic + Keyword",
+  "Graph-based",
+];
+
+// --- Agent Tools & Functions ---
+const TOOL_CATEGORIES = [
+  "Database access",
+  "API calls",
+  "File system ops",
+  "Code execution",
+  "Web browsing",
+  "Email/messaging",
+  "Calendar/scheduling",
+  "Document processing",
+  "Data analysis",
+  "Image generation",
+];
+
+const TOOL_AUTH = [
+  "OAuth",
+  "API keys",
+  "Service accounts",
+  "Managed identity",
+  "Token-based",
+  "Certificate-based",
+];
+
+const EXECUTION_ENV = [
+  "Sandboxed",
+  "Containerized",
+  "Serverless",
+  "Direct access",
+  "Isolated VM",
+];
+
 type Props = {
   value: {
     modelTypes: string[];
@@ -144,6 +319,34 @@ type Props = {
     outputTypes: string[];
     confidenceScore: string;
     modelUpdateFrequency: string;
+    // Gen AI/LLM fields
+    modelProviders?: string[];
+    specificModels?: string[];
+    contextWindow?: string;
+    avgInputTokens?: number;
+    avgOutputTokens?: number;
+    expectedRequestsPerDay?: number;
+    multimodalCapabilities?: string[];
+    responseFormats?: string[];
+    promptEngineeringReqs?: string[];
+    // Agent Architecture fields
+    agentPattern?: string;
+    agentAutonomy?: string;
+    memoryTypes?: string[];
+    orchestrationPattern?: string;
+    stateManagement?: string;
+    // RAG & Knowledge fields
+    vectorDatabases?: string[];
+    embeddingModel?: string;
+    embeddingDimensions?: number;
+    chunkingStrategy?: string;
+    retrievalStrategies?: string[];
+    knowledgeUpdateFreq?: string;
+    // Agent Tools fields
+    toolCategories?: string[];
+    toolAuth?: string[];
+    executionEnv?: string;
+    toolApprovalProcess?: string;
   };
   onChange: (data: Props['value']) => void;
 };
@@ -151,13 +354,18 @@ type Props = {
 export default function TechnicalFeasibility({ value, onChange }: Props) {
   // Helper for multi-select checkboxes
   function handleMultiSelectChange(field: keyof Props['value'], v: string) {
-    const arr = value[field] as string[];
+    const arr = (value[field] as string[]) || [];
     if (arr.includes(v)) {
       onChange({ ...value, [field]: arr.filter((x) => x !== v) });
     } else {
       onChange({ ...value, [field]: [...arr, v] });
     }
   }
+
+  // Check if Gen AI or LLM is selected to show additional sections
+  const isGenAISelected = value.modelTypes?.includes("Generative AI") || 
+                          value.modelTypes?.includes("Large Language Model (LLM)") ||
+                          value.modelTypes?.includes("Multi-modal Models");
 
   return (
     <div className="space-y-10">
@@ -215,7 +423,7 @@ export default function TechnicalFeasibility({ value, onChange }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {MODEL_TYPES.map((type) => (
                 <Label key={type} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
-                  <Checkbox checked={value.modelTypes.includes(type)} onCheckedChange={() => handleMultiSelectChange('modelTypes', type)} />
+                  <Checkbox checked={value.modelTypes?.includes(type) || false} onCheckedChange={() => handleMultiSelectChange('modelTypes', type)} />
                   <span className="text-sm text-foreground">{type}</span>
                 </Label>
               ))}
@@ -227,7 +435,7 @@ export default function TechnicalFeasibility({ value, onChange }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {MODEL_SIZES.map((size) => (
                 <Label key={size} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
-                  <Checkbox checked={value.modelSizes.includes(size)} onCheckedChange={() => handleMultiSelectChange('modelSizes', size)} />
+                  <Checkbox checked={value.modelSizes?.includes(size) || false} onCheckedChange={() => handleMultiSelectChange('modelSizes', size)} />
                   <span className="text-sm text-foreground">{size}</span>
                 </Label>
               ))}
@@ -254,7 +462,7 @@ export default function TechnicalFeasibility({ value, onChange }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {DEPLOYMENT_MODELS.map((model) => (
                 <Label key={model} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
-                  <Checkbox checked={value.deploymentModels.includes(model)} onCheckedChange={() => handleMultiSelectChange('deploymentModels', model)} />
+                  <Checkbox checked={value.deploymentModels?.includes(model) || false} onCheckedChange={() => handleMultiSelectChange('deploymentModels', model)} />
                   <span className="text-sm text-foreground">{model}</span>
                 </Label>
               ))}
@@ -266,7 +474,7 @@ export default function TechnicalFeasibility({ value, onChange }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {CLOUD_PROVIDERS.map((provider) => (
                 <Label key={provider} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
-                  <Checkbox checked={value.cloudProviders.includes(provider)} onCheckedChange={() => handleMultiSelectChange('cloudProviders', provider)} />
+                  <Checkbox checked={value.cloudProviders?.includes(provider) || false} onCheckedChange={() => handleMultiSelectChange('cloudProviders', provider)} />
                   <span className="text-sm text-foreground">{provider}</span>
                 </Label>
               ))}
@@ -278,7 +486,7 @@ export default function TechnicalFeasibility({ value, onChange }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {COMPUTE_REQUIREMENTS.map((req) => (
                 <Label key={req} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
-                  <Checkbox checked={value.computeRequirements.includes(req)} onCheckedChange={() => handleMultiSelectChange('computeRequirements', req)} />
+                  <Checkbox checked={value.computeRequirements?.includes(req) || false} onCheckedChange={() => handleMultiSelectChange('computeRequirements', req)} />
                   <span className="text-sm text-foreground">{req}</span>
                 </Label>
               ))}
@@ -305,7 +513,7 @@ export default function TechnicalFeasibility({ value, onChange }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {INTEGRATION_POINTS.map((point) => (
                 <Label key={point} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
-                  <Checkbox checked={value.integrationPoints.includes(point)} onCheckedChange={() => handleMultiSelectChange('integrationPoints', point)} />
+                  <Checkbox checked={value.integrationPoints?.includes(point) || false} onCheckedChange={() => handleMultiSelectChange('integrationPoints', point)} />
                   <span className="text-sm text-foreground">{point}</span>
                 </Label>
               ))}
@@ -317,7 +525,7 @@ export default function TechnicalFeasibility({ value, onChange }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {API_SPECS.map((api) => (
                 <Label key={api} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
-                  <Checkbox checked={value.apiSpecs.includes(api)} onCheckedChange={() => handleMultiSelectChange('apiSpecs', api)} />
+                  <Checkbox checked={value.apiSpecs?.includes(api) || false} onCheckedChange={() => handleMultiSelectChange('apiSpecs', api)} />
                   <span className="text-sm text-foreground">{api}</span>
                 </Label>
               ))}
@@ -344,7 +552,7 @@ export default function TechnicalFeasibility({ value, onChange }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {AUTH_METHODS.map((auth) => (
                 <Label key={auth} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
-                  <Checkbox checked={value.authMethods.includes(auth)} onCheckedChange={() => handleMultiSelectChange('authMethods', auth)} />
+                  <Checkbox checked={value.authMethods?.includes(auth) || false} onCheckedChange={() => handleMultiSelectChange('authMethods', auth)} />
                   <span className="text-sm text-foreground">{auth}</span>
                 </Label>
               ))}
@@ -356,7 +564,7 @@ export default function TechnicalFeasibility({ value, onChange }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {ENCRYPTION_STANDARDS.map((enc) => (
                 <Label key={enc} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
-                  <Checkbox checked={value.encryptionStandards.includes(enc)} onCheckedChange={() => handleMultiSelectChange('encryptionStandards', enc)} />
+                  <Checkbox checked={value.encryptionStandards?.includes(enc) || false} onCheckedChange={() => handleMultiSelectChange('encryptionStandards', enc)} />
                   <span className="text-sm text-foreground">{enc}</span>
                 </Label>
               ))}
@@ -383,7 +591,7 @@ export default function TechnicalFeasibility({ value, onChange }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {OUTPUT_TYPES.map((type) => (
                 <Label key={type} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
-                  <Checkbox checked={value.outputTypes.includes(type)} onCheckedChange={() => handleMultiSelectChange('outputTypes', type)} />
+                  <Checkbox checked={value.outputTypes?.includes(type) || false} onCheckedChange={() => handleMultiSelectChange('outputTypes', type)} />
                   <span className="text-sm text-foreground">{type}</span>
                 </Label>
               ))}
@@ -415,6 +623,425 @@ export default function TechnicalFeasibility({ value, onChange }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Conditionally show Gen AI sections when LLM or Generative AI is selected */}
+      {isGenAISelected && (
+        <>
+          {/* LLM/Foundation Model Configuration Section */}
+          <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+            <div className="border-b border-border pb-4 mb-6">
+              <div className="flex items-center gap-3">
+                <Sparkles className="w-6 h-6 text-purple-500" />
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">LLM/Foundation Model Configuration</h3>
+                  <p className="text-sm text-muted-foreground">Configure large language model providers, models, and token requirements</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-8">
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">Model Providers</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {MODEL_PROVIDERS.map((provider) => (
+                    <Label key={provider} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <Checkbox 
+                        checked={value.modelProviders?.includes(provider) || false} 
+                        onCheckedChange={() => handleMultiSelectChange('modelProviders', provider)} 
+                      />
+                      <span className="text-sm text-foreground">{provider}</span>
+                    </Label>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">Specific Models</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {SPECIFIC_MODELS.map((model) => (
+                    <Label key={model} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <Checkbox 
+                        checked={value.specificModels?.includes(model) || false} 
+                        onCheckedChange={() => handleMultiSelectChange('specificModels', model)} 
+                      />
+                      <span className="text-sm text-foreground">{model}</span>
+                    </Label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">Context Window Requirements</Label>
+                <RadioGroup 
+                  value={value.contextWindow || ''} 
+                  onValueChange={(newValue) => onChange({ ...value, contextWindow: newValue })} 
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"
+                >
+                  {CONTEXT_WINDOWS.map((window) => (
+                    <Label key={window} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <RadioGroupItem value={window} />
+                      <span className="text-sm text-foreground">{window}</span>
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <Label className="block font-medium mb-2 text-foreground">Avg Input Tokens/Request</Label>
+                  <Input 
+                    type="number" 
+                    value={value.avgInputTokens || ''} 
+                    onChange={(e) => onChange({ ...value, avgInputTokens: parseInt(e.target.value) || 0 })}
+                    placeholder="e.g., 500"
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <Label className="block font-medium mb-2 text-foreground">Avg Output Tokens/Request</Label>
+                  <Input 
+                    type="number" 
+                    value={value.avgOutputTokens || ''} 
+                    onChange={(e) => onChange({ ...value, avgOutputTokens: parseInt(e.target.value) || 0 })}
+                    placeholder="e.g., 1000"
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <Label className="block font-medium mb-2 text-foreground">Expected Requests/Day</Label>
+                  <Input 
+                    type="number" 
+                    value={value.expectedRequestsPerDay || ''} 
+                    onChange={(e) => onChange({ ...value, expectedRequestsPerDay: parseInt(e.target.value) || 0 })}
+                    placeholder="e.g., 10000"
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">Multimodal Capabilities</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {MULTIMODAL_CAPABILITIES.map((capability) => (
+                    <Label key={capability} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <Checkbox 
+                        checked={value.multimodalCapabilities?.includes(capability) || false} 
+                        onCheckedChange={() => handleMultiSelectChange('multimodalCapabilities', capability)} 
+                      />
+                      <span className="text-sm text-foreground">{capability}</span>
+                    </Label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">Response Formats</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {RESPONSE_FORMATS.map((format) => (
+                    <Label key={format} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <Checkbox 
+                        checked={value.responseFormats?.includes(format) || false} 
+                        onCheckedChange={() => handleMultiSelectChange('responseFormats', format)} 
+                      />
+                      <span className="text-sm text-foreground">{format}</span>
+                    </Label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">Prompt Engineering Requirements</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {PROMPT_ENGINEERING_REQS.map((req) => (
+                    <Label key={req} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <Checkbox 
+                        checked={value.promptEngineeringReqs?.includes(req) || false} 
+                        onCheckedChange={() => handleMultiSelectChange('promptEngineeringReqs', req)} 
+                      />
+                      <span className="text-sm text-foreground">{req}</span>
+                    </Label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Agent Architecture & Orchestration Section */}
+          <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+            <div className="border-b border-border pb-4 mb-6">
+              <div className="flex items-center gap-3">
+                <GitBranch className="w-6 h-6 text-blue-500" />
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">Agent Architecture & Orchestration</h3>
+                  <p className="text-sm text-muted-foreground">Define agent patterns, autonomy levels, and orchestration strategies</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-8">
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">Agent Pattern</Label>
+                <RadioGroup 
+                  value={value.agentPattern || ''} 
+                  onValueChange={(newValue) => onChange({ ...value, agentPattern: newValue })} 
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"
+                >
+                  {AGENT_PATTERNS.map((pattern) => (
+                    <Label key={pattern} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <RadioGroupItem value={pattern} />
+                      <span className="text-sm text-foreground">{pattern}</span>
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">Agent Autonomy Level</Label>
+                <RadioGroup 
+                  value={value.agentAutonomy || ''} 
+                  onValueChange={(newValue) => onChange({ ...value, agentAutonomy: newValue })} 
+                  className="grid grid-cols-1 md:grid-cols-2 gap-2"
+                >
+                  {AGENT_AUTONOMY.map((level) => (
+                    <Label key={level} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <RadioGroupItem value={level} />
+                      <span className="text-sm text-foreground">{level}</span>
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">Memory Requirements</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {MEMORY_TYPES.map((memory) => (
+                    <Label key={memory} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <Checkbox 
+                        checked={value.memoryTypes?.includes(memory) || false} 
+                        onCheckedChange={() => handleMultiSelectChange('memoryTypes', memory)} 
+                      />
+                      <span className="text-sm text-foreground">{memory}</span>
+                    </Label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">Orchestration Pattern</Label>
+                <RadioGroup 
+                  value={value.orchestrationPattern || ''} 
+                  onValueChange={(newValue) => onChange({ ...value, orchestrationPattern: newValue })} 
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"
+                >
+                  {ORCHESTRATION_PATTERNS.map((pattern) => (
+                    <Label key={pattern} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <RadioGroupItem value={pattern} />
+                      <span className="text-sm text-foreground">{pattern}</span>
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">State Management</Label>
+                <RadioGroup 
+                  value={value.stateManagement || ''} 
+                  onValueChange={(newValue) => onChange({ ...value, stateManagement: newValue })} 
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"
+                >
+                  {["Stateless", "Session-based", "Persistent", "Distributed"].map((state) => (
+                    <Label key={state} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <RadioGroupItem value={state} />
+                      <span className="text-sm text-foreground">{state}</span>
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </div>
+            </div>
+          </div>
+
+          {/* RAG & Knowledge Systems Section */}
+          <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+            <div className="border-b border-border pb-4 mb-6">
+              <div className="flex items-center gap-3">
+                <Database className="w-6 h-6 text-green-500" />
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">RAG & Knowledge Systems</h3>
+                  <p className="text-sm text-muted-foreground">Configure retrieval-augmented generation and knowledge management</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-8">
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">Vector Databases</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {VECTOR_DATABASES.map((db) => (
+                    <Label key={db} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <Checkbox 
+                        checked={value.vectorDatabases?.includes(db) || false} 
+                        onCheckedChange={() => handleMultiSelectChange('vectorDatabases', db)} 
+                      />
+                      <span className="text-sm text-foreground">{db}</span>
+                    </Label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label className="block font-medium mb-4 text-foreground">Embedding Model</Label>
+                  <RadioGroup 
+                    value={value.embeddingModel || ''} 
+                    onValueChange={(newValue) => onChange({ ...value, embeddingModel: newValue })} 
+                    className="space-y-2"
+                  >
+                    {EMBEDDING_MODELS.map((model) => (
+                      <Label key={model} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                        <RadioGroupItem value={model} />
+                        <span className="text-sm text-foreground">{model}</span>
+                      </Label>
+                    ))}
+                  </RadioGroup>
+                </div>
+
+                <div>
+                  <Label className="block font-medium mb-2 text-foreground">Embedding Dimensions</Label>
+                  <Input 
+                    type="number" 
+                    value={value.embeddingDimensions || ''} 
+                    onChange={(e) => onChange({ ...value, embeddingDimensions: parseInt(e.target.value) || 0 })}
+                    placeholder="e.g., 1536"
+                    className="w-full mb-4"
+                  />
+
+                  <Label className="block font-medium mb-4 text-foreground">Chunking Strategy</Label>
+                  <RadioGroup 
+                    value={value.chunkingStrategy || ''} 
+                    onValueChange={(newValue) => onChange({ ...value, chunkingStrategy: newValue })} 
+                    className="space-y-2"
+                  >
+                    {CHUNKING_STRATEGIES.map((strategy) => (
+                      <Label key={strategy} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                        <RadioGroupItem value={strategy} />
+                        <span className="text-sm text-foreground">{strategy}</span>
+                      </Label>
+                    ))}
+                  </RadioGroup>
+                </div>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">Retrieval Strategies</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {RETRIEVAL_STRATEGIES.map((strategy) => (
+                    <Label key={strategy} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <Checkbox 
+                        checked={value.retrievalStrategies?.includes(strategy) || false} 
+                        onCheckedChange={() => handleMultiSelectChange('retrievalStrategies', strategy)} 
+                      />
+                      <span className="text-sm text-foreground">{strategy}</span>
+                    </Label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">Knowledge Update Frequency</Label>
+                <RadioGroup 
+                  value={value.knowledgeUpdateFreq || ''} 
+                  onValueChange={(newValue) => onChange({ ...value, knowledgeUpdateFreq: newValue })} 
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"
+                >
+                  {["Real-time", "Daily", "Weekly", "Monthly", "On-demand"].map((freq) => (
+                    <Label key={freq} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <RadioGroupItem value={freq} />
+                      <span className="text-sm text-foreground">{freq}</span>
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </div>
+            </div>
+          </div>
+
+          {/* Agent Tools & Functions Section */}
+          <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+            <div className="border-b border-border pb-4 mb-6">
+              <div className="flex items-center gap-3">
+                <Wrench className="w-6 h-6 text-orange-500" />
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">Agent Tools & Functions</h3>
+                  <p className="text-sm text-muted-foreground">Configure tool access, authentication, and execution environment</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-8">
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">Tool Categories</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {TOOL_CATEGORIES.map((category) => (
+                    <Label key={category} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <Checkbox 
+                        checked={value.toolCategories?.includes(category) || false} 
+                        onCheckedChange={() => handleMultiSelectChange('toolCategories', category)} 
+                      />
+                      <span className="text-sm text-foreground">{category}</span>
+                    </Label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">Tool Authentication Methods</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {TOOL_AUTH.map((auth) => (
+                    <Label key={auth} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <Checkbox 
+                        checked={value.toolAuth?.includes(auth) || false} 
+                        onCheckedChange={() => handleMultiSelectChange('toolAuth', auth)} 
+                      />
+                      <span className="text-sm text-foreground">{auth}</span>
+                    </Label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">Execution Environment</Label>
+                <RadioGroup 
+                  value={value.executionEnv || ''} 
+                  onValueChange={(newValue) => onChange({ ...value, executionEnv: newValue })} 
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"
+                >
+                  {EXECUTION_ENV.map((env) => (
+                    <Label key={env} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <RadioGroupItem value={env} />
+                      <span className="text-sm text-foreground">{env}</span>
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-4 text-foreground">Tool Approval Process</Label>
+                <RadioGroup 
+                  value={value.toolApprovalProcess || ''} 
+                  onValueChange={(newValue) => onChange({ ...value, toolApprovalProcess: newValue })} 
+                  className="grid grid-cols-1 md:grid-cols-2 gap-2"
+                >
+                  {["Pre-approved only", "Runtime approval", "Human confirmation", "Unrestricted"].map((process) => (
+                    <Label key={process} className="flex items-center gap-2 hover:bg-accent rounded p-2 border border-border cursor-pointer transition">
+                      <RadioGroupItem value={process} />
+                      <span className="text-sm text-foreground">{process}</span>
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 } 

@@ -6,7 +6,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Database, BarChart3, FileText, Shield, Globe, Clock } from 'lucide-react';
+import { Database, BarChart3, FileText, Shield, Globe, Clock, BookOpen, Brain } from 'lucide-react';
 
 const DATA_TYPES = [
   'Personal Identifiable Information (PII)',
@@ -94,6 +94,57 @@ const RETENTION_OPTIONS = [
   'Varies by data type',
 ];
 
+// Gen AI Specific Constants
+const TRAINING_DATA_TYPES = [
+  'Instruction Datasets',
+  'Human Preference Data',
+  'Domain-specific Corpus',
+  'Few-shot Examples',
+  'Negative Examples',
+  'Test/Validation Sets',
+  'Synthetic Data',
+  'Reinforcement Learning Data',
+];
+
+const PROMPT_ENGINEERING_ITEMS = [
+  'System Prompts Defined',
+  'Prompt Templates Created',
+  'Few-shot Examples Prepared',
+  'Chain-of-thought Examples',
+  'Output Format Specifications',
+  'Error Handling Prompts',
+  'Safety Prompts',
+  'Context Management',
+];
+
+const KNOWLEDGE_SOURCES = [
+  'Internal Documentation',
+  'External APIs',
+  'Web Content',
+  'Databases',
+  'Expert Knowledge',
+  'User Feedback',
+  'Research Papers',
+  'Industry Reports',
+];
+
+const UPDATE_STRATEGIES = [
+  'Continuous Learning',
+  'Periodic Retraining',
+  'Manual Updates',
+  'Event-triggered',
+  'Incremental Learning',
+  'Batch Updates',
+];
+
+const FACT_VERIFICATION = [
+  'Manual Verification',
+  'Automated Verification',
+  'Hybrid Approach',
+  'Crowdsourced',
+  'Expert Review',
+];
+
 // Controlled component props
 type DataReadinessValue = {
   dataTypes: string[];
@@ -111,6 +162,18 @@ type DataReadinessValue = {
   crossBorderTransfer: boolean;
   dataLocalization: string;
   dataRetention: string;
+  // Gen AI specific fields
+  trainingDataTypes?: string[];
+  instructionClarityScore?: number;
+  responseQualityScore?: number;
+  diversityIndex?: number;
+  toxicityScore?: number;
+  promptEngineering?: string[];
+  knowledgeSources?: string[];
+  updateStrategy?: string;
+  factVerificationProcess?: string;
+  updateFrequency?: string;
+  versionControl?: boolean;
 };
 
 type Props = {
@@ -411,6 +474,226 @@ export default function DataReadiness({ value, onChange }: Props) {
               </Label>
             ))}
           </RadioGroup>
+        </div>
+      </div>
+
+      {/* Gen AI Training & Fine-tuning Data Section */}
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Brain className="w-6 h-6 text-purple-500" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Gen AI Training & Fine-tuning Data</h3>
+              <p className="text-sm text-muted-foreground">Define training data requirements and quality metrics for AI models</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-8">
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Training Data Requirements</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {TRAINING_DATA_TYPES.map((type) => (
+                <label key={type} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <Checkbox
+                    checked={value.trainingDataTypes?.includes(type) || false}
+                    onCheckedChange={() => handleMultiSelect('trainingDataTypes', type)}
+                  />
+                  <span className="text-sm text-foreground">{type}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-foreground mb-4">Data Quality for Gen AI</h4>
+            <div className="space-y-6">
+              <div>
+                <Label className="block font-medium mb-2 text-foreground">Instruction Clarity Score</Label>
+                <div className="flex items-center w-full">
+                  <span className="text-muted-foreground text-sm mr-4">Poor</span>
+                  <Slider
+                    min={1}
+                    max={10}
+                    step={1}
+                    value={[value.instructionClarityScore || 5]}
+                    onValueChange={([val]) => onChange({ ...value, instructionClarityScore: val })}
+                    className="w-full"
+                  />
+                  <span className="text-muted-foreground text-sm ml-4">Excellent</span>
+                  <span className="ml-6 px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold text-sm">
+                    {value.instructionClarityScore || 5}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-2 text-foreground">Response Quality Score</Label>
+                <div className="flex items-center w-full">
+                  <span className="text-muted-foreground text-sm mr-4">Poor</span>
+                  <Slider
+                    min={1}
+                    max={10}
+                    step={1}
+                    value={[value.responseQualityScore || 5]}
+                    onValueChange={([val]) => onChange({ ...value, responseQualityScore: val })}
+                    className="w-full"
+                  />
+                  <span className="text-muted-foreground text-sm ml-4">Excellent</span>
+                  <span className="ml-6 px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold text-sm">
+                    {value.responseQualityScore || 5}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-2 text-foreground">Diversity Index</Label>
+                <div className="flex items-center w-full">
+                  <span className="text-muted-foreground text-sm mr-4">Low</span>
+                  <Slider
+                    min={1}
+                    max={10}
+                    step={1}
+                    value={[value.diversityIndex || 5]}
+                    onValueChange={([val]) => onChange({ ...value, diversityIndex: val })}
+                    className="w-full"
+                  />
+                  <span className="text-muted-foreground text-sm ml-4">High</span>
+                  <span className="ml-6 px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold text-sm">
+                    {value.diversityIndex || 5}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-2 text-foreground">Toxicity Score</Label>
+                <div className="flex items-center w-full">
+                  <span className="text-muted-foreground text-sm mr-4">0%</span>
+                  <Slider
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={[value.toxicityScore || 0]}
+                    onValueChange={([val]) => onChange({ ...value, toxicityScore: val })}
+                    className="w-full"
+                  />
+                  <span className="text-muted-foreground text-sm ml-4">100%</span>
+                  <span className="ml-6 px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold text-sm">
+                    {value.toxicityScore || 0}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Prompt Engineering</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {PROMPT_ENGINEERING_ITEMS.map((item) => (
+                <label key={item} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <Checkbox
+                    checked={value.promptEngineering?.includes(item) || false}
+                    onCheckedChange={() => handleMultiSelect('promptEngineering', item)}
+                  />
+                  <span className="text-sm text-foreground">{item}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Knowledge Management Section */}
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <BookOpen className="w-6 h-6 text-blue-500" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Knowledge Management</h3>
+              <p className="text-sm text-muted-foreground">Configure knowledge sources and update strategies for AI systems</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-8">
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Knowledge Sources</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {KNOWLEDGE_SOURCES.map((source) => (
+                <label key={source} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <Checkbox
+                    checked={value.knowledgeSources?.includes(source) || false}
+                    onCheckedChange={() => handleMultiSelect('knowledgeSources', source)}
+                  />
+                  <span className="text-sm text-foreground">{source}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Update Strategy</Label>
+            <RadioGroup 
+              value={value.updateStrategy || ''} 
+              onValueChange={(newValue) => onChange({ ...value, updateStrategy: newValue })} 
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"
+            >
+              {UPDATE_STRATEGIES.map((strategy) => (
+                <Label key={strategy} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <RadioGroupItem value={strategy} />
+                  <span className="text-sm text-foreground">{strategy}</span>
+                </Label>
+              ))}
+            </RadioGroup>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-foreground mb-4">Ground Truth Management</h4>
+            <div className="space-y-4">
+              <div>
+                <Label className="block font-medium mb-2 text-foreground">Fact Verification Process</Label>
+                <RadioGroup 
+                  value={value.factVerificationProcess || ''} 
+                  onValueChange={(newValue) => onChange({ ...value, factVerificationProcess: newValue })} 
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"
+                >
+                  {FACT_VERIFICATION.map((process) => (
+                    <Label key={process} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                      <RadioGroupItem value={process} />
+                      <span className="text-sm text-foreground">{process}</span>
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-2 text-foreground">Update Frequency</Label>
+                <RadioGroup 
+                  value={value.updateFrequency || ''} 
+                  onValueChange={(newValue) => onChange({ ...value, updateFrequency: newValue })} 
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"
+                >
+                  {['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Annually', 'As Needed'].map((freq) => (
+                    <Label key={freq} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                      <RadioGroupItem value={freq} />
+                      <span className="text-sm text-foreground">{freq}</span>
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              <div>
+                <Label className="block font-medium mb-2 text-foreground">Version Control</Label>
+                <div className="flex items-center gap-2 p-2 border border-border rounded hover:bg-accent">
+                  <Checkbox
+                    checked={value.versionControl || false}
+                    onCheckedChange={(checked) => onChange({ ...value, versionControl: !!checked })}
+                  />
+                  <span className="text-sm text-foreground">Knowledge base version control enabled</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

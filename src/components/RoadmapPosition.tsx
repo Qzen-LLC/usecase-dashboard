@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { Target, Calendar, Link } from "lucide-react";
+import { Target, Calendar, Link, TrendingUp } from "lucide-react";
 
 const PROJECT_STAGES = [
   "Ideation/Planning",
@@ -26,6 +26,27 @@ const TIMELINE_CONSTRAINTS = [
 const PRIORITY_LEVELS = ["high", "medium", "low"];
 const TIMELINE_OPTIONS = ["Q3 2025", "Q4 2025", "Q1 2026", "Q2 2026"];
 
+// Gen AI Specific Constants
+const AI_MATURITY_LEVELS = [
+  "No AI/Traditional Systems",
+  "Rule-based Automation",
+  "Basic ML Models",
+  "Advanced ML",
+  "Basic Gen AI",
+  "Advanced Gen AI",
+  "Agentic AI",
+];
+
+const EVOLUTION_PATHS = [
+  "Increase Autonomy Gradually",
+  "Expand Tool Access",
+  "Add Multi-agent Coordination",
+  "Enhance Memory Systems",
+  "Improve Reasoning Capabilities",
+  "Add Human-in-the-loop Features",
+  "Implement Continuous Learning",
+];
+
 type Props = {
   value: {
     priority: string;
@@ -38,6 +59,10 @@ type Props = {
       hiring: boolean;
     };
     metrics: string;
+    // Gen AI specific fields
+    currentAIMaturity?: string;
+    targetAIMaturity?: string;
+    evolutionPath?: string[];
   };
   onChange: (data: Props['value']) => void;
 };
@@ -60,15 +85,15 @@ export default function RoadmapPosition({ value, onChange }: Props) {
     }
   }, [value.priority, value.projectStage, value.timelineConstraints, value.timeline, value.dependencies, value.metrics, onChange]);
 
-  const handleMultiSelectChange = (key: string, value: string) => {
-    const currentValue = value as any;
+  const handleMultiSelectChange = (key: string, itemValue: string) => {
     if (key === 'timelineConstraints') {
-      const newConstraints = currentValue.timelineConstraints.includes(value) 
-        ? currentValue.timelineConstraints.filter((c: string) => c !== value)
-        : [...currentValue.timelineConstraints, value];
+      const currentConstraints = value.timelineConstraints || [];
+      const newConstraints = currentConstraints.includes(itemValue) 
+        ? currentConstraints.filter((c: string) => c !== itemValue)
+        : [...currentConstraints, itemValue];
       
       onChange({
-        ...currentValue,
+        ...value,
         timelineConstraints: newConstraints,
       });
     }
@@ -149,7 +174,7 @@ export default function RoadmapPosition({ value, onChange }: Props) {
               {TIMELINE_CONSTRAINTS.map((constraint) => (
                 <label key={constraint} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
                   <Checkbox
-                    checked={value.timelineConstraints.includes(constraint)}
+                    checked={value.timelineConstraints?.includes(constraint) || false}
                     onCheckedChange={(checked) => handleMultiSelectChange('timelineConstraints', constraint)}
                   />
                   <span className="text-sm text-foreground">{constraint}</span>
@@ -220,6 +245,74 @@ export default function RoadmapPosition({ value, onChange }: Props) {
               onChange={(e) => onChange({ ...value, metrics: e.target.value })}
               className="min-h-[100px] resize-none"
             />
+          </div>
+        </div>
+      </div>
+
+      {/* AI Maturity Progression Section */}
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="border-b border-border pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <TrendingUp className="w-6 h-6 text-purple-500" />
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">AI Maturity Progression</h3>
+              <p className="text-sm text-muted-foreground">Define your current and target AI maturity levels</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-8">
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Current AI Maturity</Label>
+            <RadioGroup 
+              value={value.currentAIMaturity || ''} 
+              onValueChange={(newValue) => onChange({ ...value, currentAIMaturity: newValue })} 
+              className="grid grid-cols-1 md:grid-cols-2 gap-2"
+            >
+              {AI_MATURITY_LEVELS.map((level) => (
+                <Label key={level} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <RadioGroupItem value={level} />
+                  <span className="text-sm text-foreground">{level}</span>
+                </Label>
+              ))}
+            </RadioGroup>
+          </div>
+
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Target AI Maturity</Label>
+            <RadioGroup 
+              value={value.targetAIMaturity || ''} 
+              onValueChange={(newValue) => onChange({ ...value, targetAIMaturity: newValue })} 
+              className="grid grid-cols-1 md:grid-cols-2 gap-2"
+            >
+              {AI_MATURITY_LEVELS.map((level) => (
+                <Label key={level} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <RadioGroupItem value={level} />
+                  <span className="text-sm text-foreground">{level}</span>
+                </Label>
+              ))}
+            </RadioGroup>
+          </div>
+
+          <div>
+            <Label className="block font-medium mb-4 text-foreground">Evolution Path</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {EVOLUTION_PATHS.map((path) => (
+                <label key={path} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
+                  <Checkbox
+                    checked={value.evolutionPath?.includes(path) || false}
+                    onCheckedChange={(checked) => {
+                      const currentPath = value.evolutionPath || [];
+                      const newPath = checked 
+                        ? [...currentPath, path]
+                        : currentPath.filter(p => p !== path);
+                      onChange({ ...value, evolutionPath: newPath });
+                    }}
+                  />
+                  <span className="text-sm text-foreground">{path}</span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
       </div>
