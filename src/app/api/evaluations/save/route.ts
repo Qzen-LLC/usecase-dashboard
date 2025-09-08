@@ -32,23 +32,44 @@ export async function POST(request: NextRequest) {
     }
 
     // Save or update evaluation
-    const evaluation = await prismaClient.evaluation.upsert({
-      where: {
-        id: evaluationConfig.id || 'new-' + Date.now()
-      },
-      create: {
-        useCaseId,
-        name: evaluationConfig.name || 'Evaluation ' + new Date().toLocaleDateString(),
-        description: evaluationConfig.description,
-        configuration: evaluationConfig,
-        status: 'pending'
-      },
-      update: {
-        configuration: evaluationConfig,
-        status: evaluationResult ? 'completed' : 'pending',
-        completedAt: evaluationResult ? new Date() : null
+    let evaluation;
+    if (evaluationConfig.id) {
+      // Try update existing; if not found, create new
+      try {
+        evaluation = await prismaClient.evaluation.update({
+          where: { id: evaluationConfig.id },
+          data: {
+            name: evaluationConfig.name || 'Evaluation ' + new Date().toLocaleDateString(),
+            description: evaluationConfig.description,
+            configuration: evaluationConfig,
+            status: evaluationResult ? 'completed' : 'pending',
+            completedAt: evaluationResult ? new Date() : null
+          }
+        });
+      } catch (_e) {
+        evaluation = await prismaClient.evaluation.create({
+          data: {
+            useCaseId,
+            name: evaluationConfig.name || 'Evaluation ' + new Date().toLocaleDateString(),
+            description: evaluationConfig.description,
+            configuration: evaluationConfig,
+            status: evaluationResult ? 'completed' : 'pending',
+            completedAt: evaluationResult ? new Date() : null
+          }
+        });
       }
-    });
+    } else {
+      evaluation = await prismaClient.evaluation.create({
+        data: {
+          useCaseId,
+          name: evaluationConfig.name || 'Evaluation ' + new Date().toLocaleDateString(),
+          description: evaluationConfig.description,
+          configuration: evaluationConfig,
+          status: evaluationResult ? 'completed' : 'pending',
+          completedAt: evaluationResult ? new Date() : null
+        }
+      });
+    }
 
     // If evaluation result is provided, save the results
     if (evaluationResult && evaluationResult.results) {

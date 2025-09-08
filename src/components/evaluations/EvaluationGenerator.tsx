@@ -68,6 +68,47 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedSuites, setExpandedSuites] = useState<Set<string>>(new Set());
+  // Load existing evaluation config/results on mount
+  useEffect(() => {
+    const loadExistingEvaluation = async () => {
+      try {
+        const res = await fetch(`/api/evaluations/get?useCaseId=${useCaseId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.success || !data.evaluationConfig) return;
+
+        setEvaluationConfig(data.evaluationConfig);
+        if (data.evaluationConfig.testSuites) {
+          setTestSuites(data.evaluationConfig.testSuites.map((suite: any) => ({
+            ...suite,
+            scenarioCount: suite.scenarios.length,
+            coverage: suite.coverage?.percentage ?? 0,
+            status: 'pending'
+          })));
+        }
+        if (data.results && data.results.length > 0) {
+          // Optionally map stored results into UI state
+          const bySuite: Record<string, any[]> = {};
+          data.results.forEach((r: any) => {
+            const sid = r.suiteId || 'unknown';
+            bySuite[sid] = bySuite[sid] || [];
+            bySuite[sid].push(r);
+          });
+          setTestSuites(prev => prev.map(s => ({
+            ...s,
+            status: (bySuite[s.id]?.some(r => r.status === 'failed')) ? 'failed' : (bySuite[s.id]?.length ? 'passed' : s.status)
+          })));
+          // Summary to UI
+          if (data.summary?.overallScore) {
+            setOverallScore((data.summary.overallScore || 0) * 100);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load existing evaluation:', err);
+      }
+    };
+    if (useCaseId) loadExistingEvaluation();
+  }, [useCaseId]);
 
   // Mock test suite icons
   const suiteIcons: Record<string, React.ReactNode> = {
@@ -117,6 +158,22 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
           coverage: suite.coverage.percentage,
           status: 'pending'
         })));
+        // Persist generated evaluation (pending status) and capture evaluationId
+        try {
+          const saveResp = await fetch('/api/evaluations/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ useCaseId, evaluationConfig: data })
+          });
+          if (saveResp.ok) {
+            const saveData = await saveResp.json();
+            if (saveData?.evaluationId) {
+              setEvaluationConfig((prev: any) => ({ ...(prev || data), id: saveData.evaluationId }));
+            }
+          }
+        } catch (err) {
+          console.error('Failed to persist generated evaluation config:', err);
+        }
       }
     } catch (error) {
       console.error('Error generating evaluations:', error);
@@ -231,6 +288,21 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
       }
       
       setProgress(100);
+
+      // Persist completed evaluation results
+      try {
+        await fetch('/api/evaluations/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            useCaseId,
+            evaluationConfig: { ...(evaluationConfig || {}), id: (evaluationConfig && evaluationConfig.id) || executionResult.evaluationId },
+            evaluationResult: { results: executionResult.testResults }
+          })
+        });
+      } catch (err) {
+        console.error('Failed to save evaluation results:', err);
+      }
       
     } catch (error) {
       console.error('Error running evaluations:', error);

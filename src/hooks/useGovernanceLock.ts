@@ -195,69 +195,28 @@ export const useGovernanceLock = (
     return () => clearTimeout(timeout);
   }, [useCaseId, lockInfo?.hasLock, lockInfo?.canEdit, releaseLock]);
 
-  // Handle page unload and navigation
+  // Handle browser close/refresh; release on unmount for in-app navigation. No visibility/pagehide.
   useEffect(() => {
     if (!useCaseId || !lockInfo?.hasLock || !lockInfo?.canEdit) return;
 
-    let lockReleased = false;
-
-    const releaseLockSafely = () => {
-      if (lockReleased) return; // Prevent multiple releases
-      lockReleased = true;
-      console.log(`🔒 [GOVERNANCE] Releasing lock safely for ${framework}...`);
-      
-      try {
-        // Try beacon first
-        const data = new FormData();
-        data.append('useCaseId', useCaseId);
-        data.append('lockType', 'EXCLUSIVE');
-        data.append('scope', framework);
-        const beaconResult = navigator.sendBeacon('/api/locks/release', data);
-        console.log(`🔒 [GOVERNANCE] Beacon result for ${framework}:`, beaconResult);
-        
-        // If beacon fails, try synchronous request
-        if (!beaconResult) {
-          console.log(`🔒 [GOVERNANCE] Beacon failed for ${framework}, trying synchronous request...`);
-          const xhr = new XMLHttpRequest();
-          xhr.open('POST', '/api/locks/release', false);
-          xhr.setRequestHeader('Content-Type', 'application/json');
-          xhr.send(JSON.stringify({ useCaseId, lockType: 'EXCLUSIVE', scope: framework }));
-          console.log(`🔒 [GOVERNANCE] Synchronous request status for ${framework}:`, xhr.status);
-        }
-      } catch (error) {
-        console.error(`🔒 [GOVERNANCE] Error in releaseLockSafely for ${framework}:`, error);
-      }
+    const handleBeforeUnload = () => {
+      const data = new FormData();
+      data.append('useCaseId', useCaseId);
+      data.append('lockType', 'EXCLUSIVE');
+      data.append('scope', framework);
+      try { navigator.sendBeacon('/api/locks/release', data); } catch (_) {}
     };
 
-    // Add a global function that can be called from anywhere
-    (window as any).__releaseGovernanceLockOnNavigation = releaseLockSafely;
-
-    // Simple beforeunload handler
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      console.log(`🔒 [GOVERNANCE] Beforeunload triggered for ${framework}`);
-      releaseLockSafely();
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Release on unmount to handle in-app navigation
+      const data = new FormData();
+      data.append('useCaseId', useCaseId);
+      data.append('lockType', 'EXCLUSIVE');
+      data.append('scope', framework);
+      try { navigator.sendBeacon('/api/locks/release', data); } catch (_) {}
     };
-
-    // Simple pagehide handler
-    const handlePageHide = (e: PageTransitionEvent) => {
-      console.log(`🔒 [GOVERNANCE] Pagehide triggered for ${framework}`);
-      releaseLockSafely();
-    };
-
-              // Add event listeners
-          window.addEventListener('beforeunload', handleBeforeUnload);
-          window.addEventListener('pagehide', handlePageHide);
-    
-              return () => {
-            console.log(`🔒 [GOVERNANCE] Cleaning up event listeners for ${framework}`);
-            releaseLockSafely(); // Always try to release lock on cleanup
-            
-            // Clean up global function
-            delete (window as any).__releaseGovernanceLockOnNavigation;
-            
-            window.removeEventListener('beforeunload', handleBeforeUnload);
-            window.removeEventListener('pagehide', handlePageHide);
-          };
   }, [useCaseId, framework, lockInfo?.hasLock, lockInfo?.canEdit]);
 
   return {

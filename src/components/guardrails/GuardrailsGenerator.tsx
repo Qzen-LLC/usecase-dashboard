@@ -52,11 +52,11 @@ export default function GuardrailsGenerator({ useCaseId, assessmentData, useCase
         const response = await fetch(`/api/guardrails/get?useCaseId=${useCaseId}`);
         if (response.ok) {
           const data = await response.json();
-          if (data.success && data.guardrail) {
-            setGuardrails(data.guardrail);
+          if (data.success && data.guardrails) {
+            setGuardrails(data.guardrails);
             // Also notify parent component
             if (onGuardrailsGenerated) {
-              onGuardrailsGenerated(data.guardrail);
+              onGuardrailsGenerated(data.guardrails);
             }
           }
         }

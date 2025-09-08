@@ -492,10 +492,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         }
         
         // Load guardrails config if it exists
-        if (guardrailsData && guardrailsData.success) {
+        if (guardrailsData && guardrailsData.success && guardrailsData.guardrails) {
           setAssessmentData((prev: any) => ({
             ...prev,
-            guardrailsConfig: guardrailsData.guardrail
+            guardrailsConfig: guardrailsData.guardrails
           }));
         }
 

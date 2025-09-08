@@ -29,10 +29,16 @@ export async function GET(request: NextRequest) {
     });
 
     if (!guardrail) {
-      return NextResponse.json(
-        { message: 'No guardrails found for this use case' },
-        { status: 404 }
-      );
+      // Return success with empty payload instead of 404 to avoid noisy errors client-side
+      return NextResponse.json({
+        success: true,
+        guardrails: null,
+        rules: [],
+        id: null,
+        status: null,
+        confidence: null,
+        metadata: null
+      });
     }
 
     // Return the guardrail configuration with the correct structure
