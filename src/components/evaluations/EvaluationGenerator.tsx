@@ -545,9 +545,9 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
                         <CollapsibleTrigger className="w-full">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <Button variant="ghost" size="sm" className="p-0 h-auto">
+                              <div className="inline-flex items-center justify-center p-0 h-auto">
                                 {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                              </Button>
+                              </div>
                               {suiteIcons[suite.type] || <FileText className="h-4 w-4" />}
                               <div className="text-left">
                                 <h4 className="font-semibold">{suite.name}</h4>
