@@ -397,6 +397,30 @@ export interface EmergentRisk {
   mitigation: string;
 }
 
+// Context used by specialist agents for analysis
+export interface GuardrailsContext {
+  assessment: ComprehensiveAssessment;
+  technicalFeasibility?: any;
+  businessFeasibility?: any;
+  dataReadiness?: any;
+  ethicalImpact?: any;
+  riskAssessment?: any;
+  budgetPlanning?: any;
+  roadmapPosition?: any;
+  complianceRequirements?: any;
+  organizationPolicies?: any;
+}
+
+// Proposal returned by specialist agents
+export interface AgentProposal {
+  agentName: string;
+  guardrails: Guardrail[];
+  insights: string[];
+  concerns: string[];
+  recommendations: string[];
+  confidence: number;
+}
+
 // Temporal analysis
 export interface TemporalAnalysis {
   currentPhase: string;

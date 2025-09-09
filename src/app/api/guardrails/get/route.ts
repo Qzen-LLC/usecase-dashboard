@@ -41,10 +41,48 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Merge the database rules with the configuration
+    const configWithDbIds = { ...guardrail.configuration };
+    
+    // If we have rules in the database, update the configuration with their IDs and status
+    if (guardrail.rules && guardrail.rules.length > 0) {
+      // Create a map of rules by their name for quick lookup
+      const rulesMap = new Map();
+      guardrail.rules.forEach((dbRule: any) => {
+        rulesMap.set(dbRule.rule, dbRule);
+      });
+      
+      // Update configuration rules with database IDs and status
+      if (configWithDbIds?.guardrails?.rules) {
+        Object.keys(configWithDbIds.guardrails.rules).forEach(category => {
+          if (Array.isArray(configWithDbIds.guardrails.rules[category])) {
+            configWithDbIds.guardrails.rules[category] = configWithDbIds.guardrails.rules[category].map((rule: any) => {
+              const dbRule = rulesMap.get(rule.rule);
+              if (dbRule) {
+                return {
+                  ...rule,
+                  id: dbRule.id, // Use the actual database ID
+                  status: dbRule.status,
+                  isCustom: dbRule.isCustom,
+                  isEdited: dbRule.isEdited,
+                  approvedBy: dbRule.approvedBy,
+                  approvedAt: dbRule.approvedAt,
+                  rejectedBy: dbRule.rejectedBy,
+                  rejectedAt: dbRule.rejectedAt,
+                  rejectionReason: dbRule.rejectionReason
+                };
+              }
+              return rule;
+            });
+          }
+        });
+      }
+    }
+    
     // Return the guardrail configuration with the correct structure
     return NextResponse.json({
       success: true,
-      guardrails: guardrail.configuration, // Frontend expects 'guardrails' not 'guardrail'
+      guardrails: configWithDbIds, // Frontend expects 'guardrails' not 'guardrail'
       rules: guardrail.rules,
       id: guardrail.id,
       status: guardrail.status,

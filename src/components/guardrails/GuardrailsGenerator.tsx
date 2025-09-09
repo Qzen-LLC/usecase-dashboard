@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import EditableGuardrailCard from './EditableGuardrailCard';
+import AddGuardrailModal from './AddGuardrailModal';
 import { 
   Shield, 
   Brain, 
@@ -25,7 +27,10 @@ import {
   Users,
   TrendingUp,
   FileText,
-  Settings
+  Settings,
+  Edit2,
+  Plus,
+  Save
 } from 'lucide-react';
 
 interface Props {
@@ -44,6 +49,13 @@ export default function GuardrailsGenerator({ useCaseId, assessmentData, useCase
   const [progress, setProgress] = useState(0);
   const [agentStatus, setAgentStatus] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  
+  // New state for interactive editing
+  const [editMode, setEditMode] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addModalCategory, setAddModalCategory] = useState<'critical' | 'operational' | 'ethical' | 'economic'>('critical');
+  const [savingChanges, setSavingChanges] = useState(false);
 
   // Load existing guardrails on mount
   useEffect(() => {
@@ -52,11 +64,29 @@ export default function GuardrailsGenerator({ useCaseId, assessmentData, useCase
         const response = await fetch(`/api/guardrails/get?useCaseId=${useCaseId}`);
         if (response.ok) {
           const data = await response.json();
+          console.log('Loaded guardrails data:', data);
           if (data.success && data.guardrails) {
-            setGuardrails(data.guardrails);
+            const guardrailData = data.guardrails;
+            // Add the database ID to the guardrail data
+            if (data.id) {
+              guardrailData.id = data.id;
+            }
+            // Ensure all rules have unique IDs and status
+            if (guardrailData?.guardrails?.rules) {
+              Object.keys(guardrailData.guardrails.rules).forEach(category => {
+                if (Array.isArray(guardrailData.guardrails.rules[category])) {
+                  guardrailData.guardrails.rules[category] = guardrailData.guardrails.rules[category].map((rule: any, idx: number) => ({
+                    ...rule,
+                    id: rule.id || `${category}-${rule.rule || idx}-${Date.now()}-${Math.random()}`,
+                    status: rule.status || 'PENDING'
+                  }));
+                }
+              });
+            }
+            setGuardrails(guardrailData);
             // Also notify parent component
             if (onGuardrailsGenerated) {
-              onGuardrailsGenerated(data.guardrails);
+              onGuardrailsGenerated(guardrailData);
             }
           }
         }
@@ -130,22 +160,78 @@ export default function GuardrailsGenerator({ useCaseId, assessmentData, useCase
       });
 
       setProgress(100);
-      setGuardrails(result);
+      
+      // Ensure all rules have unique IDs and status
+      const guardrailData = result;
+      if (guardrailData?.guardrails?.rules) {
+        Object.keys(guardrailData.guardrails.rules).forEach(category => {
+          if (Array.isArray(guardrailData.guardrails.rules[category])) {
+            guardrailData.guardrails.rules[category] = guardrailData.guardrails.rules[category].map((rule: any, idx: number) => ({
+              ...rule,
+              id: rule.id || `${category}-${rule.rule || idx}-${Date.now()}-${Math.random()}`,
+              status: rule.status || 'PENDING'
+            }));
+          }
+        });
+      }
+      
+      setGuardrails(guardrailData);
       
       // Notify parent component about generated guardrails
       if (onGuardrailsGenerated) {
-        onGuardrailsGenerated(result);
+        onGuardrailsGenerated(guardrailData);
       }
       
       // Save guardrails
-      await fetch('/api/guardrails/save', {
+      console.log('Saving guardrails:', guardrailData);
+      const saveResponse = await fetch('/api/guardrails/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           useCaseId,
-          guardrails: result
+          guardrails: guardrailData
         })
       });
+      
+      if (saveResponse.ok) {
+        const saveResult = await saveResponse.json();
+        console.log('Save result:', saveResult);
+        // Update the guardrails with the saved ID and rule IDs
+        if (saveResult.guardrailId) {
+          guardrailData.id = saveResult.guardrailId;
+          
+          // Update rules with their database IDs
+          if (saveResult.rules && saveResult.rules.length > 0) {
+            const rulesMap = new Map();
+            saveResult.rules.forEach((dbRule: any) => {
+              rulesMap.set(dbRule.rule, dbRule);
+            });
+            
+            // Update configuration rules with database IDs
+            if (guardrailData?.guardrails?.rules) {
+              Object.keys(guardrailData.guardrails.rules).forEach(category => {
+                if (Array.isArray(guardrailData.guardrails.rules[category])) {
+                  guardrailData.guardrails.rules[category] = guardrailData.guardrails.rules[category].map((rule: any) => {
+                    const dbRule = rulesMap.get(rule.rule);
+                    if (dbRule) {
+                      return {
+                        ...rule,
+                        id: dbRule.id, // Use the actual database ID
+                        status: dbRule.status
+                      };
+                    }
+                    return rule;
+                  });
+                }
+              });
+            }
+          }
+          
+          setGuardrails(guardrailData);
+        }
+      } else {
+        console.error('Failed to save guardrails:', await saveResponse.text());
+      }
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -168,6 +254,238 @@ export default function GuardrailsGenerator({ useCaseId, assessmentData, useCase
       a.click();
     } catch (err) {
       setError('Failed to export guardrails');
+    }
+  };
+
+  // Handler for editing a rule
+  const handleRuleEdit = async (rule: any) => {
+    try {
+      const response = await fetch('/api/guardrails/rules/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ruleId: rule.id,
+          updates: {
+            rule: rule.rule,
+            description: rule.description,
+            severity: rule.severity,
+            rationale: rule.rationale,
+            implementation: rule.implementation,
+            conditions: rule.conditions,
+            exceptions: rule.exceptions
+          }
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        // Update local state
+        updateLocalRule(rule.id, result.rule);
+        setHasUnsavedChanges(true);
+      } else {
+        const error = await response.json();
+        setError(error.error || 'Failed to update rule');
+      }
+    } catch (err) {
+      setError('Failed to update rule');
+    }
+  };
+
+  // Handler for approving a rule
+  const handleApprove = async (ruleId: string) => {
+    console.log('Approving rule:', ruleId);
+    try {
+      const response = await fetch('/api/guardrails/rules/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ruleId,
+          approved: true
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Approval successful:', result);
+        updateLocalRule(ruleId, { status: 'APPROVED' });
+        // Force re-render
+        setGuardrails((prev: any) => ({ ...prev }));
+      } else {
+        const error = await response.json();
+        console.error('Approval failed:', error);
+        setError(error.error || 'Failed to approve rule');
+      }
+    } catch (err) {
+      console.error('Error approving rule:', err);
+      setError('Failed to approve rule');
+    }
+  };
+
+  // Handler for rejecting a rule
+  const handleReject = async (ruleId: string, reason: string) => {
+    try {
+      const response = await fetch('/api/guardrails/rules/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ruleId,
+          approved: false,
+          reason
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        updateLocalRule(ruleId, { status: 'REJECTED', rejectionReason: reason });
+      } else {
+        const error = await response.json();
+        setError(error.error || 'Failed to reject rule');
+      }
+    } catch (err) {
+      setError('Failed to reject rule');
+    }
+  };
+
+  // Handler for deleting a rule
+  const handleDelete = async (ruleId: string) => {
+    try {
+      const response = await fetch(`/api/guardrails/rules/add?ruleId=${ruleId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        removeLocalRule(ruleId);
+        setHasUnsavedChanges(true);
+      } else {
+        const error = await response.json();
+        setError(error.error || 'Failed to delete rule');
+      }
+    } catch (err) {
+      setError('Failed to delete rule');
+    }
+  };
+
+  // Handler for adding a new rule
+  const handleAddRule = async (rule: any) => {
+    try {
+      const guardrailId = guardrails.id || `${useCaseId}-guardrails`;
+      
+      const response = await fetch('/api/guardrails/rules/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guardrailId,
+          rule
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        addLocalRule(addModalCategory, result.rule);
+        setHasUnsavedChanges(true);
+      } else {
+        const error = await response.json();
+        setError(error.error || 'Failed to add rule');
+      }
+    } catch (err) {
+      setError('Failed to add rule');
+    }
+  };
+
+  // Helper function to update a rule in local state
+  const updateLocalRule = (ruleId: string, updates: any) => {
+    setGuardrails((prev: any) => {
+      const newGuardrails = { ...prev };
+      if (newGuardrails.guardrails?.rules) {
+        Object.keys(newGuardrails.guardrails.rules).forEach(category => {
+          if (Array.isArray(newGuardrails.guardrails.rules[category])) {
+            newGuardrails.guardrails.rules[category] = newGuardrails.guardrails.rules[category].map((rule: any) => {
+              // Ensure each rule has a unique ID
+              if (!rule.id) {
+                rule.id = `${category}-${rule.rule}-${Date.now()}-${Math.random()}`;
+              }
+              return rule.id === ruleId ? { ...rule, ...updates } : rule;
+            });
+          }
+        });
+      }
+      return newGuardrails;
+    });
+  };
+
+  // Helper function to remove a rule from local state
+  const removeLocalRule = (ruleId: string) => {
+    setGuardrails((prev: any) => {
+      const newGuardrails = { ...prev };
+      if (newGuardrails.guardrails?.rules) {
+        Object.keys(newGuardrails.guardrails.rules).forEach(category => {
+          if (Array.isArray(newGuardrails.guardrails.rules[category])) {
+            newGuardrails.guardrails.rules[category] = newGuardrails.guardrails.rules[category].filter(
+              (rule: any) => rule.id !== ruleId
+            );
+          }
+        });
+      }
+      return newGuardrails;
+    });
+  };
+
+  // Helper function to add a rule to local state
+  const addLocalRule = (category: string, rule: any) => {
+    setGuardrails((prev: any) => {
+      const newGuardrails = { ...prev };
+      if (!newGuardrails.guardrails) {
+        newGuardrails.guardrails = { rules: {} };
+      }
+      if (!newGuardrails.guardrails.rules) {
+        newGuardrails.guardrails.rules = {};
+      }
+      if (!newGuardrails.guardrails.rules[category]) {
+        newGuardrails.guardrails.rules[category] = [];
+      }
+      newGuardrails.guardrails.rules[category].push(rule);
+      return newGuardrails;
+    });
+  };
+
+  // Save all changes
+  const handleSaveChanges = async () => {
+    setSavingChanges(true);
+    try {
+      console.log('Manually saving guardrails:', guardrails);
+      const response = await fetch('/api/guardrails/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          useCaseId,
+          guardrails
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Manual save result:', result);
+        
+        // Update the guardrail ID if returned
+        if (result.guardrailId && guardrails) {
+          guardrails.id = result.guardrailId;
+          setGuardrails({ ...guardrails });
+        }
+        
+        setHasUnsavedChanges(false);
+        setError(null);
+        // Notify parent component
+        if (onGuardrailsGenerated) {
+          onGuardrailsGenerated(guardrails);
+        }
+      } else {
+        const error = await response.json();
+        setError(error.error || 'Failed to save changes');
+      }
+    } catch (err) {
+      setError('Failed to save changes');
+    } finally {
+      setSavingChanges(false);
     }
   };
 
@@ -400,87 +718,149 @@ export default function GuardrailsGenerator({ useCaseId, assessmentData, useCase
                 </TabsContent>
 
                 <TabsContent value="critical" className="space-y-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold">Critical Guardrails</h3>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => {
+                          setAddModalCategory('critical');
+                          setShowAddModal(true);
+                        }}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Guardrail
+                      </Button>
+                      <Button
+                        onClick={() => setEditMode(!editMode)}
+                        variant={editMode ? "default" : "outline"}
+                        size="sm"
+                      >
+                        <Edit2 className="w-4 h-4 mr-2" />
+                        {editMode ? 'View Mode' : 'Edit Mode'}
+                      </Button>
+                      {hasUnsavedChanges && (
+                        <Button
+                          onClick={handleSaveChanges}
+                          disabled={savingChanges}
+                          size="sm"
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          {savingChanges ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                   <div className="space-y-4">
                     {guardrails.guardrails?.rules?.critical?.map((rule: any, idx: number) => (
-                      <Card key={idx}>
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg flex items-center gap-2">
-                              <Shield className="w-5 h-5 text-red-500" />
-                              {rule.rule}
-                            </CardTitle>
-                            <Badge className="bg-red-500">Critical</Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-muted-foreground mb-4">{rule.description}</p>
-                          <div className="bg-muted p-3 rounded-lg">
-                            <p className="text-sm font-medium mb-1">Rationale:</p>
-                            <p className="text-sm text-muted-foreground">{rule.rationale}</p>
-                          </div>
-                          {rule.implementation?.monitoring && (
-                            <div className="mt-4">
-                              <p className="text-sm font-medium mb-2">Monitoring:</p>
-                              <div className="space-y-1">
-                                {rule.implementation.monitoring.map((monitor: any, midx: number) => (
-                                  <div key={midx} className="flex items-center gap-2 text-sm">
-                                    <Eye className="w-4 h-4" />
-                                    <span>{monitor.metric}: {monitor.threshold}</span>
-                                    <Badge variant="outline">{monitor.frequency}</Badge>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
+                      <EditableGuardrailCard
+                        key={`critical-${rule.id || rule.rule}-${idx}`}
+                        rule={{
+                          ...rule, 
+                          id: rule.id || `critical-${idx}-${Date.now()}`,
+                          status: rule.status || 'PENDING'
+                        }}
+                        editMode={editMode}
+                        onEdit={handleRuleEdit}
+                        onApprove={handleApprove}
+                        onReject={handleReject}
+                        onDelete={handleDelete}
+                        canEdit={true}
+                        canApprove={true}
+                      />
                     ))}
                   </div>
                 </TabsContent>
 
                 <TabsContent value="operational" className="space-y-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold">Operational Guardrails</h3>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => {
+                          setAddModalCategory('operational');
+                          setShowAddModal(true);
+                        }}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Guardrail
+                      </Button>
+                      <Button
+                        onClick={() => setEditMode(!editMode)}
+                        variant={editMode ? "default" : "outline"}
+                        size="sm"
+                      >
+                        <Edit2 className="w-4 h-4 mr-2" />
+                        {editMode ? 'View Mode' : 'Edit Mode'}
+                      </Button>
+                    </div>
+                  </div>
                   <div className="space-y-4">
                     {guardrails.guardrails?.rules?.operational?.map((rule: any, idx: number) => (
-                      <Card key={idx}>
-                        <CardHeader>
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            <Zap className="w-5 h-5 text-yellow-500" />
-                            {rule.rule}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-muted-foreground">{rule.description}</p>
-                          {rule.implementation?.configuration && (
-                            <div className="mt-4 p-3 bg-muted rounded-lg">
-                              <pre className="text-xs overflow-x-auto">
-                                {JSON.stringify(rule.implementation.configuration, null, 2)}
-                              </pre>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
+                      <EditableGuardrailCard
+                        key={`operational-${rule.id || rule.rule}-${idx}`}
+                        rule={{
+                          ...rule,
+                          id: rule.id || `operational-${idx}-${Date.now()}`,
+                          status: rule.status || 'PENDING'
+                        }}
+                        editMode={editMode}
+                        onEdit={handleRuleEdit}
+                        onApprove={handleApprove}
+                        onReject={handleReject}
+                        onDelete={handleDelete}
+                        canEdit={true}
+                        canApprove={true}
+                      />
                     ))}
                   </div>
                 </TabsContent>
 
                 <TabsContent value="ethical" className="space-y-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold">Ethical Guardrails</h3>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => {
+                          setAddModalCategory('ethical');
+                          setShowAddModal(true);
+                        }}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Guardrail
+                      </Button>
+                      <Button
+                        onClick={() => setEditMode(!editMode)}
+                        variant={editMode ? "default" : "outline"}
+                        size="sm"
+                      >
+                        <Edit2 className="w-4 h-4 mr-2" />
+                        {editMode ? 'View Mode' : 'Edit Mode'}
+                      </Button>
+                    </div>
+                  </div>
                   <div className="space-y-4">
                     {guardrails.guardrails?.rules?.ethical?.map((rule: any, idx: number) => (
-                      <Card key={idx}>
-                        <CardHeader>
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            <Users className="w-5 h-5 text-purple-500" />
-                            {rule.rule}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-muted-foreground">{rule.description}</p>
-                          <div className="mt-4">
-                            <p className="text-sm font-medium">Rationale:</p>
-                            <p className="text-sm text-muted-foreground">{rule.rationale}</p>
-                          </div>
-                        </CardContent>
-                      </Card>
+                      <EditableGuardrailCard
+                        key={`ethical-${rule.id || rule.rule}-${idx}`}
+                        rule={{
+                          ...rule,
+                          id: rule.id || `ethical-${idx}-${Date.now()}`,
+                          status: rule.status || 'PENDING'
+                        }}
+                        editMode={editMode}
+                        onEdit={handleRuleEdit}
+                        onApprove={handleApprove}
+                        onReject={handleReject}
+                        onDelete={handleDelete}
+                        canEdit={true}
+                        canApprove={true}
+                      />
                     ))}
                   </div>
                 </TabsContent>
@@ -609,6 +989,17 @@ export default function GuardrailsGenerator({ useCaseId, assessmentData, useCase
           </div>
         </div>
       )}
+      
+      {/* Add Guardrail Modal */}
+      <AddGuardrailModal
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        category={addModalCategory}
+        onAdd={handleAddRule}
+        existingRules={
+          guardrails?.guardrails?.rules?.[addModalCategory] || []
+        }
+      />
     </div>
   );
 }

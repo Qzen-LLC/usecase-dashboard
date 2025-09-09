@@ -802,20 +802,30 @@ model EvaluationResult {
 }
 
 model Guardrail {
-  id            String          @id @default(uuid())
-  useCaseId     String
-  name          String
-  description   String?
-  approach      String
-  configuration Json
-  reasoning     Json?
-  confidence    Float?
-  status        String          @default("draft")
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  publishedAt   DateTime?
-  useCase       UseCase         @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
-  rules         GuardrailRule[]
+  id              String          @id @default(uuid())
+  useCaseId       String
+  name            String
+  description     String?
+  approach        String
+  configuration   Json
+  reasoning       Json?
+  confidence      Float?
+  status          String          @default("draft") // draft, pending_approval, approved, rejected
+  version         Int             @default(1)
+  isEdited        Boolean         @default(false)
+  editedBy        String?
+  editedAt        DateTime?
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectedBy      String?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  publishedAt     DateTime?
+  useCase         UseCase         @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  rules           GuardrailRule[]
+  auditLogs       GuardrailAudit[]
 
   @@index([useCaseId])
   @@index([status])
@@ -823,24 +833,72 @@ model Guardrail {
 }
 
 model GuardrailRule {
-  id             String    @id @default(uuid())
-  guardrailId    String
-  type           String
-  severity       String
-  rule           String
-  description    String
-  rationale      String?
-  implementation Json
-  conditions     Json?
-  exceptions     Json?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  guardrail      Guardrail @relation(fields: [guardrailId], references: [id], onDelete: Cascade)
+  id              String             @id @default(uuid())
+  guardrailId     String
+  type            String
+  severity        String
+  rule            String
+  description     String
+  rationale       String?
+  implementation  Json
+  conditions      Json?
+  exceptions      Json?
+  status          GuardrailRuleStatus @default(PENDING)
+  isCustom        Boolean            @default(false)
+  isEdited        Boolean            @default(false)
+  originalValue   Json?              // Store original AI-generated value
+  editedBy        String?
+  editedAt        DateTime?
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectedBy      String?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  guardrail       Guardrail          @relation(fields: [guardrailId], references: [id], onDelete: Cascade)
+  comments        GuardrailComment[]
 
   @@index([guardrailId])
   @@index([type])
   @@index([severity])
+  @@index([status])
   @@index([createdAt])
+}
+
+model GuardrailComment {
+  id        String        @id @default(uuid())
+  ruleId    String
+  userId    String
+  userName  String
+  content   String
+  createdAt DateTime      @default(now())
+  rule      GuardrailRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId])
+  @@index([createdAt])
+}
+
+model GuardrailAudit {
+  id          String    @id @default(uuid())
+  guardrailId String
+  ruleId      String?
+  action      String    // create, edit, approve, reject, delete, add_rule, remove_rule
+  userId      String
+  userName    String
+  changes     Json?     // before/after values
+  timestamp   DateTime  @default(now())
+  guardrail   Guardrail @relation(fields: [guardrailId], references: [id], onDelete: Cascade)
+
+  @@index([guardrailId])
+  @@index([timestamp])
+}
+
+enum GuardrailRuleStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EDITED
 }
 
 enum RiskStatus {
