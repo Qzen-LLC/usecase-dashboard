@@ -131,15 +131,19 @@ export function mapUIToTypeDefinition(uiData: any): Partial<ComprehensiveAssessm
       trainingDataTypes: data.trainingDataTypes,
       instructionClarityScore: data.instructionClarityScore,
       responseQualityScore: data.responseQualityScore,
-      diversityScore: data.diversityScore,
-      biasScore: data.biasScore,
+      diversityScore: data.diversityScore || data.diversityIndex,
+      biasScore: data.biasScore || data.toxicityScore,
       trainingDataSize: data.trainingDataSize,
       finetuningRequired: data.finetuningRequired,
       syntheticDataUsage: data.syntheticDataUsage,
       promptEngineering: data.promptEngineering || [],
       knowledgeSources: data.knowledgeSources || [],
-      knowledgeUpdateFrequency: data.knowledgeUpdateFrequency,
+      knowledgeUpdateFrequency: data.knowledgeUpdateFrequency || data.updateFrequency,
       contextSources: data.contextSources || [],
+      // Additional fields that might be missing
+      versionControl: data.versionControl,
+      factVerificationProcess: data.factVerificationProcess,
+      updateStrategy: data.updateStrategy,
     };
   }
 
@@ -157,6 +161,46 @@ export function mapUIToTypeDefinition(uiData: any): Partial<ComprehensiveAssessm
       costOverrun: risk.costOverrun,
     };
   }
+
+  // Map Roadmap Position fields
+  if (uiData.roadmapPosition) {
+    const roadmap = uiData.roadmapPosition;
+    
+    mapped.roadmapPosition = {
+      ...roadmap,
+      // Ensure all fields are captured
+      milestoneCriteria: roadmap.milestoneCriteria || [],
+      successIndicators: roadmap.successIndicators || [],
+    };
+  }
+
+  // Ensure all assessment steps are included
+  const requiredSteps = [
+    'technicalFeasibility',
+    'businessFeasibility', 
+    'ethicalImpact',
+    'riskAssessment',
+    'dataReadiness',
+    'roadmapPosition',
+    'budgetPlanning'
+  ];
+
+  // Add any missing steps with empty objects to ensure structure consistency
+  requiredSteps.forEach(step => {
+    if (!mapped[step]) {
+      mapped[step] = uiData[step] || {};
+    }
+  });
+
+  // Add metadata for tracking
+  mapped.metadata = {
+    ...uiData.metadata,
+    lastUpdated: new Date().toISOString(),
+    version: '1.0',
+    stepsCompleted: Object.keys(uiData).filter(key => 
+      requiredSteps.includes(key) && uiData[key] && Object.keys(uiData[key]).length > 0
+    ),
+  };
 
   return mapped;
 }

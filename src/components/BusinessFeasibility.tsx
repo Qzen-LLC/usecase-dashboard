@@ -182,6 +182,20 @@ type Props = {
 export default function BusinessFeasibility({ value, onChange }: Props) {
   const lastSent = useRef<Props['value'] | null>(null);
 
+  // Debug logging to see what data is being received
+  useEffect(() => {
+    console.log('💼 [BUSINESS] Component received value:', {
+      strategicAlignment: value.strategicAlignment,
+      marketOpportunity: value.marketOpportunity,
+      genAIUseCase: value.genAIUseCase,
+      interactionPattern: value.interactionPattern,
+      userInteractionModes: value.userInteractionModes,
+      successMetrics: value.successMetrics,
+      minAcceptableAccuracy: value.minAcceptableAccuracy,
+      maxHallucinationRate: value.maxHallucinationRate,
+    });
+  }, [value]);
+
   useEffect(() => {
     const currentData = {
       strategicAlignment: value.strategicAlignment,
@@ -200,12 +214,23 @@ export default function BusinessFeasibility({ value, onChange }: Props) {
       failureImpact: value.failureImpact,
       executiveSponsorLevel: value.executiveSponsorLevel,
       stakeholderGroups: value.stakeholderGroups,
+      // Include Gen AI specific fields
+      genAIUseCase: value.genAIUseCase,
+      interactionPattern: value.interactionPattern,
+      userInteractionModes: value.userInteractionModes,
+      successMetrics: value.successMetrics,
+      minAcceptableAccuracy: value.minAcceptableAccuracy,
+      maxHallucinationRate: value.maxHallucinationRate,
+      requiredResponseRelevance: value.requiredResponseRelevance,
+      maxLatency: value.maxLatency,
+      contentQualityThreshold: value.contentQualityThreshold,
+      userSatisfactionTarget: value.userSatisfactionTarget,
     };
     if (onChange && !isEqual(currentData, lastSent.current)) {
       onChange(currentData);
       lastSent.current = currentData;
     }
-  }, [value.strategicAlignment, value.marketOpportunity, value.stakeholder, value.annualSavings, value.efficiencyGain, value.paybackPeriod, value.availabilityRequirement, value.responseTimeRequirement, value.concurrentUsers, value.revenueImpactType, value.estimatedFinancialImpact, value.userCategories, value.systemCriticality, value.failureImpact, value.executiveSponsorLevel, value.stakeholderGroups, onChange]);
+  }, [value.strategicAlignment, value.marketOpportunity, value.stakeholder, value.annualSavings, value.efficiencyGain, value.paybackPeriod, value.availabilityRequirement, value.responseTimeRequirement, value.concurrentUsers, value.revenueImpactType, value.estimatedFinancialImpact, value.userCategories, value.systemCriticality, value.failureImpact, value.executiveSponsorLevel, value.stakeholderGroups, value.genAIUseCase, value.interactionPattern, value.userInteractionModes, value.successMetrics, value.minAcceptableAccuracy, value.maxHallucinationRate, value.requiredResponseRelevance, value.maxLatency, value.contentQualityThreshold, value.userSatisfactionTarget, onChange]);
 
   // Helper for multi-select checkboxes
   function handleMultiSelectChange(field: keyof Props['value'], v: string) {

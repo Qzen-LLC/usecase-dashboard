@@ -68,14 +68,24 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedSuites, setExpandedSuites] = useState<Set<string>>(new Set());
+  // Always use real AI - no mock mode
   // Load existing evaluation config/results on mount
   useEffect(() => {
     const loadExistingEvaluation = async () => {
       try {
+        console.log('🔄 Loading existing evaluation for useCaseId:', useCaseId);
         const res = await fetch(`/api/evaluations/get?useCaseId=${useCaseId}`);
-        if (!res.ok) return;
+        if (!res.ok) {
+          console.log('❌ Failed to fetch evaluation:', res.status, res.statusText);
+          return;
+        }
         const data = await res.json();
-        if (!data.success || !data.evaluationConfig) return;
+        console.log('📊 Loaded evaluation data:', data);
+        
+        if (!data.success || !data.evaluationConfig) {
+          console.log('ℹ️ No evaluation config found');
+          return;
+        }
 
         setEvaluationConfig(data.evaluationConfig);
         if (data.evaluationConfig.testSuites) {
@@ -86,11 +96,41 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
             status: 'pending'
           })));
         }
+        
+        // Load results from summary if available
+        if (data.summary) {
+          console.log('📈 Loading results from summary:', data.summary);
+          
+          // Set overall score
+          if (data.summary.overallScore !== undefined) {
+            setOverallScore(data.summary.overallScore);
+          }
+          
+          // Convert summary to dimension results if we have dimension scores
+          if (data.summary.dimensionScores) {
+            const dimensionResults: EvaluationResult[] = Object.entries(data.summary.dimensionScores)
+              .map(([dimension, scoreData]: [string, any]) => ({
+                dimension: dimension.charAt(0).toUpperCase() + dimension.slice(1),
+                score: Math.round(scoreData.normalizedScore || scoreData.value || 0),
+                grade: scoreData.grade || getGradeFromScore(scoreData.normalizedScore || scoreData.value || 0),
+                trend: 'stable'
+              }));
+            setResults(dimensionResults);
+            console.log('✅ Set dimension results:', dimensionResults);
+          }
+          
+          // Set recommendations if available
+          if (data.summary.recommendations && data.summary.recommendations.length > 0) {
+            setRecommendations(data.summary.recommendations);
+          }
+        }
+        
+        // Update test suite statuses based on results
         if (data.results && data.results.length > 0) {
-          // Optionally map stored results into UI state
+          console.log('🧪 Loading test results:', data.results);
           const bySuite: Record<string, any[]> = {};
           data.results.forEach((r: any) => {
-            const sid = r.suiteId || 'unknown';
+            const sid = r.suiteId || r.testId || 'unknown';
             bySuite[sid] = bySuite[sid] || [];
             bySuite[sid].push(r);
           });
@@ -98,13 +138,9 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
             ...s,
             status: (bySuite[s.id]?.some(r => r.status === 'failed')) ? 'failed' : (bySuite[s.id]?.length ? 'passed' : s.status)
           })));
-          // Summary to UI
-          if (data.summary?.overallScore) {
-            setOverallScore((data.summary.overallScore || 0) * 100);
-          }
         }
       } catch (err) {
-        console.error('Failed to load existing evaluation:', err);
+        console.error('❌ Failed to load existing evaluation:', err);
       }
     };
     if (useCaseId) loadExistingEvaluation();
@@ -208,11 +244,13 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
         body: JSON.stringify({
           evaluationConfig,
           environment: {
-            name: 'synthetic',
-            type: 'synthetic',
+            name: 'production',
+            type: 'production',
             configuration: {
-              mockResponses: true,
-              deterministicMode: true
+              mockResponses: false,
+              deterministicMode: false,
+              realData: true,
+              aiAgentsEnabled: true
             }
           }
         })
@@ -226,10 +264,17 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
 
       const executionResult = await response.json();
       
+      console.log('🔍 Evaluation execution result:', executionResult);
+      console.log('   Test results:', executionResult.testResults);
+      console.log('   Scores:', executionResult.scores);
+      console.log('   Dimension scores:', executionResult.scores?.dimensionScores);
+      console.log('   Overall score:', executionResult.scores?.overallScore);
+      console.log('   Recommendations:', executionResult.recommendations);
+      
       // Update test suites based on real results
       const testResultsBySuite = new Map<string, any[]>();
       executionResult.testResults.forEach((result: any) => {
-        const suiteId = result.suiteId;
+        const suiteId = result.testId || result.suiteId; // Handle both testId and suiteId
         if (!testResultsBySuite.has(suiteId)) {
           testResultsBySuite.set(suiteId, []);
         }
@@ -249,17 +294,19 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
       }));
       
       // Convert scores to evaluation results format
-      const dimensionResults: EvaluationResult[] = Object.entries(executionResult.scores)
-        .filter(([key]) => key !== 'overallScore')
+      const dimensionResults: EvaluationResult[] = Object.entries(executionResult.scores.dimensionScores || {})
         .map(([dimension, scoreData]: [string, any]) => ({
           dimension: dimension.charAt(0).toUpperCase() + dimension.slice(1),
-          score: Math.round(scoreData.value * 100),
-          grade: scoreData.grade || getGradeFromScore(scoreData.value * 100),
+          score: Math.round(scoreData.normalizedScore || scoreData.value || 0),
+          grade: scoreData.grade || getGradeFromScore(scoreData.normalizedScore || scoreData.value || 0),
           trend: 'stable' // Could be enhanced with historical data
         }));
       
+      console.log('📊 Processed dimension results:', dimensionResults);
+      console.log('📊 Overall score:', executionResult.scores.overallScore?.value || 0);
+      
       setResults(dimensionResults);
-      setOverallScore(executionResult.scores.overallScore.value * 100);
+      setOverallScore(executionResult.scores.overallScore?.value || 0);
       
       // Set recommendations from actual evaluation
       if (executionResult.recommendations && executionResult.recommendations.length > 0) {
@@ -269,19 +316,21 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
       } else {
         // Generate basic recommendations based on scores
         const recs = [];
-        if (executionResult.scores.safety?.value < 0.9) {
+        const dimensionScores = executionResult.scores.dimensionScores || {};
+        
+        if (dimensionScores.Safety?.normalizedScore < 90) {
           recs.push('Strengthen safety measures and content filtering');
         }
-        if (executionResult.scores.performance?.value < 0.8) {
+        if (dimensionScores.Performance?.normalizedScore < 80) {
           recs.push('Optimize model performance and response times');
         }
-        if (executionResult.scores.compliance?.value < 0.95) {
+        if (dimensionScores.Compliance?.normalizedScore < 95) {
           recs.push('Review and enhance compliance controls');
         }
-        if (executionResult.scores.ethics?.value < 0.85) {
+        if (dimensionScores.Ethics?.normalizedScore < 85) {
           recs.push('Implement additional ethical safeguards');
         }
-        if (executionResult.scores.cost?.value < 0.7) {
+        if (dimensionScores['Cost Efficiency']?.normalizedScore < 70) {
           recs.push('Optimize resource usage for cost efficiency');
         }
         setRecommendations(recs.length > 0 ? recs : ['System meets all evaluation criteria']);
@@ -291,17 +340,27 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
 
       // Persist completed evaluation results
       try {
+        console.log('💾 Saving evaluation results to database...');
+        console.log('   Overall score:', executionResult.scores?.overallScore?.value);
+        console.log('   Dimension scores:', executionResult.scores?.dimensionScores);
+        console.log('   Recommendations:', executionResult.recommendations);
+        
         await fetch('/api/evaluations/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             useCaseId,
             evaluationConfig: { ...(evaluationConfig || {}), id: (evaluationConfig && evaluationConfig.id) || executionResult.evaluationId },
-            evaluationResult: { results: executionResult.testResults }
+            evaluationResult: {
+              results: executionResult.testResults,
+              scores: executionResult.scores,
+              recommendations: executionResult.recommendations
+            }
           })
         });
+        console.log('✅ Evaluation results saved successfully');
       } catch (err) {
-        console.error('Failed to save evaluation results:', err);
+        console.error('❌ Failed to save evaluation results:', err);
       }
       
     } catch (error) {
@@ -447,14 +506,22 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
                 )}
               </Button>
             )}
-            {evaluationConfig && !isRunning && results.length === 0 && (
-              <Button
-                onClick={runEvaluations}
-                variant="default"
-              >
-                <PlayCircle className="mr-2 h-4 w-4" />
-                Run Evaluations
-              </Button>
+            {evaluationConfig && !isRunning && (
+              <>
+                <div className="flex items-center space-x-2 mr-4">
+                  <div className="flex items-center space-x-2 px-3 py-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-green-700 dark:text-green-400">Real AI Agents Mode</span>
+                  </div>
+                </div>
+                <Button
+                  onClick={runEvaluations}
+                  variant="default"
+                >
+                  <PlayCircle className="mr-2 h-4 w-4" />
+                  {results.length > 0 ? 'Re-run Evaluations (Real AI)' : 'Run Evaluations (Real AI)'}
+                </Button>
+              </>
             )}
             {results.length > 0 && (
               <Button
@@ -545,9 +612,9 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
                         <CollapsibleTrigger className="w-full">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <Button variant="ghost" size="sm" className="p-0 h-auto">
+                              <div className="p-0 h-auto flex items-center justify-center">
                                 {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                              </Button>
+                              </div>
                               {suiteIcons[suite.type] || <FileText className="h-4 w-4" />}
                               <div className="text-left">
                                 <h4 className="font-semibold">{suite.name}</h4>

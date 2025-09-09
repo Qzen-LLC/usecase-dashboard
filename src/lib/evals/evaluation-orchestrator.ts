@@ -269,11 +269,11 @@ export class EvaluationOrchestrator {
       prioritization: 'critical_first',
       environments: [
         {
-          name: 'synthetic',
-          type: 'synthetic',
+          name: 'production',
+          type: 'production',
           configuration: {
-            mockResponses: true,
-            deterministicMode: true
+            mockResponses: false,
+            deterministicMode: false
           }
         },
         {

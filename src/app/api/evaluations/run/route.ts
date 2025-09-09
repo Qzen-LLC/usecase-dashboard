@@ -16,13 +16,19 @@ export async function POST(request: NextRequest) {
 
     // Set default environment if not provided
     const executionEnvironment: ExecutionEnvironment = environment || {
-      name: 'synthetic',
-      type: 'synthetic',
+      name: 'production',
+      type: 'production',
       configuration: {
-        mockResponses: true,
-        deterministicMode: true
+        mockResponses: false,
+        deterministicMode: false
       }
     };
+
+    // Log the execution environment configuration
+    console.log(`🔧 Execution Environment: ${executionEnvironment.name}`);
+    console.log(`   - Type: ${executionEnvironment.type}`);
+    console.log(`   - Mock Responses: ${executionEnvironment.configuration.mockResponses}`);
+    console.log(`   - Real AI Agents: ${!executionEnvironment.configuration.mockResponses}`);
 
     // Initialize the evaluation runner
     const runner = new EvaluationRunner();

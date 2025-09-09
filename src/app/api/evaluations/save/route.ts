@@ -34,8 +34,13 @@ export async function POST(request: NextRequest) {
     // Save or update evaluation
     let evaluation;
     if (evaluationConfig.id) {
-      // Try update existing; if not found, create new
-      try {
+      // Try to find existing evaluation first
+      const existingEvaluation = await prismaClient.evaluation.findUnique({
+        where: { id: evaluationConfig.id }
+      });
+      
+      if (existingEvaluation) {
+        // Update existing evaluation
         evaluation = await prismaClient.evaluation.update({
           where: { id: evaluationConfig.id },
           data: {
@@ -46,9 +51,11 @@ export async function POST(request: NextRequest) {
             completedAt: evaluationResult ? new Date() : null
           }
         });
-      } catch (_e) {
+      } else {
+        // Create new evaluation with the provided ID
         evaluation = await prismaClient.evaluation.create({
           data: {
+            id: evaluationConfig.id,
             useCaseId,
             name: evaluationConfig.name || 'Evaluation ' + new Date().toLocaleDateString(),
             description: evaluationConfig.description,
@@ -59,6 +66,7 @@ export async function POST(request: NextRequest) {
         });
       }
     } else {
+      // Create new evaluation without ID
       evaluation = await prismaClient.evaluation.create({
         data: {
           useCaseId,
@@ -96,22 +104,44 @@ export async function POST(request: NextRequest) {
         data: results
       });
 
-      // Update evaluation summary
+      // Update evaluation summary with detailed scores
       const passedCount = results.filter((r: any) => r.passed).length;
       const totalCount = results.length;
       
-      await prismaClient.evaluation.update({
-        where: { id: evaluation.id },
-        data: {
-          summary: {
-            totalTests: totalCount,
-            passed: passedCount,
-            failed: totalCount - passedCount,
-            passRate: totalCount > 0 ? passedCount / totalCount : 0,
-            timestamp: new Date().toISOString()
+      // Extract dimension scores from the evaluation result if available
+      let dimensionScores = {};
+      let overallScore = 0;
+      let recommendations = [];
+      
+      if (evaluationResult && evaluationResult.scores) {
+        dimensionScores = evaluationResult.scores.dimensionScores || {};
+        overallScore = evaluationResult.scores.overallScore?.value || 0;
+        recommendations = evaluationResult.recommendations || [];
+      }
+      
+      try {
+        await prismaClient.evaluation.update({
+          where: { id: evaluation.id },
+          data: {
+            summary: {
+              totalTests: totalCount,
+              passed: passedCount,
+              failed: totalCount - passedCount,
+              passRate: totalCount > 0 ? passedCount / totalCount : 0,
+              overallScore: overallScore,
+              dimensionScores: dimensionScores,
+              recommendations: recommendations,
+              timestamp: new Date().toISOString()
+            }
           }
-        }
-      });
+        });
+        console.log(`✅ Evaluation summary updated for evaluation ${evaluation.id}`);
+        console.log(`   Overall score: ${overallScore}`);
+        console.log(`   Dimension scores:`, Object.keys(dimensionScores));
+      } catch (updateError) {
+        console.error('Failed to update evaluation summary:', updateError);
+        // Don't fail the entire request if summary update fails
+      }
     }
 
     return NextResponse.json({

@@ -420,7 +420,7 @@ export default function AssessmentPage() {
   const [assessmentData, setAssessmentData] = useState<any>(defaultAssessmentData);
 
 const validateAssessmentData = useMemo(() => (data: any) => {
-  if (!data) return false;
+  if (!data) return { isValid: false, missingFields: ['all'] };
   // List all required assessment sections
   const requiredSections = [
     'technicalFeasibility',
@@ -431,16 +431,24 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     'roadmapPosition',
     'budgetPlanning'
   ];
-  // Check each section is present and filled
-  return requiredSections.every(section => {
+
+  const missingFields: string[] = [];
+
+  requiredSections.forEach(section => {
     const val = data[section];
-    if (!val) return false;
-    if (typeof val === 'object') {
-      // For objects, check if any value is empty or falsy
-      return !Object.values(val).some(v => v === '' || v === null || v === undefined || (Array.isArray(v) && v.length === 0));
+    if (!val) {
+      missingFields.push(section);
+      return;
     }
-    return val !== '' && val !== null && val !== undefined;
+    if (typeof val === 'object') {
+      const hasAnyValue = Object.values(val).some(v => v !== '' && v !== null && v !== undefined && (!Array.isArray(v) || v.length > 0));
+      if (!hasAnyValue) missingFields.push(section);
+      return;
+    }
+    if (val === '' || val === null || val === undefined) missingFields.push(section);
   });
+
+  return { isValid: missingFields.length === 0, missingFields };
 }, []);
 
   const handleAssessmentChange = useMemo(() => (section: string, data: any) => {
@@ -457,6 +465,44 @@ const validateAssessmentData = useMemo(() => (data: any) => {
       };
     });
   }, [canEdit]);
+
+  // Auto-save functionality
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const autoSave = useMemo(() => async () => {
+    if (!canEdit || saving) return;
+    
+    try {
+      const transformedData = mapUIToTypeDefinition(assessmentData);
+      
+      await fetch("/api/post-stepdata", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ useCaseId, assessData: transformedData }),
+      });
+      
+      console.log('Auto-save completed');
+    } catch (err) {
+      console.error("Auto-save failed:", err);
+    }
+  }, [useCaseId, assessmentData, canEdit, saving]);
+
+  // Debounced auto-save
+  useEffect(() => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      autoSave();
+    }, 2000); // Auto-save after 2 seconds of inactivity
+    
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [assessmentData, autoSave]);
 
   useEffect(() => {
     if (!useCaseId || !isReady) return;
@@ -478,13 +524,30 @@ const validateAssessmentData = useMemo(() => (data: any) => {
           setAssessmentData((prev: any) => {
             // Ensure backward compatibility by converting if needed
             const savedData = ensureCompatibility(useCaseData.assessData.stepsData);
-            const mergedData = { ...defaultAssessmentData, ...prev };
-
-            // Merge saved data with defaults
+            
+            // Deep merge saved data with defaults, ensuring all fields are preserved
+            const mergedData = { ...defaultAssessmentData };
+            
+            // Merge each section individually to ensure deep merging
             Object.keys(defaultAssessmentData).forEach(key => {
               if (savedData[key]) {
-                mergedData[key] = savedData[key];
+                (mergedData as any)[key] = {
+                  ...(defaultAssessmentData as any)[key],
+                  ...savedData[key]
+                };
               }
+            });
+
+            console.log('🔄 [ASSESSMENT] Loading saved data:', {
+              savedDataKeys: Object.keys(savedData),
+              technicalData: savedData.technicalFeasibility,
+              businessData: savedData.businessFeasibility,
+              ethicalData: savedData.ethicalImpact,
+              riskData: savedData.riskAssessment,
+              dataReadinessData: savedData.dataReadiness,
+              roadmapData: savedData.roadmapPosition,
+              budgetData: savedData.budgetPlanning,
+              mergedDataKeys: Object.keys(mergedData)
             });
 
             return mergedData;
@@ -573,23 +636,39 @@ const validateAssessmentData = useMemo(() => (data: any) => {
       setError(""); // Clear previous errors
       setSaveSuccess(false); // Reset success message
 
+      // Validate assessment data before saving
+      const validationResult = validateAssessmentData(assessmentData);
+      if (!validationResult.isValid) {
+        setError(`Please complete required fields: ${validationResult.missingFields.join(', ')}`);
+        setTimeout(() => setError(""), 5000);
+        return;
+      }
+
       // Transform UI data to type definition format before saving
       const transformedData = mapUIToTypeDefinition(assessmentData);
       
-      await fetch("/api/post-stepdata", {
+      const response = await fetch("/api/post-stepdata", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ useCaseId, assessData: transformedData }),
       });
 
-      // Instead of redirecting, just show a success message
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save assessment data');
+      }
+
+      const result = await response.json();
+      console.log('Assessment data saved successfully:', result);
+      
+      // Show success message
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000); // Hide success message after 3 seconds
 
     } catch (err) {
       console.error("Error saving assessment:", err);
-      setError("Failed to save assessment data");
-      setTimeout(() => setError(""), 3000);
+      setError(err instanceof Error ? err.message : "Failed to save assessment data");
+      setTimeout(() => setError(""), 5000);
     } finally {
       setSaving(false);
     }

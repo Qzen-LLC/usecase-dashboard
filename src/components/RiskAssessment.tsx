@@ -186,6 +186,20 @@ const DEPENDENCY_RISKS = [
 
 export default function RiskAssessment({ value, onChange }: Props) {
   const lastSent = useRef<any>(null);
+
+  // Debug logging to see what data is being received
+  useEffect(() => {
+    console.log('⚠️ [RISK] Component received value:', {
+      technicalRisks: value.technicalRisks,
+      businessRisks: value.businessRisks,
+      modelRisks: value.modelRisks,
+      agentRisks: value.agentRisks,
+      dependencyRisks: value.dependencyRisks,
+      vendorLockIn: value.vendorLockIn,
+      apiStability: value.apiStability,
+      costOverrun: value.costOverrun,
+    });
+  }, [value]);
   
   // Initialize state from value prop
   const [technicalRisks, setTechnicalRisks] = useState<Risk[]>(
@@ -302,12 +316,19 @@ export default function RiskAssessment({ value, onChange }: Props) {
       complianceReporting,
       riskTolerance,
       aiExperience,
+      // Include Gen AI specific fields
+      modelRisks: value.modelRisks,
+      agentRisks: value.agentRisks,
+      dependencyRisks: value.dependencyRisks,
+      vendorLockIn: value.vendorLockIn,
+      apiStability: value.apiStability,
+      costOverrun: value.costOverrun,
     };
     if (onChange && !isEqual(currentData, lastSent.current)) {
       onChange(currentData);
       lastSent.current = currentData;
     }
-  }, [technicalRisks, businessRisks, operatingJurisdictions, dataProtection, sectorSpecific, aiSpecific, certifications, auditRequirements, complianceReporting, riskTolerance, aiExperience, onChange]);
+  }, [technicalRisks, businessRisks, operatingJurisdictions, dataProtection, sectorSpecific, aiSpecific, certifications, auditRequirements, complianceReporting, riskTolerance, aiExperience, value.modelRisks, value.agentRisks, value.dependencyRisks, value.vendorLockIn, value.apiStability, value.costOverrun, onChange]);
 
 
   const handleSelectChange = (
