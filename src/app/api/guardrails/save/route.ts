@@ -31,28 +31,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save or update guardrails
-    const guardrailRecord = await prismaClient.guardrail.upsert({
-      where: {
-        id: guardrails.id || 'new-' + Date.now()
-      },
-      create: {
-        useCaseId,
-        name: guardrails.name || 'Guardrails Configuration',
-        description: guardrails.description || 'Generated guardrails for ' + useCase.title,
-        approach: guardrails.approach || 'balanced_practical',
-        configuration: guardrails,
-        reasoning: guardrails.reasoning || {},
-        confidence: guardrails.confidence?.overall || 0.8,
-        status: 'draft'
-      },
-      update: {
-        configuration: guardrails,
-        reasoning: guardrails.reasoning || {},
-        confidence: guardrails.confidence?.overall || 0.8,
-        status: guardrails.status || 'draft'
-      }
+    // First check if a guardrail already exists for this use case
+    let existingGuardrail = await prismaClient.guardrail.findFirst({
+      where: { useCaseId },
+      orderBy: { createdAt: 'desc' }
     });
+
+    // Save or update guardrails
+    const guardrailRecord = existingGuardrail 
+      ? await prismaClient.guardrail.update({
+          where: { id: existingGuardrail.id },
+          data: {
+            configuration: guardrails,
+            reasoning: guardrails.reasoning || {},
+            confidence: guardrails.confidence?.overall || 0.8,
+            status: guardrails.status || 'draft',
+            updatedAt: new Date()
+          }
+        })
+      : await prismaClient.guardrail.create({
+          data: {
+            useCaseId,
+            name: guardrails.name || 'Guardrails Configuration',
+            description: guardrails.description || 'Generated guardrails for ' + useCase.title,
+            approach: guardrails.approach || 'balanced_practical',
+            configuration: guardrails,
+            reasoning: guardrails.reasoning || {},
+            confidence: guardrails.confidence?.overall || 0.8,
+            status: 'draft'
+          }
+        });
 
     // Save individual rules if provided
     if (guardrails.guardrails?.rules) {
@@ -76,15 +84,40 @@ export async function POST(request: NextRequest) {
               rationale: rule.rationale,
               implementation: rule.implementation || {},
               conditions: rule.conditions,
-              exceptions: rule.exceptions
+              exceptions: rule.exceptions,
+              status: rule.status || 'PENDING',
+              isCustom: rule.isCustom || false,
+              isEdited: rule.isEdited || false,
+              originalValue: rule.originalValue || null,
+              editedBy: rule.editedBy || null,
+              editedAt: rule.editedAt ? new Date(rule.editedAt) : null,
+              approvedBy: rule.approvedBy || null,
+              approvedAt: rule.approvedAt ? new Date(rule.approvedAt) : null,
+              rejectedBy: rule.rejectedBy || null,
+              rejectedAt: rule.rejectedAt ? new Date(rule.rejectedAt) : null,
+              rejectionReason: rule.rejectionReason || null
             });
           });
         }
       });
 
       if (allRules.length > 0) {
+        // Delete and recreate to ensure clean state
         await prismaClient.guardrailRule.createMany({
           data: allRules
+        });
+        
+        // Fetch the created rules to get their IDs
+        const createdRules = await prismaClient.guardrailRule.findMany({
+          where: { guardrailId: guardrailRecord.id }
+        });
+        
+        // Return the rules with their database IDs
+        return NextResponse.json({
+          success: true,
+          guardrailId: guardrailRecord.id,
+          rules: createdRules,
+          message: 'Guardrails saved successfully'
         });
       }
     }
@@ -92,6 +125,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       guardrailId: guardrailRecord.id,
+      rules: [],
       message: 'Guardrails saved successfully'
     });
   } catch (error) {
