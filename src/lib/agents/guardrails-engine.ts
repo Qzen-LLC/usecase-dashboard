@@ -8,6 +8,11 @@ import { GuardrailsOrchestrator } from './guardrails-orchestrator';
 import { generateGuardrailsPrompt } from './prompts/guardrails-prompts';
 import OpenAI from 'openai';
 import { guardrailLogger } from './utils/guardrail-logger';
+import { RiskAnalyzer } from './utils/risk-analyzer';
+import { validateGuardrails, ValidationReport } from './validators/guardrail-validator';
+import { withRetry, withTimeout, CircuitBreaker, LLMError } from './utils/error-handler';
+import { guardrailsCache, promptCache, withCache } from './utils/cache-manager';
+import { CONFIG } from './config/guardrails-config';
 
 /**
  * Guardrails Generation Engine
@@ -17,9 +22,16 @@ import { guardrailLogger } from './utils/guardrail-logger';
 export class GuardrailsEngine {
   private orchestrator: GuardrailsOrchestrator;
   private openai: OpenAI;
+  private riskAnalyzer: RiskAnalyzer;
+  private circuitBreaker: CircuitBreaker;
 
   constructor() {
     this.orchestrator = new GuardrailsOrchestrator();
+    this.riskAnalyzer = new RiskAnalyzer();
+    this.circuitBreaker = new CircuitBreaker(
+      CONFIG.circuitBreaker.threshold,
+      CONFIG.circuitBreaker.timeout
+    );
     
     // Initialize OpenAI client - require API key
     const apiKey = process.env.OPENAI_API_KEY;
@@ -41,6 +53,14 @@ export class GuardrailsEngine {
   ): Promise<GuardrailsConfig> {
     console.log('🚀 Starting Agentic Guardrails Generation...');
     
+    // Check cache first
+    const cacheKey = guardrailsCache.generateKey({ assessment, orgPolicies });
+    const cached = guardrailsCache.get(cacheKey);
+    if (cached) {
+      console.log('✨ Using cached guardrails');
+      return cached as GuardrailsConfig;
+    }
+    
     // Start logging session
     guardrailLogger.startSession(
       assessment.useCaseId || 'unknown',
@@ -48,11 +68,32 @@ export class GuardrailsEngine {
     );
 
     try {
-      // Step 1: Generate multiple perspectives using LLM
-      guardrailLogger.logOrchestratorAction('GENERATE_PERSPECTIVES', {
-        approaches: ['conservative_safety', 'balanced_practical', 'innovation_focused']
+      // Step 1: Analyze risks to identify critical guardrails
+      guardrailLogger.logOrchestratorAction('ANALYZE_RISKS', {
+        assessment: assessment.useCaseId
       });
-      const perspectives = await this.generatePerspectives(assessment, orgPolicies);
+      const riskPriorities = this.riskAnalyzer.analyzeRisks(assessment);
+      const criticalGuardrails = this.riskAnalyzer.getCriticalGuardrails(riskPriorities);
+      
+      console.log(`⚠️ Identified ${riskPriorities.length} risks, ${criticalGuardrails.length} critical guardrails required`);
+      
+      // Step 2: Generate multiple perspectives using LLM with risk context
+      guardrailLogger.logOrchestratorAction('GENERATE_PERSPECTIVES', {
+        approaches: ['conservative_safety', 'balanced_practical', 'innovation_focused'],
+        criticalRisks: riskPriorities.filter(r => r.severity === 'critical').length
+      });
+      let perspectives;
+      try {
+        perspectives = await this.generatePerspectives(assessment, orgPolicies, riskPriorities);
+      } catch (llmError) {
+        console.error('LLM generation failed, using fallback agent-only approach:', llmError);
+        // Fallback: Use empty perspectives and rely on agent guardrails
+        perspectives = [];
+        guardrailLogger.log('llm_fallback', {
+          error: llmError instanceof Error ? llmError.message : 'Unknown error',
+          fallbackStrategy: 'agent-only'
+        });
+      }
 
       // Step 2: Let orchestrator coordinate specialist agents
       const agentGuardrails = await this.orchestrator.generateGuardrails(assessment);
@@ -90,9 +131,29 @@ export class GuardrailsEngine {
         }
       };
       
+      // Step 6: Run comprehensive validation
+      const validationReport = await this.runValidation(finalResult.guardrails, assessment);
+      
+      // Add validation report to final result
+      (finalResult as any).validation = {
+        score: validationReport.score,
+        isValid: validationReport.isValid,
+        coverage: validationReport.coverage,
+        summary: validationReport.summary,
+        issueCount: {
+          errors: validationReport.issues.filter(i => i.type === 'error').length,
+          warnings: validationReport.issues.filter(i => i.type === 'warning').length,
+          info: validationReport.issues.filter(i => i.type === 'info').length
+        },
+        recommendations: validationReport.recommendations
+      };
+      
       // Log final output and save
       guardrailLogger.logFinalOutput(finalResult);
       guardrailLogger.saveToFile();
+      
+      // Cache the result
+      guardrailsCache.set(cacheKey, finalResult);
       
       return finalResult;
     } catch (error) {
@@ -102,21 +163,71 @@ export class GuardrailsEngine {
   }
 
   /**
-   * Generate multiple perspectives using LLM
+   * Generate multiple perspectives using LLM with domain-specific calls
    */
   private async generatePerspectives(
     assessment: ComprehensiveAssessment,
-    orgPolicies: any
+    orgPolicies: any,
+    riskPriorities?: any[]
   ): Promise<any[]> {
-    console.log('🧠 Generating LLM perspectives...');
+    console.log('🧠 Generating comprehensive LLM perspectives...');
 
-    const perspectives = await Promise.all([
+    // Generate base perspectives
+    const basePerspectives = await Promise.all([
       this.generatePerspective(assessment, orgPolicies, 'conservative_safety'),
       this.generatePerspective(assessment, orgPolicies, 'balanced_practical'),
       this.generatePerspective(assessment, orgPolicies, 'innovation_focused')
     ]);
 
-    return perspectives;
+    // Generate domain-specific guardrails in parallel
+    console.log('🔍 Generating domain-specific guardrails...');
+    const domainGuardrails = await this.generateDomainSpecificGuardrails(assessment, orgPolicies);
+
+    // Merge domain-specific guardrails into perspectives
+    return [...basePerspectives, ...domainGuardrails];
+  }
+
+  /**
+   * Generate domain-specific guardrails using focused LLM calls
+   */
+  private async generateDomainSpecificGuardrails(
+    assessment: ComprehensiveAssessment,
+    orgPolicies: any
+  ): Promise<any[]> {
+    const domains = [
+      'security_vulnerabilities',
+      'performance_sla', 
+      'cost_optimization',
+      'data_governance'
+    ];
+
+    const domainGuardrails = await Promise.all(
+      domains.map(domain => this.generateDomainGuardrails(assessment, orgPolicies, domain))
+    );
+
+    return domainGuardrails;
+  }
+
+  /**
+   * Generate guardrails for a specific domain
+   */
+  private async generateDomainGuardrails(
+    assessment: ComprehensiveAssessment,
+    orgPolicies: any,
+    domain: string
+  ): Promise<any> {
+    const prompt = this.generateDomainPrompt(assessment, orgPolicies, domain);
+    
+    guardrailLogger.logLLMInput(domain, prompt);
+
+    const response = await this.callLLM(prompt, 'domain_specific', domain);
+
+    return {
+      approach: domain,
+      guardrails: this.parseLLMResponse(response),
+      reasoning: response.reasoning,
+      confidence: response.confidence
+    };
   }
 
   /**
@@ -144,40 +255,89 @@ export class GuardrailsEngine {
   }
 
   /**
+   * Optimize prompt size if too large
+   */
+  private optimizePrompt(prompt: string, maxLength: number = 8000): string {
+    if (prompt.length <= maxLength) return prompt;
+    
+    console.log(`⚠️ Prompt too large (${prompt.length} chars), optimizing...`);
+    
+    // Remove excessive whitespace and formatting
+    let optimized = prompt
+      .replace(/\n{3,}/g, '\n\n')  // Reduce multiple newlines
+      .replace(/\s{2,}/g, ' ')      // Reduce multiple spaces
+      .trim();
+    
+    // If still too large, truncate less critical sections
+    if (optimized.length > maxLength) {
+      // Keep the beginning (instructions) and end (output format)
+      const keepStart = Math.floor(maxLength * 0.6);
+      const keepEnd = Math.floor(maxLength * 0.3);
+      
+      const start = optimized.substring(0, keepStart);
+      const end = optimized.substring(optimized.length - keepEnd);
+      
+      optimized = start + '\n\n[... context truncated for length ...]\n\n' + end;
+    }
+    
+    console.log(`✅ Prompt optimized to ${optimized.length} chars`);
+    return optimized;
+  }
+
+  /**
    * Call OpenAI API to generate guardrails
    */
-  private async callLLM(prompt: string, approach?: string): Promise<any> {
-    console.log('📝 Calling OpenAI API with prompt length:', prompt.length);
+  private async callLLM(prompt: string, approach?: string, domain?: string): Promise<any> {
+    // Optimize prompt if too large
+    const optimizedPrompt = CONFIG.llm.promptOptimization.enabled 
+      ? this.optimizePrompt(prompt, CONFIG.llm.promptOptimization.maxLength)
+      : prompt;
+    console.log(`📝 Calling OpenAI API for ${domain || 'general'} guardrails with prompt length:`, optimizedPrompt.length);
+
+    // Check prompt cache
+    const promptKey = promptCache.generateKey({ prompt: optimizedPrompt, approach, domain });
+    const cachedResponse = promptCache.get(promptKey);
+    if (cachedResponse) {
+      console.log('✨ Using cached LLM response');
+      return cachedResponse;
+    }
 
     try {
-      // Prepare the system prompt for structured output
-      const systemPrompt = `You are an AI safety expert generating guardrails for AI systems. 
-      You must respond with a valid, parseable JSON object. Be concise but comprehensive.
-      
-      Structure your response EXACTLY as follows:
-      {
-        "critical": [...],      // Array of critical guardrails
-        "operational": [...],   // Array of operational guardrails  
-        "ethical": [...],       // Array of ethical guardrails
-        "economic": [...],      // Array of economic guardrails
-        "reasoning": {...},     // Object with key_insights and assumptions
-        "confidence": 0.85      // Number between 0-1
-      }
-      
-      Each guardrail must have: id, type, severity, rule, description, rationale.
-      Keep descriptions concise (max 100 chars). Focus on the most important guardrails specific to this use case.`;
+      // Prepare domain-specific system prompts
+      const systemPrompt = this.getDomainSystemPrompt(domain);
 
-      // Call OpenAI API with reduced tokens to avoid truncation
-      const completion = await this.openai.chat.completions.create({
-        model: process.env.DEFAULT_LLM_MODEL || 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.7,
-        max_tokens: 3000 // Reduced to avoid truncation
-      });
+      // Adjust token allocation based on domain
+      const maxTokens = domain 
+        ? CONFIG.llm.maxTokens.domain 
+        : CONFIG.llm.maxTokens.comprehensive;
+
+      // Call OpenAI API with retry and timeout
+      const completion = await withRetry(
+        () => withTimeout(
+          () => this.circuitBreaker.execute(
+            () => this.openai.chat.completions.create({
+              model: CONFIG.llm.model,
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: optimizedPrompt }
+              ],
+              response_format: { type: 'json_object' },
+              temperature: CONFIG.llm.temperature,
+              max_tokens: maxTokens
+            })
+          ),
+          CONFIG.llm.timeout,
+          'OpenAI API call timed out'
+        ),
+        {
+          maxAttempts: CONFIG.llm.maxRetries,
+          delayMs: CONFIG.llm.retryDelay,
+          backoff: true,
+          onRetry: (attempt, error) => {
+            console.warn(`LLM call attempt ${attempt} failed:`, error.message);
+          }
+        }
+      );
 
       const response = completion.choices[0]?.message?.content;
       if (!response) {
@@ -186,14 +346,28 @@ export class GuardrailsEngine {
 
       console.log('✅ OpenAI API call successful');
       
-      // Parse and validate the response with error handling
+      // Parse and validate the response with improved error handling
       let parsedResponse;
       try {
         // Try to clean the response first
-        const cleanedResponse = response
+        let cleanedResponse = response
           .trim()
           .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
           .replace(/\n\s*\n/g, '\n'); // Remove excessive newlines
+        
+        // Check if response might be truncated (ends without proper closing)
+        if (!cleanedResponse.endsWith('}')) {
+          console.warn('Response appears truncated, attempting to fix...');
+          // Count opening and closing braces
+          const openBraces = (cleanedResponse.match(/{/g) || []).length;
+          const closeBraces = (cleanedResponse.match(/}/g) || []).length;
+          const openBrackets = (cleanedResponse.match(/\[/g) || []).length;
+          const closeBrackets = (cleanedResponse.match(/\]/g) || []).length;
+          
+          // Add missing closing brackets/braces
+          cleanedResponse += ']'.repeat(Math.max(0, openBrackets - closeBrackets));
+          cleanedResponse += '}'.repeat(Math.max(0, openBraces - closeBraces));
+        }
         
         parsedResponse = JSON.parse(cleanedResponse);
       } catch (parseError) {
@@ -250,6 +424,9 @@ export class GuardrailsEngine {
       if (approach) {
         guardrailLogger.logLLMOutput(approach, validatedResponse, true);
       }
+      
+      // Cache the successful response
+      promptCache.set(promptKey, validatedResponse);
 
       return validatedResponse;
 
@@ -314,9 +491,15 @@ export class GuardrailsEngine {
     }
 
     // Add LLM-generated guardrails from each perspective
-    perspectives.forEach(perspective => {
-      allGuardrails.push(...perspective.guardrails);
-    });
+    if (perspectives && perspectives.length > 0) {
+      perspectives.forEach(perspective => {
+        if (perspective.guardrails && Array.isArray(perspective.guardrails)) {
+          allGuardrails.push(...perspective.guardrails);
+        }
+      });
+    } else {
+      console.log('⚠️ No LLM perspectives available, using agent guardrails only');
+    }
 
     // Remove duplicates and resolve conflicts
     const synthesized = this.deduplicateAndResolve(allGuardrails);
@@ -557,21 +740,70 @@ export class GuardrailsEngine {
   private combineReasoning(perspectives: any[], agentReasoning: any): any {
     return {
       timestamp: new Date().toISOString(),
-      perspectives: perspectives.map(p => ({
-        approach: p.approach,
-        reasoning: p.reasoning
-      })),
+      perspectives: perspectives.length > 0 
+        ? perspectives.map(p => ({
+            approach: p.approach || 'unknown',
+            reasoning: p.reasoning || 'No reasoning available'
+          }))
+        : [],
       agentReasoning,
-      synthesis: 'Combined multi-perspective LLM reasoning with specialist agent analysis'
+      synthesis: perspectives.length > 0
+        ? 'Combined multi-perspective LLM reasoning with specialist agent analysis'
+        : 'Agent-based analysis (LLM unavailable)'
     };
+  }
+
+  /**
+   * Run comprehensive validation on generated guardrails
+   */
+  async runValidation(
+    guardrails: GuardrailsConfig,
+    assessment: ComprehensiveAssessment
+  ): Promise<ValidationReport> {
+    console.log('🔍 Running comprehensive validation...');
+    
+    const report = await validateGuardrails(guardrails, assessment);
+    
+    // Log validation results
+    guardrailLogger.log('validation', {
+      score: report.score,
+      isValid: report.isValid,
+      errorCount: report.issues.filter(i => i.type === 'error').length,
+      warningCount: report.issues.filter(i => i.type === 'warning').length,
+      coverage: report.coverage
+    });
+    
+    // If validation fails critically, log issues
+    if (!report.isValid) {
+      console.error('❌ Validation failed with critical errors:');
+      report.issues
+        .filter(i => i.type === 'error')
+        .forEach(issue => {
+          console.error(`  - ${issue.message}`);
+          if (issue.suggestion) {
+            console.error(`    💡 ${issue.suggestion}`);
+          }
+        });
+    } else {
+      console.log(`✅ Validation passed with score: ${report.score}/100`);
+    }
+    
+    return report;
   }
 
   /**
    * Calculate overall confidence score
    */
   private calculateOverallConfidence(perspectives: any[], agentConfidence: any): any {
-    const llmConfidence = perspectives.reduce((sum, p) => sum + p.confidence, 0) / perspectives.length;
-    const overallScore = (llmConfidence + agentConfidence.overall) / 2;
+    // Handle case where no LLM perspectives are available
+    const llmConfidence = perspectives.length > 0 
+      ? perspectives.reduce((sum, p) => sum + (p.confidence || 0), 0) / perspectives.length
+      : 0;
+    
+    // If no LLM confidence, use agent confidence only
+    const overallScore = perspectives.length > 0
+      ? (llmConfidence + agentConfidence.overall) / 2
+      : agentConfidence.overall;
 
     return {
       overall: overallScore,
@@ -609,5 +841,242 @@ export class GuardrailsEngine {
     complexity += (assessment.businessFeasibility?.userCategories?.length || 0) / 5;
 
     return Math.min(complexity, 10);
+  }
+
+  /**
+   * Get domain-specific system prompt
+   */
+  private getDomainSystemPrompt(domain?: string): string {
+    const basePrompt = `You are an AI safety expert generating guardrails for AI systems. 
+    You must respond with a valid, parseable JSON object. Be concise but comprehensive.`;
+
+    if (!domain) {
+      return `${basePrompt}
+      
+      Structure your response EXACTLY as follows:
+      {
+        "critical": [...],      // Array of critical guardrails
+        "operational": [...],   // Array of operational guardrails  
+        "ethical": [...],       // Array of ethical guardrails
+        "economic": [...],      // Array of economic guardrails
+        "reasoning": {...},     // Object with key_insights and assumptions
+        "confidence": 0.85      // Number between 0-1
+      }
+      
+      Each guardrail must have: id, type, severity, rule, description, rationale, implementation.
+      Focus on the most important guardrails specific to this use case.`;
+    }
+
+    const domainPrompts: Record<string, string> = {
+      security_vulnerabilities: `${basePrompt}
+      
+      You are specialized in security vulnerabilities and attack vectors.
+      Focus EXCLUSIVELY on:
+      - Prompt injection defense mechanisms
+      - Jailbreak prevention strategies
+      - Adversarial input detection
+      - Model inversion attack prevention
+      - Data poisoning mitigation
+      - Output validation and sanitization
+      
+      Structure your response as:
+      {
+        "security": [
+          {
+            "id": "unique-id",
+            "type": "prompt_injection|jailbreak|adversarial|data_poisoning",
+            "severity": "critical|high|medium",
+            "rule": "SPECIFIC_SECURITY_RULE",
+            "description": "Clear security control description",
+            "rationale": "Security risk being mitigated",
+            "implementation": {
+              "detection_pattern": "regex or algorithm",
+              "prevention_method": "specific technique",
+              "monitoring": { "metric": "...", "threshold": "..." }
+            }
+          }
+        ],
+        "reasoning": { "vulnerabilities_identified": [...], "attack_vectors": [...] },
+        "confidence": 0.85
+      }`,
+
+      performance_sla: `${basePrompt}
+      
+      You are specialized in performance optimization and SLA management.
+      Focus EXCLUSIVELY on:
+      - Response time enforcement (latency requirements)
+      - Throughput optimization
+      - Availability and uptime requirements
+      - Load balancing strategies
+      - Caching mechanisms
+      - Circuit breaker patterns
+      - Timeout configurations
+      
+      Structure your response as:
+      {
+        "performance": [
+          {
+            "id": "unique-id",
+            "type": "latency|throughput|availability|caching",
+            "severity": "critical|high|medium",
+            "rule": "SPECIFIC_PERFORMANCE_RULE",
+            "description": "Performance requirement description",
+            "rationale": "Why this performance metric matters",
+            "implementation": {
+              "threshold": "specific value with unit",
+              "monitoring_interval": "1m|5m|1h",
+              "fallback_strategy": "what to do when threshold exceeded",
+              "optimization_technique": "specific method"
+            }
+          }
+        ],
+        "reasoning": { "sla_requirements": [...], "bottlenecks": [...] },
+        "confidence": 0.85
+      }`,
+
+      cost_optimization: `${basePrompt}
+      
+      You are specialized in cost optimization and resource management.
+      Focus EXCLUSIVELY on:
+      - Token usage optimization
+      - API call reduction strategies
+      - Model selection optimization
+      - Caching for cost reduction
+      - Batch processing opportunities
+      - Resource allocation efficiency
+      - Budget alert mechanisms
+      
+      Structure your response as:
+      {
+        "cost": [
+          {
+            "id": "unique-id",
+            "type": "token_optimization|api_cost|resource_efficiency",
+            "severity": "high|medium|low",
+            "rule": "SPECIFIC_COST_RULE",
+            "description": "Cost optimization strategy",
+            "rationale": "Expected cost savings",
+            "implementation": {
+              "optimization_method": "specific technique",
+              "expected_savings": "percentage or amount",
+              "budget_threshold": "alert level",
+              "measurement": "how to track savings"
+            }
+          }
+        ],
+        "reasoning": { "cost_drivers": [...], "optimization_opportunities": [...] },
+        "confidence": 0.85
+      }`,
+
+      data_governance: `${basePrompt}
+      
+      You are specialized in data governance and privacy management.
+      Focus EXCLUSIVELY on:
+      - Data minimization strategies
+      - PII detection and masking
+      - Data retention policies
+      - Cross-border data transfer controls
+      - Purpose limitation enforcement
+      - Consent management
+      - Data quality monitoring
+      - Model drift detection
+      
+      Structure your response as:
+      {
+        "governance": [
+          {
+            "id": "unique-id",
+            "type": "data_minimization|retention|privacy|drift_monitoring",
+            "severity": "critical|high|medium",
+            "rule": "SPECIFIC_GOVERNANCE_RULE",
+            "description": "Data governance control",
+            "rationale": "Compliance or risk mitigation reason",
+            "implementation": {
+              "control_mechanism": "specific method",
+              "monitoring_frequency": "daily|weekly|monthly",
+              "compliance_framework": "GDPR|HIPAA|etc",
+              "enforcement_method": "how to enforce"
+            }
+          }
+        ],
+        "reasoning": { "data_risks": [...], "compliance_requirements": [...] },
+        "confidence": 0.85
+      }`
+    };
+
+    return domainPrompts[domain] || basePrompt;
+  }
+
+  /**
+   * Generate domain-specific prompt
+   */
+  private generateDomainPrompt(
+    assessment: ComprehensiveAssessment,
+    orgPolicies: any,
+    domain: string
+  ): string {
+    const domainContexts: Record<string, () => string> = {
+      security_vulnerabilities: () => `
+        Generate security-focused guardrails for this AI use case.
+        
+        CRITICAL SECURITY CONTEXT:
+        - Prompt Injection Vulnerability Score: ${assessment.riskAssessment?.modelRisks?.['Prompt Injection Vulnerability'] || 'Unknown'}
+        - Adversarial Input Risk: ${assessment.riskAssessment?.modelRisks?.['Adversarial Inputs'] || 'Unknown'}
+        - Data Poisoning Risk: ${assessment.riskAssessment?.modelRisks?.['Data Poisoning Risk'] || 'Unknown'}
+        - Public Facing: ${assessment.businessFeasibility?.userCategories?.includes('General Public') ? 'YES' : 'NO'}
+        - Agent Architecture: ${assessment.technicalFeasibility?.agentArchitecture || 'Not specified'}
+        - Autonomy Level: ${assessment.technicalFeasibility?.agentAutonomy || 'Not specified'}
+        
+        Generate specific security guardrails addressing these vulnerabilities.
+        Include detection patterns, prevention methods, and monitoring configurations.`,
+
+      performance_sla: () => `
+        Generate performance and SLA guardrails for this AI use case.
+        
+        CRITICAL PERFORMANCE REQUIREMENTS:
+        - Response Time Requirement: ${assessment.businessFeasibility?.responseTimeRequirement || 'Not specified'}
+        - Availability Requirement: ${assessment.businessFeasibility?.availabilityRequirement || 'Not specified'}
+        - Concurrent Users: ${assessment.businessFeasibility?.concurrentUsers || 'Not specified'}
+        - System Criticality: ${assessment.businessFeasibility?.systemCriticality || 'Not specified'}
+        - Expected Requests/Day: ${assessment.technicalFeasibility?.expectedRequestsPerDay || 'Not specified'}
+        - Streaming Enabled: ${assessment.technicalFeasibility?.streamingEnabled ? 'YES' : 'NO'}
+        
+        Generate specific performance guardrails with thresholds, monitoring intervals, and fallback strategies.`,
+
+      cost_optimization: () => `
+        Generate cost optimization guardrails for this AI use case.
+        
+        CRITICAL COST CONTEXT:
+        - Monthly Token Volume: ${assessment.budgetPlanning?.monthlyTokenVolume || 0} tokens
+        - Budget Range: ${assessment.budgetPlanning?.budgetRange || 'Not specified'}
+        - Total Investment: ${assessment.financialConstraints?.totalInvestment || 'Not specified'}
+        - API Cost Base: ${assessment.budgetPlanning?.baseApiCost || 0}
+        - Average Input Tokens: ${assessment.technicalFeasibility?.avgInputTokens || 0}
+        - Average Output Tokens: ${assessment.technicalFeasibility?.avgOutputTokens || 0}
+        - Model Provider: ${assessment.technicalFeasibility?.modelProvider || 'Not specified'}
+        
+        Generate specific cost optimization guardrails with budget alerts, token limits, and efficiency strategies.`,
+
+      data_governance: () => `
+        Generate data governance guardrails for this AI use case.
+        
+        CRITICAL DATA CONTEXT:
+        - Data Types: ${assessment.dataReadiness?.dataTypes?.join(', ') || 'Not specified'}
+        - Data Volume: ${assessment.dataReadiness?.dataVolume || 'Not specified'}
+        - Data Retention: ${assessment.dataReadiness?.dataRetention || 'Not specified'}
+        - Cross-Border Transfer: ${assessment.dataReadiness?.crossBorderTransfer ? 'YES' : 'NO'}
+        - Data Minimization: ${assessment.ethicalImpact?.privacySecurity?.dataMinimization ? 'ENABLED' : 'NOT ENABLED'}
+        - Model Drift Risk: ${assessment.riskAssessment?.modelRisks?.['Model Drift/Degradation'] || 'Unknown'}
+        - Compliance: ${Object.keys(assessment.complianceRequirements || {}).filter(k => assessment.complianceRequirements[k]).join(', ')}
+        
+        Generate specific data governance guardrails for minimization, retention, drift monitoring, and compliance.`
+    };
+
+    const contextGenerator = domainContexts[domain];
+    if (!contextGenerator) {
+      throw new Error(`Unknown domain: ${domain}`);
+    }
+
+    return contextGenerator();
   }
 }

@@ -11,6 +11,11 @@ import { EthicsAnalystAgent } from './specialists/EthicsAdvisorAgent';
 import { SecurityExpertAgent } from './specialists/SecurityArchitectAgent';
 import { BusinessStrategistAgent } from './specialists/BusinessStrategistAgent';
 import { TechnicalOptimizerAgent } from './specialists/TechnicalOptimizerAgent';
+import { PerformanceAgent } from './specialists/PerformanceAgent';
+import { SecurityVulnerabilityAgent } from './specialists/SecurityVulnerabilityAgent';
+import { CostOptimizationAgent } from './specialists/CostOptimizationAgent';
+import { DataGovernanceAgent } from './specialists/DataGovernanceAgent';
+import { SpecialistAgentAdapter } from './specialists/SpecialistAgentAdapter';
 import { guardrailLogger } from './utils/guardrail-logger';
 
 /**
@@ -28,13 +33,19 @@ export class GuardrailsOrchestrator {
   }
 
   private initializeSpecialists() {
-    // Initialize all specialist agents
+    // Initialize original specialist agents
     this.specialists.set('risk', new RiskAnalystAgent());
     this.specialists.set('compliance', new ComplianceExpertAgent());
     this.specialists.set('ethics', new EthicsAnalystAgent());
     this.specialists.set('security', new SecurityExpertAgent());
     this.specialists.set('business', new BusinessStrategistAgent());
     this.specialists.set('technical', new TechnicalOptimizerAgent());
+    
+    // Initialize new enhanced specialist agents with adapter
+    this.specialists.set('performance', new SpecialistAgentAdapter(new PerformanceAgent()));
+    this.specialists.set('security_vulnerability', new SpecialistAgentAdapter(new SecurityVulnerabilityAgent()));
+    this.specialists.set('cost_optimization', new SpecialistAgentAdapter(new CostOptimizationAgent()));
+    this.specialists.set('data_governance', new SpecialistAgentAdapter(new DataGovernanceAgent()));
   }
 
   /**

@@ -67,7 +67,7 @@ ${assessment.technicalFeasibility?.modelTypes?.includes('Generative AI') ? `
 - RAG System: ${assessment.technicalFeasibility?.ragArchitecture ? 'Yes' : 'No'}
 ` : 'Not a Gen AI use case'}
 
-## Generate Guardrails Following This Structure:
+## Generate Guardrails Following This Enhanced Structure:
 {
   "critical": {
     "description": "Non-negotiable safety guardrails that must be implemented",
@@ -106,6 +106,34 @@ ${assessment.technicalFeasibility?.modelTypes?.includes('Generative AI') ? `
     ]
   },
   
+  "security_vulnerabilities": {
+    "description": "Protection against prompt injection, jailbreaking, and adversarial attacks",
+    "guardrails": [
+      // Focus on: prompt injection, jailbreak prevention, adversarial input detection, output validation
+    ]
+  },
+  
+  "performance_sla": {
+    "description": "Response time, throughput, and availability requirements",
+    "guardrails": [
+      // Focus on: latency enforcement, timeout configuration, circuit breakers, load balancing
+    ]
+  },
+  
+  "cost_optimization": {
+    "description": "Token usage, API costs, and resource efficiency",
+    "guardrails": [
+      // Focus on: token budgets, context optimization, caching strategies, model selection
+    ]
+  },
+  
+  "data_governance": {
+    "description": "Data minimization, retention, privacy, and drift monitoring",
+    "guardrails": [
+      // Focus on: PII protection, retention policies, cross-border transfers, model drift
+    ]
+  },
+  
   "operational": {
     "description": "Performance and reliability guardrails",
     "guardrails": [
@@ -123,7 +151,7 @@ ${assessment.technicalFeasibility?.modelTypes?.includes('Generative AI') ? `
   "economic": {
     "description": "Cost and resource management guardrails",
     "guardrails": [
-      // Similar structure
+      // Similar structure - can be merged with cost_optimization
     ]
   },
   
