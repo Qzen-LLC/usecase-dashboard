@@ -33,6 +33,7 @@ model UseCase {
   updatedAt                DateTime            @updatedAt
   priority                 String?
   stage                    String?
+  businessFunction         String?
   aiucId                   Int
   estimatedTimelineMonths  String?             @default("")
   initialCost              String?             @default("")
@@ -40,15 +41,18 @@ model UseCase {
   plannedStartDate         String?             @default("")
   organizationId           String?
   userId                   String?
-  businessFunction         String?
   Approval                 Approval?
   assessData               Assess?
   euAiActAssessments       EuAiActAssessment?
+  Evaluation               Evaluation[]
   finopsData               FinOps?
+  GoldenDataset            GoldenDataset[]
+  Guardrail                Guardrail[]
   iso42001Assessments      Iso42001Assessment?
   Lock                     Lock[]
   promptTemplates          PromptTemplate[]
   risks                    Risk[]
+  answers                  Answer[]
   uaeAiAssessments         UaeAiAssessment?
   organization             Organization?       @relation(fields: [organizationId], references: [id])
   user                     User?               @relation(fields: [userId], references: [id])
@@ -700,6 +704,244 @@ model Lock {
   @@index([scope])
 }
 
+model Evaluation {
+  id               String             @id
+  useCaseId        String
+  name             String
+  description      String?
+  configuration    Json
+  status           String             @default("pending")
+  startedAt        DateTime?
+  completedAt      DateTime?
+  summary          Json?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  UseCase          UseCase            @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  EvaluationResult EvaluationResult[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([useCaseId])
+}
+
+model EvaluationResult {
+  id             String     @id
+  evaluationId   String
+  category       String
+  testType       String
+  input          Json
+  expectedOutput Json?
+  actualOutput   Json?
+  metrics        Json
+  passed         Boolean
+  severity       String?
+  details        Json?
+  timestamp      DateTime   @default(now())
+  Evaluation     Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+
+  @@index([category])
+  @@index([evaluationId])
+  @@index([passed])
+  @@index([timestamp])
+}
+
+model GoldenDataset {
+  id               String        @id
+  useCaseId        String
+  version          String        @default("1.0.0")
+  name             String
+  description      String
+  metadata         Json
+  statistics       Json?
+  qualityMetrics   Json?
+  validationStatus Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime
+  publishedAt      DateTime?
+  UseCase          UseCase       @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  GoldenEntry      GoldenEntry[]
+
+  @@index([createdAt])
+  @@index([publishedAt])
+  @@index([useCaseId])
+}
+
+model GoldenEntry {
+  id               String         @id
+  datasetId        String
+  category         String
+  inputSpec        Json
+  expectedOutputs  Json
+  metadata         Json
+  quality          Json?
+  version          Int            @default(1)
+  previousVersions Json?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime
+  GoldenDataset    GoldenDataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  GoldenReview     GoldenReview[]
+
+  @@index([category])
+  @@index([createdAt])
+  @@index([datasetId])
+}
+
+model GoldenReview {
+  id          String      @id
+  entryId     String
+  reviewer    String
+  scores      Json
+  decision    String
+  comments    String?
+  suggestions Json?
+  timestamp   DateTime    @default(now())
+  GoldenEntry GoldenEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@index([entryId])
+  @@index([reviewer])
+  @@index([timestamp])
+}
+
+model Guardrail {
+  id              String           @id
+  useCaseId       String
+  name            String
+  description     String?
+  approach        String
+  configuration   Json
+  reasoning       Json?
+  confidence      Float?
+  status          String           @default("draft")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime
+  publishedAt     DateTime?
+  approvedAt      DateTime?
+  approvedBy      String?
+  editedAt        DateTime?
+  editedBy        String?
+  isEdited        Boolean          @default(false)
+  rejectedAt      DateTime?
+  rejectedBy      String?
+  rejectionReason String?
+  version         Int              @default(1)
+  UseCase         UseCase          @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  GuardrailAudit  GuardrailAudit[]
+  GuardrailRule   GuardrailRule[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([useCaseId])
+}
+
+model GuardrailAudit {
+  id          String    @id
+  guardrailId String
+  ruleId      String?
+  action      String
+  userId      String
+  userName    String
+  changes     Json?
+  timestamp   DateTime  @default(now())
+  Guardrail   Guardrail @relation(fields: [guardrailId], references: [id], onDelete: Cascade)
+
+  @@index([guardrailId])
+  @@index([timestamp])
+}
+
+model GuardrailComment {
+  id            String        @id
+  ruleId        String
+  userId        String
+  userName      String
+  content       String
+  createdAt     DateTime      @default(now())
+  GuardrailRule GuardrailRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([ruleId])
+}
+
+model GuardrailRule {
+  id               String              @id
+  guardrailId      String
+  type             String
+  severity         String
+  rule             String
+  description      String
+  rationale        String?
+  implementation   Json
+  conditions       Json?
+  exceptions       Json?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime
+  approvedAt       DateTime?
+  approvedBy       String?
+  editedAt         DateTime?
+  editedBy         String?
+  isCustom         Boolean             @default(false)
+  isEdited         Boolean             @default(false)
+  originalValue    Json?
+  rejectedAt       DateTime?
+  rejectedBy       String?
+  rejectionReason  String?
+  status           GuardrailRuleStatus @default(PENDING)
+  GuardrailComment GuardrailComment[]
+  Guardrail        Guardrail           @relation(fields: [guardrailId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([guardrailId])
+  @@index([severity])
+  @@index([status])
+  @@index([type])
+}
+
+model QuestionTemplate {
+  id                String       @id @default(uuid())
+  text              String
+  type              QuestionType
+  optionTemplates   OptionTemplate[]
+  questions         Question[]
+}
+
+model OptionTemplate {
+  id                 String    @id @default(uuid())
+  text               String
+  questionTemplate   QuestionTemplate  @relation(fields: [questionTemplateId], references: [id])
+  questionTemplateId String 
+}
+
+model Question {
+  id        String       @id @default(uuid())
+  text      String
+  type      QuestionType
+  template  QuestionTemplate? @relation(fields: [templateId], references: [id])
+  templateId String?
+  options   Option[]
+  answers   Answer[]
+}
+
+model Option {
+  id         String    @id @default(uuid())
+  text       String
+  question   Question  @relation(fields: [questionId], references: [id])
+  questionId String
+}
+
+model Answer {
+  id         String   @id @default(uuid())
+  question   Question @relation(fields: [questionId], references: [id])
+  questionId String
+  useCaseId  String
+  useCase    UseCase  @relation(fields: [useCaseId], references: [id])
+  value      Json
+}
+
+enum QuestionType {
+  CHECKBOX
+  RADIO
+  TEXT
+}
+
 enum RiskStatus {
   OPEN
   IN_PROGRESS
@@ -760,4 +1002,11 @@ enum LockScope {
   GOVERNANCE_EU_AI_ACT
   GOVERNANCE_ISO_42001
   GOVERNANCE_UAE_AI
+}
+
+enum GuardrailRuleStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EDITED
 }

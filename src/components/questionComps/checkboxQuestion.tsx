@@ -1,0 +1,68 @@
+"use client";
+
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+
+interface CheckboxGroupProps {
+  label: string;
+  options: OptionProps[];
+  checkedOptions: AnswerProps[];
+  onChange: (newChecked: AnswerProps[]) => void;
+}
+
+interface OptionProps {
+  id: string;
+  text: string;
+  questionId: string;
+}
+
+interface AnswerProps {
+  id: string;        
+  value: string;     
+  questionId: string;
+}
+
+export function CheckboxGroup({
+  label,
+  options,
+  checkedOptions,
+  onChange,
+}: CheckboxGroupProps) {
+  const toggleOption = (option: OptionProps, isChecked: boolean) => {
+    if (isChecked) {
+      const newAnswer: AnswerProps = {
+        id: `${option.questionId}-${option.id}`, // Generate unique ID
+        value: option.text,      
+        questionId: option.questionId,
+      };
+      onChange([...checkedOptions, newAnswer]);
+    } else {
+      onChange(checkedOptions.filter((a) => a.id !== `${option.questionId}-${option.id}`));
+    }
+  };
+
+  return (
+    <div>
+      <Label className="block font-medium mb-4 text-foreground">{label}</Label>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {options.map((option) => {
+          const isChecked = checkedOptions.some((a) => a.id === `${option.questionId}-${option.id}`);
+          return (
+            <Label
+              key={`${option.questionId}-${option.id}`}
+              className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer"
+            >
+              <Checkbox
+                checked={isChecked}
+                onCheckedChange={(checked) =>
+                  toggleOption(option, checked as boolean)
+                }
+              />
+              <span className="text-sm text-foreground">{option.text}</span>
+            </Label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

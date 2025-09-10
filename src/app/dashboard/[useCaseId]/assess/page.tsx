@@ -24,6 +24,7 @@ import ReadOnlyBudgetPlanning from '@/components/ReadOnlyBudgetPlanning';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { useStableRender } from '@/hooks/useStableRender';
 import { useLock } from '@/hooks/useLock';
+import { QuestionType } from '@/generated/prisma';
 
 
 interface UseCase {
@@ -32,6 +33,27 @@ interface UseCase {
   owner: string;
   aiucId: number;
   stage: string; // Added stage to the interface
+}
+
+// Add interfaces for the question data
+interface QnAProps {
+  id: string,
+  text: string,
+  type: QuestionType,
+  options: OptionProps[],
+  answers: AnswerProps[],
+}
+
+interface OptionProps {
+  id: string,
+  text: string,
+  questionId: string,
+}
+
+interface AnswerProps {
+  id: string,        
+  value: string,     
+  questionId: string,
 }
 
 export default function AssessmentPage() {
@@ -53,6 +75,9 @@ export default function AssessmentPage() {
   const budgetPlanningRef = useRef<any>(null);
   const approvalsPageRef = useRef<any>(null);
   const pageTopRef = useRef<HTMLDivElement>(null);
+  const [questions, setQuestions] = useState<QnAProps[]>([]);
+  const [questionsLoading, setQuestionsLoading] = useState(true);
+  const [questionAnswers, setQuestionAnswers] = useState<Record<string, AnswerProps[]>>({}); // Add this state
 
   // Add readonly styles to the document when in readonly mode
   useEffect(() => {
@@ -348,6 +373,14 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     });
   }, [canEdit]);
 
+  // Handler for answer changes
+  const handleAnswerChange = (questionId: string, answers: AnswerProps[]) => {
+    setQuestionAnswers(prev => ({
+      ...prev,
+      [questionId]: answers
+    }));
+  };
+
   useEffect(() => {
     if (!useCaseId || !isReady) return;
     setLoading(true);
@@ -390,6 +423,46 @@ const validateAssessmentData = useMemo(() => (data: any) => {
       }
       return next;
     });
+  }, []);
+
+  // Add useEffect to fetch questions
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        setQuestionsLoading(true);
+        const response = await fetch('/api/get-assess-questions', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        const qnAData = await response.json();
+        
+        const formattedQuestions = qnAData.map((q: QnAProps) => ({
+          id: q.id,
+          text: q.text,
+          type: q.type,
+          options: q.options.map((o) => ({
+            id: o.id,            
+            text: o.text,
+            questionId: q.id,    
+          })),
+          answers: q.answers.map((a) => ({
+            id: a.id,
+            value: a.value,
+            questionId: q.id,
+          })),
+        }));
+        
+        setQuestions(formattedQuestions);
+      } catch (error) {
+        console.error('Error fetching questions:', error);
+      } finally {
+        setQuestionsLoading(false);
+      }
+    };
+
+    fetchQuestions();
   }, []);
 
   // Scroll to top when currentStep changes
@@ -447,11 +520,24 @@ const validateAssessmentData = useMemo(() => (data: any) => {
       setError(""); // Clear previous errors
       setSaveSuccess(false); // Reset success message
 
+      // Save assessment data
       await fetch("/api/post-stepdata", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ useCaseId, assessData: assessmentData }),
       });
+
+      // Save question answers
+      if (Object.keys(questionAnswers).length > 0) {
+        await fetch("/api/save-question-answers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            useCaseId, 
+            answers: questionAnswers 
+          }),
+        });
+      }
 
       // Instead of redirecting, just show a success message
       setSaveSuccess(true);
@@ -464,7 +550,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     } finally {
       setSaving(false);
     }
-  }, [useCaseId, assessmentData]);
+  }, [useCaseId, assessmentData, questionAnswers]);
 
   const handleNext = useMemo(() => async () => {
     if (currentStep === 7 && budgetPlanningRef.current) {
@@ -656,6 +742,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               <TechnicalFeasibility
                 value={assessmentData.technicalFeasibility}
                 onChange={data => handleAssessmentChange('technicalFeasibility', data)}
+                questions={questions}
+                questionsLoading={questionsLoading}
+                questionAnswers={questionAnswers}
+                onAnswerChange={handleAnswerChange}
               />
             )
           ) : currentStep === 2 ? (

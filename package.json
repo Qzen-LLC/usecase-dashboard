@@ -8,6 +8,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
+    "seed-assess-questions": "tsx scripts/seed-assess-questions.ts",
     "postinstall": "prisma generate || true",
     "setup-admin": "tsx scripts/setup-admin.ts",
     "create-user": "tsx scripts/create-user.ts",
@@ -113,5 +114,9 @@
     "tsx": "^4.20.3",
     "tw-animate-css": "^1.3.4",
     "typescript": "^5"
-  }
+  },
+  "prisma": {
+      "seed": "tsx prisma/seed.ts",
+      "seed-actual": "tsx prisma/seedActual.ts"
+    }
 }
