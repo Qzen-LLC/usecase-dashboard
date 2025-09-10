@@ -144,6 +144,24 @@ const ViewUseCasePage = () => {
   // Helper function to format field values for display
   const formatFieldValue = (value: unknown): string => {
     if (Array.isArray(value)) {
+      // Check if array contains objects
+      if (value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
+        // Handle array of objects - format each object as key-value pairs
+        return value.map((item, index) => {
+          if (typeof item === 'object' && item !== null) {
+            const obj = item as Record<string, unknown>;
+            const formattedPairs = Object.entries(obj)
+              .filter(([_, val]) => val !== null && val !== undefined && val !== '' && val !== 0)
+              .map(([key, val]) => {
+                const readableKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
+                return `${readableKey}: ${val}`;
+              });
+            return formattedPairs.join(', ');
+          }
+          return String(item);
+        }).join('; ');
+      }
+      // Handle simple arrays
       return value.join(', ');
     }
     if (typeof value === 'boolean') {
@@ -160,7 +178,7 @@ const ViewUseCasePage = () => {
         .map(([key, val]) => {
           const readableKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
           if (Array.isArray(val)) {
-            return `${readableKey}: ${val.join(', ')}`;
+            return `${readableKey}: ${formatFieldValue(val)}`;
           }
           if (typeof val === 'object' && val !== null) {
             return `${readableKey}: ${formatFieldValue(val)}`;
@@ -708,8 +726,10 @@ const ViewUseCasePage = () => {
                      <div className="px-5 py-4 bg-muted/30 border-t border-border">
                        {(() => {
                          const riskAssessmentData = getAssessmentData('riskAssessment');
+                         console.log('🔍 [DEBUG] Risk Assessment Data:', riskAssessmentData);
                          const riskData = filterTechnicalFeasibilityData(riskAssessmentData);
                          const entries = Object.entries(riskData);
+                         console.log('🔍 [DEBUG] Filtered Risk Data:', { riskData, entries });
                          
                          if (entries.length === 0) {
                            return (
@@ -725,7 +745,29 @@ const ViewUseCasePage = () => {
                                <div key={key} className="flex flex-col gap-1">
                                  <span className="text-sm font-medium text-foreground">{key}:</span>
                                  <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
-                                   {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
+                                   {Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null ? (
+                                     // Render array of objects as structured list
+                                     <div className="space-y-2">
+                                       {value.map((item, index) => (
+                                         <div key={index} className="border-l-2 border-primary/30 pl-3 py-1">
+                                           {typeof item === 'object' && item !== null ? (
+                                             <div className="space-y-1">
+                                               {Object.entries(item as Record<string, unknown>).map(([itemKey, itemValue]) => (
+                                                 <div key={itemKey} className="flex items-start gap-2">
+                                                   <span className="font-medium text-primary min-w-0 flex-shrink-0">
+                                                     {itemKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:
+                                                   </span>
+                                                   <span className="text-foreground">{String(itemValue)}</span>
+                                                 </div>
+                                               ))}
+                                             </div>
+                                           ) : (
+                                             <span>{String(item)}</span>
+                                           )}
+                                         </div>
+                                       ))}
+                                     </div>
+                                   ) : typeof value === 'object' && value !== null && !Array.isArray(value) ? (
                                      // Render nested objects as structured content
                                      <div className="space-y-1">
                                        {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
