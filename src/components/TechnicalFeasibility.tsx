@@ -170,7 +170,7 @@ type Props = {
   onChange: (data: Props['value']) => void;
   questions: QnAProps[];
   questionsLoading: boolean;
-  questionAnswers: Record<string, AnswerProps[]>; // Add this prop to get current answers
+  questionAnswers: Record<string, AnswerProps[]>;
   onAnswerChange: (questionId: string, answers: AnswerProps[]) => void;
 };
 
@@ -199,7 +199,9 @@ export default function TechnicalFeasibility({ value, onChange, questions, quest
       ) : (
         questions.map((q) => {
           // Get current answers from questionAnswers state, fallback to original answers
-          const currentAnswers = questionAnswers[q.id] || q.answers;
+          const currentAnswers = questionAnswers[q.id] || q.answers || [];
+          
+          console.log(`Question ${q.id} answers:`, currentAnswers); // Debug log
           
           return q.type === QuestionType.CHECKBOX ? (
             <CheckboxGroup

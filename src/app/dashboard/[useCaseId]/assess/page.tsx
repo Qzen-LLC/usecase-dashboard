@@ -77,7 +77,7 @@ export default function AssessmentPage() {
   const pageTopRef = useRef<HTMLDivElement>(null);
   const [questions, setQuestions] = useState<QnAProps[]>([]);
   const [questionsLoading, setQuestionsLoading] = useState(true);
-  const [questionAnswers, setQuestionAnswers] = useState<Record<string, AnswerProps[]>>({}); // Add this state
+  const [questionAnswers, setQuestionAnswers] = useState<Record<string, AnswerProps[]>>({});
 
   // Add readonly styles to the document when in readonly mode
   useEffect(() => {
@@ -425,18 +425,20 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     });
   }, []);
 
-  // Add useEffect to fetch questions
+  // Update the useEffect to fetch questions with answers
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
         setQuestionsLoading(true);
-        const response = await fetch('/api/get-assess-questions', {
+        const response = await fetch(`/api/get-assess-questions?useCaseId=${useCaseId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
         });
         const qnAData = await response.json();
+        
+        console.log('Fetched questions data:', qnAData); // Debug log
         
         const formattedQuestions = qnAData.map((q: QnAProps) => ({
           id: q.id,
@@ -455,6 +457,17 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         }));
         
         setQuestions(formattedQuestions);
+        
+        // Initialize questionAnswers with fetched answers
+        const initialAnswers: Record<string, AnswerProps[]> = {};
+        formattedQuestions.forEach(q => {
+          if (q.answers && q.answers.length > 0) {
+            initialAnswers[q.id] = q.answers;
+            console.log(`Initialized answers for question ${q.id}:`, q.answers); // Debug log
+          }
+        });
+        setQuestionAnswers(initialAnswers);
+        
       } catch (error) {
         console.error('Error fetching questions:', error);
       } finally {
@@ -462,8 +475,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
       }
     };
 
-    fetchQuestions();
-  }, []);
+    if (useCaseId) {
+      fetchQuestions();
+    }
+  }, [useCaseId]);
 
   // Scroll to top when currentStep changes
   useEffect(() => {

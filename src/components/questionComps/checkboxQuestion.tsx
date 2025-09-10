@@ -25,9 +25,11 @@ interface AnswerProps {
 export function CheckboxGroup({
   label,
   options,
-  checkedOptions,
+  checkedOptions = [],
   onChange,
 }: CheckboxGroupProps) {
+  console.log('CheckboxGroup rendered with checkedOptions:', checkedOptions); // Debug log
+  
   const toggleOption = (option: OptionProps, isChecked: boolean) => {
     if (isChecked) {
       const newAnswer: AnswerProps = {
@@ -37,7 +39,7 @@ export function CheckboxGroup({
       };
       onChange([...checkedOptions, newAnswer]);
     } else {
-      onChange(checkedOptions.filter((a) => a.id !== `${option.questionId}-${option.id}`));
+      onChange(checkedOptions.filter((a) => a.value !== option.text)); // Match by value instead of id
     }
   };
 
@@ -46,7 +48,10 @@ export function CheckboxGroup({
       <Label className="block font-medium mb-4 text-foreground">{label}</Label>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {options.map((option) => {
-          const isChecked = checkedOptions.some((a) => a.id === `${option.questionId}-${option.id}`);
+          // Match by value instead of id
+          const isChecked = checkedOptions.some((a) => a.value === option.text);
+          console.log(`Option ${option.text} is checked:`, isChecked, 'checkedOptions:', checkedOptions); // Debug log
+          
           return (
             <Label
               key={`${option.questionId}-${option.id}`}
