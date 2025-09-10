@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Target, TrendingUp, Zap, AlertTriangle, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Target, TrendingUp, Zap, AlertTriangle, ChevronRight, ChevronDown } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import ReadOnlyAssessmentDisplay from '@/components/ReadOnlyAssessmentDisplay';
@@ -57,6 +57,7 @@ const ViewUseCasePage = () => {
   const [useCase, setUseCase] = useState<UseCaseDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const fetchUseCaseDetails = async () => {
@@ -98,6 +99,111 @@ const ViewUseCasePage = () => {
     } catch {
       return 'Invalid date';
     }
+  };
+
+  // Helper function to filter out empty/false/0 values from technical feasibility data
+  const filterTechnicalFeasibilityData = (data: Record<string, unknown> | undefined) => {
+    if (!data) return {};
+    
+    const filtered: Record<string, unknown> = {};
+    
+    Object.entries(data).forEach(([key, value]) => {
+      // Skip if value is falsy, empty array, or 0
+      if (value === false || value === null || value === undefined || 
+          value === '' || value === 0 || 
+          (Array.isArray(value) && value.length === 0)) {
+        return;
+      }
+      
+      // Handle nested objects - recursively filter them
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        const nestedFiltered = filterTechnicalFeasibilityData(value as Record<string, unknown>);
+        // Only include the nested object if it has meaningful content
+        if (Object.keys(nestedFiltered).length > 0) {
+          const readableKey = key
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/^./, str => str.toUpperCase())
+            .trim();
+          filtered[readableKey] = nestedFiltered;
+        }
+        return;
+      }
+      
+      // Convert key to readable format
+      const readableKey = key
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, str => str.toUpperCase())
+        .trim();
+      
+      filtered[readableKey] = value;
+    });
+    
+    return filtered;
+  };
+
+  // Helper function to format field values for display
+  const formatFieldValue = (value: unknown): string => {
+    if (Array.isArray(value)) {
+      return value.join(', ');
+    }
+    if (typeof value === 'boolean') {
+      return value ? 'Yes' : 'No';
+    }
+    if (typeof value === 'number') {
+      return value.toString();
+    }
+    if (typeof value === 'object' && value !== null) {
+      // Handle nested objects by formatting them as key-value pairs
+      const obj = value as Record<string, unknown>;
+      const formattedPairs = Object.entries(obj)
+        .filter(([_, val]) => val !== null && val !== undefined && val !== '' && val !== 0)
+        .map(([key, val]) => {
+          const readableKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
+          if (Array.isArray(val)) {
+            return `${readableKey}: ${val.join(', ')}`;
+          }
+          if (typeof val === 'object' && val !== null) {
+            return `${readableKey}: ${formatFieldValue(val)}`;
+          }
+          return `${readableKey}: ${val}`;
+        });
+      return formattedPairs.join('; ');
+    }
+    if (typeof value === 'string') {
+      return value;
+    }
+    return String(value);
+  };
+
+  // Toggle dropdown section
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }));
+  };
+
+  // Helper function to get assessment data from multiple possible locations
+  const getAssessmentData = (sectionName: string): Record<string, unknown> | undefined => {
+    if (!useCase?.assessData) return undefined;
+    
+    // Try the expected location first: assessData.stepsData.sectionName
+    if (useCase.assessData.stepsData && typeof useCase.assessData.stepsData === 'object') {
+      const stepsData = useCase.assessData.stepsData as Record<string, unknown>;
+      if (stepsData[sectionName]) {
+        return stepsData[sectionName] as Record<string, unknown>;
+      }
+    }
+    
+    // Fallback: check if data is directly in assessData
+    if (useCase.assessData && typeof useCase.assessData === 'object') {
+      const assessData = useCase.assessData as Record<string, unknown>;
+      if (assessData[sectionName]) {
+        return assessData[sectionName] as Record<string, unknown>;
+      }
+    }
+    
+    return undefined;
   };
 
   const renderSection = (title: string, icon: React.ReactNode, children: React.ReactNode) => (
@@ -390,68 +496,427 @@ const ViewUseCasePage = () => {
           <div className="w-full lg:w-1/2">
             <div className="bg-muted rounded-lg overflow-hidden">
               <div className="space-y-0">
-                 <div 
-                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
-                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=1&readonly=true`)}
-                 >
-                   <span>Technical Feasibility</span>
-                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                 {/* Technical Feasibility Dropdown */}
+                 <div className="border-b border-border">
+                   <div 
+                     className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
+                     onClick={() => toggleSection('technicalFeasibility')}
+                   >
+                     <span>Technical Feasibility</span>
+                     {expandedSections.technicalFeasibility ? (
+                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                     ) : (
+                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                     )}
+                   </div>
+                   {expandedSections.technicalFeasibility && (
+                     <div className="px-5 py-4 bg-muted/30 border-t border-border">
+                       {(() => {
+                         // Debug logging to understand data structure
+                         console.log('🔍 [DEBUG] Technical Feasibility Data Structure:', {
+                           useCase: !!useCase,
+                           assessData: !!useCase?.assessData,
+                           stepsData: !!useCase?.assessData?.stepsData,
+                           technicalFeasibility: !!useCase?.assessData?.stepsData?.technicalFeasibility,
+                           rawTechnicalData: useCase?.assessData?.stepsData?.technicalFeasibility,
+                           assessDataStructure: useCase?.assessData,
+                           fullUseCase: useCase
+                         });
+                         
+                         // Use the helper function to get technical feasibility data
+                         const technicalFeasibilityData = getAssessmentData('technicalFeasibility');
+                         console.log('🔍 [DEBUG] Retrieved technical feasibility data:', technicalFeasibilityData);
+                         
+                         // Additional debug: show the raw data structure
+                         if (useCase?.assessData) {
+                           console.log('🔍 [DEBUG] Raw assessData structure:', JSON.stringify(useCase.assessData, null, 2));
+                         }
+                         
+                         const technicalData = filterTechnicalFeasibilityData(technicalFeasibilityData);
+                         const entries = Object.entries(technicalData);
+                         
+                         console.log('🔍 [DEBUG] Filtered Technical Data:', {
+                           technicalData,
+                           entries,
+                           entriesLength: entries.length
+                         });
+                         
+                         if (entries.length === 0) {
+                           return (
+                             <p className="text-sm text-muted-foreground italic">
+                               No technical feasibility data available.
+                             </p>
+                           );
+                         }
+                         
+                         return (
+                           <div className="space-y-3">
+                             {entries.map(([key, value]) => (
+                               <div key={key} className="flex flex-col gap-1">
+                                 <span className="text-sm font-medium text-foreground">{key}:</span>
+                                 <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
+                                   {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
+                                     // Render nested objects as structured content
+                                     <div className="space-y-1">
+                                       {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
+                                         <div key={nestedKey} className="flex justify-between">
+                                           <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
+                                           <span>{formatFieldValue(nestedValue)}</span>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   ) : (
+                                     formatFieldValue(value)
+                                   )}
+                                 </div>
+                               </div>
+                             ))}
+                           </div>
+                         );
+                       })()}
+                     </div>
+                   )}
                  </div>
-                 <div 
-                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
-                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=2&readonly=true`)}
-                 >
-                   <span>Business Feasibility</span>
-                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                 {/* Business Feasibility Dropdown */}
+                 <div className="border-b border-border">
+                   <div 
+                     className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
+                     onClick={() => toggleSection('businessFeasibility')}
+                   >
+                     <span>Business Feasibility</span>
+                     {expandedSections.businessFeasibility ? (
+                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                     ) : (
+                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                     )}
+                   </div>
+                   {expandedSections.businessFeasibility && (
+                     <div className="px-5 py-4 bg-muted/30 border-t border-border">
+                       {(() => {
+                         const businessFeasibilityData = getAssessmentData('businessFeasibility');
+                         console.log('🔍 [DEBUG] Business Feasibility Data:', businessFeasibilityData);
+                         const businessData = filterTechnicalFeasibilityData(businessFeasibilityData);
+                         const entries = Object.entries(businessData);
+                         console.log('🔍 [DEBUG] Filtered Business Data:', { businessData, entries });
+                         
+                         if (entries.length === 0) {
+                           return (
+                             <p className="text-sm text-muted-foreground italic">
+                               No business feasibility data available.
+                             </p>
+                           );
+                         }
+                         
+                         return (
+                           <div className="space-y-3">
+                             {entries.map(([key, value]) => (
+                               <div key={key} className="flex flex-col gap-1">
+                                 <span className="text-sm font-medium text-foreground">{key}:</span>
+                                 <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
+                                   {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
+                                     // Render nested objects as structured content
+                                     <div className="space-y-1">
+                                       {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
+                                         <div key={nestedKey} className="flex justify-between">
+                                           <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
+                                           <span>{formatFieldValue(nestedValue)}</span>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   ) : (
+                                     formatFieldValue(value)
+                                   )}
+                                 </div>
+                               </div>
+                             ))}
+                           </div>
+                         );
+                       })()}
+                     </div>
+                   )}
                  </div>
-                 <div 
-                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
-                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=3&readonly=true`)}
-                 >
-                   <span>Ethical Impact</span>
-                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                 {/* Ethical Impact Dropdown */}
+                 <div className="border-b border-border">
+                   <div 
+                     className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
+                     onClick={() => toggleSection('ethicalImpact')}
+                   >
+                     <span>Ethical Impact</span>
+                     {expandedSections.ethicalImpact ? (
+                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                     ) : (
+                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                     )}
+                   </div>
+                   {expandedSections.ethicalImpact && (
+                     <div className="px-5 py-4 bg-muted/30 border-t border-border">
+                       {(() => {
+                         const ethicalImpactData = getAssessmentData('ethicalImpact');
+                         const ethicalData = filterTechnicalFeasibilityData(ethicalImpactData);
+                         const entries = Object.entries(ethicalData);
+                         
+                         if (entries.length === 0) {
+                           return (
+                             <p className="text-sm text-muted-foreground italic">
+                               No ethical impact data available.
+                             </p>
+                           );
+                         }
+                         
+                         return (
+                           <div className="space-y-3">
+                             {entries.map(([key, value]) => (
+                               <div key={key} className="flex flex-col gap-1">
+                                 <span className="text-sm font-medium text-foreground">{key}:</span>
+                                 <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
+                                   {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
+                                     // Render nested objects as structured content
+                                     <div className="space-y-1">
+                                       {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
+                                         <div key={nestedKey} className="flex justify-between">
+                                           <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
+                                           <span>{formatFieldValue(nestedValue)}</span>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   ) : (
+                                     formatFieldValue(value)
+                                   )}
+                                 </div>
+                               </div>
+                             ))}
+                           </div>
+                         );
+                       })()}
+                     </div>
+                   )}
                  </div>
-                 <div 
-                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
-                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=4&readonly=true`)}
-                 >
-                   <span>Risk Assessment</span>
-                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                 {/* Risk Assessment Dropdown */}
+                 <div className="border-b border-border">
+                   <div 
+                     className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
+                     onClick={() => toggleSection('riskAssessment')}
+                   >
+                     <span>Risk Assessment</span>
+                     {expandedSections.riskAssessment ? (
+                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                     ) : (
+                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                     )}
+                   </div>
+                   {expandedSections.riskAssessment && (
+                     <div className="px-5 py-4 bg-muted/30 border-t border-border">
+                       {(() => {
+                         const riskAssessmentData = getAssessmentData('riskAssessment');
+                         const riskData = filterTechnicalFeasibilityData(riskAssessmentData);
+                         const entries = Object.entries(riskData);
+                         
+                         if (entries.length === 0) {
+                           return (
+                             <p className="text-sm text-muted-foreground italic">
+                               No risk assessment data available.
+                             </p>
+                           );
+                         }
+                         
+                         return (
+                           <div className="space-y-3">
+                             {entries.map(([key, value]) => (
+                               <div key={key} className="flex flex-col gap-1">
+                                 <span className="text-sm font-medium text-foreground">{key}:</span>
+                                 <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
+                                   {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
+                                     // Render nested objects as structured content
+                                     <div className="space-y-1">
+                                       {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
+                                         <div key={nestedKey} className="flex justify-between">
+                                           <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
+                                           <span>{formatFieldValue(nestedValue)}</span>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   ) : (
+                                     formatFieldValue(value)
+                                   )}
+                                 </div>
+                               </div>
+                             ))}
+                           </div>
+                         );
+                       })()}
+                     </div>
+                   )}
                  </div>
-                 <div 
-                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
-                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=5&readonly=true`)}
-                 >
-                   <span>Data Readiness</span>
-                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
+
+                 {/* Data Readiness Dropdown */}
+                 <div className="border-b border-border">
+                   <div 
+                     className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
+                     onClick={() => toggleSection('dataReadiness')}
+                   >
+                     <span>Data Readiness</span>
+                     {expandedSections.dataReadiness ? (
+                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                     ) : (
+                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                     )}
+                   </div>
+                   {expandedSections.dataReadiness && (
+                     <div className="px-5 py-4 bg-muted/30 border-t border-border">
+                       {(() => {
+                         const dataReadinessAssessmentData = getAssessmentData('dataReadiness');
+                         const dataReadinessData = filterTechnicalFeasibilityData(dataReadinessAssessmentData);
+                         const entries = Object.entries(dataReadinessData);
+                         
+                         if (entries.length === 0) {
+                           return (
+                             <p className="text-sm text-muted-foreground italic">
+                               No data readiness information available.
+                             </p>
+                           );
+                         }
+                         
+                         return (
+                           <div className="space-y-3">
+                             {entries.map(([key, value]) => (
+                               <div key={key} className="flex flex-col gap-1">
+                                 <span className="text-sm font-medium text-foreground">{key}:</span>
+                                 <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
+                                   {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
+                                     // Render nested objects as structured content
+                                     <div className="space-y-1">
+                                       {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
+                                         <div key={nestedKey} className="flex justify-between">
+                                           <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
+                                           <span>{formatFieldValue(nestedValue)}</span>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   ) : (
+                                     formatFieldValue(value)
+                                   )}
+                                 </div>
+                               </div>
+                             ))}
+                           </div>
+                         );
+                       })()}
+                     </div>
+                   )}
                  </div>
-                 <div 
-                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
-                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=6&readonly=true`)}
-                 >
-                   <span>Roadmap Position</span>
-                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
+
+                 {/* Roadmap Position Dropdown */}
+                 <div className="border-b border-border">
+                   <div 
+                     className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
+                     onClick={() => toggleSection('roadmapPosition')}
+                   >
+                     <span>Roadmap Position</span>
+                     {expandedSections.roadmapPosition ? (
+                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                     ) : (
+                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                     )}
+                   </div>
+                   {expandedSections.roadmapPosition && (
+                     <div className="px-5 py-4 bg-muted/30 border-t border-border">
+                       {(() => {
+                         const roadmapPositionData = getAssessmentData('roadmapPosition');
+                         const roadmapData = filterTechnicalFeasibilityData(roadmapPositionData);
+                         const entries = Object.entries(roadmapData);
+                         
+                         if (entries.length === 0) {
+                           return (
+                             <p className="text-sm text-muted-foreground italic">
+                               No roadmap position data available.
+                             </p>
+                           );
+                         }
+                         
+                         return (
+                           <div className="space-y-3">
+                             {entries.map(([key, value]) => (
+                               <div key={key} className="flex flex-col gap-1">
+                                 <span className="text-sm font-medium text-foreground">{key}:</span>
+                                 <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
+                                   {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
+                                     // Render nested objects as structured content
+                                     <div className="space-y-1">
+                                       {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
+                                         <div key={nestedKey} className="flex justify-between">
+                                           <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
+                                           <span>{formatFieldValue(nestedValue)}</span>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   ) : (
+                                     formatFieldValue(value)
+                                   )}
+                                 </div>
+                               </div>
+                             ))}
+                           </div>
+                         );
+                       })()}
+                     </div>
+                   )}
                  </div>
-                 <div 
-                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
-                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=7&readonly=true`)}
-                 >
-                   <span>Budget Planning</span>
-                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                 </div>
-                 <div 
-                   className="px-5 py-4 bg-card border-b border-border text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
-                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=8&readonly=true`)}
-                 >
-                   <span>Financial Dashboard</span>
-                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                 </div>
-                 <div 
-                   className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
-                   onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=9&readonly=true`)}
-                 >
-                   <span>Approvals</span>
-                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
+
+                 {/* Budget Planning Dropdown */}
+                 <div className="border-b border-border">
+                   <div 
+                     className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
+                     onClick={() => toggleSection('budgetPlanning')}
+                   >
+                     <span>Budget Planning</span>
+                     {expandedSections.budgetPlanning ? (
+                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                     ) : (
+                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                     )}
+                   </div>
+                   {expandedSections.budgetPlanning && (
+                     <div className="px-5 py-4 bg-muted/30 border-t border-border">
+                       {(() => {
+                         const budgetPlanningData = getAssessmentData('budgetPlanning');
+                         const budgetData = filterTechnicalFeasibilityData(budgetPlanningData);
+                         const entries = Object.entries(budgetData);
+                         
+                         if (entries.length === 0) {
+                           return (
+                             <p className="text-sm text-muted-foreground italic">
+                               No budget planning data available.
+                             </p>
+                           );
+                         }
+                         
+                         return (
+                           <div className="space-y-3">
+                             {entries.map(([key, value]) => (
+                               <div key={key} className="flex flex-col gap-1">
+                                 <span className="text-sm font-medium text-foreground">{key}:</span>
+                                 <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
+                                   {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
+                                     // Render nested objects as structured content
+                                     <div className="space-y-1">
+                                       {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
+                                         <div key={nestedKey} className="flex justify-between">
+                                           <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
+                                           <span>{formatFieldValue(nestedValue)}</span>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   ) : (
+                                     formatFieldValue(value)
+                                   )}
+                                 </div>
+                               </div>
+                             ))}
+                           </div>
+                         );
+                       })()}
+                     </div>
+                   )}
                  </div>
                </div>
             </div>
