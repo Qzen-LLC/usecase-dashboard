@@ -166,10 +166,7 @@ export async function GET(request: Request) {
         const uaeAiAssessments = Array.isArray(useCase.uaeAiAssessments) ? useCase.uaeAiAssessments : [];
         const hasAssessments = euAiActAssessments.length > 0 || iso42001Assessments.length > 0 || uaeAiAssessments.length > 0;
         
-        // Filter: only show use cases with frameworks selected OR active assessments
-        if (!hasFrameworks && !hasAssessments) {
-          return null;
-        }
+        // Do not filter out use cases; include even if no frameworks/assessments yet
 
         // Debug log for progress values
         if (euAiActAssessments.length > 0 || iso42001Assessments.length > 0 || uaeAiAssessments.length > 0) {

@@ -7,7 +7,7 @@
 // - Proper contrast and readability in both light and dark themes
 // - Framework-specific lock management for exclusive editing
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +52,7 @@ export default function GovernancePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const inFlight = useRef(false);
   
   // Lock management state
   const [selectedUseCase, setSelectedUseCase] = useState<UseCase | null>(null);
@@ -82,11 +83,6 @@ export default function GovernancePage() {
       fetchAllData(true);
     };
     
-    // Auto-refresh every 30 seconds to ensure progress updates are shown
-    const interval = setInterval(() => {
-      fetchAllData(true);
-    }, 30000);
-    
     // Listen for governance refresh events from assessment pages
     const handleGovernanceRefresh = () => {
       fetchAllData(true);
@@ -97,12 +93,15 @@ export default function GovernancePage() {
     return () => {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('governance-refresh', handleGovernanceRefresh);
-      clearInterval(interval);
     };
   }, []);
 
   const fetchAllData = async (isRefresh = false) => {
     try {
+      if (inFlight.current) {
+        return;
+      }
+      inFlight.current = true;
       if (isRefresh) {
         setRefreshing(true);
       }
@@ -169,11 +168,12 @@ export default function GovernancePage() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      inFlight.current = false;
     }
   };
 
   const handleRefresh = () => {
-    fetchAllData(true);
+    if (!inFlight.current) fetchAllData(true);
   };
 
   const handleStartAssessment = async (useCase: UseCase, framework: GovernanceFramework) => {

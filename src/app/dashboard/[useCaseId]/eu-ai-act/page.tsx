@@ -272,28 +272,33 @@ export default function EuAiActAssessmentPage() {
         return;
       }
 
-      // Merge saved answers from assessment into topics structure
+      // Merge saved answers from assessment into topics structure (O(n) with Map)
+      const answerByQuestionId = new Map<string, any>();
+      if (Array.isArray(assessmentData.answers)) {
+        for (const ans of assessmentData.answers) {
+          if (ans?.questionId) answerByQuestionId.set(ans.questionId, ans);
+        }
+      }
+
       const topicsWithAnswers = topicsData.map((topic: Topic) => ({
         ...topic,
         subtopics: topic.subtopics.map((subtopic: Subtopic) => ({
           ...subtopic,
           questions: subtopic.questions.map((question: Question) => {
-            // Find corresponding saved answer in assessment
-            const savedAnswer = assessmentData.answers?.find(
-              (answer: any) => answer.questionId === question.questionId
-            );
-            
+            const savedAnswer = answerByQuestionId.get(question.questionId);
             return {
               ...question,
-              answer: savedAnswer ? {
-                id: savedAnswer.id,
-                answer: savedAnswer.answer || '',
-                evidenceFiles: savedAnswer.evidenceFiles || [],
-                status: savedAnswer.status || 'pending'
-              } : undefined
+              answer: savedAnswer
+                ? {
+                    id: savedAnswer.id,
+                    answer: savedAnswer.answer || '',
+                    evidenceFiles: savedAnswer.evidenceFiles || [],
+                    status: savedAnswer.status || 'pending',
+                  }
+                : undefined,
             };
-          })
-        }))
+          }),
+        })),
       }));
 
       setTopics(topicsWithAnswers);
@@ -625,33 +630,69 @@ export default function EuAiActAssessmentPage() {
   };
 
   const toggleTopic = (topicId: string) => {
-    const newExpanded = new Set(expandedTopics);
-    if (newExpanded.has(topicId)) {
-      newExpanded.delete(topicId);
+    if (expandedTopics.has(topicId)) {
+      // If clicking on an open topic, close it
+      setExpandedTopics(new Set());
     } else {
-      newExpanded.add(topicId);
+      // If clicking on a closed topic, close all others and open this one
+      setExpandedTopics(new Set([topicId]));
+      
+      // Scroll to the topic after state update
+      setTimeout(() => {
+        const element = document.getElementById(`topic-${topicId}`);
+        if (element) {
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 100);
     }
-    setExpandedTopics(newExpanded);
   };
 
   const toggleSubtopic = (subtopicId: string) => {
-    const newExpanded = new Set(expandedSubtopics);
-    if (newExpanded.has(subtopicId)) {
-      newExpanded.delete(subtopicId);
+    if (expandedSubtopics.has(subtopicId)) {
+      // If clicking on an open subtopic, close it
+      setExpandedSubtopics(new Set());
     } else {
-      newExpanded.add(subtopicId);
+      // If clicking on a closed subtopic, close all others and open this one
+      setExpandedSubtopics(new Set([subtopicId]));
+      
+      // Scroll to the subtopic after state update
+      setTimeout(() => {
+        const element = document.getElementById(`subtopic-${subtopicId}`);
+        if (element) {
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 100);
     }
-    setExpandedSubtopics(newExpanded);
   };
 
   const toggleCategory = (categoryId: string) => {
-    const newExpanded = new Set(expandedCategories);
-    if (newExpanded.has(categoryId)) {
-      newExpanded.delete(categoryId);
+    if (expandedCategories.has(categoryId)) {
+      // If clicking on an open category, close it
+      setExpandedCategories(new Set());
     } else {
-      newExpanded.add(categoryId);
+      // If clicking on a closed category, close all others and open this one
+      setExpandedCategories(new Set([categoryId]));
+      
+      // Scroll to the category after state update
+      setTimeout(() => {
+        const element = document.getElementById(`category-${categoryId}`);
+        if (element) {
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 100);
     }
-    setExpandedCategories(newExpanded);
   };
 
   const handleControlStatusChange = (controlId: string, status: string, notes: string) => {
@@ -1550,6 +1591,7 @@ export default function EuAiActAssessmentPage() {
             {activeTab === 'assessment' && topics.map((topic) => (
               <Card key={topic.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader 
+                  id={`topic-${topic.topicId}`}
                   className="cursor-pointer bg-gradient-to-r from-primary/10 to-primary/20 hover:from-primary/20 hover:to-primary/30 transition-all duration-200"
                   onClick={() => toggleTopic(topic.topicId)}
                 >
@@ -1578,6 +1620,7 @@ export default function EuAiActAssessmentPage() {
                     {topic.subtopics.map((subtopic) => (
                       <div key={subtopic.id} className="border-t border-border">
                         <div 
+                          id={`subtopic-${subtopic.subtopicId}`}
                           className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
                           onClick={() => toggleSubtopic(subtopic.subtopicId)}
                         >
@@ -1712,6 +1755,7 @@ export default function EuAiActAssessmentPage() {
             {activeTab === 'controls' && controlCategories.map((category) => (
               <Card key={category.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader 
+                  id={`category-${category.categoryId}`}
                   className={`cursor-pointer transition-all duration-200 ${
                     isDarkMode 
                       ? 'bg-gradient-to-r from-green-950/30 to-emerald-950/30 hover:from-green-950/50 hover:to-emerald-950/50' 

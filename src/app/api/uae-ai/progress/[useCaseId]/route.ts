@@ -4,7 +4,7 @@ import { currentUser } from '@clerk/nextjs/server';
 
 export async function GET(
   request: Request,
-  { params }: { params: { useCaseId: string } }
+  context: { params: { useCaseId: string } } | Promise<{ params: { useCaseId: string } }>
 ) {
   try {
     const user = await currentUser();
@@ -12,6 +12,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { params } = await Promise.resolve(context as any);
     const { useCaseId } = params;
 
     // Check if use case exists and user has access

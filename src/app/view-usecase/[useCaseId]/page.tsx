@@ -58,6 +58,13 @@ const ViewUseCasePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  // External sections data
+  const [guardrailsConfig, setGuardrailsConfig] = useState<any | null>(null);
+  const [evaluationData, setEvaluationData] = useState<any | null>(null);
+  const [goldenDatasets, setGoldenDatasets] = useState<any[] | null>(null);
+  const [guardrailsInfo, setGuardrailsInfo] = useState<any | null>(null);
+  const [autoEvalRunning, setAutoEvalRunning] = useState(false);
+  const [autoEvalAttempted, setAutoEvalAttempted] = useState(false);
 
   useEffect(() => {
     const fetchUseCaseDetails = async () => {
@@ -80,6 +87,141 @@ const ViewUseCasePage = () => {
       fetchUseCaseDetails();
     }
   }, [useCaseId]);
+
+  // Load external sections: guardrails, evaluations, golden datasets
+  useEffect(() => {
+    if (!useCaseId) return;
+    // Guardrails
+    fetch(`/api/guardrails/get?useCaseId=${useCaseId}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && data.success) {
+          setGuardrailsInfo(data);
+          if (data.guardrails) setGuardrailsConfig(data.guardrails);
+        }
+      })
+      .catch(() => {});
+    // Evaluations (latest)
+    fetch(`/api/evaluations/get?useCaseId=${useCaseId}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && data.success && (data.evaluationConfig || (Array.isArray(data.results) && data.results.length > 0))) {
+          setEvaluationData(data);
+        }
+      })
+      .catch(() => {});
+    // Golden datasets (list)
+    fetch(`/api/golden/datasets?useCaseId=${useCaseId}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (Array.isArray(data)) setGoldenDatasets(data);
+      })
+      .catch(() => {});
+  }, [useCaseId]);
+
+  // Auto-generate and run evaluations if none exist in DB
+  useEffect(() => {
+    const shouldAutoRun = !!useCaseId && !autoEvalAttempted && !evaluationData && !!guardrailsConfig;
+    if (!shouldAutoRun) return;
+    setAutoEvalAttempted(true);
+
+    const run = async () => {
+      try {
+        setAutoEvalRunning(true);
+        // 1) Generate evaluation config from guardrails and assessment data
+        const genResp = await fetch('/api/evaluations/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            useCaseId,
+            guardrailsConfig,
+            assessmentData: {
+              title: useCase?.title,
+              department: useCase?.businessFunction,
+              owner: useCase?.user?.email,
+              technicalFeasibility: getAssessmentData('technicalFeasibility'),
+              businessFeasibility: getAssessmentData('businessFeasibility'),
+              ethicalImpact: getAssessmentData('ethicalImpact'),
+              riskAssessment: getAssessmentData('riskAssessment'),
+              dataReadiness: getAssessmentData('dataReadiness'),
+              roadmapPosition: getAssessmentData('roadmapPosition'),
+              budgetPlanning: getAssessmentData('budgetPlanning')
+            }
+          })
+        });
+        if (!genResp.ok) throw new Error('Failed to generate evaluations');
+        const genData = await genResp.json();
+
+        // 2) Save the generated config to DB to create an evaluation row
+        const saveCfgResp = await fetch('/api/evaluations/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ useCaseId, evaluationConfig: genData })
+        });
+        if (!saveCfgResp.ok) throw new Error('Failed to save evaluation config');
+        const saveCfg = await saveCfgResp.json();
+        const evaluationId = saveCfg.evaluationId || genData.id;
+
+        // 3) Run the evaluations
+        const runResp = await fetch('/api/evaluations/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            evaluationConfig: { ...genData, id: evaluationId },
+            environment: {
+              name: 'production',
+              type: 'production',
+              configuration: { mockResponses: false, deterministicMode: false, realData: true, aiAgentsEnabled: true }
+            }
+          })
+        });
+        if (!runResp.ok) throw new Error('Failed to run evaluations');
+        const runData = await runResp.json();
+
+        // 4) Persist results and summary
+        const saveResResp = await fetch('/api/evaluations/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            useCaseId,
+            evaluationConfig: { ...(genData || {}), id: evaluationId },
+            evaluationResult: {
+              results: runData.testResults,
+              scores: runData.scores,
+              recommendations: runData.recommendations
+            }
+          })
+        });
+        if (!saveResResp.ok) throw new Error('Failed to save evaluation results');
+
+        // 5) Update local state to reflect DB shape
+        setEvaluationData({
+          success: true,
+          evaluationId,
+          status: runData.status || 'completed',
+          completedAt: new Date().toISOString(),
+          summary: {
+            totalTests: runData.testResults?.length || 0,
+            passed: (runData.testResults || []).filter((r: any) => r.status === 'passed').length,
+            failed: (runData.testResults || []).filter((r: any) => r.status === 'failed').length,
+            passRate: (runData.testResults || []).length > 0 ? (runData.testResults.filter((r: any) => r.status === 'passed').length / runData.testResults.length) : 0,
+            overallScore: runData.scores?.overallScore?.value || 0,
+            dimensionScores: runData.scores?.dimensionScores || {},
+            recommendations: runData.recommendations || [],
+            timestamp: new Date().toISOString()
+          },
+          evaluationConfig: { ...(genData || {}), id: evaluationId },
+          results: runData.testResults || []
+        });
+      } catch (e) {
+        console.error('Auto evaluation failed:', e);
+      } finally {
+        setAutoEvalRunning(false);
+      }
+    };
+
+    run();
+  }, [useCaseId, autoEvalAttempted, evaluationData, guardrailsConfig, useCase]);
 
   const getOverallScore = () => {
     if (!useCase) return 0;
@@ -193,12 +335,36 @@ const ViewUseCasePage = () => {
     return String(value);
   };
 
-  // Toggle dropdown section
+  // Toggle dropdown section - collapse one section when another is opened
   const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [sectionId]: !prev[sectionId]
-    }));
+    setExpandedSections(prev => {
+      const isCurrentlyOpen = prev[sectionId];
+      
+      if (isCurrentlyOpen) {
+        // If clicking on an open section, close it
+        return {
+          ...prev,
+          [sectionId]: false
+        };
+      } else {
+        // If clicking on a closed section, close all others and open this one
+        // Scroll to the section after state update
+        setTimeout(() => {
+          const element = document.getElementById(`section-${sectionId}`);
+          if (element) {
+            element.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'start',
+              inline: 'nearest'
+            });
+          }
+        }, 100); // Small delay to ensure DOM is updated
+        
+        return {
+          [sectionId]: true
+        };
+      }
+    });
   };
 
   // Helper function to get assessment data from multiple possible locations
@@ -517,6 +683,7 @@ const ViewUseCasePage = () => {
                  {/* Technical Feasibility Dropdown */}
                  <div className="border-b border-border">
                    <div 
+                     id="section-technicalFeasibility"
                      className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
                      onClick={() => toggleSection('technicalFeasibility')}
                    >
@@ -598,6 +765,7 @@ const ViewUseCasePage = () => {
                  {/* Business Feasibility Dropdown */}
                  <div className="border-b border-border">
                    <div 
+                     id="section-businessFeasibility"
                      className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
                      onClick={() => toggleSection('businessFeasibility')}
                    >
@@ -656,6 +824,7 @@ const ViewUseCasePage = () => {
                  {/* Ethical Impact Dropdown */}
                  <div className="border-b border-border">
                    <div 
+                     id="section-ethicalImpact"
                      className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
                      onClick={() => toggleSection('ethicalImpact')}
                    >
@@ -712,6 +881,7 @@ const ViewUseCasePage = () => {
                  {/* Risk Assessment Dropdown */}
                  <div className="border-b border-border">
                    <div 
+                     id="section-riskAssessment"
                      className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
                      onClick={() => toggleSection('riskAssessment')}
                    >
@@ -793,6 +963,7 @@ const ViewUseCasePage = () => {
                  {/* Data Readiness Dropdown */}
                  <div className="border-b border-border">
                    <div 
+                     id="section-dataReadiness"
                      className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
                      onClick={() => toggleSection('dataReadiness')}
                    >
@@ -850,6 +1021,7 @@ const ViewUseCasePage = () => {
                  {/* Roadmap Position Dropdown */}
                  <div className="border-b border-border">
                    <div 
+                     id="section-roadmapPosition"
                      className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
                      onClick={() => toggleSection('roadmapPosition')}
                    >
@@ -907,6 +1079,7 @@ const ViewUseCasePage = () => {
                  {/* Budget Planning Dropdown */}
                  <div className="border-b border-border">
                    <div 
+                     id="section-budgetPlanning"
                      className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
                      onClick={() => toggleSection('budgetPlanning')}
                    >
@@ -940,6 +1113,336 @@ const ViewUseCasePage = () => {
                                  <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
                                    {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
                                      // Render nested objects as structured content
+                                     <div className="space-y-1">
+                                       {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
+                                         <div key={nestedKey} className="flex justify-between">
+                                           <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
+                                           <span>{formatFieldValue(nestedValue)}</span>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   ) : (
+                                     formatFieldValue(value)
+                                   )}
+                                 </div>
+                               </div>
+                             ))}
+                           </div>
+                         );
+                       })()}
+                     </div>
+                   )}
+                 </div>
+                 {/* AI Guardrails Dropdown */}
+                 <div className="border-b border-border">
+                   <div 
+                     id="section-aiGuardrails"
+                     className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
+                     onClick={() => toggleSection('aiGuardrails')}
+                   >
+                     <span>AI Guardrails</span>
+                     {expandedSections.aiGuardrails ? (
+                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                     ) : (
+                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                     )}
+                   </div>
+                   {expandedSections.aiGuardrails && (
+                    <div className="px-5 py-4 bg-muted/30 border-t border-border">
+                      {(() => {
+                        // Prefer structured API data for friendly rendering
+                        if (guardrailsInfo && (guardrailsConfig || guardrailsInfo.rules)) {
+                          const cfg = guardrailsConfig || guardrailsInfo.guardrails || {};
+                          const meta = guardrailsInfo.metadata || {};
+                          const status = guardrailsInfo.status || cfg.status || '—';
+                          const confidence = (guardrailsInfo.confidence ?? cfg.confidence) ?? '—';
+                          const version = cfg.version || cfg.guardrails?.version || cfg?.version;
+                          const agents = cfg.agents || cfg.guardrails?.agents;
+                          const generatedAt = meta.updatedAt || meta.createdAt;
+                          const rulesByCategory = cfg.guardrails?.rules || cfg.rules || {};
+
+                          // Build a normalized rules array grouped by category
+                          const categories = Object.keys(rulesByCategory);
+
+                          return (
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="bg-card border rounded p-3">
+                                  <div className="text-xs text-muted-foreground">Version</div>
+                                  <div className="text-sm font-medium">{version || '—'}</div>
+                                </div>
+                                <div className="bg-card border rounded p-3">
+                                  <div className="text-xs text-muted-foreground">Generated</div>
+                                  <div className="text-sm font-medium">{generatedAt ? formatFieldValue(generatedAt) : '—'}</div>
+                                </div>
+                                <div className="bg-card border rounded p-3">
+                                  <div className="text-xs text-muted-foreground">Status</div>
+                                  <div className="text-sm font-medium">{status || '—'}</div>
+                                </div>
+                                <div className="bg-card border rounded p-3">
+                                  <div className="text-xs text-muted-foreground">Confidence</div>
+                                  <div className="text-sm font-medium">{confidence ?? '—'}</div>
+                                </div>
+                              </div>
+
+                              {Array.isArray(agents) && agents.length > 0 && (
+                                <div className="bg-card border rounded p-3">
+                                  <div className="text-xs text-muted-foreground mb-1">Agents</div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {agents.map((a: any, idx: number) => (
+                                      <span key={idx} className="px-2 py-0.5 text-xs bg-muted rounded">
+                                        {String(a)}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Rules grouped by category */}
+                              {categories.length > 0 ? (
+                                <div className="space-y-5">
+                                  {categories.map(category => {
+                                    const rules = Array.isArray(rulesByCategory[category]) ? rulesByCategory[category] : [];
+                                    if (rules.length === 0) return null;
+                                    return (
+                                      <div key={category}>
+                                        <div className="text-sm font-semibold mb-2 capitalize">{category}</div>
+                                        <div className="space-y-2">
+                                          {rules.map((rule: any, idx: number) => (
+                                            <div key={rule.id || idx} className="bg-card border rounded p-3">
+                                              <div className="flex items-center justify-between gap-3">
+                                                <div className="font-medium text-sm truncate">{rule.rule || rule.name || 'Rule'}</div>
+                                                {rule.severity && (
+                                                  <span className="text-xs px-2 py-0.5 rounded bg-muted">{String(rule.severity)}</span>
+                                                )}
+                                              </div>
+                                              {rule.description && (
+                                                <div className="text-sm text-muted-foreground mt-1">{rule.description}</div>
+                                              )}
+                                              <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                                {rule.type && <span className="px-2 py-0.5 bg-muted rounded">{String(rule.type)}</span>}
+                                                {rule.status && <span className="px-2 py-0.5 bg-muted rounded">{String(rule.status)}</span>}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-muted-foreground italic">No guardrail rules available.</p>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        // Fallback to generic renderer using assessData key if API data not present
+                        const guardrailsSource = guardrailsConfig || getAssessmentData('aiGuardrails');
+                        const guardrailsData = filterTechnicalFeasibilityData(guardrailsSource);
+                        const entries = Object.entries(guardrailsData);
+                        if (entries.length === 0) {
+                          return (
+                            <p className="text-sm text-muted-foreground italic">
+                              No AI guardrails configured.
+                            </p>
+                          );
+                        }
+                        return (
+                          <div className="space-y-3">
+                            {entries.map(([key, value]) => (
+                              <div key={key} className="flex flex-col gap-1">
+                                <span className="text-sm font-medium text-foreground">{key}:</span>
+                                <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
+                                  {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
+                                    <div className="space-y-1">
+                                      {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
+                                        <div key={nestedKey} className="flex justify-between">
+                                          <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
+                                          <span>{formatFieldValue(nestedValue)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    formatFieldValue(value)
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                 </div>
+
+                 {/* AI Evaluations Dropdown */}
+                 <div className="border-b border-border">
+                   <div 
+                     id="section-aiEvaluations"
+                     className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
+                     onClick={() => toggleSection('aiEvaluations')}
+                   >
+                     <span>AI Evaluations</span>
+                     {expandedSections.aiEvaluations ? (
+                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                     ) : (
+                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                     )}
+                   </div>
+                   {expandedSections.aiEvaluations && (
+                     <div className="px-5 py-4 bg-muted/30 border-t border-border">
+                       {(() => {
+                         if (autoEvalRunning) {
+                           return (
+                             <p className="text-sm text-muted-foreground italic">Running evaluations...</p>
+                           );
+                         }
+                         if (!evaluationData) {
+                           return (
+                             <p className="text-sm text-muted-foreground italic">
+                               No AI evaluations recorded.
+                             </p>
+                           );
+                         }
+
+                         const summary = evaluationData.summary || {} as any;
+                         const dimensionScores = summary.dimensionScores || {} as Record<string, any>;
+                         const recommendations = Array.isArray(summary.recommendations) ? summary.recommendations : [];
+
+                         return (
+                           <div className="space-y-4">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                               <div className="bg-card border rounded p-3">
+                                 <div className="text-xs text-muted-foreground">Status</div>
+                                 <div className="text-sm font-medium">{evaluationData.status || '—'}</div>
+                               </div>
+                               <div className="bg-card border rounded p-3">
+                                 <div className="text-xs text-muted-foreground">Completed At</div>
+                                 <div className="text-sm font-medium">{evaluationData.completedAt ? formatDate(evaluationData.completedAt as any) : '—'}</div>
+                               </div>
+                             </div>
+
+                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                               <div className="bg-card border rounded p-3">
+                                 <div className="text-xs text-muted-foreground">Total Tests</div>
+                                 <div className="text-lg font-semibold">{summary.totalTests ?? (evaluationData.results?.length || 0)}</div>
+                               </div>
+                               <div className="bg-card border rounded p-3">
+                                 <div className="text-xs text-muted-foreground">Passed</div>
+                                 <div className="text-lg font-semibold">{summary.passed ?? '-'}</div>
+                               </div>
+                               <div className="bg-card border rounded p-3">
+                                 <div className="text-xs text-muted-foreground">Pass Rate</div>
+                                 <div className="text-lg font-semibold">{summary.passRate != null ? Math.round(summary.passRate * 100) + '%' : '-'}</div>
+                               </div>
+                               <div className="bg-card border rounded p-3">
+                                 <div className="text-xs text-muted-foreground">Overall Score</div>
+                                 <div className="text-lg font-semibold">{summary.overallScore != null ? Math.round(summary.overallScore) : (summary.overallScore?.value ?? '—')}</div>
+                               </div>
+                             </div>
+
+                             <div className="bg-card border rounded p-3">
+                               <div className="text-xs text-muted-foreground mb-1">Dimension Scores</div>
+                               {Object.keys(dimensionScores).length === 0 ? (
+                                 <div className="text-sm text-muted-foreground">—</div>
+                               ) : (
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                   {Object.entries(dimensionScores).map(([name, data]) => {
+                                     const ds: any = data as any;
+                                     const label = String(name);
+                                     const norm = Math.round(ds.normalizedScore ?? ds.value ?? 0);
+                                     const weight = ds.weight != null ? ds.weight : undefined;
+                                     const contrib = ds.contributionToOverall != null ? Math.round(ds.contributionToOverall) : undefined;
+                                     return (
+                                       <div key={label} className="flex items-center justify-between text-sm bg-muted/40 rounded px-3 py-2">
+                                         <span className="font-medium">{label}</span>
+                                         <span className="text-muted-foreground">
+                                           {norm}
+                                           {weight != null && (
+                                             <>
+                                               {' · '}w:{weight}
+                                             </>
+                                           )}
+                                           {contrib != null && (
+                                             <>
+                                               {' · '}c:{contrib}
+                                             </>
+                                           )}
+                                         </span>
+                                       </div>
+                                     );
+                                   })}
+                                 </div>
+                               )}
+                             </div>
+
+                             <div className="bg-card border rounded p-3">
+                               <div className="text-xs text-muted-foreground mb-1">Recommendations</div>
+                               {recommendations.length === 0 ? (
+                                 <div className="text-sm text-muted-foreground">—</div>
+                               ) : (
+                                 <ul className="list-disc pl-5 text-sm space-y-1">
+                                   {recommendations.map((rec: any, idx: number) => (
+                                     <li key={idx} className="text-foreground">
+                                       {typeof rec === 'string' ? rec : (rec.description || rec.text || JSON.stringify(rec))}
+                                     </li>
+                                   ))}
+                                 </ul>
+                               )}
+                             </div>
+
+                             {summary.timestamp && (
+                               <div className="text-xs text-muted-foreground">Timestamp: {formatFieldValue(summary.timestamp)}</div>
+                             )}
+                           </div>
+                         );
+                       })()}
+                     </div>
+                   )}
+                 </div>
+
+                 {/* Golden Dataset Dropdown */}
+                 <div className="border-b border-border">
+                   <div 
+                     id="section-goldenDataset"
+                     className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
+                     onClick={() => toggleSection('goldenDataset')}
+                   >
+                     <span>Golden Dataset</span>
+                     {expandedSections.goldenDataset ? (
+                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                     ) : (
+                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                     )}
+                   </div>
+                   {expandedSections.goldenDataset && (
+                     <div className="px-5 py-4 bg-muted/30 border-t border-border">
+                       {(() => {
+                         const goldenSource = Array.isArray(goldenDatasets) ? {
+                           datasets: goldenDatasets.map((ds: any) => ({
+                             name: ds.name,
+                             version: ds.version,
+                             entryCount: ds.entryCount,
+                             createdAt: ds.createdAt
+                           }))
+                         } : getAssessmentData('goldenDataset');
+                         const goldenDatasetData = filterTechnicalFeasibilityData(goldenSource);
+                         const entries = Object.entries(goldenDatasetData);
+                         if (entries.length === 0) {
+                           return (
+                             <p className="text-sm text-muted-foreground italic">
+                               No golden dataset information available.
+                             </p>
+                           );
+                         }
+                         return (
+                           <div className="space-y-3">
+                             {entries.map(([key, value]) => (
+                               <div key={key} className="flex flex-col gap-1">
+                                 <span className="text-sm font-medium text-foreground">{key}:</span>
+                                 <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
+                                   {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
                                      <div className="space-y-1">
                                        {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
                                          <div key={nestedKey} className="flex justify-between">

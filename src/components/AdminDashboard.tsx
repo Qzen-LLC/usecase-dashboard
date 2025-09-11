@@ -635,7 +635,7 @@ export default function AdminDashboard() {
                             visibility: "visible",
                             opacity: 1,
                             position: "relative",
-                            zIndex: 9999,
+                            zIndex: 10,
                             minWidth: "100px",
                             backgroundColor: "#ef4444",
                             borderColor: "#b91c1c",

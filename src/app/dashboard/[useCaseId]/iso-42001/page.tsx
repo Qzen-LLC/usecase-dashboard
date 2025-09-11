@@ -1052,25 +1052,49 @@ export default function Iso42001AssessmentPage() {
   };
 
   const toggleClause = (clauseId: string) => {
-    const newExpanded = new Set(expandedClauses);
-    if (newExpanded.has(clauseId)) {
-      newExpanded.delete(clauseId);
+    if (expandedClauses.has(clauseId)) {
+      // If clicking on an open clause, close it
+      setExpandedClauses(new Set());
       console.log("ISO 42001 Debug - Collapsed clause:", clauseId);
     } else {
-      newExpanded.add(clauseId);
+      // If clicking on a closed clause, close all others and open this one
+      setExpandedClauses(new Set([clauseId]));
       console.log("ISO 42001 Debug - Expanded clause:", clauseId);
+      
+      // Scroll to the clause after state update
+      setTimeout(() => {
+        const element = document.getElementById(`clause-${clauseId}`);
+        if (element) {
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 100);
     }
-    setExpandedClauses(newExpanded);
   };
 
   const toggleCategory = (categoryId: string) => {
-    const newExpanded = new Set(expandedCategories);
-    if (newExpanded.has(categoryId)) {
-      newExpanded.delete(categoryId);
+    if (expandedCategories.has(categoryId)) {
+      // If clicking on an open category, close it
+      setExpandedCategories(new Set());
     } else {
-      newExpanded.add(categoryId);
+      // If clicking on a closed category, close all others and open this one
+      setExpandedCategories(new Set([categoryId]));
+      
+      // Scroll to the category after state update
+      setTimeout(() => {
+        const element = document.getElementById(`category-${categoryId}`);
+        if (element) {
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 100);
     }
-    setExpandedCategories(newExpanded);
   };
 
   const getStatusIcon = (status: string, hasImplementation: boolean) => {
@@ -1355,6 +1379,7 @@ export default function Iso42001AssessmentPage() {
                   className="overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                 >
                   <CardHeader
+                    id={`clause-${clause.clauseId}`}
                     className={`cursor-pointer transition-all duration-200 ${
                       isDarkMode
                         ? "bg-gradient-to-r from-purple-950/30 to-purple-900/30 hover:from-purple-950/50 hover:to-purple-900/50"
@@ -1665,6 +1690,7 @@ export default function Iso42001AssessmentPage() {
                   className="overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                 >
                   <CardHeader
+                    id={`category-${category.categoryId}`}
                     className={`cursor-pointer transition-all duration-200 ${
                       isDarkMode
                         ? "bg-gradient-to-r from-indigo-950/30 to-indigo-900/30 hover:from-indigo-950/50 hover:to-indigo-900/50"
