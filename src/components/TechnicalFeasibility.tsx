@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Brain, Server, Plug, Shield as ShieldIcon, Check } from 'lucide-react';
 import { PrismaClient, QuestionType } from '@/generated/prisma';
 import { CheckboxGroup } from './questionComps/checkboxQuestion';
+import { RadioGroupQuestion } from './questionComps/radioQuestion';
 
 // --- New options for technical complexity fields ---
 // const MODEL_TYPES = [
@@ -183,6 +184,15 @@ export default function TechnicalFeasibility({ value, onChange, questions, quest
     onAnswerChange(questionId, newAnswers);
   };
 
+  // Handler for radio changes
+  const handleRadioChange = (questionId: string, newAnswer: AnswerProps | null) => {
+    console.log('Radio changed for question:', questionId, newAnswer);
+    
+    // Convert single answer to array format for consistency
+    const answers = newAnswer ? [newAnswer] : [];
+    onAnswerChange(questionId, answers);
+  };
+
   return (
     <div className="space-y-10">
       {/* Assessment Banner */}
@@ -203,15 +213,32 @@ export default function TechnicalFeasibility({ value, onChange, questions, quest
           
           console.log(`Question ${q.id} answers:`, currentAnswers); // Debug log
           
-          return q.type === QuestionType.CHECKBOX ? (
-            <CheckboxGroup
-              key={q.id}
-              label={q.text}
-              options={q.options}
-              checkedOptions={currentAnswers}
-              onChange={(newAnswers) => handleCheckboxChange(q.id, newAnswers)}
-            />
-          ) : null;
+          if (q.type === QuestionType.CHECKBOX) {
+            return (
+              <CheckboxGroup
+                key={q.id}
+                label={q.text}
+                options={q.options}
+                checkedOptions={currentAnswers}
+                onChange={(newAnswers) => handleCheckboxChange(q.id, newAnswers)}
+              />
+            );
+          } else if (q.type === QuestionType.RADIO) {
+            // For radio questions, we expect only one answer
+            const checkedOption = currentAnswers.length > 0 ? currentAnswers[0] : null;
+            
+            return (
+              <RadioGroupQuestion
+                key={q.id}
+                label={q.text}
+                options={q.options}
+                checkedOption={checkedOption}
+                onChange={(newAnswer) => handleRadioChange(q.id, newAnswer)}
+              />
+            );
+          }
+          
+          return null;
         })
       )}
     </div>

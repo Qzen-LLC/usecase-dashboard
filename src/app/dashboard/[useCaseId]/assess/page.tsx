@@ -460,7 +460,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         
         // Initialize questionAnswers with fetched answers
         const initialAnswers: Record<string, AnswerProps[]> = {};
-        formattedQuestions.forEach(q => {
+        formattedQuestions.forEach((q: QnAProps) => {
           if (q.answers && q.answers.length > 0) {
             initialAnswers[q.id] = q.answers;
             console.log(`Initialized answers for question ${q.id}:`, q.answers); // Debug log
