@@ -41,7 +41,7 @@ interface QnAProps {
   text: string,
   type: QuestionType,
   options: OptionProps[],
-  answers: AnswerProps[],
+  answers: AnswerProps[], // This will now contain all answers for the question
 }
 
 interface OptionProps {
@@ -50,10 +50,11 @@ interface OptionProps {
   questionId: string,
 }
 
+// Update the AnswerProps interface to match the new structure
 interface AnswerProps {
-  id: string,        
-  value: string,     
-  questionId: string,
+  id: string;        
+  value: string;     
+  questionId: string;
 }
 
 export default function AssessmentPage() {
@@ -449,11 +450,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
             text: o.text,
             questionId: q.id,    
           })),
-          answers: q.answers.map((a) => ({
-            id: a.id,
-            value: a.value,
-            questionId: q.id,
-          })),
+          answers: q.answers || [], // Initialize with empty array if no answers
         }));
         
         setQuestions(formattedQuestions);

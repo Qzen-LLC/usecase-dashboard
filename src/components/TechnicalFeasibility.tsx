@@ -137,7 +137,7 @@ interface QnAProps {
   text: string,
   type: QuestionType,
   options: OptionProps[],
-  answers: AnswerProps[],
+  answers: AnswerProps[], // This will now contain all answers for the question
 }
 
 interface OptionProps {
@@ -147,9 +147,9 @@ interface OptionProps {
 }
 
 interface AnswerProps {
-  id: string,        
-  value: string,     
-  questionId: string,
+  id: string;        
+  value: string;     
+  questionId: string;
 }
 
 type Props = {

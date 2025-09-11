@@ -14,25 +14,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Delete existing answers for this use case
-    await prisma.answer.deleteMany({
-      where: {
-        useCaseId: useCaseId
+    // Process each question's answers
+    for (const [questionId, questionAnswers] of Object.entries(answers)) {
+      if (Array.isArray(questionAnswers) && questionAnswers.length > 0) {
+        // Delete existing answer for this question and use case
+        await prisma.answer.deleteMany({
+          where: {
+            questionId: questionId,
+            useCaseId: useCaseId,
+          },
+        });
+
+        // Create a single answer record with all answers as JSON array
+        await prisma.answer.create({
+          data: {
+            questionId: questionId,
+            useCaseId: useCaseId,
+            value: questionAnswers, // Store as JSON array
+          },
+        });
       }
-    });
-
-    // Create new answers
-    const answerPromises = Object.entries(answers).map(([questionId, answerList]) => {
-      return prisma.answer.createMany({
-        data: answerList.map((answer: any) => ({
-          questionId: questionId,
-          useCaseId: useCaseId,
-          value: answer.value, // Store the answer value as JSON
-        }))
-      });
-    });
-
-    await Promise.all(answerPromises);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
