@@ -10,6 +10,8 @@ import { Brain, Server, Plug, Shield as ShieldIcon, Check } from 'lucide-react';
 import { PrismaClient, QuestionType } from '@/generated/prisma';
 import { CheckboxGroup } from './questionComps/checkboxQuestion';
 import { RadioGroupQuestion } from './questionComps/radioQuestion';
+import { SliderQuestion } from './questionComps/SliderQuestion';
+import { TextQuestion } from './questionComps/TextQuestion';
 
 // --- New options for technical complexity fields ---
 // const MODEL_TYPES = [
@@ -150,7 +152,7 @@ interface AnswerProps {
   id: string;        
   value: string;     
   questionId: string;
-  optionId: string;
+  optionId?: string;  // Make optionId optional since TEXT and SLIDER don't have options
 }
 
 type Props = {
@@ -194,6 +196,30 @@ export default function TechnicalFeasibility({ value, onChange, questions, quest
     onAnswerChange(questionId, answers);
   };
 
+  // Handler for slider changes
+  const handleSliderChange = (questionId: string, newValue: number) => {
+    console.log('Slider changed for question:', questionId, newValue);
+    
+    const answer: AnswerProps = {
+      id: `${questionId}-slider`,
+      value: newValue.toString(),
+      questionId: questionId,
+    };
+    onAnswerChange(questionId, [answer]);
+  };
+
+  // Handler for text changes
+  const handleTextChange = (questionId: string, newValue: string) => {
+    console.log('Text changed for question:', questionId, newValue);
+    
+    const answer: AnswerProps = {
+      id: `${questionId}-text`,
+      value: newValue,
+      questionId: questionId,
+    };
+    onAnswerChange(questionId, [answer]);
+  };
+
   return (
     <div className="space-y-10">
       {/* Assessment Banner */}
@@ -235,6 +261,34 @@ export default function TechnicalFeasibility({ value, onChange, questions, quest
                 options={q.options}
                 checkedOption={checkedOption}
                 onChange={(newAnswer) => handleRadioChange(q.id, newAnswer)}
+              />
+            );
+          } else if (q.type === QuestionType.SLIDER) {
+            // For slider questions, we expect only one answer with a numeric value
+            const currentValue = currentAnswers.length > 0 ? parseInt(currentAnswers[0].value) || 0 : 0;
+            
+            return (
+              <SliderQuestion
+                key={q.id}
+                label={q.text}
+                value={currentValue}
+                min={0}
+                max={100}
+                step={1}
+                onChange={(newValue) => handleSliderChange(q.id, newValue)}
+              />
+            );
+          } else if (q.type === QuestionType.TEXT) {
+            // For text questions, we expect only one answer with a text value
+            const currentValue = currentAnswers.length > 0 ? currentAnswers[0].value : '';
+            
+            return (
+              <TextQuestion
+                key={q.id}
+                label={q.text}
+                value={currentValue}
+                placeholder="Enter your answer..."
+                onChange={(newValue) => handleTextChange(q.id, newValue)}
               />
             );
           }

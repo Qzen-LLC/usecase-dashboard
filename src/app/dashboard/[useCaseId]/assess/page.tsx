@@ -55,6 +55,7 @@ interface AnswerProps {
   id: string;        
   value: string;     
   questionId: string;
+  optionId?: string;  // Make optionId optional since TEXT and SLIDER don't have options
 }
 
 export default function AssessmentPage() {

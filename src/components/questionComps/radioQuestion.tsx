@@ -20,7 +20,7 @@ interface AnswerProps {
   id: string;        
   value: string;     
   questionId: string;
-  optionId: string;  // Add optionId field
+  optionId?: string;  // Add optionId field
 }
 
 export function RadioGroupQuestion({

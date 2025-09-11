@@ -14,6 +14,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('Saving answers:', answers); // Debug log
+
     // Process each question's answers
     for (const [questionId, questionAnswers] of Object.entries(answers)) {
       if (Array.isArray(questionAnswers) && questionAnswers.length > 0) {
@@ -25,24 +27,40 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // Extract option IDs and labels from the answers, filtering out undefined values
-        const optionIds = questionAnswers
-          .map((answer: any) => answer.optionId)
-          .filter((id: any) => id !== undefined && id !== null);
+        const firstAnswer = questionAnswers[0];
         
-        const labels = questionAnswers
-          .map((answer: any) => answer.label || answer.value) // fallback to value if label doesn't exist
-          .filter((label: any) => label !== undefined && label !== null);
-
-        // Only create answer if we have valid data
-        if (optionIds.length > 0 && labels.length > 0) {
+        // Check if this is a text-based question (TEXT or SLIDER) - no optionId
+        if (firstAnswer.optionId === undefined) {
+          // For TEXT and SLIDER questions, store the value directly
+          console.log(`Saving text-based answer for question ${questionId}:`, firstAnswer.value);
           await prisma.answer.create({
             data: {
               questionId: questionId,
               useCaseId: useCaseId,
-              value: { optionIds, labels }, // Store as { optionIds: [], labels: [] }
+              value: { text: firstAnswer.value }, // Store as { text: "answer" }
             },
           });
+        } else {
+          // For CHECKBOX and RADIO questions, extract option IDs and labels
+          const optionIds = questionAnswers
+            .map((answer: any) => answer.optionId)
+            .filter((id: any) => id !== undefined && id !== null);
+          
+          const labels = questionAnswers
+            .map((answer: any) => answer.label || answer.value) // fallback to value if label doesn't exist
+            .filter((label: any) => label !== undefined && label !== null);
+
+          // Only create answer if we have valid data
+          if (optionIds.length > 0 && labels.length > 0) {
+            console.log(`Saving option-based answer for question ${questionId}:`, { optionIds, labels });
+            await prisma.answer.create({
+              data: {
+                questionId: questionId,
+                useCaseId: useCaseId,
+                value: { optionIds, labels }, // Store as { optionIds: [], labels: [] }
+              },
+            });
+          }
         }
       }
     }

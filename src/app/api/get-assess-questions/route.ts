@@ -43,15 +43,24 @@ export async function GET(request: NextRequest) {
       // Get the answer data for this question
       const answerData = q.answers.length > 0 ? q.answers[0].value : null;
       
-      // Convert the new structure back to the old format for compatibility
       let answers = [];
-      if (answerData && answerData.optionIds && answerData.labels) {
-        answers = answerData.optionIds.map((optionId: string, index: number) => ({
-          id: `${q.id}-${optionId}`,
-          value: answerData.labels[index],
-          questionId: q.id,
-          optionId: optionId,
-        }));
+      if (answerData) {
+        if (answerData.optionIds && answerData.labels) {
+          // For CHECKBOX and RADIO questions
+          answers = answerData.optionIds.map((optionId: string, index: number) => ({
+            id: `${q.id}-${optionId}`,
+            value: answerData.labels[index],
+            questionId: q.id,
+            optionId: optionId,
+          }));
+        } else if (answerData.text) {
+          // For TEXT and SLIDER questions
+          answers = [{
+            id: `${q.id}-${q.type.toLowerCase()}`,
+            value: answerData.text,
+            questionId: q.id,
+          }];
+        }
       }
 
       return {
