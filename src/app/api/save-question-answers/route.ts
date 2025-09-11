@@ -25,14 +25,25 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // Create a single answer record with all answers as JSON array
-        await prisma.answer.create({
-          data: {
-            questionId: questionId,
-            useCaseId: useCaseId,
-            value: questionAnswers, // Store as JSON array
-          },
-        });
+        // Extract option IDs and labels from the answers, filtering out undefined values
+        const optionIds = questionAnswers
+          .map((answer: any) => answer.optionId)
+          .filter((id: any) => id !== undefined && id !== null);
+        
+        const labels = questionAnswers
+          .map((answer: any) => answer.label || answer.value) // fallback to value if label doesn't exist
+          .filter((label: any) => label !== undefined && label !== null);
+
+        // Only create answer if we have valid data
+        if (optionIds.length > 0 && labels.length > 0) {
+          await prisma.answer.create({
+            data: {
+              questionId: questionId,
+              useCaseId: useCaseId,
+              value: { optionIds, labels }, // Store as { optionIds: [], labels: [] }
+            },
+          });
+        }
       }
     }
 

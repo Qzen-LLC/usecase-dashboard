@@ -20,6 +20,7 @@ interface AnswerProps {
   id: string;        
   value: string;     
   questionId: string;
+  optionId: string;  // Add optionId field
 }
 
 export function RadioGroupQuestion({
@@ -36,9 +37,10 @@ export function RadioGroupQuestion({
       const selectedOption = options.find(option => option.text === value);
       if (selectedOption) {
         const newAnswer: AnswerProps = {
-          id: `${selectedOption.questionId}-${selectedOption.id}`, // Generate unique ID
+          id: `${selectedOption.questionId}-${selectedOption.id}`,
           value: selectedOption.text,      
           questionId: selectedOption.questionId,
+          optionId: selectedOption.id,  // Store the option ID
         };
         onChange(newAnswer);
       }

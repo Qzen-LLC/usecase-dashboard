@@ -150,6 +150,7 @@ interface AnswerProps {
   id: string;        
   value: string;     
   questionId: string;
+  optionId: string;
 }
 
 type Props = {

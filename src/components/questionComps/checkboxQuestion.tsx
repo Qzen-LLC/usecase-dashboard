@@ -20,6 +20,7 @@ interface AnswerProps {
   id: string;        
   value: string;     
   questionId: string;
+  optionId: string;  // Add optionId field
 }
 
 export function CheckboxGroup({
@@ -33,13 +34,14 @@ export function CheckboxGroup({
   const toggleOption = (option: OptionProps, isChecked: boolean) => {
     if (isChecked) {
       const newAnswer: AnswerProps = {
-        id: `${option.questionId}-${option.id}`, // Generate unique ID
+        id: `${option.questionId}-${option.id}`,
         value: option.text,      
         questionId: option.questionId,
+        optionId: option.id,  // Store the option ID
       };
       onChange([...checkedOptions, newAnswer]);
     } else {
-      onChange(checkedOptions.filter((a) => a.value !== option.text)); // Match by value instead of id
+      onChange(checkedOptions.filter((a) => a.optionId !== option.id)); // Match by optionId
     }
   };
 
@@ -48,8 +50,8 @@ export function CheckboxGroup({
       <Label className="block font-medium mb-4 text-foreground">{label}</Label>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {options.map((option) => {
-          // Match by value instead of id
-          const isChecked = checkedOptions.some((a) => a.value === option.text);
+          // Match by optionId instead of value
+          const isChecked = checkedOptions.some((a) => a.optionId === option.id);
           console.log(`Option ${option.text} is checked:`, isChecked, 'checkedOptions:', checkedOptions); // Debug log
           
           return (

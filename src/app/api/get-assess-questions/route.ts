@@ -39,17 +39,33 @@ export async function GET(request: NextRequest) {
     });
 
     // Transform the data to match the expected format
-    const formattedQuestions = questions.map(q => ({
-      id: q.id,
-      text: q.text,
-      type: q.type,
-      options: q.options.map(o => ({
-        id: o.id,
-        text: o.text,
-        questionId: q.id,
-      })),
-      answers: q.answers.length > 0 ? q.answers[0].value : [], // Get answers from the single record as JSON array
-    }));
+    const formattedQuestions = questions.map(q => {
+      // Get the answer data for this question
+      const answerData = q.answers.length > 0 ? q.answers[0].value : null;
+      
+      // Convert the new structure back to the old format for compatibility
+      let answers = [];
+      if (answerData && answerData.optionIds && answerData.labels) {
+        answers = answerData.optionIds.map((optionId: string, index: number) => ({
+          id: `${q.id}-${optionId}`,
+          value: answerData.labels[index],
+          questionId: q.id,
+          optionId: optionId,
+        }));
+      }
+
+      return {
+        id: q.id,
+        text: q.text,
+        type: q.type,
+        options: q.options.map(o => ({
+          id: o.id,
+          text: o.text,
+          questionId: q.id,
+        })),
+        answers: answers,
+      };
+    });
 
     return NextResponse.json(formattedQuestions);
   } catch (error) {
