@@ -5,6 +5,8 @@ import { ArrowLeft, Target, TrendingUp, Zap, AlertTriangle, ChevronRight, Chevro
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import ReadOnlyAssessmentDisplay from '@/components/ReadOnlyAssessmentDisplay';
+import ReadOnlyFinancialDashboard from '@/components/ReadOnlyFinancialDashboard';
+import ReadOnlyApprovalsDashboard from '@/components/ReadOnlyApprovalsDashboard';
 
 interface UseCaseDetails {
   id: string;
@@ -65,6 +67,8 @@ const ViewUseCasePage = () => {
   const [guardrailsInfo, setGuardrailsInfo] = useState<any | null>(null);
   const [autoEvalRunning, setAutoEvalRunning] = useState(false);
   const [autoEvalAttempted, setAutoEvalAttempted] = useState(false);
+  const [approvalsData, setApprovalsData] = useState<any | null>(null);
+  const [finopsData, setFinopsData] = useState<any | null>(null);
 
   useEffect(() => {
     const fetchUseCaseDetails = async () => {
@@ -115,6 +119,20 @@ const ViewUseCasePage = () => {
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (Array.isArray(data)) setGoldenDatasets(data);
+      })
+      .catch(() => {});
+    // Approvals data
+    fetch(`/api/read-approvals?useCaseId=${useCaseId}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data) setApprovalsData(data);
+      })
+      .catch(() => {});
+    // Financial data
+    fetch(`/api/get-finops?id=${useCaseId}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) setFinopsData(data[0]);
       })
       .catch(() => {});
   }, [useCaseId]);
@@ -627,9 +645,17 @@ const ViewUseCasePage = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex flex-col lg:flex-row gap-5 px-5 pb-5">
+        <div className={`flex flex-col gap-5 px-5 pb-5 ${
+          expandedSections.financial || expandedSections.approvals
+            ? 'lg:flex-col'
+            : 'lg:flex-row'
+        }`}>
           {/* Left Panel */}
-          <div className="w-full lg:w-1/2 flex flex-col gap-5">
+          <div className={`flex flex-col gap-5 ${
+            expandedSections.financial || expandedSections.approvals
+              ? 'w-full'
+              : 'w-full lg:w-1/2'
+          }`}>
                          {/* Problem Statement */}
              <div className="bg-muted/30 rounded-lg p-5 border border-border">
                <h2 className="text-[15px] font-semibold mb-3 text-foreground">Problem Statement:</h2>
@@ -677,7 +703,11 @@ const ViewUseCasePage = () => {
           </div>
 
           {/* Right Panel */}
-          <div className="w-full lg:w-1/2">
+          <div className={`${
+            expandedSections.financial || expandedSections.approvals
+              ? 'w-full'
+              : 'w-full lg:w-1/2'
+          }`}>
             <div className="bg-muted rounded-lg overflow-hidden">
               <div className="space-y-0">
                  {/* Technical Feasibility Dropdown */}
@@ -897,7 +927,65 @@ const ViewUseCasePage = () => {
                        {(() => {
                          const riskAssessmentData = getAssessmentData('riskAssessment');
                          console.log('🔍 [DEBUG] Risk Assessment Data:', riskAssessmentData);
-                         const riskData = filterTechnicalFeasibilityData(riskAssessmentData);
+                         
+                         // Special filtering for risk assessment data
+                         const filterRiskAssessmentData = (data: Record<string, unknown> | undefined) => {
+                           if (!data) return {};
+                           
+                           const filtered: Record<string, unknown> = {};
+                           
+                           Object.entries(data).forEach(([key, value]) => {
+                             // Handle array of risk objects
+                             if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
+                               const filteredRisks = value.filter((riskItem: any) => {
+                                 // Only include risks that have meaningful impact and probability (not "None")
+                                 const impact = riskItem.impact || riskItem.Impact;
+                                 const probability = riskItem.probability || riskItem.Probability;
+                                 return impact && impact !== 'None' && impact !== 'none' && 
+                                        probability && probability !== 'None' && probability !== 'none';
+                               });
+                               
+                               if (filteredRisks.length > 0) {
+                                 const readableKey = key
+                                   .replace(/([A-Z])/g, ' $1')
+                                   .replace(/^./, str => str.toUpperCase())
+                                   .trim();
+                                 filtered[readableKey] = filteredRisks;
+                               }
+                               return;
+                             }
+                             
+                             // Handle other data types with standard filtering
+                             if (value === false || value === null || value === undefined || 
+                                 value === '' || value === 0 || 
+                                 (Array.isArray(value) && value.length === 0)) {
+                               return;
+                             }
+                             
+                             if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                               const nestedFiltered = filterRiskAssessmentData(value as Record<string, unknown>);
+                               if (Object.keys(nestedFiltered).length > 0) {
+                                 const readableKey = key
+                                   .replace(/([A-Z])/g, ' $1')
+                                   .replace(/^./, str => str.toUpperCase())
+                                   .trim();
+                                 filtered[readableKey] = nestedFiltered;
+                               }
+                               return;
+                             }
+                             
+                             const readableKey = key
+                               .replace(/([A-Z])/g, ' $1')
+                               .replace(/^./, str => str.toUpperCase())
+                               .trim();
+                             
+                             filtered[readableKey] = value;
+                           });
+                           
+                           return filtered;
+                         };
+                         
+                         const riskData = filterRiskAssessmentData(riskAssessmentData);
                          const entries = Object.entries(riskData);
                          console.log('🔍 [DEBUG] Filtered Risk Data:', { riskData, entries });
                          
@@ -916,7 +1004,7 @@ const ViewUseCasePage = () => {
                                  <span className="text-sm font-medium text-foreground">{key}:</span>
                                  <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
                                    {Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null ? (
-                                     // Render array of objects as structured list
+                                     // Render array of risk objects as structured list
                                      <div className="space-y-2">
                                        {value.map((item, index) => (
                                          <div key={index} className="border-l-2 border-primary/30 pl-3 py-1">
@@ -1133,6 +1221,28 @@ const ViewUseCasePage = () => {
                      </div>
                    )}
                  </div>
+                 {/* Financial Dashboard Button */}
+                 <div className="border-b border-border">
+                   <div 
+                     className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
+                     onClick={() => toggleSection('financial')}
+                   >
+                     <span>Financial Dashboard</span>
+                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                   </div>
+                 </div>
+
+                 {/* Approvals Button */}
+                 <div className="border-b border-border">
+                   <div 
+                     className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
+                     onClick={() => toggleSection('approvals')}
+                   >
+                     <span>Approvals</span>
+                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                   </div>
+                 </div>
+
                  {/* AI Guardrails Dropdown */}
                  <div className="border-b border-border">
                    <div 
@@ -1402,6 +1512,7 @@ const ViewUseCasePage = () => {
                    )}
                  </div>
 
+
                  {/* Golden Dataset Dropdown */}
                  <div className="border-b border-border">
                    <div 
@@ -1467,6 +1578,48 @@ const ViewUseCasePage = () => {
             </div>
           </div>
         </div>
+
+        {/* Financial Dashboard - Full Width Section */}
+        {expandedSections.financial && (
+          <div className="px-5 pb-5">
+            <div className="bg-muted rounded-lg overflow-hidden">
+              <div 
+                id="section-financial"
+                className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between border-b border-border"
+                onClick={() => toggleSection('financial')}
+              >
+                <span>Financial Dashboard</span>
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="bg-muted/30">
+                <ReadOnlyFinancialDashboard data={getAssessmentData('budgetPlanning') as any} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Approvals Dashboard - Full Width Section */}
+        {expandedSections.approvals && (
+          <div className="px-5 pb-5">
+            <div className="bg-muted rounded-lg overflow-hidden">
+              <div 
+                id="section-approvals"
+                className="px-5 py-4 bg-card text-[15px] text-foreground cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between border-b border-border"
+                onClick={() => toggleSection('approvals')}
+              >
+                <span>Approvals Dashboard</span>
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="bg-muted/30">
+                <ReadOnlyApprovalsDashboard 
+                  useCaseData={useCase} 
+                  finopsData={finopsData}
+                  approvalsData={approvalsData}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
