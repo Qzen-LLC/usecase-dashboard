@@ -132,9 +132,17 @@ const ViewUseCasePage = () => {
     fetch(`/api/get-finops?id=${useCaseId}`)
       .then(res => res.ok ? res.json() : null)
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) setFinopsData(data[0]);
+        console.log('🔍 [DEBUG] Finops API Response:', data);
+        if (Array.isArray(data) && data.length > 0) {
+          console.log('🔍 [DEBUG] Setting finopsData to:', data[0]);
+          setFinopsData(data[0]);
+        } else {
+          console.log('🔍 [DEBUG] No finops data found or empty array');
+        }
       })
-      .catch(() => {});
+      .catch((error) => {
+        console.error('🔍 [DEBUG] Error fetching finops data:', error);
+      });
   }, [useCaseId]);
 
   // Auto-generate and run evaluations if none exist in DB
@@ -1592,7 +1600,10 @@ const ViewUseCasePage = () => {
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </div>
               <div className="bg-muted/30">
-                <ReadOnlyFinancialDashboard data={getAssessmentData('budgetPlanning') as any} />
+                <ReadOnlyFinancialDashboard 
+                  data={getAssessmentData('budgetPlanning') as any} 
+                  finopsData={finopsData}
+                />
               </div>
             </div>
           </div>

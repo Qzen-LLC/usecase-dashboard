@@ -81,10 +81,16 @@ interface ReadOnlyFinancialDashboardProps {
     safetyApiCost?: number;
     backupModelCost?: number;
   };
+  finopsData?: {
+    totalInvestment: number;
+    cumValue: number;
+    ROI: number;
+    netValue: number;
+  };
 }
 
 
-const ReadOnlyFinancialDashboard: React.FC<ReadOnlyFinancialDashboardProps> = ({ data }) => {
+const ReadOnlyFinancialDashboard: React.FC<ReadOnlyFinancialDashboardProps> = ({ data, finopsData }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
 
@@ -561,7 +567,7 @@ const ReadOnlyFinancialDashboard: React.FC<ReadOnlyFinancialDashboardProps> = ({
         <Card className="p-6 bg-muted/50 border-border">
           <div className="text-center">
             <p className="text-2xl font-bold text-foreground mb-1">
-              {formatCurrency(finalProjection.totalInvestment)}
+              {formatCurrency(finopsData?.totalInvestment || 0)}
             </p>
             <p className="text-sm text-muted-foreground">Total Investment</p>
           </div>
@@ -571,7 +577,7 @@ const ReadOnlyFinancialDashboard: React.FC<ReadOnlyFinancialDashboardProps> = ({
         <Card className="p-6 bg-muted/50 border-border">
           <div className="text-center">
             <p className="text-2xl font-bold text-foreground mb-1">
-              {formatCurrency(finalProjection.cumulativeValue)}
+              {formatCurrency(finopsData?.cumValue || 0)}
             </p>
             <p className="text-sm text-muted-foreground">Total Value Generated</p>
           </div>
@@ -581,7 +587,7 @@ const ReadOnlyFinancialDashboard: React.FC<ReadOnlyFinancialDashboardProps> = ({
         <Card className="p-6 bg-muted/50 border-border">
           <div className="text-center">
             <p className="text-2xl font-bold text-foreground mb-1">
-              {formatPercent(finalProjection.roi)}
+              {formatPercent(finopsData?.ROI || 0)}
             </p>
             <p className="text-sm text-muted-foreground">Net ROI</p>
           </div>
@@ -601,7 +607,7 @@ const ReadOnlyFinancialDashboard: React.FC<ReadOnlyFinancialDashboardProps> = ({
         <Card className="p-6 bg-muted/50 border-border">
           <div className="text-center">
             <p className="text-2xl font-bold text-foreground mb-1">
-              {formatCurrency(finalProjection.netValue)}
+              {formatCurrency(finopsData?.netValue || 0)}
             </p>
             <p className="text-sm text-muted-foreground">Net Value (Forecast)</p>
           </div>
