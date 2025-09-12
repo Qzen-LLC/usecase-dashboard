@@ -71,7 +71,7 @@ const ExecutiveDashboard = () => {
             </div>
             <div>
               <h1 className="page-title">Executive Dashboard</h1>
-              <p className="page-subtitle">Portfolio, financial, risk, and strategic insights at a glance</p>
+              <p className="page-subtitle">Portfolio, Financial, Risk, and Strategic Insights at a glance</p>
             </div>
           </div>
         </div>

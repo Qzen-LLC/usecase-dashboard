@@ -57,6 +57,7 @@ export default function AssessmentPage() {
   const budgetPlanningRef = useRef<any>(null);
   const approvalsPageRef = useRef<any>(null);
   const pageTopRef = useRef<HTMLDivElement>(null);
+  const navigationRef = useRef<HTMLDivElement>(null);
 
   // Add readonly styles to the document when in readonly mode
   useEffect(() => {
@@ -168,16 +169,6 @@ export default function AssessmentPage() {
     });
   }, [useCaseId, hasAttemptedLockAcquisition, acquireExclusiveLock]); // Only run once per useCaseId
 
-  // Update current step when URL parameters change
-  useEffect(() => {
-    if (stepParam) {
-      const step = parseInt(stepParam);
-      if (step >= 1 && step <= 9) {
-        setCurrentStep(step);
-      }
-    }
-  }, [stepParam]);
-
   // Memoize assessment steps to prevent unnecessary re-renders
   const assessmentSteps = useMemo(() => [
     { id: 1, title: "Technical Feasibility" },
@@ -193,6 +184,36 @@ export default function AssessmentPage() {
     { id: 11, title: "AI Evaluations" },
     { id: 12, title: "Golden Dataset" },
   ], []);
+
+  // Memoized function to scroll to current step in navigation
+  const scrollToCurrentStep = useMemo(() => {
+    return () => {
+      if (navigationRef.current) {
+        const currentStepElement = navigationRef.current.querySelector(`[data-step="${currentStep}"]`);
+        if (currentStepElement) {
+          currentStepElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'center'
+          });
+        }
+      }
+    };
+  }, [currentStep]);
+
+  // Update current step when URL parameters change
+  useEffect(() => {
+    if (stepParam) {
+      const step = parseInt(stepParam);
+      if (step >= 1 && step <= 12) {
+        setCurrentStep(step);
+        // Scroll to the step after a short delay to ensure DOM is ready
+        setTimeout(() => {
+          scrollToCurrentStep();
+        }, 200);
+      }
+    }
+  }, [stepParam, scrollToCurrentStep]);
 
   // Memoize default assessment data to prevent unnecessary re-renders
   const defaultAssessmentData = useMemo(() => ({
@@ -596,6 +617,16 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     });
   }, [isReady]);
 
+  // Auto-scroll to current step when currentStep changes
+  useEffect(() => {
+    // Small delay to ensure DOM is updated
+    const timeoutId = setTimeout(() => {
+      scrollToCurrentStep();
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
+  }, [currentStep, scrollToCurrentStep]);
+
   // Scroll to top when currentStep changes
   useEffect(() => {
     if (currentStep > 1) { // Don't scroll on initial load
@@ -695,14 +726,22 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     }
     if (currentStep < assessmentSteps.length) {
       setCurrentStep((prev) => prev + 1);
+      // Scroll to current step after state update
+      setTimeout(() => {
+        scrollToCurrentStep();
+      }, 100);
     }
-  }, [currentStep]);
+  }, [currentStep, assessmentSteps.length, scrollToCurrentStep]);
 
   const handlePrev = useMemo(() => () => {
     if (!isFirstStep) {
       setCurrentStep((prev) => prev - 1);
+      // Scroll to current step after state update
+      setTimeout(() => {
+        scrollToCurrentStep();
+      }, 100);
     }
-  }, [isFirstStep]);
+  }, [isFirstStep, scrollToCurrentStep]);
 
   // Handle cancel button click
   const handleCancel = async () => {
@@ -799,13 +838,17 @@ const validateAssessmentData = useMemo(() => (data: any) => {
 
 
       {/* Assessment Steps Navigation */}
-      <div className="px-8 py-4 border-b border-border bg-muted overflow-x-auto">
+      <div ref={navigationRef} className="px-8 py-4 border-b border-border bg-muted overflow-x-auto">
         <div className="flex items-center space-x-4">
           {assessmentSteps.map((step, idx) => (
-            <div key={step.id} className="flex items-center">
+            <div key={step.id} className="flex items-center" data-step={step.id}>
               <button
                 type="button"
-                className={`flex items-center justify-center w-10 h-10 rounded-full focus:outline-none transition-colors duration-150 ${currentStep === step.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"} ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`flex items-center justify-center w-10 h-10 rounded-full focus:outline-none transition-all duration-300 transform hover:scale-105 ${
+                  currentStep === step.id 
+                    ? "bg-primary text-primary-foreground scale-110 shadow-lg ring-2 ring-primary/20 ring-offset-2 ring-offset-background" 
+                    : "bg-muted text-muted-foreground hover:bg-accent hover:scale-105"
+                } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                 style={{ cursor: isReadOnly ? 'not-allowed' : 'pointer' }}
                 onClick={() => !isReadOnly && setCurrentStep(step.id)}
                 disabled={isReadOnly}
@@ -815,7 +858,11 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               </button>
               <button
                 type="button"
-                className={`ml-2 whitespace-nowrap text-sm font-medium bg-transparent border-none p-0 m-0 focus:outline-none transition-colors duration-150 ${currentStep === step.id ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+                className={`ml-2 whitespace-nowrap text-sm bg-transparent border-none p-0 m-0 focus:outline-none transition-all duration-300 transform hover:scale-105 ${
+                  currentStep === step.id 
+                    ? "text-primary font-bold" 
+                    : "text-muted-foreground hover:text-primary font-medium"
+                }`}
                 style={{ cursor: 'pointer' }}
                 onClick={() => setCurrentStep(step.id)}
                 aria-current={currentStep === step.id ? 'step' : undefined}
@@ -823,7 +870,13 @@ const validateAssessmentData = useMemo(() => (data: any) => {
                 {step.title}
               </button>
               {idx < assessmentSteps.length - 1 && (
-                <ChevronRight className="w-5 h-5 text-muted-foreground mx-2" />
+                <ChevronRight 
+                  className={`w-5 h-5 mx-2 transition-colors duration-300 ${
+                    currentStep === step.id 
+                      ? "text-primary" 
+                      : "text-muted-foreground"
+                  }`} 
+                />
               )}
             </div>
           ))}
