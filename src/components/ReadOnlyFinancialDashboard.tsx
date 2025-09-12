@@ -120,11 +120,11 @@ const ReadOnlyFinancialDashboard: React.FC<ReadOnlyFinancialDashboardProps> = ({
   const financialProjections = useMemo(() => {
     const projections = [];
    
-    for (let month = 0; month < FORECAST_MONTHS; month++) {
-      const monthNumber = month + 1;
-      const devCost = month === 0 ? initialDevCost : 0;
+    for (let month = 1; month <= FORECAST_MONTHS; month++) {
+      const monthNumber = month;
+      const devCost = month === 1 ? initialDevCost : 0;
       
-      // Use the specified growth formulas
+      // Use the specified growth formulas (same as Financial Dashboard)
       const monthlyApiCost = baseApiCost * Math.pow(1.12, month / 12);
       const monthlyInfraCost = baseInfraCost * Math.pow(1.05, month / 12);
       const monthlyOpCost = baseOpCost * Math.pow(1.08, month / 12);

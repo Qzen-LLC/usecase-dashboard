@@ -332,12 +332,12 @@ export default function RiskAssessment({ value, onChange }: Props) {
 
 
   const handleSelectChange = (
-    type: 'technical' | 'business',
+    type: 'technicalRisks' | 'businessRisks',
     index: number,
     field: 'probability' | 'impact',
     value: string
   ) => {
-    const updater = type === 'technical' ? setTechnicalRisks : setBusinessRisks;
+    const updater = type === 'technicalRisks' ? setTechnicalRisks : setBusinessRisks;
     updater((prevRisks) => {
       const newRisks = [...prevRisks];
       newRisks[index] = { ...newRisks[index], [field]: value };
@@ -346,7 +346,7 @@ export default function RiskAssessment({ value, onChange }: Props) {
   };
 
 
-  const renderRiskRow = (item: Risk, index: number, type: 'technical' | 'business') => (
+  const renderRiskRow = (item: Risk, index: number, type: 'technicalRisks' | 'businessRisks') => (
     <div
       key={index}
       className="flex items-center justify-between border rounded-lg p-4"

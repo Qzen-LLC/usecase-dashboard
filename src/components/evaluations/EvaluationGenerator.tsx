@@ -158,7 +158,7 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
 
   const generateEvaluations = async () => {
     if (!guardrailsConfig) {
-      alert('Please generate guardrails first');
+      alert('⚠️ Guardrails Required\n\nPlease generate guardrails first before running evaluations.\n\nEvaluations require guardrails to define what should be tested.');
       return;
     }
 
@@ -221,7 +221,13 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
 
   const runEvaluations = async () => {
     if (!evaluationConfig) {
-      alert('Please generate evaluations first');
+      alert('⚠️ Evaluation Config Required\n\nPlease generate evaluations first before running them.\n\nThis will create test suites based on your guardrails.');
+      return;
+    }
+
+    // Alert user about evaluation run
+    const confirmed = confirm('🚀 Run Evaluations?\n\nThis will execute all test suites against your AI system.\n\nThis process may take several minutes and will consume API credits.\n\nDo you want to continue?');
+    if (!confirmed) {
       return;
     }
 

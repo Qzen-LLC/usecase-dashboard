@@ -143,6 +143,9 @@ const FinancialDashboard = () => {
       if (breakEvenMonth === null && netValue >= 0) breakEvenMonth = month;
       result.push({
         month,
+        monthlyApiCost: apiCost,
+        monthlyInfraCost: infraCost,
+        monthlyOpCost: opCost,
         apiCost,
         infraCost,
         opCost,
@@ -1068,16 +1071,16 @@ const FinancialDashboard = () => {
           const m12 = rows[11];
           if (!m12) return null;
           const total = m12.totalMonthlyCost;
-          const apiPct = total ? (m12.apiCost / total) * 100 : 0;
-          const infraPct = total ? (m12.infraCost / total) * 100 : 0;
-          const opPct = total ? (m12.opCost / total) * 100 : 0;
+          const apiPct = total ? (m12.monthlyApiCost / total) * 100 : 0;
+          const infraPct = total ? (m12.monthlyInfraCost / total) * 100 : 0;
+          const opPct = total ? (m12.monthlyOpCost / total) * 100 : 0;
           return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                              <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border border-red-200 dark:border-red-700 rounded-xl p-6 text-center hover:shadow-md transition-all duration-200">
                  <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
                    <span className="text-xl text-white">API</span>
                  </div>
-                 <div className="text-2xl font-bold text-red-600 dark:text-red-400 mb-1">{formatCurrency(m12.apiCost)}</div>
+                 <div className="text-2xl font-bold text-red-600 dark:text-red-400 mb-1">{formatCurrency(m12.monthlyApiCost)}</div>
                  <div className="font-semibold text-gray-700 dark:text-gray-200 mb-1">API Costs</div>
                  <div className="text-sm font-medium text-red-500 dark:text-red-400">{apiPct.toFixed(1)}% of total</div>
                </div>
@@ -1085,7 +1088,7 @@ const FinancialDashboard = () => {
                  <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-3">
                    <span className="text-xl text-white">Infra</span>
                  </div>
-                 <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-1">{formatCurrency(m12.infraCost)}</div>
+                 <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-1">{formatCurrency(m12.monthlyInfraCost)}</div>
                  <div className="font-semibold text-gray-700 dark:text-gray-200 mb-1">Infrastructure</div>
                  <div className="text-sm font-medium text-orange-500 dark:text-orange-400">{infraPct.toFixed(1)}% of total</div>
                </div>
@@ -1093,7 +1096,7 @@ const FinancialDashboard = () => {
                  <div className="w-12 h-12 bg-yellow-600 rounded-full flex items-center justify-center mx-auto mb-3">
                    <span className="text-xl text-white">Ops</span>
                  </div>
-                 <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400 mb-1">{formatCurrency(m12.opCost)}</div>
+                 <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400 mb-1">{formatCurrency(m12.monthlyOpCost)}</div>
                  <div className="font-semibold text-gray-700 dark:text-gray-200 mb-1">Operations</div>
                  <div className="text-sm font-medium text-yellow-600 dark:text-yellow-400">{opPct.toFixed(1)}% of total</div>
                </div>

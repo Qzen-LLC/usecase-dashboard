@@ -145,109 +145,9 @@ const ViewUseCasePage = () => {
       });
   }, [useCaseId]);
 
-  // Auto-generate and run evaluations if none exist in DB
-  useEffect(() => {
-    const shouldAutoRun = !!useCaseId && !autoEvalAttempted && !evaluationData && !!guardrailsConfig;
-    if (!shouldAutoRun) return;
-    setAutoEvalAttempted(true);
-
-    const run = async () => {
-      try {
-        setAutoEvalRunning(true);
-        // 1) Generate evaluation config from guardrails and assessment data
-        const genResp = await fetch('/api/evaluations/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            useCaseId,
-            guardrailsConfig,
-            assessmentData: {
-              title: useCase?.title,
-              department: useCase?.businessFunction,
-              owner: useCase?.user?.email,
-              technicalFeasibility: getAssessmentData('technicalFeasibility'),
-              businessFeasibility: getAssessmentData('businessFeasibility'),
-              ethicalImpact: getAssessmentData('ethicalImpact'),
-              riskAssessment: getAssessmentData('riskAssessment'),
-              dataReadiness: getAssessmentData('dataReadiness'),
-              roadmapPosition: getAssessmentData('roadmapPosition'),
-              budgetPlanning: getAssessmentData('budgetPlanning')
-            }
-          })
-        });
-        if (!genResp.ok) throw new Error('Failed to generate evaluations');
-        const genData = await genResp.json();
-
-        // 2) Save the generated config to DB to create an evaluation row
-        const saveCfgResp = await fetch('/api/evaluations/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ useCaseId, evaluationConfig: genData })
-        });
-        if (!saveCfgResp.ok) throw new Error('Failed to save evaluation config');
-        const saveCfg = await saveCfgResp.json();
-        const evaluationId = saveCfg.evaluationId || genData.id;
-
-        // 3) Run the evaluations
-        const runResp = await fetch('/api/evaluations/run', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            evaluationConfig: { ...genData, id: evaluationId },
-            environment: {
-              name: 'production',
-              type: 'production',
-              configuration: { mockResponses: false, deterministicMode: false, realData: true, aiAgentsEnabled: true }
-            }
-          })
-        });
-        if (!runResp.ok) throw new Error('Failed to run evaluations');
-        const runData = await runResp.json();
-
-        // 4) Persist results and summary
-        const saveResResp = await fetch('/api/evaluations/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            useCaseId,
-            evaluationConfig: { ...(genData || {}), id: evaluationId },
-            evaluationResult: {
-              results: runData.testResults,
-              scores: runData.scores,
-              recommendations: runData.recommendations
-            }
-          })
-        });
-        if (!saveResResp.ok) throw new Error('Failed to save evaluation results');
-
-        // 5) Update local state to reflect DB shape
-        setEvaluationData({
-          success: true,
-          evaluationId,
-          status: runData.status || 'completed',
-          completedAt: new Date().toISOString(),
-          summary: {
-            totalTests: runData.testResults?.length || 0,
-            passed: (runData.testResults || []).filter((r: any) => r.status === 'passed').length,
-            failed: (runData.testResults || []).filter((r: any) => r.status === 'failed').length,
-            passRate: (runData.testResults || []).length > 0 ? (runData.testResults.filter((r: any) => r.status === 'passed').length / runData.testResults.length) : 0,
-            overallScore: runData.scores?.overallScore?.value || 0,
-            dimensionScores: runData.scores?.dimensionScores || {},
-            recommendations: runData.recommendations || [],
-            timestamp: new Date().toISOString()
-          },
-          evaluationConfig: { ...(genData || {}), id: evaluationId },
-          results: runData.testResults || []
-        });
-      } catch (e) {
-        console.error('Auto evaluation failed:', e);
-      } finally {
-        setAutoEvalRunning(false);
-      }
-    };
-
-    run();
-  }, [useCaseId, autoEvalAttempted, evaluationData, guardrailsConfig, useCase]);
+  // Note: Auto-evaluation runs have been disabled in view mode
+  // Evaluations should only be run explicitly by users, not automatically
+  // This prevents unwanted evaluation runs when viewing use cases
 
   const getOverallScore = () => {
     if (!useCase) return 0;
@@ -579,25 +479,27 @@ const ViewUseCasePage = () => {
               </span>
             </div>
           </div>
-          <div className="flex items-center ml-auto gap-1.5">
-            <span className="mr-2.5 text-muted-foreground">Use Case Profile</span>
-            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-semibold text-xs border-2 border-background shadow-sm">
-              {useCase.operationalImpactScore || 'B'}
-            </div>
-            <div className="w-8 h-8 rounded-full bg-pink-500 flex items-center justify-center text-white font-semibold text-xs border-2 border-background shadow-sm">
-              {useCase.productivityImpactScore || 'B'}
-            </div>
-            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-xs border-2 border-background shadow-sm">
-              {useCase.revenueImpactScore || 'B'}
-            </div>
-            <div className="ml-1.5">
-              <div className="text-[10px] text-muted-foreground">Operational</div>
-            </div>
-            <div className="ml-4">
-              <div className="text-[10px] text-muted-foreground">Productivity</div>
-            </div>
-            <div className="ml-4">
-              <div className="text-[10px] text-muted-foreground">Business</div>
+          <div className="flex items-center ml-auto gap-4">
+            <span className="text-sm font-medium text-muted-foreground">Use Case Profile</span>
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col items-center gap-1">
+                <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-semibold text-xs border-2 border-background shadow-sm">
+                  {useCase.operationalImpactScore || 'B'}
+                </div>
+                <div className="text-xs text-muted-foreground font-medium">Operational</div>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <div className="w-8 h-8 rounded-full bg-pink-500 flex items-center justify-center text-white font-semibold text-xs border-2 border-background shadow-sm">
+                  {useCase.productivityImpactScore || 'B'}
+                </div>
+                <div className="text-xs text-muted-foreground font-medium">Productivity</div>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-xs border-2 border-background shadow-sm">
+                  {useCase.revenueImpactScore || 'B'}
+                </div>
+                <div className="text-xs text-muted-foreground font-medium">Business</div>
+              </div>
             </div>
           </div>
         </div>
@@ -1411,16 +1313,16 @@ const ViewUseCasePage = () => {
                    {expandedSections.aiEvaluations && (
                      <div className="px-5 py-4 bg-muted/30 border-t border-border">
                        {(() => {
-                         if (autoEvalRunning) {
-                           return (
-                             <p className="text-sm text-muted-foreground italic">Running evaluations...</p>
-                           );
-                         }
                          if (!evaluationData) {
                            return (
-                             <p className="text-sm text-muted-foreground italic">
-                               No AI evaluations recorded.
-                             </p>
+                             <div className="space-y-3">
+                               <p className="text-sm text-muted-foreground italic">
+                                 No AI evaluations have been run for this use case.
+                               </p>
+                               <p className="text-xs text-muted-foreground">
+                                 Evaluations must be run explicitly from the evaluation dashboard, not automatically in view mode.
+                               </p>
+                             </div>
                            );
                          }
 
@@ -1601,7 +1503,28 @@ const ViewUseCasePage = () => {
               </div>
               <div className="bg-muted/30">
                 <ReadOnlyFinancialDashboard 
-                  data={getAssessmentData('budgetPlanning') as any} 
+                  data={finopsData ? {
+                    initialDevCost: finopsData.devCostBase || 0,
+                    baseApiCost: finopsData.apiCostBase || 0,
+                    baseInfraCost: finopsData.infraCostBase || 0,
+                    baseOpCost: finopsData.opCostBase || 0,
+                    baseMonthlyValue: finopsData.valueBase || 0,
+                    valueGrowthRate: finopsData.valueGrowthRate || 0,
+                    budgetRange: finopsData.budgetRange || '',
+                    inputTokenPrice: finopsData.inputTokenPrice || 0,
+                    outputTokenPrice: finopsData.outputTokenPrice || 0,
+                    embeddingTokenPrice: finopsData.embeddingTokenPrice || 0,
+                    finetuningTokenPrice: finopsData.finetuningTokenPrice || 0,
+                    monthlyTokenBudget: finopsData.monthlyTokenBudget || 0,
+                    avgTokensPerUser: finopsData.avgTokensPerUser || 0,
+                    peakTokenUsage: finopsData.peakTokenUsage || 0,
+                    optimizationStrategies: finopsData.optimizationStrategies || [],
+                    vectorDbCost: finopsData.vectorDbCost || 0,
+                    gpuInferenceCost: finopsData.gpuInferenceCost || 0,
+                    monitoringToolsCost: finopsData.monitoringToolsCost || 0,
+                    safetyApiCost: finopsData.safetyApiCost || 0,
+                    backupModelCost: finopsData.backupModelCost || 0
+                  } : undefined} 
                   finopsData={finopsData}
                 />
               </div>
