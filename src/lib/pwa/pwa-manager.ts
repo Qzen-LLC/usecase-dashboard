@@ -529,3 +529,4 @@ export const defaultPWAConfig: PWAConfig = {
 // Create singleton instance
 export const pwaManager = new PWAManager(defaultPWAConfig)
 
+

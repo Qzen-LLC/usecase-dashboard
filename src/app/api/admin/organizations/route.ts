@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { prismaClient } from '@/utils/db';
-import { Clerk } from '@clerk/clerk-sdk-node';
+import { createClerkClient } from '@clerk/backend';
 
-const clerk = new Clerk({ secretKey: process.env.CLERK_SECRET_KEY });
+const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
 // Get all organizations (QZen Admin only)
 export async function GET() {

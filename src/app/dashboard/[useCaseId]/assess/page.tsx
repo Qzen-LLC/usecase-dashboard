@@ -573,13 +573,28 @@ const validateAssessmentData = useMemo(() => (data: any) => {
   useEffect(() => {
     if (!isReady) return;
     setAssessmentData((prev: any) => {
-      const next = { ...defaultAssessmentData, ...prev };
-      for (const key in defaultAssessmentData) {
-        if (!next[key]) next[key] = (defaultAssessmentData as any)[key];
+      // Only merge defaults if we don't have saved data yet
+      // This prevents overwriting saved assessment data
+      if (!prev || Object.keys(prev).length === 0) {
+        return defaultAssessmentData;
       }
-      return next;
+      
+      // Deep merge to preserve saved data while ensuring all default fields exist
+      const merged = { ...defaultAssessmentData };
+      Object.keys(defaultAssessmentData).forEach(key => {
+        const typedKey = key as keyof typeof defaultAssessmentData;
+        if (prev[key] && typeof prev[key] === 'object' && !Array.isArray(prev[key])) {
+          // Deep merge objects
+          (merged as any)[key] = { ...(defaultAssessmentData as any)[key], ...prev[key] };
+        } else if (prev[key] !== undefined) {
+          // Use saved value if it exists
+          (merged as any)[key] = prev[key];
+        }
+      });
+      
+      return merged;
     });
-  }, []);
+  }, [isReady]);
 
   // Scroll to top when currentStep changes
   useEffect(() => {

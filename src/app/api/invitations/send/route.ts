@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { PrismaClient } from '@/generated/prisma';
-import { Clerk } from '@clerk/clerk-sdk-node';
+import { createClerkClient } from '@clerk/backend';
 
 const prisma = new PrismaClient();
-const clerk = new Clerk({ secretKey: process.env.CLERK_SECRET_KEY });
+const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
 export async function POST(req: Request) {
   try {

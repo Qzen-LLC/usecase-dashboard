@@ -537,3 +537,4 @@ export const insightsGenerator = new AIInsightsGenerator()
 
 export default insightsGenerator
 
+

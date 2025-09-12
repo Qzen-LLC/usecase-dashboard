@@ -371,3 +371,4 @@ async function syncContent() {
 
 console.log('Service Worker: Loaded successfully')
 
+

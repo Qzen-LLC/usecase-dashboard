@@ -266,3 +266,4 @@ const enhancedConfig: NextConfig = {
 
 export default enhancedConfig
 
+
