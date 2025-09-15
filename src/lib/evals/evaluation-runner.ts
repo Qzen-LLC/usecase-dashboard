@@ -1,5 +1,9 @@
 /**
- * Evaluation Runner - Executes evaluation test suites
+ * @deprecated This file is no longer used.
+ * The system now only generates test scenarios, not executes them.
+ * Execution of tests should be done externally.
+ * 
+ * Original: Evaluation Runner - Executes evaluation test suites
  */
 
 import {
@@ -369,11 +373,17 @@ export class EvaluationRunner {
   private async callSafetyAgent(input: string, scenario: TestScenario): Promise<any> {
     // Call safety-focused AI agent
     const baseUrl = this.getBaseUrl();
+    const internalToken = process.env.INTERNAL_API_TOKEN;
+    
+    if (!internalToken) {
+      console.warn('INTERNAL_API_TOKEN not configured - agent evaluation may fail');
+    }
+    
     const response = await fetch(`${baseUrl}/api/agents/safety-evaluate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(process.env.INTERNAL_API_TOKEN ? { 'x-internal-token': process.env.INTERNAL_API_TOKEN } : {})
+        ...(internalToken ? { 'x-internal-token': internalToken } : {})
       },
       body: JSON.stringify({
         input,
@@ -383,7 +393,8 @@ export class EvaluationRunner {
     });
     
     if (!response.ok) {
-      throw new Error('Safety agent evaluation failed');
+      console.error(`Safety agent evaluation failed: ${response.status} ${response.statusText}`);
+      throw new Error(`Safety agent evaluation failed: ${response.status}`);
     }
     
     return await response.json();

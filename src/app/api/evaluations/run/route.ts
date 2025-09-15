@@ -1,8 +1,26 @@
+/**
+ * @deprecated This endpoint is no longer used.
+ * The system now only generates test scenarios, not executes them.
+ * Use /api/evaluations/generate-v2 instead for test generation.
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 import { EvaluationRunner } from '@/lib/evals/evaluation-runner';
 import { EvaluationConfig, ExecutionEnvironment } from '@/lib/evals/types';
 
 export async function POST(request: NextRequest) {
+  // This endpoint is deprecated and should not be used
+  return NextResponse.json(
+    { 
+      error: 'This endpoint is deprecated. The system now only generates test scenarios, not executes them. Use /api/evaluations/generate-v2 for test generation.' 
+    },
+    { status: 410 } // 410 Gone status code
+  );
+}
+
+// Original implementation preserved below for reference
+/*
+export async function POST_DEPRECATED(request: NextRequest) {
   try {
     const body = await request.json();
     const { evaluationConfig, environment } = body;
@@ -58,3 +76,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+*/
