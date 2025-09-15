@@ -1033,7 +1033,15 @@ const validateAssessmentData = useMemo(() => (data: any) => {
             )}
           </>
         )}
-        {currentStep < 12 ? (
+        {currentStep === 10 ? (
+          <button
+            className={`px-4 py-2 w-64 rounded-xl shadow-lg font-semibold text-lg transition ${isReadOnly ? 'bg-gray-400 text-gray-200 cursor-not-allowed opacity-50' : 'bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white hover:shadow-xl'}`}
+            onClick={handleCompleteAssessment}
+            disabled={isReadOnly}
+          >
+            Complete Assessment
+          </button>
+        ) : currentStep < 12 ? (
           <button
             className={`flex items-center px-4 py-2 rounded-md bg-gray-600 dark:bg-gray-700 text-white hover:bg-gray-700 dark:hover:bg-gray-600 ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={handleNext}
@@ -1042,13 +1050,13 @@ const validateAssessmentData = useMemo(() => (data: any) => {
             Next
             <ChevronRight className="w-4 h-4 ml-2" />
           </button>
-        ) : currentStep === 10 ? (
+        ) : currentStep === 12 ? (
           <button
-            className={`px-4 py-2 w-64 rounded-xl shadow-lg font-semibold text-lg transition ${isReadOnly ? 'bg-gray-400 text-gray-200 cursor-not-allowed opacity-50' : 'bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white hover:shadow-xl'}`}
+            className={`px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={handleCompleteAssessment}
             disabled={isReadOnly}
           >
-            Complete Assessment
+            Save and Complete Assessment
           </button>
         ) : (
           <div />
