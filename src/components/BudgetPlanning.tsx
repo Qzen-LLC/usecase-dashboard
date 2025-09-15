@@ -1,187 +1,139 @@
-'use client';
-import React, { useEffect, useImperativeHandle, forwardRef } from 'react';
-import { Input } from '@/components/ui/input';
-import { Card, CardHeader } from '@/components/ui/card';
+import React, { useEffect, useState } from 'react';
+import {
+  Checkbox
+} from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
 import { Label } from '@/components/ui/label';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useParams } from 'next/navigation';
+import { Brain, Server, Plug, Shield as ShieldIcon, Check } from 'lucide-react';
+import { PrismaClient, QuestionType, Stage } from '@/generated/prisma';
+import { CheckboxGroup } from './questionComps/checkboxQuestion';
+import { RadioGroupQuestion } from './questionComps/radioQuestion';
+import { SliderQuestion } from './questionComps/SliderQuestion';
+import { TextQuestion } from './questionComps/TextQuestion';
+import { useAnswerHandlers } from '@/lib/handle-assess-ui';
 
-interface BudgetPlanningProps {
-  value: {
-    initialDevCost: number;
-    baseApiCost: number;
-    baseInfraCost: number;
-    baseOpCost: number;
-    baseMonthlyValue: number;
-    valueGrowthRate: number;
-    budgetRange: string;
-    error?: string;
-    loading?: boolean;
-  };
-  onChange: (data: BudgetPlanningProps['value']) => void;
+interface QnAProps {
+  id: string,
+  text: string,
+  type: QuestionType,
+  stage: Stage,
+  options: OptionProps[],
+  answers: AnswerProps[], // This will now contain all answers for the question
 }
 
-const BUDGET_RANGES = [
-  '< $100K',
-  '$100K - $500K',
-  '$500K - $1M',
-  '$1M - $5M',
-  '> $5M',
-];
+interface OptionProps {
+  id: string,
+  text: string,
+  questionId: string,
+}
 
-const BudgetPlanning = forwardRef<{ saveFinops: () => Promise<void> }, BudgetPlanningProps>(({ value, onChange }, ref) => {
-  const params = useParams();
-  const useCaseId = params.useCaseId as string;
+interface AnswerProps {
+  id: string;        
+  value: string;     
+  questionId: string;
+  optionId?: string;  // Make optionId optional since TEXT and SLIDER don't have options
+}
 
-  useEffect(() => {
-    if (!useCaseId) return;
-    onChange({ ...value, loading: true });
-    fetch(`/api/get-finops?id=${useCaseId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          const d = data[0];
-          onChange({
-            ...value,
-            initialDevCost: d.devCostBase ?? value.initialDevCost,
-            baseApiCost: d.apiCostBase ?? value.baseApiCost,
-            baseInfraCost: d.infraCostBase ?? value.baseInfraCost,
-            baseOpCost: d.opCostBase ?? value.baseOpCost,
-            baseMonthlyValue: d.valueBase ?? value.baseMonthlyValue,
-            valueGrowthRate: d.valueGrowthRate ?? value.valueGrowthRate,
-            budgetRange: d.budgetRange ?? value.budgetRange,
-            loading: false,
-            error: '',
-          });
-        } else {
-          onChange({ ...value, loading: false });
-        }
-      })
-      .catch(() => {
-        onChange({ ...value, loading: false, error: 'Failed to load budget data' });
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [useCaseId]);
+type Props = {
+  value: {
+    modelTypes: string[];
+    modelSizes: string[];
+    deploymentModels: string[];
+    cloudProviders: string[];
+    computeRequirements: string[];
+    integrationPoints: string[];
+    apiSpecs: string[];
+    authMethods: string[];
+    encryptionStandards: string[];
+    technicalComplexity: number;
+    outputTypes: string[];
+    confidenceScore: string;
+    modelUpdateFrequency: string;
+  };
+  onChange: (data: Props['value']) => void;
+  questions: QnAProps[];
+  questionsLoading: boolean;
+  questionAnswers: Record<string, AnswerProps[]>;
+  onAnswerChange: (questionId: string, answers: AnswerProps[]) => void;
+};
 
-  useImperativeHandle(ref, () => ({
-    async saveFinops() {
-      if (!useCaseId) return;
-      // --- Calculations for 36 months (same as FinancialDashboard) ---
-      const FORECAST_MONTHS = 36;
-      let cumulativeValue = 0;
-      let cumulativeOpCosts = 0;
-      let breakEvenMonth = null;
-      let last = {};
-      for (let month = 1; month <= FORECAST_MONTHS; month++) {
-        const apiCost = value.baseApiCost * Math.pow(1.12, month / 12);
-        const infraCost = value.baseInfraCost * Math.pow(1.05, month / 12);
-        const opCost = value.baseOpCost * Math.pow(1.08, month / 12);
-        const totalMonthlyCost = apiCost + infraCost + opCost;
-        const monthlyValue = value.baseMonthlyValue * Math.pow(1 + value.valueGrowthRate, month / 12);
-        cumulativeValue += monthlyValue;
-        cumulativeOpCosts += totalMonthlyCost;
-        const totalInvestment = value.initialDevCost + cumulativeOpCosts;
-        const _monthlyProfit = monthlyValue - totalMonthlyCost;
-        const netValue = cumulativeValue - totalInvestment;
-        const ROI = totalInvestment > 0 ? (netValue / totalInvestment) * 100 : 0;
-        if (breakEvenMonth === null && netValue >= 0) breakEvenMonth = month;
-        if (month === FORECAST_MONTHS) {
-          last = {
-            ROI,
-            netValue,
-            apiCostBase: value.baseApiCost,
-            cumOpCost: cumulativeOpCosts,
-            cumValue: cumulativeValue,
-            devCostBase: value.initialDevCost,
-            infraCostBase: value.baseInfraCost,
-            opCostBase: value.baseOpCost,
-            totalInvestment,
-            valueBase: value.baseMonthlyValue,
-            valueGrowthRate: value.valueGrowthRate,
-            budgetRange: value.budgetRange,
-          };
-        }
-      }
-      await fetch('/api/update-finops', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          useCaseId,
-          ...last,
-        }),
-      });
-
-      // Refresh data from database after saving to ensure consistency
-      try {
-        const response = await fetch(`/api/get-finops?id=${useCaseId}`);
-        const data = await response.json();
-        if (Array.isArray(data) && data.length > 0) {
-          const d = data[0];
-          onChange({
-            ...value,
-            initialDevCost: d.devCostBase ?? value.initialDevCost,
-            baseApiCost: d.apiCostBase ?? value.baseApiCost,
-            baseInfraCost: d.infraCostBase ?? value.baseInfraCost,
-            baseOpCost: d.opCostBase ?? value.baseOpCost,
-            baseMonthlyValue: d.valueBase ?? value.baseMonthlyValue,
-            valueGrowthRate: d.valueGrowthRate ?? value.valueGrowthRate,
-            budgetRange: d.budgetRange ?? value.budgetRange,
-            error: '',
-          });
-        }
-      } catch (error) {
-        console.error('Failed to refresh data after save:', error);
-      }
-    }
-  }), [useCaseId, value]);
+export default function BudgetPlanning({ value, onChange, questions, questionsLoading, questionAnswers, onAnswerChange }: Props) {
+  const { handleCheckboxChange, handleRadioChange, handleSliderChange, handleTextChange } = useAnswerHandlers(onAnswerChange);
 
   return (
-    <Card className="mb-8 p-6 bg-card border border-border shadow-md rounded-xl">
-      <CardHeader>
-        {value.error && <div className="text-red-500 mb-2">{value.error}</div>}
-        {value.loading && <div className="text-muted-foreground mb-4">Loading saved data...</div>}
-      </CardHeader>
-      <div className="mb-6">
-        <Label className="mb-2">Budget Range</Label>
-        <RadioGroup value={value.budgetRange} onValueChange={val => { onChange({ ...value, budgetRange: val }); }} className="space-y-2 mt-2">
-          {BUDGET_RANGES.map((range) => (
-            <div key={range} className="flex items-center">
-              <RadioGroupItem value={range} id={`budget-${range}`} className="mr-2" />
-              <Label htmlFor={`budget-${range}`} className="text-sm">{range}</Label>
-            </div>
-          ))}
-        </RadioGroup>
+    <div className="space-y-10">
+      <div className="bg-gradient-to-r from-primary/10 via-primary/20 to-primary/10 border-l-4 border-primary p-4 mb-8 rounded-2xl flex items-center gap-3 shadow-md">
+        <div className="font-semibold text-foreground text-lg mb-1">Technical Feasibility Assessment</div>
+        <div className="text-muted-foreground">Evaluate the technical requirements and constraints for implementing this AI solution.</div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-                          <label className="font-semibold text-[#23235b] dark:text-blue-200">Initial Dev Cost</label>
-          <Input type="number" value={value.initialDevCost} min={0} onChange={e => onChange({ ...value, initialDevCost: Number(e.target.value) })} className="w-full" />
+      
+      {questionsLoading || !questions ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <span className="ml-2 text-muted-foreground">Loading questions...</span>
         </div>
-        <div>
-                          <label className="font-semibold text-[#23235b] dark:text-blue-200">Monthly API Cost</label>
-          <Input type="number" value={value.baseApiCost} min={0} onChange={e => onChange({ ...value, baseApiCost: Number(e.target.value) })} className="w-full" />
-        </div>
-        <div>
-                          <label className="font-semibold text-[#23235b] dark:text-blue-200">Monthly Infrastructure</label>
-          <Input type="number" value={value.baseInfraCost} min={0} onChange={e => onChange({ ...value, baseInfraCost: Number(e.target.value) })} className="w-full" />
-        </div>
-        <div>
-                          <label className="font-semibold text-[#23235b] dark:text-blue-200">Monthly Operations</label>
-          <Input type="number" value={value.baseOpCost} min={0} onChange={e => onChange({ ...value, baseOpCost: Number(e.target.value) })} className="w-full" />
-        </div>
-        <div>
-                          <label className="font-semibold text-[#23235b] dark:text-blue-200">Monthly Value Generated</label>
-          <Input type="number" value={value.baseMonthlyValue} min={0} onChange={e => onChange({ ...value, baseMonthlyValue: Number(e.target.value) })} className="w-full" />
-        </div>
-        <div>
-                          <label className="font-semibold text-[#23235b] dark:text-blue-200">Value Growth Rate (%)</label>
-          <Input type="number" value={value.valueGrowthRate * 100} min={0} max={100} onChange={e => onChange({ ...value, valueGrowthRate: Number(e.target.value) / 100 })} className="w-full" />
-        </div>
-      </div>
-    </Card>
+      ) : (
+        questions.map((q) => {
+          const currentAnswers = questionAnswers[q.id] || q.answers || [];
+          
+          console.log(`Question ${q.id} answers:`, currentAnswers);
+          
+          if (q.stage === Stage.BUDGET_PLANNING) {
+            if (q.type === QuestionType.CHECKBOX) {
+              return (
+                <CheckboxGroup
+                  key={q.id}
+                  label={q.text}
+                  options={q.options}
+                  checkedOptions={currentAnswers}
+                  onChange={(newAnswers) => handleCheckboxChange(q.id, newAnswers)}
+                />
+              );
+            } else if (q.type === QuestionType.RADIO) {
+              const checkedOption = currentAnswers.length > 0 ? currentAnswers[0] : null;
+              
+              return (
+                <RadioGroupQuestion
+                  key={q.id}
+                  label={q.text}
+                  options={q.options}
+                  checkedOption={checkedOption}
+                  onChange={(newAnswer) => handleRadioChange(q.id, newAnswer)}
+                />
+              );
+            } else if (q.type === QuestionType.SLIDER) {
+              const currentValue = currentAnswers.length > 0 ? parseInt(currentAnswers[0].value) || 0 : 0;
+              
+              return (
+                <SliderQuestion
+                  key={q.id}
+                  label={q.text}
+                  value={currentValue}
+                  min={0}
+                  max={100}
+                  step={1}
+                  onChange={(newValue) => handleSliderChange(q.id, newValue)}
+                />
+              );
+            } else if (q.type === QuestionType.TEXT) {
+              const currentValue = currentAnswers.length > 0 ? currentAnswers[0].value : '';
+              
+              return (
+                <TextQuestion
+                  key={q.id}
+                  label={q.text}
+                  value={currentValue}
+                  placeholder="Enter your answer..."
+                  onChange={(newValue) => handleTextChange(q.id, newValue)}
+                />
+              );
+            }
+          }
+          return null;
+        })
+      )}
+    </div>
   );
-});
-
-BudgetPlanning.displayName = 'BudgetPlanning';
-
-export default BudgetPlanning;
+} 

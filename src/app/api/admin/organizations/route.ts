@@ -159,6 +159,28 @@ export async function POST(req: Request) {
       // The invitation record is still created in the database
     }
 
+    const templates = await prismaClient.questionTemplate.findMany({
+      include: { optionTemplates: true },
+    });
+  
+    await prismaClient.$transaction(
+      templates.map((template) =>
+        prismaClient.question.create({
+          data: {
+            text: template.text,
+            type: template.type,
+            templateId: template.id,
+            organizationId: result.org.id,
+            stage: template.stage,
+            options: {
+              create: template.optionTemplates.map((opt) => ({ text: opt.text })),
+            },
+          },
+        })
+      )
+    );
+    
+
     return NextResponse.json({ 
       success: true, 
       organization: result.org,

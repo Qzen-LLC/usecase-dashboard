@@ -41,6 +41,7 @@ model UseCase {
   plannedStartDate         String?             @default("")
   organizationId           String?
   userId                   String?
+  answers                  Answer[]
   Approval                 Approval?
   assessData               Assess?
   euAiActAssessments       EuAiActAssessment?
@@ -52,7 +53,6 @@ model UseCase {
   Lock                     Lock[]
   promptTemplates          PromptTemplate[]
   risks                    Risk[]
-  answers                  Answer[]
   uaeAiAssessments         UaeAiAssessment?
   organization             Organization?       @relation(fields: [organizationId], references: [id])
   user                     User?               @relation(fields: [userId], references: [id])
@@ -503,6 +503,7 @@ model Organization {
   updatedAt      DateTime         @updatedAt
   invitations    Invitation[]     @relation("OrganizationInvitations")
   PromptTemplate PromptTemplate[]
+  Question       Question[]
   useCases       UseCase[]
   users          User[]
   vendors        Vendor[]
@@ -896,44 +897,48 @@ model GuardrailRule {
 }
 
 model QuestionTemplate {
-  id                String       @id @default(uuid())
-  text              String
-  type              QuestionType
-  optionTemplates   OptionTemplate[]
-  questions         Question[]
+  id              String           @id @default(uuid())
+  text            String
+  type            QuestionType
+  stage           Stage
+  optionTemplates OptionTemplate[]
+  questions       Question[]
 }
 
 model OptionTemplate {
-  id                 String    @id @default(uuid())
+  id                 String           @id @default(uuid())
   text               String
-  questionTemplate   QuestionTemplate  @relation(fields: [questionTemplateId], references: [id])
-  questionTemplateId String 
+  questionTemplateId String
+  questionTemplate   QuestionTemplate @relation(fields: [questionTemplateId], references: [id])
 }
 
 model Question {
-  id        String       @id @default(uuid())
-  text      String
-  type      QuestionType
-  template  QuestionTemplate? @relation(fields: [templateId], references: [id])
-  templateId String?
-  options   Option[]
-  answers   Answer[]
+  id             String            @id @default(uuid())
+  text           String
+  type           QuestionType
+  templateId     String?
+  organizationId String            @default("1d431de5-265f-455b-88ca-76b2d2934e8f")
+  stage          Stage
+  answers        Answer[]
+  options        Option[]
+  Organization   Organization      @relation(fields: [organizationId], references: [id])
+  template       QuestionTemplate? @relation(fields: [templateId], references: [id])
 }
 
 model Option {
-  id         String    @id @default(uuid())
+  id         String   @id @default(uuid())
   text       String
-  question   Question  @relation(fields: [questionId], references: [id])
   questionId String
+  question   Question @relation(fields: [questionId], references: [id])
 }
 
 model Answer {
   id         String   @id @default(uuid())
-  question   Question @relation(fields: [questionId], references: [id])
   questionId String
-  useCaseId  String
-  useCase    UseCase  @relation(fields: [useCaseId], references: [id])
   value      Json
+  useCaseId  String
+  question   Question @relation(fields: [questionId], references: [id])
+  useCase    UseCase  @relation(fields: [useCaseId], references: [id])
 }
 
 enum QuestionType {
@@ -1010,4 +1015,14 @@ enum GuardrailRuleStatus {
   APPROVED
   REJECTED
   EDITED
+}
+
+enum Stage {
+  TECHNICAL_FEASIBILITY
+  BUSINESS_FEASIBILITY
+  ETHICAL_IMPACT
+  RISK_ASSESSMENT
+  DATA_READINESS
+  ROADMAP_POSITION
+  BUDGET_PLANNING
 }

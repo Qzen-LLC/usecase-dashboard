@@ -24,7 +24,7 @@ import ReadOnlyBudgetPlanning from '@/components/ReadOnlyBudgetPlanning';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { useStableRender } from '@/hooks/useStableRender';
 import { useLock } from '@/hooks/useLock';
-import { QuestionType } from '@/generated/prisma';
+import { QuestionType, Stage } from '@/generated/prisma';
 
 
 interface UseCase {
@@ -40,6 +40,7 @@ interface QnAProps {
   id: string,
   text: string,
   type: QuestionType,
+  stage: Stage,
   options: OptionProps[],
   answers: AnswerProps[], // This will now contain all answers for the question
 }
@@ -446,6 +447,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
           id: q.id,
           text: q.text,
           type: q.type,
+          stage: q.stage,
           options: q.options.map((o) => ({
             id: o.id,            
             text: o.text,
@@ -768,6 +770,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               <BusinessFeasibility
                 value={assessmentData.businessFeasibility}
                 onChange={data => handleAssessmentChange('businessFeasibility', data)}
+                questions={questions}
+                questionsLoading={questionsLoading}
+                questionAnswers={questionAnswers}
+                onAnswerChange={handleAnswerChange}
               />
             )
           ) : currentStep === 3 ? (
@@ -786,6 +792,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               <RiskAssessment
                 value={assessmentData.riskAssessment}
                 onChange={data => handleAssessmentChange('riskAssessment', data)}
+                questions={questions}
+                questionsLoading={questionsLoading}
+                questionAnswers={questionAnswers}
+                onAnswerChange={handleAnswerChange}
               />
             )
           ) : currentStep === 5 ? (
@@ -795,6 +805,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               <DataReadiness
                 value={assessmentData.dataReadiness}
                 onChange={data => handleAssessmentChange('dataReadiness', data)}
+                questions={questions}
+                questionsLoading={questionsLoading}
+                questionAnswers={questionAnswers}
+                onAnswerChange={handleAnswerChange}
               />
             )
           ) : currentStep === 6 ? (
@@ -804,6 +818,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               <RoadmapPosition
                 value={assessmentData.roadmapPosition}
                 onChange={data => handleAssessmentChange('roadmapPosition', data)}
+                questions={questions}
+                questionsLoading={questionsLoading}
+                questionAnswers={questionAnswers}
+                onAnswerChange={handleAnswerChange}
               />
             )
           ) : currentStep === 7 ? (
@@ -811,9 +829,13 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               <ReadOnlyBudgetPlanning data={assessmentData.budgetPlanning} />
             ) : (
               <BudgetPlanning
-                ref={budgetPlanningRef}
+                // ref={budgetPlanningRef}
                 value={assessmentData.budgetPlanning}
                 onChange={data => handleAssessmentChange('budgetPlanning', data)}
+                questions={questions}
+                questionsLoading={questionsLoading}
+                questionAnswers={questionAnswers}
+                onAnswerChange={handleAnswerChange}
               />
             )
           ) : currentStep === 8 ? (

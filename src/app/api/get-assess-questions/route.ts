@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
         id: q.id,
         text: q.text,
         type: q.type,
+        stage: q.stage,
         options: q.options.map(o => ({
           id: o.id,
           text: o.text,
