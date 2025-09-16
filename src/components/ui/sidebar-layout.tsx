@@ -130,6 +130,15 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
           isAdmin: true // Add flag for styling
         }]
       : []),
+      ...(userData?.role === 'ORG_ADMIN'
+        ? [{
+            title: 'Configure Questions',
+            href: '/dashboard/configure-questions',
+            icon: Users,
+            description: 'Question Management',
+            isAdmin: true // Add flag for styling
+          }]
+        : []),
     ...navigationItems
   ];
 
