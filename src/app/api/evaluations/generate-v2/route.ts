@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
 
     console.log('🚀 Starting LLM-powered evaluation generation...');
     console.log(`   Use Case: ${useCaseId}`);
+    console.log(`   Guardrails ID received: ${guardrailsId}`);
     console.log(`   Strategy: ${generationStrategy}, Intensity: ${testIntensity}`);
     console.log(`   Mode: ${useOrchestrator ? 'Multi-Agent Orchestrator' : 'Direct LLM Engine'}`);
 
@@ -121,6 +122,8 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error generating LLM-powered evaluations:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('Error details:', JSON.stringify(error, null, 2));
     
     // Check for specific error types
     if (error instanceof Error) {
@@ -141,6 +144,15 @@ export async function POST(request: NextRequest) {
           message: 'Evaluation generation timed out. Try using a lighter intensity setting.',
           details: error.message
         }, { status: 504 });
+      }
+      
+      if (error.message.includes('guardrails')) {
+        return NextResponse.json({
+          success: false,
+          error: 'GUARDRAILS_REQUIRED',
+          message: 'Guardrails must be generated first before creating evaluations',
+          details: error.message
+        }, { status: 400 });
       }
     }
     

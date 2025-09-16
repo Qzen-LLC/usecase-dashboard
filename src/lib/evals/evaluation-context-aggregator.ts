@@ -93,10 +93,13 @@ export class EvaluationContextAggregator {
     }
 
     // Fetch guardrails configuration
+    console.log(`🔍 Fetching guardrails for use case: ${useCaseId}, guardrailsId: ${guardrailsId}`);
     const guardrails = await this.fetchGuardrails(useCaseId, guardrailsId);
     if (!guardrails) {
-      throw new Error(`Guardrails not found for use case: ${useCaseId}`);
+      console.error(`No guardrails found for use case: ${useCaseId}`);
+      throw new Error(`No guardrails found for use case: ${useCaseId}. Please generate guardrails first before creating evaluations.`);
     }
+    console.log(`✅ Found guardrails with ${Object.keys(guardrails).length} rules`);
 
     // Fetch assessments
     const assessments = await this.fetchAssessments(useCaseId);
@@ -153,7 +156,7 @@ export class EvaluationContextAggregator {
     return await prismaClient.useCase.findUnique({
       where: { id: useCaseId },
       include: {
-        assessments: true,
+        assessData: true,  // Changed from assessments
         guardrails: true,
         evaluations: {
           orderBy: { createdAt: 'desc' },
@@ -170,18 +173,35 @@ export class EvaluationContextAggregator {
     let guardrailRecord;
     
     if (guardrailsId) {
+      console.log(`Fetching guardrails by ID: ${guardrailsId}`);
       guardrailRecord = await prismaClient.guardrail.findUnique({
         where: { id: guardrailsId }
       });
-    } else {
-      // Get the latest guardrails for the use case
+    }
+    
+    // If no ID provided or not found by ID, get the latest guardrails for the use case
+    if (!guardrailRecord) {
+      console.log(`Fetching latest guardrails for use case: ${useCaseId}`);
       guardrailRecord = await prismaClient.guardrail.findFirst({
         where: { useCaseId },
         orderBy: { createdAt: 'desc' }
       });
+      
+      if (guardrailRecord) {
+        console.log(`Found guardrail record with ID: ${guardrailRecord.id}`);
+      } else {
+        console.log(`No guardrail records found for use case: ${useCaseId}`);
+        
+        // Try to list all guardrails to debug
+        const allGuardrails = await prismaClient.guardrail.findMany({
+          select: { id: true, useCaseId: true }
+        });
+        console.log(`All guardrails in database:`, allGuardrails);
+      }
     }
 
     if (!guardrailRecord || !guardrailRecord.configuration) {
+      console.log(`Guardrail record status - exists: ${!!guardrailRecord}, has configuration: ${!!guardrailRecord?.configuration}`);
       return null;
     }
 
@@ -192,35 +212,38 @@ export class EvaluationContextAggregator {
    * Fetch all assessments for the use case
    */
   private async fetchAssessments(useCaseId: string): Promise<any> {
-    const assessments = await prismaClient.assessment.findMany({
+    // Fetch the assess data - it's a single record with JSON data
+    const assessData = await prismaClient.assess.findUnique({
       where: { useCaseId }
     });
-
+    
+    // If no assess data, return empty assessments
+    if (!assessData || !assessData.stepsData) {
+      return {
+        technical: null,
+        business: null,
+        ethical: null,
+        risk: null,
+        data: null,
+        compliance: null
+      };
+    }
+    
+    // Parse the JSON stepsData to get individual assessments
+    const stepsData = assessData.stepsData as any;
+    
+    // The stepsData contains assessment data organized by steps
+    // Map the steps to our assessment categories
     const assessmentMap: any = {
-      technical: null,
-      business: null,
-      ethical: null,
-      risk: null,
-      data: null,
-      compliance: null
+      technical: stepsData?.step2 || null,  // Technical feasibility
+      business: stepsData?.step3 || null,   // Business feasibility  
+      ethical: stepsData?.step4 || null,    // Ethical impact
+      risk: stepsData?.step5 || null,       // Risk assessment
+      data: stepsData?.step1 || null,       // Data readiness
+      compliance: stepsData?.compliance || null,
+      // Store the full data for reference
+      raw: stepsData
     };
-
-    assessments.forEach(assessment => {
-      const type = assessment.type.toLowerCase();
-      if (type.includes('technical')) {
-        assessmentMap.technical = assessment.results;
-      } else if (type.includes('business')) {
-        assessmentMap.business = assessment.results;
-      } else if (type.includes('ethical') || type.includes('ethics')) {
-        assessmentMap.ethical = assessment.results;
-      } else if (type.includes('risk')) {
-        assessmentMap.risk = assessment.results;
-      } else if (type.includes('data')) {
-        assessmentMap.data = assessment.results;
-      } else if (type.includes('compliance')) {
-        assessmentMap.compliance = assessment.results;
-      }
-    });
 
     return assessmentMap;
   }
@@ -485,10 +508,36 @@ export class EvaluationContextAggregator {
     const rulesByType: Record<string, number> = {};
     const enforcementStrategies: Set<string> = new Set();
 
+    // Debug log the guardrails structure
+    console.log('Processing guardrails structure:', JSON.stringify(Object.keys(guardrails || {})));
+    
+    // The guardrails configuration can be in different formats depending on the source
+    // Check for nested structure first (from API), then direct structure (from DB)
+    let rulesObject = null;
+    
+    if (guardrails?.guardrails?.rules) {
+      // Structure from API: { guardrails: { rules: {...} } }
+      rulesObject = guardrails.guardrails.rules;
+      console.log('Found rules in guardrails.guardrails.rules structure');
+    } else if (guardrails?.rules) {
+      // Direct structure from DB: { rules: {...} }
+      rulesObject = guardrails.rules;
+      console.log('Found rules in guardrails.rules structure');
+    } else if ((guardrails as any)?.guardrails && typeof (guardrails as any).guardrails === 'object') {
+      // Sometimes the configuration is { guardrails: {...} } without nested rules
+      const g = (guardrails as any).guardrails;
+      if (g.rules) {
+        rulesObject = g.rules;
+        console.log('Found rules in alternate guardrails structure');
+      }
+    }
+    
     // Extract all rules
-    if (guardrails.guardrails?.rules) {
-      Object.entries(guardrails.guardrails.rules).forEach(([category, rules]) => {
+    if (rulesObject) {
+      console.log('Rules categories found:', Object.keys(rulesObject));
+      Object.entries(rulesObject).forEach(([category, rules]) => {
         if (Array.isArray(rules)) {
+          console.log(`Processing ${rules.length} rules in category: ${category}`);
           allRules.push(...rules);
           rules.forEach((rule: any) => {
             const type = rule.type || category;
@@ -501,9 +550,14 @@ export class EvaluationContextAggregator {
           });
         }
       });
+    } else {
+      console.log('No rules found in guardrails configuration');
+      console.log('Full guardrails object:', JSON.stringify(guardrails, null, 2).substring(0, 500));
     }
 
     const criticalRules = allRules.filter(r => r.severity === 'critical').length;
+    
+    console.log(`Processed ${allRules.length} total rules, ${criticalRules} critical`);
 
     return {
       configuration: guardrails,

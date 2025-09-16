@@ -733,7 +733,19 @@ Response format:
       
       suite.scenarios.forEach(scenario => {
         // Create a fingerprint for the scenario
-        const fingerprint = `${scenario.name}-${scenario.inputs[0]?.value?.substring(0, 50)}`;
+        // Handle different types of input values (string, object, array, etc.)
+        let inputValue = '';
+        if (scenario.inputs && scenario.inputs[0]) {
+          const val = scenario.inputs[0].value;
+          if (typeof val === 'string') {
+            inputValue = val.substring(0, 50);
+          } else if (typeof val === 'object') {
+            inputValue = JSON.stringify(val).substring(0, 50);
+          } else {
+            inputValue = String(val).substring(0, 50);
+          }
+        }
+        const fingerprint = `${scenario.name}-${inputValue}`;
         
         if (!seenScenarios.has(fingerprint)) {
           seenScenarios.add(fingerprint);

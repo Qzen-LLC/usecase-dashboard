@@ -72,64 +72,10 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
   const [generationStrategy, setGenerationStrategy] = useState<'comprehensive' | 'targeted' | 'rapid'>('comprehensive');
   const [testIntensity, setTestIntensity] = useState<'light' | 'standard' | 'thorough'>('standard');
   const [useOrchestrator, setUseOrchestrator] = useState(false); // Use multi-agent orchestrator
-  const [hasExistingData, setHasExistingData] = useState(false); // Track if we loaded existing data
-  const [existingDataAvailable, setExistingDataAvailable] = useState<boolean | null>(null); // null = checking, true = available, false = not available
   // Always use real AI - no mock mode
-  // Check for existing evaluation but don't auto-load
-  useEffect(() => {
-    const checkExistingEvaluation = async () => {
-      try {
-        console.log('🔄 Loading existing evaluation for useCaseId:', useCaseId);
-        const res = await fetch(`/api/evaluations/get?useCaseId=${useCaseId}`);
-        if (!res.ok) {
-          console.log('❌ Failed to fetch evaluation:', res.status, res.statusText);
-          return;
-        }
-        const data = await res.json();
-        console.log('📊 Loaded evaluation data:', data);
-        
-        if (!data.success || !data.evaluationConfig) {
-          console.log('ℹ️ No evaluation config found');
-          setExistingDataAvailable(false);
-          return;
-        }
-
-        // Data exists but don't load it yet
-        console.log('✅ Found existing evaluation data');
-        setExistingDataAvailable(true);
-        // Don't auto-load - wait for user choice
-      } catch (err) {
-        console.error('❌ Failed to check existing evaluation:', err);
-      }
-    };
-    if (useCaseId) checkExistingEvaluation();
-  }, [useCaseId]);
-  
-  // Function to load existing data when user chooses
-  const loadExistingData = async () => {
-    try {
-      const res = await fetch(`/api/evaluations/get?useCaseId=${useCaseId}`);
-      if (!res.ok) return;
-      const data = await res.json();
-      if (!data.success || !data.evaluationConfig) return;
-      
-      setEvaluationConfig(data.evaluationConfig);
-      setHasExistingData(true);
-      if (data.evaluationConfig.testSuites) {
-        setTestSuites(data.evaluationConfig.testSuites.map((suite: any) => ({
-          ...suite,
-          scenarioCount: suite.scenarios.length,
-          coverage: suite.coverage?.percentage ?? 0,
-          status: 'pending'
-        })));
-      }
-      if (data.summary?.recommendations?.length > 0) {
-        setRecommendations(data.summary.recommendations);
-      }
-    } catch (err) {
-      console.error('Failed to load existing data:', err);
-    }
-  };
+  // No longer check for existing evaluations - always start fresh with AI generation
+  // The old evaluation system has been deprecated in favor of LLM-powered generation
+  // Old evaluation loading removed - always generate fresh with AI
 
   // Mock test suite icons
   const suiteIcons: Record<string, React.ReactNode> = {
@@ -142,14 +88,18 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
   };
 
   const generateEvaluations = async () => {
-    if (!guardrailsConfig) {
-      alert('⚠️ Guardrails Required\n\nPlease generate guardrails first before running evaluations.\n\nEvaluations require guardrails to define what should be tested.');
-      return;
-    }
+    console.log('🎯 Starting generateEvaluations...');
+    console.log('🎯 guardrailsConfig present?', !!guardrailsConfig);
+    console.log('🎯 guardrailsConfig value:', guardrailsConfig);
+    
+    // Temporarily bypass the guardrails check - we'll fetch them on the backend
+    // if (!guardrailsConfig) {
+    //   alert('⚠️ Guardrails Required\n\nPlease generate guardrails first before running evaluations.\n\nEvaluations require guardrails to define what should be tested.');
+    //   return;
+    // }
 
     setIsGenerating(true);
     setProgress(0);
-    setHasExistingData(false); // Clear the existing data flag when generating new
 
     try {
       // Simulate progress
@@ -160,9 +110,13 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
       // Choose API endpoint based on generation mode
       const apiEndpoint = useAIGeneration ? '/api/evaluations/generate-v2' : '/api/evaluations/generate';
       
+      console.log('🔍 Use Case ID:', useCaseId);
+      console.log('🔍 Guardrails config:', guardrailsConfig);
+      console.log('🔍 Guardrails ID:', guardrailsConfig?.id);
+      
       const requestBody = useAIGeneration ? {
         useCaseId,
-        guardrailsId: guardrailsConfig.id,
+        guardrailsId: guardrailsConfig?.id || null,
         generationStrategy,
         testIntensity,
         useOrchestrator
@@ -181,6 +135,28 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
       clearInterval(progressInterval);
       setProgress(100);
 
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        console.error('API Error:', errorData);
+        console.error('Response status:', response.status);
+        console.error('Response statusText:', response.statusText);
+        
+        // Show specific error message based on error type
+        if (errorData.error === 'GUARDRAILS_REQUIRED') {
+          alert('⚠️ Guardrails Required\n\nPlease generate guardrails first on the AI Guardrails tab before creating evaluations.');
+        } else if (errorData.error === 'LLM_CONFIGURATION_ERROR') {
+          alert('⚠️ LLM Configuration Required\n\nOpenAI API key is not configured. Please check your environment configuration.');
+        } else {
+          alert(`⚠️ Generation Failed\n\n${errorData.message || errorData.details || 'Failed to generate evaluations. Please try again.'}`);
+        }
+        throw new Error(errorData.message || errorData.details || 'Failed to generate evaluations');
+      }
+      
       if (response.ok) {
         const data = await response.json();
         
@@ -586,63 +562,12 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Show banner if displaying existing data */}
-        {hasExistingData && evaluationConfig && (
-          <Alert className="mb-4" variant="default">
-            <Info className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>Displaying previously generated test scenarios. These tests should be executed externally.</span>
-              <Button
-                onClick={() => {
-                  setEvaluationConfig(null);
-                  setTestSuites([]);
-                  setRecommendations([]);
-                  setHasExistingData(false);
-                  setExistingDataAvailable(false);
-                }}
-                variant="outline"
-                size="sm"
-                className="ml-4"
-              >
-                <RefreshCw className="mr-2 h-3 w-3" />
-                Generate New
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
+        {/* Banner removed - no longer showing old evaluation data */}
         
-        {/* Choice to load existing data or generate new */}
-        {existingDataAvailable === true && !evaluationConfig && (
-          <Alert className="mb-6" variant="default">
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              <div className="space-y-3">
-                <p>Existing test scenarios found for this use case.</p>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={loadExistingData}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    View Existing Tests
-                  </Button>
-                  <Button
-                    onClick={() => setExistingDataAvailable(false)}
-                    variant="default"
-                    size="sm"
-                  >
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Generate New Tests
-                  </Button>
-                </div>
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
+        {/* Old evaluation system removed - always use new AI generation */}
         
         {/* AI Generation Settings */}
-        {!evaluationConfig && existingDataAvailable !== true && (
+        {!evaluationConfig && (
           <div className="mb-6 p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/10 dark:to-blue-900/10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
