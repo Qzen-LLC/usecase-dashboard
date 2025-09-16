@@ -72,10 +72,40 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
   const [generationStrategy, setGenerationStrategy] = useState<'comprehensive' | 'targeted' | 'rapid'>('comprehensive');
   const [testIntensity, setTestIntensity] = useState<'light' | 'standard' | 'thorough'>('standard');
   const [useOrchestrator, setUseOrchestrator] = useState(false); // Use multi-agent orchestrator
-  // Always use real AI - no mock mode
-  // No longer check for existing evaluations - always start fresh with AI generation
-  // The old evaluation system has been deprecated in favor of LLM-powered generation
-  // Old evaluation loading removed - always generate fresh with AI
+  const [agentProgress, setAgentProgress] = useState<Record<string, string>>({}); // Track agent progress
+  const [generationPhase, setGenerationPhase] = useState<string>('');
+  
+  // Load existing evaluation on mount
+  useEffect(() => {
+    const loadExistingEvaluation = async () => {
+      try {
+        const response = await fetch(`/api/evaluations/generate-v2?useCaseId=${useCaseId}`, {
+          method: 'GET'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.evaluation) {
+            const evalConfig = data.evaluation.configuration;
+            setEvaluationConfig(evalConfig);
+            setTestSuites(evalConfig.testSuites.map((suite: any) => ({
+              ...suite,
+              scenarioCount: suite.scenarios.length,
+              scenarios: suite.scenarios,
+              coverage: suite.coverage?.percentage || 0,
+              status: 'pending'
+            })));
+          }
+        }
+      } catch (error) {
+        console.log('No existing evaluation found, ready to generate new one');
+      }
+    };
+    
+    if (useCaseId) {
+      loadExistingEvaluation();
+    }
+  }, [useCaseId]);
 
   // Mock test suite icons
   const suiteIcons: Record<string, React.ReactNode> = {
@@ -92,20 +122,52 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
     console.log('🎯 guardrailsConfig present?', !!guardrailsConfig);
     console.log('🎯 guardrailsConfig value:', guardrailsConfig);
     
-    // Temporarily bypass the guardrails check - we'll fetch them on the backend
-    // if (!guardrailsConfig) {
-    //   alert('⚠️ Guardrails Required\n\nPlease generate guardrails first before running evaluations.\n\nEvaluations require guardrails to define what should be tested.');
-    //   return;
-    // }
-
     setIsGenerating(true);
     setProgress(0);
+    setGenerationPhase('Initializing...');
+    
+    // Initialize agent progress
+    const agents = useOrchestrator ? [
+      'Risk Analyst',
+      'Compliance Expert',
+      'Ethics Advisor',
+      'Security Architect',
+      'Business Strategist',
+      'Technical Optimizer'
+    ] : [
+      'Safety Agent',
+      'Performance Agent',
+      'Guardrail Agent'
+    ];
+    
+    const initialProgress: Record<string, string> = {};
+    agents.forEach(agent => {
+      initialProgress[agent] = 'pending';
+    });
+    setAgentProgress(initialProgress);
 
     try {
-      // Simulate progress
+      // Simulate agent progress
+      const agents = Object.keys(agentProgress);
+      let currentAgentIndex = 0;
+      
       const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 10, 90));
-      }, 500);
+        setProgress(prev => Math.min(prev + (90 / agents.length), 90));
+        
+        // Update agent status
+        if (currentAgentIndex < agents.length) {
+          const agent = agents[currentAgentIndex];
+          setAgentProgress(prev => ({ ...prev, [agent]: 'analyzing' }));
+          setGenerationPhase(`${agent} is analyzing...`);
+          
+          // Mark agent as complete after some time
+          setTimeout(() => {
+            setAgentProgress(prev => ({ ...prev, [agent]: 'completed' }));
+          }, 2000);
+          
+          currentAgentIndex++;
+        }
+      }, 3000);
 
       // Choose API endpoint based on generation mode
       const apiEndpoint = useAIGeneration ? '/api/evaluations/generate-v2' : '/api/evaluations/generate';
@@ -134,6 +196,14 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
 
       clearInterval(progressInterval);
       setProgress(100);
+      setGenerationPhase('Synthesizing results...');
+      
+      // Mark all agents as completed
+      const completedProgress: Record<string, string> = {};
+      Object.keys(agentProgress).forEach(agent => {
+        completedProgress[agent] = 'completed';
+      });
+      setAgentProgress(completedProgress);
 
       if (!response.ok) {
         let errorData;
@@ -197,7 +267,11 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
       console.error('Error generating evaluations:', error);
     } finally {
       setIsGenerating(false);
-      setTimeout(() => setProgress(0), 1000);
+      setGenerationPhase('');
+      setTimeout(() => {
+        setProgress(0);
+        setAgentProgress({});
+      }, 1000);
     }
   };
 
@@ -526,29 +600,6 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
             AI System Evaluations
           </span>
           <div className="flex gap-2">
-            {!evaluationConfig && (
-              <Button
-                onClick={generateEvaluations}
-                disabled={isGenerating || !guardrailsConfig}
-                variant="default"
-              >
-                {isGenerating ? (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    {useAIGeneration ? (
-                      <Sparkles className="mr-2 h-4 w-4" />
-                    ) : (
-                      <PlayCircle className="mr-2 h-4 w-4" />
-                    )}
-                    {useAIGeneration ? 'Generate with AI' : 'Generate Evaluations'}
-                  </>
-                )}
-              </Button>
-            )}
             {evaluationConfig && (
               <Button
                 onClick={exportResults}
@@ -567,7 +618,7 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
         {/* Old evaluation system removed - always use new AI generation */}
         
         {/* AI Generation Settings */}
-        {!evaluationConfig && (
+        {!evaluationConfig && !isGenerating && (
           <div className="mb-6 p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/10 dark:to-blue-900/10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -584,6 +635,7 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
                   checked={useAIGeneration}
                   onChange={(e) => setUseAIGeneration(e.target.checked)}
                   className="sr-only"
+                  disabled
                 />
                 <div className={`relative w-11 h-6 rounded-full transition-colors ${
                   useAIGeneration ? 'bg-purple-600' : 'bg-gray-300'
@@ -593,7 +645,7 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
                   }`} />
                 </div>
                 <span className="ml-2 text-sm font-medium">
-                  {useAIGeneration ? 'AI Mode' : 'Static Mode'}
+                  AI Mode
                 </span>
               </label>
             </div>
@@ -642,6 +694,19 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
                   AI generation creates dynamic, context-aware test scenarios using GPT-4o. 
                   {useOrchestrator ? ' Multi-agent mode uses specialized agents for comprehensive coverage.' : ' Direct mode is faster but less comprehensive.'}
                 </div>
+                
+                {/* Generate Button */}
+                <div className="mt-4 flex justify-center">
+                  <Button
+                    onClick={generateEvaluations}
+                    disabled={isGenerating}
+                    size="lg"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                  >
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Generate Test Scenarios
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -649,13 +714,66 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
         
         {isGenerating && (
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">
-                Generating evaluation suite...
-              </span>
-              <span className="text-sm font-medium">{Math.round(progress)}%</span>
+            <div className="p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/10 dark:to-blue-900/10">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400 animate-pulse" />
+                <h3 className="font-semibold">Agent Analysis in Progress</h3>
+              </div>
+              
+              {/* Agent Progress Grid */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                {Object.entries(agentProgress).map(([agent, status]) => {
+                  const getAgentIcon = (name: string) => {
+                    if (name.includes('Risk')) return <AlertTriangle className="h-4 w-4" />;
+                    if (name.includes('Compliance')) return <Shield className="h-4 w-4" />;
+                    if (name.includes('Ethics')) return <Users className="h-4 w-4" />;
+                    if (name.includes('Security')) return <Shield className="h-4 w-4" />;
+                    if (name.includes('Business')) return <TrendingUp className="h-4 w-4" />;
+                    if (name.includes('Technical') || name.includes('Performance')) return <Zap className="h-4 w-4" />;
+                    if (name.includes('Safety')) return <Shield className="h-4 w-4" />;
+                    return <Bot className="h-4 w-4" />;
+                  };
+                  
+                  const getStatusColor = (status: string) => {
+                    switch (status) {
+                      case 'completed': return 'text-green-600';
+                      case 'analyzing': return 'text-blue-600';
+                      default: return 'text-gray-400';
+                    }
+                  };
+                  
+                  return (
+                    <div key={agent} className="flex items-center gap-2 p-2 rounded-md bg-white/50 dark:bg-gray-800/50">
+                      <div className={`${getStatusColor(status)}`}>
+                        {getAgentIcon(agent)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium truncate">{agent}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {status === 'completed' ? 'completed' : status === 'analyzing' ? 'analyzing' : 'pending'}
+                        </div>
+                      </div>
+                      <div>
+                        {status === 'completed' && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+                        {status === 'analyzing' && <RefreshCw className="h-4 w-4 text-blue-600 animate-spin" />}
+                        {status === 'pending' && <div className="h-4 w-4" />}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Progress Bar */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">
+                    {generationPhase || 'Processing...'}
+                  </span>
+                  <span className="text-sm font-medium">{Math.round(progress)}%</span>
+                </div>
+                <Progress value={progress} className="h-2" />
+              </div>
             </div>
-            <Progress value={progress} className="h-2" />
           </div>
         )}
 
