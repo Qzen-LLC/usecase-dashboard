@@ -3,35 +3,71 @@ import { auth } from '@clerk/nextjs/server';
 import { PrismaClient } from '@/generated/prisma';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
+ 
 
-const prisma = new PrismaClient();
+export const runtime = 'nodejs';
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __prisma__: PrismaClient | undefined;
+}
+
+const prisma = globalThis.__prisma__ ?? new PrismaClient();
+if (process.env.NODE_ENV !== 'production') {
+  globalThis.__prisma__ = prisma;
+}
+
+function extractErrorMessage(err: unknown): string {
+  const anyErr: any = err;
+  return (
+    anyErr?.response?.data?.error?.message ||
+    anyErr?.response?.data?.message ||
+    anyErr?.error?.message ||
+    anyErr?.message ||
+    'Unknown error'
+  );
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = auth();
+    const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { 
-      promptId, 
-      content, 
-      settings, 
-      service, 
-      type, 
-      variables 
-    } = body;
+    const json = await request.json();
+    // Minimal inline validation
+    const promptId = typeof json?.promptId === 'string' && json.promptId.trim().length > 0 ? json.promptId : '';
+    const service = json?.service === 'OPENAI' || json?.service === 'ANTHROPIC' ? json.service : undefined;
+    const type = json?.type === 'PROMPT' || json?.type === 'CHAT' ? json.type : undefined;
+    const settingsRaw = json?.settings ?? {};
+    const settings = {
+      model: String(settingsRaw?.model || ''),
+      temperature: Number.isFinite(settingsRaw?.temperature) ? settingsRaw.temperature : 1,
+      maxTokens: Number.isInteger(settingsRaw?.maxTokens) && settingsRaw?.maxTokens > 0 ? settingsRaw.maxTokens : undefined,
+      topP: Number.isFinite(settingsRaw?.topP) ? settingsRaw.topP : 1,
+      frequencyPenalty: Number.isFinite(settingsRaw?.frequencyPenalty) ? settingsRaw.frequencyPenalty : 0,
+      presencePenalty: Number.isFinite(settingsRaw?.presencePenalty) ? settingsRaw.presencePenalty : 0,
+    } as {
+      model: string; temperature: number; maxTokens?: number; topP: number; frequencyPenalty: number; presencePenalty: number;
+    };
+    const content = json?.content;
+    const variables = json?.variables ?? {};
+
+    const contentValid =
+      type === 'PROMPT'
+        ? typeof content?.prompt === 'string' && content.prompt.trim().length > 0
+        : Array.isArray(content?.messages) && content.messages.length > 0 && content.messages.every(
+            (m: any) => ['user', 'assistant', 'system'].includes(m?.role) && typeof m?.content === 'string'
+          );
+
+    if (!userId || !promptId || !service || !type || !settings.model || !contentValid) {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    }
 
     // Get prompt template
     const promptTemplate = await prisma.promptTemplate.findUnique({
       where: { id: promptId },
-      include: {
-        versions: {
-          orderBy: { createdAt: 'desc' },
-          take: 1
-        }
-      }
     });
 
     if (!promptTemplate) {
@@ -75,8 +111,8 @@ export async function POST(request: NextRequest) {
             temperature: settings.temperature,
             max_tokens: settings.maxTokens,
             top_p: settings.topP,
-            frequency_penalty: settings.frequencyPenalty || 0,
-            presence_penalty: settings.presencePenalty || 0,
+            frequency_penalty: settings.frequencyPenalty ?? 0,
+            presence_penalty: settings.presencePenalty ?? 0,
           });
 
           response = completion.choices[0]?.message?.content || '';
@@ -90,8 +126,8 @@ export async function POST(request: NextRequest) {
             temperature: settings.temperature,
             max_tokens: settings.maxTokens,
             top_p: settings.topP,
-            frequency_penalty: settings.frequencyPenalty || 0,
-            presence_penalty: settings.presencePenalty || 0,
+            frequency_penalty: settings.frequencyPenalty ?? 0,
+            presence_penalty: settings.presencePenalty ?? 0,
           });
 
           response = completion.choices[0]?.message?.content || '';
@@ -130,7 +166,7 @@ export async function POST(request: NextRequest) {
 
         const message = await anthropic.messages.create({
           model: settings.model,
-          max_tokens: settings.maxTokens,
+          max_tokens: settings.maxTokens ?? 1024,
           temperature: settings.temperature,
           top_p: settings.topP,
           system: systemMessage,
@@ -156,11 +192,17 @@ export async function POST(request: NextRequest) {
 
       const latencyMs = Date.now() - startTime;
 
+      // Determine latest prompt version
+      const latestVersion = await prisma.promptVersion.findFirst({
+        where: { templateId: promptId },
+        orderBy: { createdAt: 'desc' },
+      });
+
       // Save test run to database
       const testRun = await prisma.promptTestRun.create({
         data: {
           promptTemplateId: promptId,
-          versionId: promptTemplate.versions[0]?.id || promptTemplate.id,
+          versionId: latestVersion?.id || promptId,
           service,
           model: settings.model,
           variables: variables || {},
@@ -179,7 +221,7 @@ export async function POST(request: NextRequest) {
         success: true,
         response,
         executionId: testRun.id,
-        versionId: promptTemplate.versions[0]?.id || promptTemplate.id,
+        versionId: latestVersion?.id || promptId,
         inputTokens,
         outputTokens,
         tokensUsed,
@@ -188,13 +230,18 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (apiError: any) {
-      console.error('API Error:', apiError);
+      const normalizedMessage = extractErrorMessage(apiError);
+      console.error('API Error:', normalizedMessage);
 
       // Save failed test run
+      const latestVersion = await prisma.promptVersion.findFirst({
+        where: { templateId: promptId },
+        orderBy: { createdAt: 'desc' },
+      });
       await prisma.promptTestRun.create({
         data: {
           promptTemplateId: promptId,
-          versionId: promptTemplate.versions[0]?.id || promptTemplate.id,
+          versionId: latestVersion?.id || promptId,
           service,
           model: settings.model,
           variables: variables || {},
@@ -205,13 +252,13 @@ export async function POST(request: NextRequest) {
           latencyMs: Date.now() - startTime,
           cost: 0,
           status: 'ERROR',
-          error: apiError.message,
+          error: normalizedMessage,
           userId,
         },
       });
 
       return NextResponse.json({ 
-        error: apiError.message || 'Failed to execute prompt'
+        error: normalizedMessage || 'Failed to execute prompt'
       }, { status: 500 });
     }
 
@@ -224,7 +271,7 @@ export async function POST(request: NextRequest) {
 // Get execution history for a prompt
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = auth();
+    const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

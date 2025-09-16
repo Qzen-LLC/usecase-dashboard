@@ -228,6 +228,11 @@ export default function GuardrailsGenerator({ useCaseId, assessmentData, useCase
           }
           
           setGuardrails(guardrailData);
+          
+          // Update parent with the guardrails that now have IDs
+          if (onGuardrailsGenerated) {
+            onGuardrailsGenerated(guardrailData);
+          }
         }
       } else {
         console.error('Failed to save guardrails:', await saveResponse.text());

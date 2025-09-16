@@ -26,7 +26,10 @@ import {
   Info,
   ChevronDown,
   ChevronRight,
-  FlaskConical
+  FlaskConical,
+  Sparkles,
+  Settings2,
+  Bot
 } from 'lucide-react';
 
 interface EvaluationGeneratorProps {
@@ -59,91 +62,49 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
   assessmentData
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [evaluationConfig, setEvaluationConfig] = useState<any>(null);
   const [testSuites, setTestSuites] = useState<TestSuite[]>([]);
-  const [results, setResults] = useState<EvaluationResult[]>([]);
-  const [overallScore, setOverallScore] = useState<number>(0);
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedSuites, setExpandedSuites] = useState<Set<string>>(new Set());
-  // Always use real AI - no mock mode
-  // Load existing evaluation config/results on mount
+  const [useAIGeneration, setUseAIGeneration] = useState(true); // Default to AI generation
+  const [generationStrategy, setGenerationStrategy] = useState<'comprehensive' | 'targeted' | 'rapid'>('comprehensive');
+  const [testIntensity, setTestIntensity] = useState<'light' | 'standard' | 'thorough'>('standard');
+  const [useOrchestrator, setUseOrchestrator] = useState(false); // Use multi-agent orchestrator
+  const [agentProgress, setAgentProgress] = useState<Record<string, string>>({}); // Track agent progress
+  const [generationPhase, setGenerationPhase] = useState<string>('');
+  
+  // Load existing evaluation on mount
   useEffect(() => {
     const loadExistingEvaluation = async () => {
       try {
-        console.log('🔄 Loading existing evaluation for useCaseId:', useCaseId);
-        const res = await fetch(`/api/evaluations/get?useCaseId=${useCaseId}`);
-        if (!res.ok) {
-          console.log('❌ Failed to fetch evaluation:', res.status, res.statusText);
-          return;
-        }
-        const data = await res.json();
-        console.log('📊 Loaded evaluation data:', data);
+        const response = await fetch(`/api/evaluations/generate-v2?useCaseId=${useCaseId}`, {
+          method: 'GET'
+        });
         
-        if (!data.success || !data.evaluationConfig) {
-          console.log('ℹ️ No evaluation config found');
-          return;
-        }
-
-        setEvaluationConfig(data.evaluationConfig);
-        if (data.evaluationConfig.testSuites) {
-          setTestSuites(data.evaluationConfig.testSuites.map((suite: any) => ({
-            ...suite,
-            scenarioCount: suite.scenarios.length,
-            coverage: suite.coverage?.percentage ?? 0,
-            status: 'pending'
-          })));
-        }
-        
-        // Load results from summary if available
-        if (data.summary) {
-          console.log('📈 Loading results from summary:', data.summary);
-          
-          // Set overall score
-          if (data.summary.overallScore !== undefined) {
-            setOverallScore(data.summary.overallScore);
-          }
-          
-          // Convert summary to dimension results if we have dimension scores
-          if (data.summary.dimensionScores) {
-            const dimensionResults: EvaluationResult[] = Object.entries(data.summary.dimensionScores)
-              .map(([dimension, scoreData]: [string, any]) => ({
-                dimension: dimension.charAt(0).toUpperCase() + dimension.slice(1),
-                score: Math.round(scoreData.normalizedScore || scoreData.value || 0),
-                grade: scoreData.grade || getGradeFromScore(scoreData.normalizedScore || scoreData.value || 0),
-                trend: 'stable'
-              }));
-            setResults(dimensionResults);
-            console.log('✅ Set dimension results:', dimensionResults);
-          }
-          
-          // Set recommendations if available
-          if (data.summary.recommendations && data.summary.recommendations.length > 0) {
-            setRecommendations(data.summary.recommendations);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.evaluation) {
+            const evalConfig = data.evaluation.configuration;
+            setEvaluationConfig(evalConfig);
+            setTestSuites(evalConfig.testSuites.map((suite: any) => ({
+              ...suite,
+              scenarioCount: suite.scenarios.length,
+              scenarios: suite.scenarios,
+              coverage: suite.coverage?.percentage || 0,
+              status: 'pending'
+            })));
           }
         }
-        
-        // Update test suite statuses based on results
-        if (data.results && data.results.length > 0) {
-          console.log('🧪 Loading test results:', data.results);
-          const bySuite: Record<string, any[]> = {};
-          data.results.forEach((r: any) => {
-            const sid = r.suiteId || r.testId || 'unknown';
-            bySuite[sid] = bySuite[sid] || [];
-            bySuite[sid].push(r);
-          });
-          setTestSuites(prev => prev.map(s => ({
-            ...s,
-            status: (bySuite[s.id]?.some(r => r.status === 'failed')) ? 'failed' : (bySuite[s.id]?.length ? 'passed' : s.status)
-          })));
-        }
-      } catch (err) {
-        console.error('❌ Failed to load existing evaluation:', err);
+      } catch (error) {
+        console.log('No existing evaluation found, ready to generate new one');
       }
     };
-    if (useCaseId) loadExistingEvaluation();
+    
+    if (useCaseId) {
+      loadExistingEvaluation();
+    }
   }, [useCaseId]);
 
   // Mock test suite icons
@@ -157,54 +118,145 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
   };
 
   const generateEvaluations = async () => {
-    if (!guardrailsConfig) {
-      alert('⚠️ Guardrails Required\n\nPlease generate guardrails first before running evaluations.\n\nEvaluations require guardrails to define what should be tested.');
-      return;
-    }
-
+    console.log('🎯 Starting generateEvaluations...');
+    console.log('🎯 guardrailsConfig present?', !!guardrailsConfig);
+    console.log('🎯 guardrailsConfig value:', guardrailsConfig);
+    
     setIsGenerating(true);
     setProgress(0);
+    setGenerationPhase('Initializing...');
+    
+    // Initialize agent progress
+    const agents = useOrchestrator ? [
+      'Risk Analyst',
+      'Compliance Expert',
+      'Ethics Advisor',
+      'Security Architect',
+      'Business Strategist',
+      'Technical Optimizer'
+    ] : [
+      'Safety Agent',
+      'Performance Agent',
+      'Guardrail Agent'
+    ];
+    
+    const initialProgress: Record<string, string> = {};
+    agents.forEach(agent => {
+      initialProgress[agent] = 'pending';
+    });
+    setAgentProgress(initialProgress);
 
     try {
-      // Simulate progress
+      // Simulate agent progress
+      const agents = Object.keys(agentProgress);
+      let currentAgentIndex = 0;
+      
       const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 10, 90));
-      }, 500);
+        setProgress(prev => Math.min(prev + (90 / agents.length), 90));
+        
+        // Update agent status
+        if (currentAgentIndex < agents.length) {
+          const agent = agents[currentAgentIndex];
+          setAgentProgress(prev => ({ ...prev, [agent]: 'analyzing' }));
+          setGenerationPhase(`${agent} is analyzing...`);
+          
+          // Mark agent as complete after some time
+          setTimeout(() => {
+            setAgentProgress(prev => ({ ...prev, [agent]: 'completed' }));
+          }, 2000);
+          
+          currentAgentIndex++;
+        }
+      }, 3000);
 
-      const response = await fetch('/api/evaluations/generate', {
+      // Choose API endpoint based on generation mode
+      const apiEndpoint = useAIGeneration ? '/api/evaluations/generate-v2' : '/api/evaluations/generate';
+      
+      console.log('🔍 Use Case ID:', useCaseId);
+      console.log('🔍 Guardrails config:', guardrailsConfig);
+      console.log('🔍 Guardrails ID:', guardrailsConfig?.id);
+      
+      const requestBody = useAIGeneration ? {
+        useCaseId,
+        guardrailsId: guardrailsConfig?.id || null,
+        generationStrategy,
+        testIntensity,
+        useOrchestrator
+      } : {
+        useCaseId,
+        guardrailsConfig,
+        assessmentData
+      };
+
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          useCaseId,
-          guardrailsConfig,
-          assessmentData
-        })
+        body: JSON.stringify(requestBody)
       });
 
       clearInterval(progressInterval);
       setProgress(100);
+      setGenerationPhase('Synthesizing results...');
+      
+      // Mark all agents as completed
+      const completedProgress: Record<string, string> = {};
+      Object.keys(agentProgress).forEach(agent => {
+        completedProgress[agent] = 'completed';
+      });
+      setAgentProgress(completedProgress);
 
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        console.error('API Error:', errorData);
+        console.error('Response status:', response.status);
+        console.error('Response statusText:', response.statusText);
+        
+        // Show specific error message based on error type
+        if (errorData.error === 'GUARDRAILS_REQUIRED') {
+          alert('⚠️ Guardrails Required\n\nPlease generate guardrails first on the AI Guardrails tab before creating evaluations.');
+        } else if (errorData.error === 'LLM_CONFIGURATION_ERROR') {
+          alert('⚠️ LLM Configuration Required\n\nOpenAI API key is not configured. Please check your environment configuration.');
+        } else {
+          alert(`⚠️ Generation Failed\n\n${errorData.message || errorData.details || 'Failed to generate evaluations. Please try again.'}`);
+        }
+        throw new Error(errorData.message || errorData.details || 'Failed to generate evaluations');
+      }
+      
       if (response.ok) {
         const data = await response.json();
-        setEvaluationConfig(data);
-        setTestSuites(data.testSuites.map((suite: any) => ({
+        
+        // Handle response based on API version
+        const evalConfig = useAIGeneration ? data.evaluationConfig : data;
+        
+        setEvaluationConfig(evalConfig);
+        setTestSuites(evalConfig.testSuites.map((suite: any) => ({
           ...suite,
           scenarioCount: suite.scenarios.length,
           scenarios: suite.scenarios,
-          coverage: suite.coverage.percentage,
+          coverage: suite.coverage?.percentage || 0,
           status: 'pending'
         })));
+        
+        // Show summary for AI generation
+        if (useAIGeneration && data.summary) {
+          console.log('✨ AI Generation Summary:', data.summary);
+        }
         // Persist generated evaluation (pending status) and capture evaluationId
         try {
           const saveResp = await fetch('/api/evaluations/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ useCaseId, evaluationConfig: data })
+            body: JSON.stringify({ useCaseId, evaluationConfig: evalConfig })
           });
           if (saveResp.ok) {
             const saveData = await saveResp.json();
             if (saveData?.evaluationId) {
-              setEvaluationConfig((prev: any) => ({ ...(prev || data), id: saveData.evaluationId }));
+              setEvaluationConfig((prev: any) => ({ ...(prev || evalConfig), id: saveData.evaluationId }));
             }
           }
         } catch (err) {
@@ -215,10 +267,16 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
       console.error('Error generating evaluations:', error);
     } finally {
       setIsGenerating(false);
-      setTimeout(() => setProgress(0), 1000);
+      setGenerationPhase('');
+      setTimeout(() => {
+        setProgress(0);
+        setAgentProgress({});
+      }, 1000);
     }
   };
 
+  // Removed runEvaluations function - we only generate test scenarios, not execute them
+  /*
   const runEvaluations = async () => {
     if (!evaluationConfig) {
       alert('⚠️ Evaluation Config Required\n\nPlease generate evaluations first before running them.\n\nThis will create test suites based on your guardrails.');
@@ -378,6 +436,7 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
       setIsRunning(false);
     }
   };
+  */
 
   const getGradeFromScore = (score: number): string => {
     if (score >= 90) return 'A';
@@ -388,6 +447,53 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
   };
 
   const exportResults = async () => {
+    if (!evaluationConfig) {
+      alert('No test scenarios to export. Please generate evaluations first.');
+      return;
+    }
+
+    try {
+      // Export test scenarios configuration
+      const exportData = {
+        useCaseId,
+        generatedAt: evaluationConfig.createdAt || new Date().toISOString(),
+        generationMethod: useAIGeneration ? 'AI-Powered (LLM)' : 'Template-Based',
+        strategy: useAIGeneration ? generationStrategy : 'static',
+        intensity: useAIGeneration ? testIntensity : 'standard',
+        testSuites: testSuites.map(suite => ({
+          id: suite.id,
+          name: suite.name,
+          type: suite.type,
+          priority: suite.priority,
+          scenarioCount: suite.scenarioCount,
+          coverage: suite.coverage,
+          scenarios: suite.scenarios
+        })),
+        totalScenarios: testSuites.reduce((sum, suite) => sum + (suite.scenarioCount || 0), 0),
+        metadata: evaluationConfig.metadata || {},
+        evaluationCriteria: evaluationConfig.evaluationCriteria || {},
+        scoringFramework: evaluationConfig.scoringFramework || {}
+      };
+
+      // Create and download JSON file
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `evaluation-scenarios-${useCaseId}-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      console.log('✅ Exported test scenarios successfully');
+    } catch (error) {
+      console.error('Error exporting test scenarios:', error);
+      alert('Failed to export test scenarios');
+    }
+  };
+
+  // Old export function - commented out
+  /*
+  const exportResultsOld = async () => {
     if (!evaluationConfig || results.length === 0) {
       alert('No results to export');
       return;
@@ -442,6 +548,7 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
       URL.revokeObjectURL(url);
     }
   };
+  */
 
   const getGradeColor = (grade: string) => {
     switch (grade) {
@@ -493,73 +600,188 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
             AI System Evaluations
           </span>
           <div className="flex gap-2">
-            {!evaluationConfig && (
-              <Button
-                onClick={generateEvaluations}
-                disabled={isGenerating || !guardrailsConfig}
-                variant="default"
-              >
-                {isGenerating ? (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <PlayCircle className="mr-2 h-4 w-4" />
-                    Generate Evaluations
-                  </>
-                )}
-              </Button>
-            )}
-            {evaluationConfig && !isRunning && (
-              <>
-                <div className="flex items-center space-x-2 mr-4">
-                  <div className="flex items-center space-x-2 px-3 py-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-sm font-medium text-green-700 dark:text-green-400">Real AI Agents Mode</span>
-                  </div>
-                </div>
-                <Button
-                  onClick={runEvaluations}
-                  variant="default"
-                >
-                  <PlayCircle className="mr-2 h-4 w-4" />
-                  {results.length > 0 ? 'Re-run Evaluations (Real AI)' : 'Run Evaluations (Real AI)'}
-                </Button>
-              </>
-            )}
-            {results.length > 0 && (
+            {evaluationConfig && (
               <Button
                 onClick={exportResults}
                 variant="outline"
               >
                 <Download className="mr-2 h-4 w-4" />
-                Export Results
+                Export Test Scenarios
               </Button>
             )}
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {(isGenerating || isRunning) && (
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">
-                {isGenerating ? 'Generating evaluation suite...' : 'Running evaluations...'}
-              </span>
-              <span className="text-sm font-medium">{Math.round(progress)}%</span>
+        {/* Banner removed - no longer showing old evaluation data */}
+        
+        {/* Old evaluation system removed - always use new AI generation */}
+        
+        {/* AI Generation Settings */}
+        {!evaluationConfig && !isGenerating && (
+          <div className="mb-6 p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/10 dark:to-blue-900/10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                <h3 className="font-semibold">AI-Powered Test Generation</h3>
+                <Badge variant="default" className="bg-gradient-to-r from-purple-600 to-blue-600">
+                  <Bot className="h-3 w-3 mr-1" />
+                  LLM Enhanced
+                </Badge>
+              </div>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useAIGeneration}
+                  onChange={(e) => setUseAIGeneration(e.target.checked)}
+                  className="sr-only"
+                  disabled
+                />
+                <div className={`relative w-11 h-6 rounded-full transition-colors ${
+                  useAIGeneration ? 'bg-purple-600' : 'bg-gray-300'
+                }`}>
+                  <div className={`absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                    useAIGeneration ? 'translate-x-5' : ''
+                  }`} />
+                </div>
+                <span className="ml-2 text-sm font-medium">
+                  AI Mode
+                </span>
+              </label>
             </div>
-            <Progress value={progress} className="h-2" />
+            
+            {useAIGeneration && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Generation Strategy</label>
+                    <select
+                      value={generationStrategy}
+                      onChange={(e) => setGenerationStrategy(e.target.value as any)}
+                      className="w-full px-3 py-2 border rounded-md text-sm"
+                    >
+                      <option value="comprehensive">Comprehensive</option>
+                      <option value="targeted">Targeted</option>
+                      <option value="rapid">Rapid</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Test Intensity</label>
+                    <select
+                      value={testIntensity}
+                      onChange={(e) => setTestIntensity(e.target.value as any)}
+                      className="w-full px-3 py-2 border rounded-md text-sm"
+                    >
+                      <option value="light">Light (5-10 tests)</option>
+                      <option value="standard">Standard (10-15 tests)</option>
+                      <option value="thorough">Thorough (15-20 tests)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Engine Mode</label>
+                    <select
+                      value={useOrchestrator ? 'orchestrator' : 'engine'}
+                      onChange={(e) => setUseOrchestrator(e.target.value === 'orchestrator')}
+                      className="w-full px-3 py-2 border rounded-md text-sm"
+                    >
+                      <option value="engine">Direct LLM</option>
+                      <option value="orchestrator">Multi-Agent</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  <Info className="h-3 w-3 inline mr-1" />
+                  AI generation creates dynamic, context-aware test scenarios using GPT-4o. 
+                  {useOrchestrator ? ' Multi-agent mode uses specialized agents for comprehensive coverage.' : ' Direct mode is faster but less comprehensive.'}
+                </div>
+                
+                {/* Generate Button */}
+                <div className="mt-4 flex justify-center">
+                  <Button
+                    onClick={generateEvaluations}
+                    disabled={isGenerating}
+                    size="lg"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                  >
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Generate Test Scenarios
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {isGenerating && (
+          <div className="mb-6">
+            <div className="p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/10 dark:to-blue-900/10">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400 animate-pulse" />
+                <h3 className="font-semibold">Agent Analysis in Progress</h3>
+              </div>
+              
+              {/* Agent Progress Grid */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                {Object.entries(agentProgress).map(([agent, status]) => {
+                  const getAgentIcon = (name: string) => {
+                    if (name.includes('Risk')) return <AlertTriangle className="h-4 w-4" />;
+                    if (name.includes('Compliance')) return <Shield className="h-4 w-4" />;
+                    if (name.includes('Ethics')) return <Users className="h-4 w-4" />;
+                    if (name.includes('Security')) return <Shield className="h-4 w-4" />;
+                    if (name.includes('Business')) return <TrendingUp className="h-4 w-4" />;
+                    if (name.includes('Technical') || name.includes('Performance')) return <Zap className="h-4 w-4" />;
+                    if (name.includes('Safety')) return <Shield className="h-4 w-4" />;
+                    return <Bot className="h-4 w-4" />;
+                  };
+                  
+                  const getStatusColor = (status: string) => {
+                    switch (status) {
+                      case 'completed': return 'text-green-600';
+                      case 'analyzing': return 'text-blue-600';
+                      default: return 'text-gray-400';
+                    }
+                  };
+                  
+                  return (
+                    <div key={agent} className="flex items-center gap-2 p-2 rounded-md bg-white/50 dark:bg-gray-800/50">
+                      <div className={`${getStatusColor(status)}`}>
+                        {getAgentIcon(agent)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium truncate">{agent}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {status === 'completed' ? 'completed' : status === 'analyzing' ? 'analyzing' : 'pending'}
+                        </div>
+                      </div>
+                      <div>
+                        {status === 'completed' && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+                        {status === 'analyzing' && <RefreshCw className="h-4 w-4 text-blue-600 animate-spin" />}
+                        {status === 'pending' && <div className="h-4 w-4" />}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Progress Bar */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">
+                    {generationPhase || 'Processing...'}
+                  </span>
+                  <span className="text-sm font-medium">{Math.round(progress)}%</span>
+                </div>
+                <Progress value={progress} className="h-2" />
+              </div>
+            </div>
           </div>
         )}
 
         {evaluationConfig && (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="suites">Test Suites</TabsTrigger>
-              <TabsTrigger value="results">Results</TabsTrigger>
               <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
             </TabsList>
 
@@ -589,23 +811,7 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
                 </Card>
               </div>
 
-              {results.length > 0 && (
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold">Overall Score</h3>
-                      <div className="text-3xl font-bold">{Math.round(overallScore)}</div>
-                    </div>
-                    <Progress value={overallScore} className="h-3 mb-2" />
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Grade: <span className={`font-bold ${getGradeColor(overallScore >= 90 ? 'A' : overallScore >= 80 ? 'B' : 'C')}`}>
-                        {overallScore >= 90 ? 'A' : overallScore >= 80 ? 'B' : 'C'}
-                      </span></span>
-                      <span>Recommendation: <span className="font-semibold text-green-600">Deploy</span></span>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              {/* Evaluation results will be shown after external execution */}
             </TabsContent>
 
             <TabsContent value="suites" className="space-y-4">
@@ -698,43 +904,17 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
               })}
             </TabsContent>
 
-            <TabsContent value="results" className="space-y-4">
-              {results.length > 0 ? (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    {results.map((result) => (
-                      <Card key={result.dimension}>
-                        <CardContent className="pt-6">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-semibold">{result.dimension}</h4>
-                            <div className="flex items-center gap-2">
-                              <span className={`text-2xl font-bold ${getGradeColor(result.grade)}`}>
-                                {result.grade}
-                              </span>
-                              <span className="text-sm text-muted-foreground">
-                                {getTrendIcon(result.trend)}
-                              </span>
-                            </div>
-                          </div>
-                          <Progress value={result.score} className="h-2 mb-2" />
-                          <div className="flex justify-between text-sm text-muted-foreground">
-                            <span>Score: {result.score}/100</span>
-                            <span>Trend: {result.trend}</span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </>
-              ) : (
+            {/* Results tab removed - tests should be executed externally */}
+            {false && (
+              <TabsContent value="results" className="space-y-4">
                 <Alert>
                   <Info className="h-4 w-4" />
                   <AlertDescription>
-                    Run evaluations to see results
+                    Tests should be executed externally using the generated test scenarios
                   </AlertDescription>
                 </Alert>
-              )}
-            </TabsContent>
+              </TabsContent>
+            )}
 
             <TabsContent value="recommendations" className="space-y-4">
               {recommendations.length > 0 ? (
@@ -750,7 +930,7 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
                 <Alert>
                   <Info className="h-4 w-4" />
                   <AlertDescription>
-                    Run evaluations to see recommendations
+                    Generate evaluation suites to see AI-powered test recommendations
                   </AlertDescription>
                 </Alert>
               )}

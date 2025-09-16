@@ -466,43 +466,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     });
   }, [canEdit]);
 
-  // Auto-save functionality
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  const autoSave = useMemo(() => async () => {
-    if (!canEdit || saving) return;
-    
-    try {
-      const transformedData = mapUIToTypeDefinition(assessmentData);
-      
-      await fetch("/api/post-stepdata", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ useCaseId, assessData: transformedData }),
-      });
-      
-      console.log('Auto-save completed');
-    } catch (err) {
-      console.error("Auto-save failed:", err);
-    }
-  }, [useCaseId, assessmentData, canEdit, saving]);
-
-  // Debounced auto-save
-  useEffect(() => {
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-    }
-    
-    autoSaveTimeoutRef.current = setTimeout(() => {
-      autoSave();
-    }, 2000); // Auto-save after 2 seconds of inactivity
-    
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, [assessmentData, autoSave]);
+  // Auto-save disabled: save only on explicit user actions (Save/Complete)
 
   useEffect(() => {
     if (!useCaseId || !isReady) return;
