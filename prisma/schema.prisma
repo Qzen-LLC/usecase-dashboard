@@ -962,3 +962,31 @@ enum LockScope {
   GOVERNANCE_ISO_42001
   GOVERNANCE_UAE_AI
 }
+
+// Observability Models
+model ObservabilitySession {
+  id              String    @id @default(uuid())
+  sessionId       String    @unique
+  useCaseId       String?
+  useCaseTitle    String?
+  sessionType     String    // 'guardrails' | 'evaluation'
+  status          String    @default("running") // 'running' | 'completed' | 'failed'
+  startTime       DateTime  @default(now())
+  endTime         DateTime?
+  duration        Int?      // milliseconds
+  totalLLMCalls   Int       @default(0)
+  totalTokens     Int       @default(0)
+  totalCost       Float     @default(0)
+  agentsInvolved  String[]
+  langsmithUrl    String?
+  langsmithRunId  String?
+  metadata        Json?
+  errors          Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([useCaseId])
+  @@index([sessionType])
+  @@index([status])
+  @@index([startTime])
+}

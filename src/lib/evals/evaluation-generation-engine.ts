@@ -933,17 +933,23 @@ Response format:
   }
 
   private determineScenarioType(scenario: LLMTestScenario): string {
+    // Ensure testInput is a string
+    const testInputStr = typeof scenario.testInput === 'string'
+      ? scenario.testInput
+      : JSON.stringify(scenario.testInput || '');
+    const lowerInput = testInputStr.toLowerCase();
+
     // Determine type based on tags and content
-    if (scenario.tags.includes('safety') || scenario.testInput.toLowerCase().includes('harmful')) {
+    if (scenario.tags.includes('safety') || lowerInput.includes('harmful')) {
       return 'safety';
     }
-    if (scenario.tags.includes('performance') || scenario.testInput.toLowerCase().includes('latency')) {
+    if (scenario.tags.includes('performance') || lowerInput.includes('latency')) {
       return 'performance';
     }
-    if (scenario.tags.includes('security') || scenario.testInput.toLowerCase().includes('injection')) {
+    if (scenario.tags.includes('security') || lowerInput.includes('injection')) {
       return 'security';
     }
-    if (scenario.tags.includes('compliance') || scenario.testInput.toLowerCase().includes('gdpr')) {
+    if (scenario.tags.includes('compliance') || lowerInput.includes('gdpr')) {
       return 'compliance';
     }
     return 'functional';

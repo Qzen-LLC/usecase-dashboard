@@ -245,6 +245,45 @@ export class ObservabilityManager {
 
     // End LangSmith session
     await langsmithTracer.endSession(outputs, error);
+    const traceUrl = langsmithTracer.getTraceUrl();
+
+    // Save session to database
+    try {
+      // Parse sessionId to extract components
+      const [sessionType, useCaseId] = sessionId.split('-');
+
+      const sessionData = {
+        sessionId,
+        useCaseId: useCaseId || undefined,
+        useCaseTitle: (summary as any).useCaseTitle || undefined,
+        sessionType: sessionType || 'evaluation',
+        status: summary.status,
+        startTime: summary.startTime,
+        endTime: summary.endTime,
+        duration: summary.totalDurationMs,
+        totalLLMCalls: summary.totalLLMCalls,
+        totalTokens: summary.totalTokens,
+        totalCost: summary.totalCost,
+        agentsInvolved: summary.agentsInvolved,
+        langsmithUrl: traceUrl || undefined,
+        langsmithRunId: langsmithTracer.getCurrentRunId() || undefined,
+        metadata: outputs ? { outputs } : undefined,
+        errors: summary.errors.length > 0 ? summary.errors : undefined,
+      };
+
+      // Save to database via API
+      const response = await fetch('/api/observability/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionData }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to save observability session to database');
+      }
+    } catch (saveError) {
+      console.error('Error saving observability session:', saveError);
+    }
 
     // Log final summary
     console.log('\n═══════════════════════════════════════════════════════════════════');
@@ -257,13 +296,12 @@ export class ObservabilityManager {
     console.log(`🎯 Total Tokens: ${summary.totalTokens}`);
     console.log(`💰 Total Cost: $${summary.totalCost.toFixed(4)}`);
     console.log(`📈 Status: ${summary.status}`);
-    
+
     if (summary.errors.length > 0) {
       console.log(`❌ Errors: ${summary.errors.length}`);
       summary.errors.forEach(err => console.error(`   • ${err}`));
     }
 
-    const traceUrl = langsmithTracer.getTraceUrl();
     if (traceUrl) {
       console.log(`\n📊 View Full Trace: ${traceUrl}`);
     }

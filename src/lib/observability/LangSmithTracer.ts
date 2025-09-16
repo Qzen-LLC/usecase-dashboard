@@ -345,6 +345,13 @@ export class LangSmithTracer {
   }
 
   /**
+   * Get current run ID
+   */
+  getCurrentRunId(): string | null {
+    return this.currentRun?.id || null;
+  }
+
+  /**
    * Check if tracing is enabled
    */
   isEnabled(): boolean {
