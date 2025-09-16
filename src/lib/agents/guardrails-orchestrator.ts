@@ -17,6 +17,8 @@ import { CostOptimizationAgent } from './specialists/CostOptimizationAgent';
 import { DataGovernanceAgent } from './specialists/DataGovernanceAgent';
 import { SpecialistAgentAdapter } from './specialists/SpecialistAgentAdapter';
 import { guardrailLogger } from './utils/guardrail-logger';
+import { createAgentTracer, AgentTracer } from '../observability/AgentTracer';
+import { observabilityManager } from '../observability/ObservabilityManager';
 
 /**
  * Master Orchestrator Agent for Guardrails Generation
@@ -26,6 +28,8 @@ import { guardrailLogger } from './utils/guardrail-logger';
 export class GuardrailsOrchestrator {
   private specialists: Map<string, SpecialistAgent>;
   private contextGraph: ContextGraph | null = null;
+  private tracer: AgentTracer | null = null;
+  private sessionId: string | null = null;
 
   constructor() {
     this.specialists = new Map();
@@ -54,6 +58,31 @@ export class GuardrailsOrchestrator {
   async generateGuardrails(assessment: ComprehensiveAssessment): Promise<GuardrailsConfig> {
     console.log('🤖 Orchestrator: Starting guardrails generation for use case:', assessment.useCaseId);
 
+    // Start observability session
+    this.sessionId = await observabilityManager.startUseCaseSession(
+      assessment.useCaseId,
+      assessment.useCaseTitle || 'Unknown Use Case',
+      'guardrails',
+      { tags: ['guardrails-generation', 'orchestrator'] }
+    );
+
+    // Create tracer for orchestrator
+    this.tracer = createAgentTracer(
+      'GuardrailsOrchestrator',
+      'orchestrator',
+      this.sessionId
+    );
+
+    // Start orchestrator execution tracking
+    await this.tracer.startExecution({
+      assessment: {
+        id: assessment.useCaseId,
+        title: assessment.useCaseTitle
+      },
+      specialistCount: this.specialists.size
+    });
+
+    try {
     // Phase 1: Build comprehensive context understanding
     const context = await this.analyzeContext(assessment);
     
@@ -67,10 +96,21 @@ export class GuardrailsOrchestrator {
       conflictTypes: conflicts.map(c => c.type)
     });
     
+    // Track orchestration action with observability manager
+    await observabilityManager.trackOrchestration('IDENTIFY_CONFLICTS', {
+      conflictsFound: conflicts.length,
+      conflictTypes: conflicts.map(c => c.type)
+    }, this.sessionId);
+    
     const resolutions = await this.resolveConflicts(conflicts, context);
     guardrailLogger.logOrchestratorAction('RESOLVE_CONFLICTS', {
       resolutionsCount: resolutions.length
     });
+    
+    // Track conflict resolution
+    await observabilityManager.trackOrchestration('RESOLVE_CONFLICTS', {
+      resolutionsCount: resolutions.length
+    }, this.sessionId);
     
     // Phase 4: Synthesize final guardrails
     const synthesized = await this.synthesizeGuardrails(
@@ -85,7 +125,7 @@ export class GuardrailsOrchestrator {
     // Phase 6: Generate implementation-ready configuration
     const implementation = this.generateImplementationConfig(validated);
 
-    return {
+    const guardrailsConfig = {
       guardrails: implementation,
       reasoning: this.documentReasoning(specialistProposals, resolutions),
       confidence: this.calculateConfidence(validated),
@@ -96,6 +136,31 @@ export class GuardrailsOrchestrator {
         contextComplexity: this.assessContextComplexity(context)
       }
     };
+
+    // End successful orchestrator execution
+    if (this.tracer) {
+      await this.tracer.endExecution(guardrailsConfig);
+    }
+
+    // End observability session
+    if (this.sessionId) {
+      await observabilityManager.endSession(this.sessionId, guardrailsConfig);
+    }
+
+    return guardrailsConfig;
+    } catch (error) {
+      // End failed orchestrator execution
+      if (this.tracer) {
+        await this.tracer.endExecution(null, error);
+      }
+
+      // End failed session
+      if (this.sessionId) {
+        await observabilityManager.endSession(this.sessionId, null, error);
+      }
+
+      throw error;
+    }
   }
 
   /**

@@ -8,6 +8,8 @@ import OpenAI from 'openai';
 import { EvaluationContext } from './evaluation-context-aggregator';
 import { EvaluationConfig, TestSuite, TestScenario } from './types';
 import { GuardrailsConfig, Guardrail } from '../agents/types';
+import { createAgentTracer, AgentTracer } from '../observability/AgentTracer';
+import { observabilityManager } from '../observability/ObservabilityManager';
 
 export interface GenerationStrategy {
   type: 'comprehensive' | 'targeted' | 'rapid';
@@ -38,6 +40,8 @@ export class EvaluationGenerationEngine {
   private openai: OpenAI;
   private maxRetries: number = 3;
   private timeout: number = 30000; // 30 seconds
+  private tracer: AgentTracer | null = null;
+  private sessionId: string | null = null;
   
   constructor() {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -58,7 +62,28 @@ export class EvaluationGenerationEngine {
     console.log('🚀 Starting LLM-powered evaluation generation...');
     console.log(`   Strategy: ${strategy.type}, Intensity: ${strategy.intensity}`);
     
+    // Start observability session
+    this.sessionId = await observabilityManager.startUseCaseSession(
+      context.useCase.id,
+      context.useCase.title,
+      'evaluation',
+      { tags: ['evaluation-generation', strategy.type] }
+    );
+    
+    // Create tracer for this engine
+    this.tracer = createAgentTracer(
+      'EvaluationGenerationEngine',
+      'evaluation',
+      this.sessionId
+    );
+    
     try {
+      // Start agent execution tracking
+      await this.tracer.startExecution({
+        strategy,
+        contextComplexity: this.assessContextComplexity(context),
+        guardrailsCount: context.guardrails.totalRules
+      });
       // Step 1: Generate test perspectives based on strategy
       const perspectives = await this.generateTestPerspectives(context, strategy);
       
@@ -85,7 +110,7 @@ export class EvaluationGenerationEngine {
       // Step 7: Create scoring framework
       const scoringFramework = this.createScoringFramework(synthesizedSuites, context);
       
-      return {
+      const evaluationConfig = {
         id: `eval-${context.useCase.id}-${Date.now()}`,
         useCaseId: context.useCase.id,
         version: '2.0.0',
@@ -106,8 +131,31 @@ export class EvaluationGenerationEngine {
           generationCost: this.estimateGenerationCost(synthesizedSuites)
         }
       };
+      
+      // End successful agent execution
+      if (this.tracer) {
+        await this.tracer.endExecution(evaluationConfig);
+      }
+      
+      // End observability session
+      if (this.sessionId) {
+        await observabilityManager.endSession(this.sessionId, evaluationConfig);
+      }
+      
+      return evaluationConfig;
     } catch (error) {
       console.error('Error generating evaluations:', error);
+      
+      // End failed agent execution
+      if (this.tracer) {
+        await this.tracer.endExecution(null, error);
+      }
+      
+      // End failed session
+      if (this.sessionId) {
+        await observabilityManager.endSession(this.sessionId, null, error);
+      }
+      
       throw new Error(`Failed to generate evaluations: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -290,29 +338,41 @@ export class EvaluationGenerationEngine {
   }
 
   /**
-   * Call OpenAI API with retry logic
+   * Call OpenAI API with retry logic and full observability
    */
   private async callLLM(prompt: string, context: string): Promise<any> {
     console.log(`📝 Calling LLM for ${context} (prompt length: ${prompt.length})`);
     
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       try {
-        const completion = await this.openai.chat.completions.create({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: this.getSystemPrompt(context)
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          response_format: { type: 'json_object' },
-          temperature: 0.7,
-          max_tokens: 4000
-        });
+        // Use tracer if available for full observability
+        const systemPrompt = this.getSystemPrompt(context);
+        
+        const completion = this.tracer 
+          ? await this.tracer.traceOpenAICall(
+              this.openai,
+              {
+                model: 'gpt-4o-mini',
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user', content: prompt }
+                ],
+                response_format: { type: 'json_object' },
+                temperature: 0.7,
+                max_tokens: 4000
+              },
+              context // Purpose of the call
+            )
+          : await this.openai.chat.completions.create({
+              model: 'gpt-4o-mini',
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: prompt }
+              ],
+              response_format: { type: 'json_object' },
+              temperature: 0.7,
+              max_tokens: 4000
+            });
         
         const response = completion.choices[0]?.message?.content;
         if (!response) {
