@@ -909,7 +909,7 @@ model OptionTemplate {
   id                 String           @id @default(uuid())
   text               String
   questionTemplateId String
-  questionTemplate   QuestionTemplate @relation(fields: [questionTemplateId], references: [id])
+  questionTemplate   QuestionTemplate @relation(fields: [questionTemplateId], references: [id], onDelete: Cascade)
 }
 
 model Question {

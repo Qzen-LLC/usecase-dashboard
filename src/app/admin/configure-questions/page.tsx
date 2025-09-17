@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useStableRender } from "@/hooks/useStableRender";
 import { useUserData } from "@/contexts/UserContext";
 import {
@@ -47,40 +47,36 @@ import {
 } from "lucide-react";
 import { QuestionType, Stage } from "@/generated/prisma";
 
-interface Question {
+interface QuestionTemplate {
   id: string;
   text: string;
   type: QuestionType;
   stage: Stage;
-  options: Option[];
-  organizationId: string;
+  optionTemplates: OptionTemplate[];
 }
 
-interface Option {
+interface OptionTemplate {
   id: string;
   text: string;
-  questionId: string;
+  questionTemplateId: string;
 }
 
-interface NewQuestion {
+interface NewQuestionTemplate {
   text: string;
   type: QuestionType;
   stage: Stage;
-  options: string[];
+  optionTemplates: string[];
 }
 
-export default function ConfigureQuestionsPage() {
+export default function ConfigureQuestionTemplatesPage() {
   const { user, isSignedIn, isLoaded } = useUser();
   const { userData } = useUserData();
+  console.log(userData);
   const router = useRouter();
   const { isReady } = useStableRender();
-  const searchParams = useSearchParams();
-  
-  // Get organizationId from URL params for QZEN_ADMIN users
-  const orgIdFromUrl = searchParams.get('orgId');
 
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
+  const [questionTemplates, setQuestionTemplates] = useState<QuestionTemplate[]>([]);
+  const [filteredQuestionTemplates, setFilteredQuestionTemplates] = useState<QuestionTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -89,44 +85,35 @@ export default function ConfigureQuestionsPage() {
   // Dialog states
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [editingQuestionTemplate, setEditingQuestionTemplate] = useState<QuestionTemplate | null>(null);
   
   // Form states
-  const [newQuestion, setNewQuestion] = useState<NewQuestion>({
+  const [newQuestionTemplate, setNewQuestionTemplate] = useState<NewQuestionTemplate>({
     text: "",
     type: QuestionType.TEXT,
     stage: Stage.TECHNICAL_FEASIBILITY,
-    options: [""],
+    optionTemplates: [""],
   });
   
-  const [editQuestion, setEditQuestion] = useState<NewQuestion>({
+  const [editQuestionTemplate, setEditQuestionTemplate] = useState<NewQuestionTemplate>({
     text: "",
     type: QuestionType.TEXT,
     stage: Stage.TECHNICAL_FEASIBILITY,
-    options: [""],
+    optionTemplates: [""],
   });
   
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // Determine which organizationId to use
-  const organizationId = userData?.role === 'QZEN_ADMIN' ? orgIdFromUrl : userData?.organizationId;
-
-  const fetchQuestions = async () => {
-    if (!organizationId) {
-      setError("Organization ID not found");
-      setLoading(false);
-      return;
-    }
-
+  const fetchQuestionTemplates = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/organizations/${organizationId}/questions`);
+      const response = await fetch(`/api/question-templates`);
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch questions");
+        throw new Error(data.error || "Failed to fetch question templates");
       }
-      setQuestions(data.questions || []);
+      setQuestionTemplates(data.questionTemplates || []);
     } catch (err: any) {
       setError(err.message || "Unknown error");
     } finally {
@@ -137,20 +124,15 @@ export default function ConfigureQuestionsPage() {
   // Filter questions based on selected stage
   useEffect(() => {
     if (selectedStage === "all") {
-      setFilteredQuestions(questions);
+      setFilteredQuestionTemplates(questionTemplates);
     } else {
-      setFilteredQuestions(questions.filter(q => q.stage === selectedStage));
+      setFilteredQuestionTemplates(questionTemplates.filter(q => q.stage === selectedStage));
     }
-  }, [questions, selectedStage]);
+  }, [questionTemplates, selectedStage]);
 
   const handleAddQuestion = async () => {
-    if (!newQuestion.text.trim()) {
+    if (!newQuestionTemplate.text.trim()) {
       setError("Question text is required");
-      return;
-    }
-
-    if (!organizationId) {
-      setError("Organization ID not found");
       return;
     }
 
@@ -159,41 +141,36 @@ export default function ConfigureQuestionsPage() {
     setSuccess(null);
 
     try {
-      const response = await fetch(`/api/organizations/${organizationId}/questions`, {
+      const response = await fetch(`/api/question-templates`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newQuestion),
+        body: JSON.stringify(newQuestionTemplate),
       });
       const data = await response.json();
-      
+      console.log(data)
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create question");
+        throw new Error(data.error || "Failed to create question template");
       }
 
-      setSuccess("Question created successfully!");
-      setNewQuestion({
+      setSuccess("Question template created successfully!");
+      setNewQuestionTemplate({
         text: "",
         type: QuestionType.TEXT,
         stage: Stage.TECHNICAL_FEASIBILITY,
-        options: [""],
+        optionTemplates: [""],
       });
       setIsAddDialogOpen(false);
-      fetchQuestions();
+      fetchQuestionTemplates();
     } catch (err: any) {
-      setError(err.message || "Failed to create question");
+      setError(err.message || "Failed to create question template");
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleEditQuestion = async () => {
-    if (!editingQuestion || !editQuestion.text.trim()) {
+    if (!editingQuestionTemplate || !editQuestionTemplate.text.trim()) {
       setError("Question text is required");
-      return;
-    }
-
-    if (!organizationId) {
-      setError("Organization ID not found");
       return;
     }
 
@@ -202,110 +179,105 @@ export default function ConfigureQuestionsPage() {
     setSuccess(null);
 
     try {
-      const response = await fetch(`/api/organizations/${organizationId}/questions/${editingQuestion.id}`, {
+      const response = await fetch(`/api/question-templates/${editingQuestionTemplate.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editQuestion),
+        body: JSON.stringify(editQuestionTemplate),
       });
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || "Failed to update question");
+        throw new Error(data.error || "Failed to update question template");
       }
 
-      setSuccess("Question updated successfully!");
-      setEditingQuestion(null);
+      setSuccess("Question template updated successfully!");
+      setEditingQuestionTemplate(null);
       setIsEditDialogOpen(false);
-      fetchQuestions();
+      fetchQuestionTemplates();
     } catch (err: any) {
-      setError(err.message || "Failed to update question");
+      setError(err.message || "Failed to update question template");
     } finally {
       setActionLoading(null);
     }
   };
 
-  const handleDeleteQuestion = async (questionId: string, questionText: string) => {
+  const handleDeleteQuestion = async (questionTemplateId: string, questionText: string) => {
     if (!confirm(`Are you sure you want to delete "${questionText}"? This action cannot be undone.`)) {
       return;
     }
 
-    if (!organizationId) {
-      setError("Organization ID not found");
-      return;
-    }
-
-    setActionLoading(questionId);
+    setActionLoading(questionTemplateId);
     setError(null);
     setSuccess(null);
 
     try {
-      const response = await fetch(`/api/organizations/${organizationId}/questions/${questionId}`, {
+      const response = await fetch(`/api/question-templates/${questionTemplateId}`, {
         method: "DELETE",
       });
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || "Failed to delete question");
+        throw new Error(data.error || "Failed to delete question template");
       }
 
-      setSuccess("Question deleted successfully!");
-      fetchQuestions();
+      setSuccess("Question template deleted successfully!");
+      fetchQuestionTemplates();
     } catch (err: any) {
-      setError(err.message || "Failed to delete question");
+      setError(err.message || "Failed to delete question template");
     } finally {
       setActionLoading(null);
     }
   };
 
-  const openEditDialog = (question: Question) => {
-    setEditingQuestion(question);
-    setEditQuestion({
-      text: question.text,
-      type: question.type,
-      stage: question.stage,
-      options: question.options.length > 0 ? question.options.map(o => o.text) : [""],
+  const openEditDialog = (questionTemplate: QuestionTemplate) => {
+    setEditingQuestionTemplate(questionTemplate);
+    setEditQuestionTemplate({
+      text: questionTemplate.text,
+      type: questionTemplate.type,
+      stage: questionTemplate.stage,
+      optionTemplates: questionTemplate.optionTemplates.length > 0 ? questionTemplate.optionTemplates.map(o => o.text) : [""],
     });
     setIsEditDialogOpen(true);
   };
 
   const addOption = (isEdit: boolean = false) => {
     if (isEdit) {
-      setEditQuestion(prev => ({
+      setEditQuestionTemplate(prev => ({
         ...prev,
-        options: [...prev.options, ""]
+        optionTemplates: [...prev.optionTemplates, ""]
       }));
     } else {
-      setNewQuestion(prev => ({
+      setNewQuestionTemplate(prev => ({
         ...prev,
-        options: [...prev.options, ""]
+        optionTemplates: [...prev.optionTemplates, ""]
       }));
     }
   };
 
   const removeOption = (index: number, isEdit: boolean = false) => {
     if (isEdit) {
-      setEditQuestion(prev => ({
+      setEditQuestionTemplate(prev => ({
         ...prev,
-        options: prev.options.filter((_, i) => i !== index)
+        optionTemplates: prev.optionTemplates.filter((_, i) => i !== index)
       }));
     } else {
-      setNewQuestion(prev => ({
+      setNewQuestionTemplate(prev => ({
         ...prev,
-        options: prev.options.filter((_, i) => i !== index)
+        optionTemplates: prev.optionTemplates.filter((_, i) => i !== index)
       }));
     }
   };
 
   const updateOption = (index: number, value: string, isEdit: boolean = false) => {
     if (isEdit) {
-      setEditQuestion(prev => ({
+      setEditQuestionTemplate(prev => ({
         ...prev,
-        options: prev.options.map((opt, i) => i === index ? value : opt)
+        optionTemplates: prev.optionTemplates.map((opt, i) => i === index ? value : opt)
       }));
     } else {
-      setNewQuestion(prev => ({
+      setNewQuestionTemplate(prev => ({
         ...prev,
-        options: prev.options.map((opt, i) => i === index ? value : opt)
+        optionTemplates: prev.optionTemplates.map((opt, i) => i === index ? value : opt)
       }));
     }
   };
@@ -343,10 +315,10 @@ export default function ConfigureQuestionsPage() {
 
   // All hooks must be called before any conditional returns
   useEffect(() => {
-    if (isReady && organizationId) {
-      fetchQuestions();
+    if (isReady) {
+      fetchQuestionTemplates();
     }
-  }, [isReady, organizationId]);
+  }, [isReady]);
 
   // Now we can do conditional returns after all hooks
   if (!isReady || !isLoaded) {
@@ -366,20 +338,7 @@ export default function ConfigureQuestionsPage() {
     return null;
   }
 
-  // Wait for userData to be loaded before doing role validation
-  if (!userData) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-foreground font-medium">Loading user data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Updated access control to allow both ORG_ADMIN and QZEN_ADMIN
-  if (userData.role !== "QZEN_ADMIN" && userData.role !== "ORG_ADMIN") {
+  if (userData?.role !== "QZEN_ADMIN") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-8">
         <Card className="max-w-md w-full border-destructive bg-destructive/10">
@@ -391,64 +350,10 @@ export default function ConfigureQuestionsPage() {
           </CardHeader>
           <CardContent>
             <p className="text-destructive mb-4">
-              You don't have permission to access question configuration.
+              You don't have permission to access question templates.
             </p>
             <p className="text-muted-foreground mb-4">
-              Your role: {userData.role || "Unknown"}
-            </p>
-            <Button
-              onClick={() => router.push("/dashboard")}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              Go to Dashboard
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // For QZEN_ADMIN users, check if organizationId is provided
-  if (userData.role === "QZEN_ADMIN" && !organizationId) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-8">
-        <Card className="max-w-md w-full border-destructive bg-destructive/10">
-          <CardHeader>
-            <CardTitle className="text-destructive flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" />
-              Organization Required
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-destructive mb-4">
-              Please select an organization to configure questions for.
-            </p>
-            <Button
-              onClick={() => router.push("/admin")}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              Go to Admin Dashboard
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // For ORG_ADMIN users, check if they have an organization
-  if (userData.role === "ORG_ADMIN" && !userData.organizationId) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-8">
-        <Card className="max-w-md w-full border-destructive bg-destructive/10">
-          <CardHeader>
-            <CardTitle className="text-destructive flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" />
-              Organization Not Found
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-destructive mb-4">
-              Your user account is not associated with an organization.
+              Your role: {userData?.role || "Unknown"}
             </p>
             <Button
               onClick={() => router.push("/dashboard")}
@@ -467,7 +372,7 @@ export default function ConfigureQuestionsPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-foreground font-medium">Loading questions...</p>
+          <p className="text-foreground font-medium">Loading question templates...</p>
         </div>
       </div>
     );
@@ -481,32 +386,27 @@ export default function ConfigureQuestionsPage() {
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent leading-tight">
-                Configure Questions
+                Configure Question Templates
               </h1>
               <p className="text-muted-foreground mt-3 text-lg">
-                Manage assessment questions for your organization
+                Manage assessment question templates for your organization
               </p>
-              {userData.role === 'QZEN_ADMIN' && organizationId && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  Managing questions for organization: {organizationId}
-                </p>
-              )}
             </div>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="flex items-center gap-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-primary-foreground px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex-shrink-0">
                   <Plus className="w-6 h-6" />
-                  Add Question
+                  Add Question Template
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Settings className="w-5 h-5" />
-                    Add New Question
+                    Add New Question Template
                   </DialogTitle>
                   <DialogDescription>
-                    Create a new assessment question for your organization.
+                    Create a new assessment question template for your organization.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-6">
@@ -514,8 +414,8 @@ export default function ConfigureQuestionsPage() {
                     <Label htmlFor="questionText">Question Text *</Label>
                     <Textarea
                       id="questionText"
-                      value={newQuestion.text}
-                      onChange={(e) => setNewQuestion(prev => ({ ...prev, text: e.target.value }))}
+                      value={newQuestionTemplate.text}
+                      onChange={(e) => setNewQuestionTemplate(prev => ({ ...prev, text: e.target.value }))}
                       placeholder="Enter your question here..."
                       className="mt-1"
                       rows={3}
@@ -526,8 +426,8 @@ export default function ConfigureQuestionsPage() {
                     <div>
                       <Label htmlFor="questionType">Question Type *</Label>
                       <Select
-                        value={newQuestion.type}
-                        onValueChange={(value) => setNewQuestion(prev => ({ ...prev, type: value as QuestionType }))}
+                        value={newQuestionTemplate.type}
+                        onValueChange={(value) => setNewQuestionTemplate(prev => ({ ...prev, type: value as QuestionType }))}
                       >
                         <SelectTrigger className="mt-1">
                           <SelectValue />
@@ -544,8 +444,8 @@ export default function ConfigureQuestionsPage() {
                     <div>
                       <Label htmlFor="questionStage">Assessment Stage *</Label>
                       <Select
-                        value={newQuestion.stage}
-                        onValueChange={(value) => setNewQuestion(prev => ({ ...prev, stage: value as Stage }))}
+                        value={newQuestionTemplate.stage}
+                        onValueChange={(value) => setNewQuestionTemplate(prev => ({ ...prev, stage: value as Stage }))}
                       >
                         <SelectTrigger className="mt-1">
                           <SelectValue />
@@ -563,11 +463,11 @@ export default function ConfigureQuestionsPage() {
                     </div>
                   </div>
 
-                  {needsOptions(newQuestion.type) && (
+                  {needsOptions(newQuestionTemplate.type) && (
                     <div>
                       <Label>Options *</Label>
                       <div className="space-y-2 mt-1">
-                        {newQuestion.options.map((option, index) => (
+                        {newQuestionTemplate.optionTemplates.map((option, index) => (
                           <div key={index} className="flex gap-2">
                             <Input
                               value={option}
@@ -575,7 +475,7 @@ export default function ConfigureQuestionsPage() {
                               placeholder={`Option ${index + 1}`}
                               className="flex-1"
                             />
-                            {newQuestion.options.length > 1 && (
+                            {newQuestionTemplate.optionTemplates.length > 1 && (
                               <Button
                                 type="button"
                                 variant="outline"
@@ -610,12 +510,12 @@ export default function ConfigureQuestionsPage() {
                   </Button>
                   <Button
                     onClick={handleAddQuestion}
-                    disabled={actionLoading === "add" || !newQuestion.text.trim()}
+                    disabled={actionLoading === "add" || !newQuestionTemplate.text.trim()}
                   >
                     {actionLoading === "add" ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : null}
-                    Add Question
+                    Add Question Template
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -644,10 +544,10 @@ export default function ConfigureQuestionsPage() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <HelpCircle className="w-5 h-5" />
-                  Assessment Questions
+                  Assessment Question Templates
                 </CardTitle>
                 <CardDescription>
-                  Manage all questions used in your organization's assessments
+                  Manage all question templates used in your organization's assessments
                 </CardDescription>
               </div>
               
@@ -689,18 +589,18 @@ export default function ConfigureQuestionsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {filteredQuestions.length === 0 ? (
+            {filteredQuestionTemplates.length === 0 ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                   <HelpCircle className="w-8 h-8 text-muted-foreground" />
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-2">
-                  {selectedStage === "all" ? "No Questions Yet" : "No Questions Found"}
+                  {selectedStage === "all" ? "No Question Templates Yet" : "No Question Templates Found"}
                 </h3>
                 <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                   {selectedStage === "all" 
-                    ? "Create your first assessment question to get started."
-                    : `No questions found for ${getStageLabel(selectedStage as Stage)}. Try selecting a different stage or create a new question.`
+                    ? "Create your first assessment question template to get started."
+                    : `No question templates found for ${getStageLabel(selectedStage as Stage)}. Try selecting a different stage or create a new question template.`
                   }
                 </p>
                 <Button
@@ -708,7 +608,7 @@ export default function ConfigureQuestionsPage() {
                   className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-xl"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Question
+                  Add Question Template
                 </Button>
               </div>
             ) : (
@@ -716,7 +616,7 @@ export default function ConfigureQuestionsPage() {
                 {/* Results Summary */}
                 <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
                   <span>
-                    Showing {filteredQuestions.length} of {questions.length} questions
+                    Showing {filteredQuestionTemplates.length} of {questionTemplates.length} question templates
                     {selectedStage !== "all" && ` for ${getStageLabel(selectedStage as Stage)}`}
                   </span>
                   {selectedStage !== "all" && (
@@ -732,32 +632,32 @@ export default function ConfigureQuestionsPage() {
                   )}
                 </div>
 
-                {filteredQuestions.map((question) => (
+                {filteredQuestionTemplates.map((questionTemplate) => (
                   <div
-                    key={question.id}
+                    key={questionTemplate.id}
                     className="border border-border rounded-xl p-6 hover:shadow-md transition-shadow duration-200"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-3">
                           <h3 className="text-lg font-semibold text-foreground">
-                            {question.text}
+                            {questionTemplate.text}
                           </h3>
                           <Badge variant="secondary" className="px-3 py-1 rounded-full">
-                            {getQuestionTypeLabel(question.type)}
+                            {getQuestionTypeLabel(questionTemplate.type)}
                           </Badge>
                           <Badge variant="outline" className="px-3 py-1 rounded-full">
-                            {getStageLabel(question.stage)}
+                            {getStageLabel(questionTemplate.stage)}
                           </Badge>
                         </div>
                         
-                        {question.options.length > 0 && (
+                        {questionTemplate.optionTemplates.length > 0 && (
                           <div className="mt-3">
                             <p className="text-sm font-medium text-muted-foreground mb-2">
                               Options:
                             </p>
                             <div className="flex flex-wrap gap-2">
-                              {question.options.map((option, index) => (
+                              {questionTemplate.optionTemplates.map((option, index) => (
                                 <Badge
                                   key={index}
                                   variant="outline"
@@ -775,7 +675,7 @@ export default function ConfigureQuestionsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => openEditDialog(question)}
+                          onClick={() => openEditDialog(questionTemplate)}
                           className="border-border text-foreground hover:bg-muted"
                         >
                           <Edit className="w-4 h-4 mr-2" />
@@ -784,11 +684,11 @@ export default function ConfigureQuestionsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDeleteQuestion(question.id, question.text)}
-                          disabled={actionLoading === question.id}
+                          onClick={() => handleDeleteQuestion(questionTemplate.id, questionTemplate.text)}
+                          disabled={actionLoading === questionTemplate.id}
                           className="border-destructive text-destructive hover:bg-destructive/10"
                         >
-                          {actionLoading === question.id ? (
+                          {actionLoading === questionTemplate.id ? (
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                           ) : (
                             <Trash2 className="w-4 h-4 mr-2" />
@@ -810,20 +710,20 @@ export default function ConfigureQuestionsPage() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Edit className="w-5 h-5" />
-                Edit Question
+                Edit Question Template
               </DialogTitle>
               <DialogDescription>
-                Update the question details and options.
+                Update the question template details and options.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-6">
               <div>
-                <Label htmlFor="editQuestionText">Question Text *</Label>
+                <Label htmlFor="editQuestionText">Question Template Text *</Label>
                 <Textarea
                   id="editQuestionText"
-                  value={editQuestion.text}
-                  onChange={(e) => setEditQuestion(prev => ({ ...prev, text: e.target.value }))}
-                  placeholder="Enter your question here..."
+                  value={editQuestionTemplate.text}
+                  onChange={(e) => setEditQuestionTemplate(prev => ({ ...prev, text: e.target.value }))}
+                  placeholder="Enter your question template here..."
                   className="mt-1"
                   rows={3}
                 />
@@ -831,10 +731,10 @@ export default function ConfigureQuestionsPage() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="editQuestionType">Question Type *</Label>
+                  <Label htmlFor="editQuestionType">Question Template Type *</Label>
                   <Select
-                    value={editQuestion.type}
-                    onValueChange={(value) => setEditQuestion(prev => ({ ...prev, type: value as QuestionType }))}
+                    value={editQuestionTemplate.type}
+                    onValueChange={(value) => setEditQuestionTemplate(prev => ({ ...prev, type: value as QuestionType }))}
                   >
                     <SelectTrigger className="mt-1">
                       <SelectValue />
@@ -849,10 +749,10 @@ export default function ConfigureQuestionsPage() {
                 </div>
                 
                 <div>
-                  <Label htmlFor="editQuestionStage">Assessment Stage *</Label>
+                  <Label htmlFor="editQuestionStage">Assessment Question Template Stage *</Label>
                   <Select
-                    value={editQuestion.stage}
-                    onValueChange={(value) => setEditQuestion(prev => ({ ...prev, stage: value as Stage }))}
+                    value={editQuestionTemplate.stage}
+                    onValueChange={(value) => setEditQuestionTemplate(prev => ({ ...prev, stage: value as Stage }))}
                   >
                     <SelectTrigger className="mt-1">
                       <SelectValue />
@@ -870,11 +770,11 @@ export default function ConfigureQuestionsPage() {
                 </div>
               </div>
 
-              {needsOptions(editQuestion.type) && (
+              {needsOptions(editQuestionTemplate.type) && (
                 <div>
                   <Label>Options *</Label>
                   <div className="space-y-2 mt-1">
-                    {editQuestion.options.map((option, index) => (
+                    {editQuestionTemplate.optionTemplates.map((option, index) => (
                       <div key={index} className="flex gap-2">
                         <Input
                           value={option}
@@ -882,7 +782,7 @@ export default function ConfigureQuestionsPage() {
                           placeholder={`Option ${index + 1}`}
                           className="flex-1"
                         />
-                        {editQuestion.options.length > 1 && (
+                        {editQuestionTemplate.optionTemplates.length > 1 && (
                           <Button
                             type="button"
                             variant="outline"
@@ -917,12 +817,12 @@ export default function ConfigureQuestionsPage() {
               </Button>
               <Button
                 onClick={handleEditQuestion}
-                disabled={actionLoading === "edit" || !editQuestion.text.trim()}
+                disabled={actionLoading === "edit" || !editQuestionTemplate.text.trim()}
               >
                 {actionLoading === "edit" ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : null}
-                Update Question
+                Update Question Template
               </Button>
             </DialogFooter>
           </DialogContent>
