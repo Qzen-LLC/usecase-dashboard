@@ -1,8 +1,8 @@
-import { 
-  ComprehensiveAssessment, 
+import {
+  ComprehensiveAssessment,
   GuardrailsConfig,
   Guardrail,
-  ImplementationConfig 
+  ImplementationConfig
 } from './types';
 import { GuardrailsOrchestrator } from './guardrails-orchestrator';
 import { generateGuardrailsPrompt } from './prompts/guardrails-prompts';
@@ -13,6 +13,7 @@ import { validateGuardrails, ValidationReport } from './validators/guardrail-val
 import { withRetry, withTimeout, CircuitBreaker, LLMError } from './utils/error-handler';
 import { guardrailsCache, promptCache, withCache } from './utils/cache-manager';
 import { CONFIG } from './config/guardrails-config';
+import { observabilityManager } from '../observability/ObservabilityManager';
 
 /**
  * Guardrails Generation Engine
@@ -52,7 +53,7 @@ export class GuardrailsEngine {
     orgPolicies?: any
   ): Promise<GuardrailsConfig> {
     console.log('🚀 Starting Agentic Guardrails Generation...');
-    
+
     // Check cache first
     const cacheKey = guardrailsCache.generateKey({ assessment, orgPolicies });
     const cached = guardrailsCache.get(cacheKey);
@@ -60,7 +61,15 @@ export class GuardrailsEngine {
       console.log('✨ Using cached guardrails');
       return cached as GuardrailsConfig;
     }
-    
+
+    // Start observability session
+    const sessionId = await observabilityManager.startUseCaseSession(
+      assessment.useCaseId || 'unknown',
+      assessment.useCaseTitle || 'Unknown Use Case',
+      'guardrails',
+      { tags: ['guardrails-generation', 'engine'] }
+    );
+
     // Start logging session
     guardrailLogger.startSession(
       assessment.useCaseId || 'unknown',
@@ -155,9 +164,16 @@ export class GuardrailsEngine {
       // Cache the result
       guardrailsCache.set(cacheKey, finalResult);
       
+      // End observability session successfully
+      await observabilityManager.endSession(sessionId, finalResult);
+
       return finalResult;
     } catch (error) {
       console.error('Error generating guardrails:', error);
+
+      // End observability session with error
+      await observabilityManager.endSession(sessionId, null, error);
+
       throw error;
     }
   }

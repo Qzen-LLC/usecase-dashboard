@@ -3,12 +3,13 @@
  */
 
 import { langsmithTracer } from './LangSmithTracer';
-import { 
-  TraceMetadata, 
-  AgentExecutionMetrics, 
+import {
+  TraceMetadata,
+  AgentExecutionMetrics,
   OrchestrationMetrics,
-  TraceSummary 
+  TraceSummary
 } from './types';
+import { prismaClient } from '@/utils/db';
 
 export class ObservabilityManager {
   private static instance: ObservabilityManager;
@@ -49,8 +50,8 @@ export class ObservabilityManager {
       ...additionalMetadata
     });
 
-    // Initialize trace summary
-    const summary: TraceSummary = {
+    // Initialize trace summary with useCaseTitle
+    const summary: TraceSummary & { useCaseTitle?: string } = {
       traceId: sessionId,
       startTime: new Date(),
       totalLLMCalls: 0,
@@ -58,7 +59,8 @@ export class ObservabilityManager {
       totalCost: 0,
       agentsInvolved: [],
       status: 'running',
-      errors: []
+      errors: [],
+      useCaseTitle // Store the title in the summary
     };
 
     this.activeTraces.set(sessionId, summary);
@@ -247,10 +249,13 @@ export class ObservabilityManager {
     await langsmithTracer.endSession(outputs, error);
     const traceUrl = langsmithTracer.getTraceUrl();
 
-    // Save session to database
+    // Save session to database directly
     try {
       // Parse sessionId to extract components
-      const [sessionType, useCaseId] = sessionId.split('-');
+      const parts = sessionId.split('-');
+      const sessionType = parts[0] || 'evaluation';
+      // Extract useCaseId (UUID format)
+      const useCaseId = parts.slice(1, 6).join('-'); // Reconstruct UUID
 
       const sessionData = {
         sessionId,
@@ -271,16 +276,42 @@ export class ObservabilityManager {
         errors: summary.errors.length > 0 ? summary.errors : undefined,
       };
 
-      // Save to database via API
-      const response = await fetch('/api/observability/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionData }),
+      // Save directly to database using Prisma
+      await prismaClient.observabilitySession.upsert({
+        where: { sessionId },
+        update: {
+          status: sessionData.status,
+          endTime: sessionData.endTime,
+          duration: sessionData.duration,
+          totalLLMCalls: sessionData.totalLLMCalls,
+          totalTokens: sessionData.totalTokens,
+          totalCost: sessionData.totalCost,
+          agentsInvolved: sessionData.agentsInvolved,
+          langsmithUrl: sessionData.langsmithUrl,
+          langsmithRunId: sessionData.langsmithRunId,
+          metadata: sessionData.metadata || {},
+          errors: sessionData.errors || null,
+        },
+        create: {
+          sessionId: sessionData.sessionId,
+          useCaseId: sessionData.useCaseId,
+          useCaseTitle: sessionData.useCaseTitle,
+          sessionType: sessionData.sessionType,
+          status: sessionData.status,
+          startTime: sessionData.startTime,
+          endTime: sessionData.endTime,
+          duration: sessionData.duration,
+          totalLLMCalls: sessionData.totalLLMCalls,
+          totalTokens: sessionData.totalTokens,
+          totalCost: sessionData.totalCost,
+          agentsInvolved: sessionData.agentsInvolved,
+          langsmithUrl: sessionData.langsmithUrl,
+          langsmithRunId: sessionData.langsmithRunId,
+          metadata: sessionData.metadata || {},
+          errors: sessionData.errors || null,
+        },
       });
-
-      if (!response.ok) {
-        console.error('Failed to save observability session to database');
-      }
+      console.log(`💾 Observability session saved to database: ${sessionId}`);
     } catch (saveError) {
       console.error('Error saving observability session:', saveError);
     }
