@@ -292,7 +292,7 @@ export class LangSmithTracer {
       });
 
       console.log(`🏁 Ended LangSmith session: ${this.currentRun.id}`);
-      console.log(`📊 View trace at: https://smith.langchain.com/o/e6c3c073-5d24-5088-8a86-3c0ee5065e4d/projects/p/${this.config.langsmithProject}/r/${this.currentRun.id}`);
+      console.log(`📊 View trace at: https://smith.langchain.com/public/${this.config.langsmithProject}/r/${this.currentRun.id}`);
       
       this.currentRun = null;
       this.runStack = [];
