@@ -73,6 +73,20 @@ export class GuardrailsOrchestrator {
       this.sessionId
     );
 
+    // Start orchestrator as an agent
+    await observabilityManager.startAgentExecution(
+      'GuardrailsOrchestrator',
+      'orchestrator',
+      {
+        assessment: {
+          id: assessment.useCaseId,
+          title: assessment.useCaseTitle
+        },
+        specialistCount: this.specialists.size
+      },
+      this.sessionId
+    );
+
     // Start orchestrator execution tracking
     await this.tracer.startExecution({
       assessment: {
@@ -142,6 +156,14 @@ export class GuardrailsOrchestrator {
       await this.tracer.endExecution(guardrailsConfig);
     }
 
+    // End orchestrator as agent
+    await observabilityManager.endAgentExecution(
+      'GuardrailsOrchestrator',
+      guardrailsConfig,
+      null,
+      this.sessionId
+    );
+
     // End observability session
     if (this.sessionId) {
       await observabilityManager.endSession(this.sessionId, guardrailsConfig);
@@ -153,6 +175,14 @@ export class GuardrailsOrchestrator {
       if (this.tracer) {
         await this.tracer.endExecution(null, error);
       }
+
+      // End orchestrator as agent with error
+      await observabilityManager.endAgentExecution(
+        'GuardrailsOrchestrator',
+        null,
+        error,
+        this.sessionId
+      );
 
       // End failed session
       if (this.sessionId) {
@@ -660,14 +690,30 @@ export class GuardrailsOrchestrator {
     // Run all specialists in parallel for efficiency
     const specialistPromises = Array.from(this.specialists.entries()).map(
       async ([name, agent]) => {
+        // Start agent execution tracking
+        await observabilityManager.startAgentExecution(
+          name,
+          'specialist',
+          context,
+          this.sessionId
+        );
+
         // Log agent input
         guardrailLogger.logAgentInput(name, context);
-        
+
         const response = await agent.analyzeAndPropose(context);
-        
+
         // Log agent output
         guardrailLogger.logAgentOutput(name, response);
-        
+
+        // End agent execution tracking
+        await observabilityManager.endAgentExecution(
+          name,
+          response,
+          null,
+          this.sessionId
+        );
+
         return { name, response };
       }
     );
