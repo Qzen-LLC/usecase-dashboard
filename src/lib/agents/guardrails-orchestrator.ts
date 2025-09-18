@@ -690,6 +690,9 @@ export class GuardrailsOrchestrator {
     // Run all specialists in parallel for efficiency
     const specialistPromises = Array.from(this.specialists.entries()).map(
       async ([name, agent]) => {
+        // Create a tracer for this specialist agent
+        const agentTracer = createAgentTracer(name, 'specialist', this.sessionId);
+
         // Start agent execution tracking
         await observabilityManager.startAgentExecution(
           name,
@@ -698,13 +701,24 @@ export class GuardrailsOrchestrator {
           this.sessionId
         );
 
+        // Start tracer execution
+        await agentTracer.startExecution(context);
+
         // Log agent input
         guardrailLogger.logAgentInput(name, context);
+
+        // Set the tracer on the agent if it's a BaseSpecialistAgent
+        if ('setTracer' in agent && typeof agent.setTracer === 'function') {
+          agent.setTracer(agentTracer);
+        }
 
         const response = await agent.analyzeAndPropose(context);
 
         // Log agent output
         guardrailLogger.logAgentOutput(name, response);
+
+        // End tracer execution
+        await agentTracer.endExecution(response);
 
         // End agent execution tracking
         await observabilityManager.endAgentExecution(

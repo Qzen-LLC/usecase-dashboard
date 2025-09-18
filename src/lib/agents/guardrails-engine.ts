@@ -14,6 +14,7 @@ import { withRetry, withTimeout, CircuitBreaker, LLMError } from './utils/error-
 import { guardrailsCache, promptCache, withCache } from './utils/cache-manager';
 import { CONFIG } from './config/guardrails-config';
 import { observabilityManager } from '../observability/ObservabilityManager';
+import { createAgentTracer, AgentTracer } from '../observability/AgentTracer';
 
 /**
  * Guardrails Generation Engine
@@ -25,6 +26,7 @@ export class GuardrailsEngine {
   private openai: OpenAI;
   private riskAnalyzer: RiskAnalyzer;
   private circuitBreaker: CircuitBreaker;
+  private tracer: AgentTracer | null = null;
 
   constructor() {
     this.orchestrator = new GuardrailsOrchestrator();
@@ -33,13 +35,13 @@ export class GuardrailsEngine {
       CONFIG.circuitBreaker.threshold,
       CONFIG.circuitBreaker.timeout
     );
-    
+
     // Initialize OpenAI client - require API key
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       throw new Error('LLM Configuration Required: OPENAI_API_KEY must be set in environment variables for guardrail generation');
     }
-    
+
     this.openai = new OpenAI({
       apiKey: apiKey,
     });
@@ -69,6 +71,10 @@ export class GuardrailsEngine {
       'guardrails',
       { tags: ['guardrails-generation', 'engine'] }
     );
+
+    // Create tracer for this session
+    this.tracer = createAgentTracer('GuardrailsEngine', 'orchestrator', sessionId);
+    await this.tracer.startExecution({ assessment, orgPolicies });
 
     // Start logging session
     guardrailLogger.startSession(
@@ -163,13 +169,23 @@ export class GuardrailsEngine {
       
       // Cache the result
       guardrailsCache.set(cacheKey, finalResult);
-      
+
+      // End tracer execution
+      if (this.tracer) {
+        await this.tracer.endExecution(finalResult);
+      }
+
       // End observability session successfully
       await observabilityManager.endSession(sessionId, finalResult);
 
       return finalResult;
     } catch (error) {
       console.error('Error generating guardrails:', error);
+
+      // End tracer execution with error
+      if (this.tracer) {
+        await this.tracer.endExecution(null, error);
+      }
 
       // End observability session with error
       await observabilityManager.endSession(sessionId, null, error);
@@ -327,20 +343,40 @@ export class GuardrailsEngine {
         ? CONFIG.llm.maxTokens.domain 
         : CONFIG.llm.maxTokens.comprehensive;
 
-      // Call OpenAI API with retry and timeout
+      // Call OpenAI API with retry, timeout, and observability
       const completion = await withRetry(
         () => withTimeout(
           () => this.circuitBreaker.execute(
-            () => this.openai.chat.completions.create({
-              model: CONFIG.llm.model,
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: optimizedPrompt }
-              ],
-              response_format: { type: 'json_object' },
-              temperature: CONFIG.llm.temperature,
-              max_tokens: maxTokens
-            })
+            async () => {
+              // Use tracer if available, otherwise fallback to direct call
+              if (this.tracer) {
+                return await this.tracer.traceOpenAICall(
+                  this.openai,
+                  {
+                    model: CONFIG.llm.model,
+                    messages: [
+                      { role: 'system', content: systemPrompt },
+                      { role: 'user', content: optimizedPrompt }
+                    ],
+                    response_format: { type: 'json_object' },
+                    temperature: CONFIG.llm.temperature,
+                    max_tokens: maxTokens
+                  },
+                  `${domain || approach || 'guardrails'}_generation`
+                );
+              } else {
+                return await this.openai.chat.completions.create({
+                  model: CONFIG.llm.model,
+                  messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: optimizedPrompt }
+                  ],
+                  response_format: { type: 'json_object' },
+                  temperature: CONFIG.llm.temperature,
+                  max_tokens: maxTokens
+                });
+              }
+            }
           ),
           CONFIG.llm.timeout,
           'OpenAI API call timed out'

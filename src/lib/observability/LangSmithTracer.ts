@@ -32,8 +32,20 @@ export class LangSmithTracer {
       enableLatencyTracking: true,
     };
 
+    console.log('🔍 LangSmith Config:', {
+      enabled: this.config.enabled,
+      hasApiKey: !!this.config.langsmithApiKey,
+      project: this.config.langsmithProject,
+      level: this.config.level
+    });
+
     if (this.config.enabled && this.config.langsmithApiKey) {
       this.initializeClient();
+    } else {
+      console.warn('⚠️ LangSmith not initialized:', {
+        enabled: this.config.enabled,
+        hasApiKey: !!this.config.langsmithApiKey
+      });
     }
   }
 
@@ -46,11 +58,16 @@ export class LangSmithTracer {
 
   private initializeClient() {
     try {
+      // LangSmith client also checks process.env directly
+      process.env.LANGSMITH_API_KEY = this.config.langsmithApiKey;
+      process.env.LANGSMITH_PROJECT = this.config.langsmithProject;
+
       this.client = new Client({
         apiKey: this.config.langsmithApiKey,
         apiUrl: 'https://api.smith.langchain.com',
       });
       console.log('✅ LangSmith client initialized successfully');
+      console.log('📊 LangSmith project:', this.config.langsmithProject);
     } catch (error) {
       console.error('❌ Failed to initialize LangSmith client:', error);
       this.config.enabled = false;
@@ -61,7 +78,16 @@ export class LangSmithTracer {
    * Start a new trace session
    */
   async startSession(metadata: TraceMetadata): Promise<RunTree | null> {
-    if (!this.config.enabled || !this.client) return null;
+    console.log('📌 LangSmith startSession called:', {
+      enabled: this.config.enabled,
+      hasClient: !!this.client,
+      metadata
+    });
+
+    if (!this.config.enabled || !this.client) {
+      console.warn('⚠️ LangSmith session not started - disabled or no client');
+      return null;
+    }
 
     try {
       const run = new RunTree({
@@ -80,8 +106,9 @@ export class LangSmithTracer {
       await run.postRun();
       this.currentRun = run;
       this.runStack = [run];
-      
+
       console.log(`🎯 Started LangSmith session: ${run.id}`);
+      console.log(`📊 View at: https://smith.langchain.com/public/${this.config.langsmithProject}/r/${run.id}`);
       return run;
     } catch (error) {
       console.error('Failed to start LangSmith session:', error);
@@ -265,7 +292,7 @@ export class LangSmithTracer {
       });
 
       console.log(`🏁 Ended LangSmith session: ${this.currentRun.id}`);
-      console.log(`📊 View trace at: https://smith.langchain.com/public/${this.config.langsmithProject}/r/${this.currentRun.id}`);
+      console.log(`📊 View trace at: https://smith.langchain.com/o/e6c3c073-5d24-5088-8a86-3c0ee5065e4d/projects/p/${this.config.langsmithProject}/r/${this.currentRun.id}`);
       
       this.currentRun = null;
       this.runStack = [];

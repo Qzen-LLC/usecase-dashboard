@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { AgentResponse, Guardrail } from '../types';
 import { guardrailLogger } from '../utils/guardrail-logger';
+import { AgentTracer } from '../../observability/AgentTracer';
 
 /**
  * Base class for specialist agents that generate guardrails using LLM
@@ -9,17 +10,26 @@ export abstract class BaseSpecialistAgent {
   protected openai: OpenAI;
   protected agentName: string;
   protected domain: string;
-  
-  constructor(agentName: string, domain: string) {
+  protected tracer: AgentTracer | null = null;
+
+  constructor(agentName: string, domain: string, tracer?: AgentTracer) {
     this.agentName = agentName;
     this.domain = domain;
-    
+    this.tracer = tracer || null;
+
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       throw new Error(`${agentName}: OpenAI API key not configured`);
     }
-    
+
     this.openai = new OpenAI({ apiKey });
+  }
+
+  /**
+   * Set the tracer for this agent
+   */
+  public setTracer(tracer: AgentTracer): void {
+    this.tracer = tracer;
   }
   
   /**
@@ -73,17 +83,33 @@ export abstract class BaseSpecialistAgent {
       `;
       
       console.log(`🤖 ${this.agentName}: Generating guardrails via LLM...`);
-      
-      const completion = await this.openai.chat.completions.create({
-        model: process.env.DEFAULT_LLM_MODEL || 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.7,
-        max_tokens: 2000
-      });
+
+      // Use tracer if available for observability
+      const completion = this.tracer
+        ? await this.tracer.traceOpenAICall(
+            this.openai,
+            {
+              model: process.env.DEFAULT_LLM_MODEL || 'gpt-4o-mini',
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+              ],
+              response_format: { type: 'json_object' },
+              temperature: 0.7,
+              max_tokens: 2000
+            },
+            `${this.domain}_guardrails_generation`
+          )
+        : await this.openai.chat.completions.create({
+            model: process.env.DEFAULT_LLM_MODEL || 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0.7,
+            max_tokens: 2000
+          });
       
       const response = completion.choices[0]?.message?.content;
       if (!response) {
