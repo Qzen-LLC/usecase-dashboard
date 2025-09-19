@@ -172,9 +172,9 @@ export class GuardrailLogger {
         concerns: response.concerns ? response.concerns.slice(0, 3) : []
       }
     };
-    
+
     this.log('AGENT_OUTPUT', entry);
-    
+
     console.log(`\n┌─── 🤖 AGENT OUTPUT: ${agentName} ───`);
     console.log(`│ 🛡️ Guardrails: ${response.guardrails?.length || 0}`);
     console.log(`│ 💡 Insights: ${response.insights?.length || 0}`);
@@ -188,6 +188,87 @@ export class GuardrailLogger {
       });
     }
     console.log(`└───────────────────────────────────────────────────\n`);
+  }
+
+  /**
+   * Log agent LLM call with full prompts
+   */
+  logAgentLLMCall(agentName: string, systemPrompt: string, userPrompt: string, model: string) {
+    const entry = {
+      type: 'AGENT_LLM_CALL',
+      agent: agentName,
+      timestamp: new Date().toISOString(),
+      model: model,
+      prompts: {
+        system: systemPrompt,
+        user: userPrompt,
+        systemLength: systemPrompt.length,
+        userLength: userPrompt.length,
+        totalLength: systemPrompt.length + userPrompt.length
+      }
+    };
+
+    this.log('AGENT_LLM_CALL', entry);
+
+    console.log(`\n╔═══════════════════════════════════════════════════════════════════`);
+    console.log(`║ 🤖 AGENT LLM CALL: ${agentName}`);
+    console.log(`║ 🧠 Model: ${model}`);
+    console.log(`║ 📏 System Prompt: ${systemPrompt.length} chars`);
+    console.log(`║ 📏 User Prompt: ${userPrompt.length} chars`);
+    console.log(`║ 📏 Total: ${systemPrompt.length + userPrompt.length} chars`);
+    console.log(`║ ───────────────────────────────────────────────────────────────`);
+    console.log(`║ System Prompt Preview:`);
+    console.log(`║ ${this.truncate(systemPrompt, 300).replace(/\n/g, '\n║ ')}`);
+    console.log(`║ ───────────────────────────────────────────────────────────────`);
+    console.log(`║ User Prompt Preview:`);
+    console.log(`║ ${this.truncate(userPrompt, 500).replace(/\n/g, '\n║ ')}`);
+    console.log(`╚═══════════════════════════════════════════════════════════════════\n`);
+  }
+
+  /**
+   * Log agent LLM response with full content
+   */
+  logAgentLLMResponse(agentName: string, rawResponse: string | null, parsedGuardrails: any[], parseSuccess: boolean, error?: any) {
+    const entry = {
+      type: 'AGENT_LLM_RESPONSE',
+      agent: agentName,
+      timestamp: new Date().toISOString(),
+      response: {
+        raw: rawResponse,
+        rawLength: rawResponse ? rawResponse.length : 0,
+        parsed: parsedGuardrails,
+        guardrailsCount: parsedGuardrails.length,
+        parseSuccess: parseSuccess,
+        error: error ? error.message : null
+      }
+    };
+
+    this.log('AGENT_LLM_RESPONSE', entry);
+
+    console.log(`\n╔═══════════════════════════════════════════════════════════════════`);
+    console.log(`║ 🤖 AGENT LLM RESPONSE: ${agentName}`);
+    console.log(`║ ✅ Parse Success: ${parseSuccess}`);
+    console.log(`║ 🛡️ Guardrails Generated: ${parsedGuardrails.length}`);
+    console.log(`║ 📏 Response Length: ${rawResponse ? rawResponse.length : 0} chars`);
+    if (!parseSuccess && error) {
+      console.log(`║ ❌ Parse Error: ${error.message}`);
+    }
+    if (rawResponse) {
+      console.log(`║ ───────────────────────────────────────────────────────────────`);
+      console.log(`║ Raw Response Preview:`);
+      console.log(`║ ${this.truncate(rawResponse, 500).replace(/\n/g, '\n║ ')}`);
+    }
+    if (parsedGuardrails.length > 0) {
+      console.log(`║ ───────────────────────────────────────────────────────────────`);
+      console.log(`║ First Guardrail:`);
+      const firstGuardrail = parsedGuardrails[0];
+      console.log(`║   ID: ${firstGuardrail.id}`);
+      console.log(`║   Type: ${firstGuardrail.type}`);
+      console.log(`║   Severity: ${firstGuardrail.severity}`);
+      console.log(`║   Rule: ${firstGuardrail.rule}`);
+      console.log(`║   Description: ${this.truncate(firstGuardrail.description || '', 100)}`);
+    }
+    console.log(`╚═══════════════════════════════════════════════════════════════════\n`);
   }
   
   /**

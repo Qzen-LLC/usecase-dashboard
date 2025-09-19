@@ -84,12 +84,17 @@ export abstract class BaseSpecialistAgent {
       
       console.log(`🤖 ${this.agentName}: Generating guardrails via LLM...`);
 
+      const model = process.env.DEFAULT_LLM_MODEL || 'gpt-4o-mini';
+
+      // Log the full prompts being sent to LLM
+      guardrailLogger.logAgentLLMCall(this.agentName, systemPrompt, userPrompt, model);
+
       // Use tracer if available for observability
       const completion = this.tracer
         ? await this.tracer.traceOpenAICall(
             this.openai,
             {
-              model: process.env.DEFAULT_LLM_MODEL || 'gpt-4o-mini',
+              model: model,
               messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt }
@@ -101,7 +106,7 @@ export abstract class BaseSpecialistAgent {
             `${this.domain}_guardrails_generation`
           )
         : await this.openai.chat.completions.create({
-            model: process.env.DEFAULT_LLM_MODEL || 'gpt-4o-mini',
+            model: model,
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt }
@@ -110,27 +115,32 @@ export abstract class BaseSpecialistAgent {
             temperature: 0.7,
             max_tokens: 2000
           });
-      
+
       const response = completion.choices[0]?.message?.content;
       if (!response) {
         console.warn(`${this.agentName}: No response from LLM`);
+        guardrailLogger.logAgentLLMResponse(this.agentName, null, [], false, new Error('No response from LLM'));
         return [];
       }
-      
+
       try {
         const parsed = JSON.parse(response);
         const guardrails = Array.isArray(parsed) ? parsed : (parsed.guardrails || []);
-        
+
         // Validate and clean guardrails
-        const validGuardrails = guardrails.filter((g: any) => 
+        const validGuardrails = guardrails.filter((g: any) =>
           g.id && g.type && g.severity && g.rule && g.description
         );
-        
+
+        // Log the full response and parsed guardrails
+        guardrailLogger.logAgentLLMResponse(this.agentName, response, validGuardrails, true);
+
         console.log(`✅ ${this.agentName}: Generated ${validGuardrails.length} guardrails`);
         return validGuardrails;
-        
+
       } catch (parseError) {
         console.error(`${this.agentName}: Failed to parse LLM response:`, parseError);
+        guardrailLogger.logAgentLLMResponse(this.agentName, response, [], false, parseError);
         return [];
       }
       

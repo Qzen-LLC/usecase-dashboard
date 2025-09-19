@@ -202,17 +202,24 @@ export class LangSmithTracer {
         // Log what we're sending to LangSmith
         console.log(`  - Sending to LangSmith: string of ${outputToSend.length} chars`);
 
+        // For LLM runs, use LangChain's expected format
         await childRun.end({
           outputs: this.config.captureResponses ? {
-            // Send raw string content as 'output' for LangSmith UI compatibility
-            output: outputToSend,
-            // Keep structured metrics separately
-            metrics: {
-              model: metadata.model,
-              promptTokens: metrics?.promptTokens,
-              completionTokens: metrics?.completionTokens,
-              totalTokens: metrics?.totalTokens,
-              cost: metrics?.estimatedCost,
+            // LangSmith expects this format for LLM runs
+            generations: [[{
+              text: outputToSend,
+              message: {
+                content: outputToSend,
+                role: 'assistant'
+              }
+            }]],
+            llm_output: {
+              token_usage: {
+                prompt_tokens: metrics?.promptTokens || 0,
+                completion_tokens: metrics?.completionTokens || 0,
+                total_tokens: metrics?.totalTokens || 0
+              },
+              model_name: metadata.model
             }
           } : { metrics },
         });
