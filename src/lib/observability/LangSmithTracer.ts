@@ -27,7 +27,7 @@ export class LangSmithTracer {
       langsmithProject: process.env.LANGSMITH_PROJECT || 'default',
       capturePrompts: true,
       captureResponses: true,
-      sanitizeSensitiveData: true,
+      sanitizeSensitiveData: false, // Temporarily disabled to debug output issue
       enableCostTracking: true,
       enableLatencyTracking: true,
     };
@@ -181,13 +181,42 @@ export class LangSmithTracer {
 
       // Update run with outputs and metrics
       if (childRun) {
+        // Get the raw content string from OpenAI response
+        let rawContent = '';
+        if (result && typeof result === 'object' && 'choices' in result) {
+          rawContent = (result as any).choices[0]?.message?.content || '';
+        }
+
+        // For debugging - log the actual response
+        console.log(`🔍 LangSmith Response Capture [${metadata.agentName || 'Direct'}]:`);
+        console.log(`  - Raw content length: ${rawContent.length} chars`);
+        if (rawContent.length < 500) {
+          console.log(`  - Raw content: ${rawContent}`);
+        } else {
+          console.log(`  - Raw content preview: ${rawContent.substring(0, 200)}...`);
+        }
+
+        // Apply sanitization to the raw string if enabled
+        const outputToSend = this.config.sanitizeSensitiveData ? this.sanitize(rawContent) : rawContent;
+
+        // Log what we're sending to LangSmith
+        console.log(`  - Sending to LangSmith: string of ${outputToSend.length} chars`);
+
         await childRun.end({
           outputs: this.config.captureResponses ? {
-            response: this.sanitize(this.extractResponse(result)),
-            metrics,
+            // Send raw string content as 'output' for LangSmith UI compatibility
+            output: outputToSend,
+            // Keep structured metrics separately
+            metrics: {
+              model: metadata.model,
+              promptTokens: metrics?.promptTokens,
+              completionTokens: metrics?.completionTokens,
+              totalTokens: metrics?.totalTokens,
+              cost: metrics?.estimatedCost,
+            }
           } : { metrics },
         });
-        
+
         this.runStack.pop();
 
         // Log to console if in detailed mode
@@ -317,24 +346,34 @@ export class LangSmithTracer {
   /**
    * Extract response content from various result formats
    */
-  private extractResponse(result: any): string {
+  private extractResponse(result: any): any {
     if (!result) return '';
-    
+
     // OpenAI chat completion
     if (result.choices && result.choices[0]?.message?.content) {
-      return result.choices[0].message.content;
+      const content = result.choices[0].message.content;
+      // Try to parse JSON if it looks like JSON
+      if (typeof content === 'string' && (content.trim().startsWith('{') || content.trim().startsWith('['))) {
+        try {
+          return JSON.parse(content);
+        } catch {
+          // If parsing fails, return as string
+          return content;
+        }
+      }
+      return content;
     }
-    
+
     // Direct string response
     if (typeof result === 'string') {
       return result;
     }
-    
-    // JSON response
+
+    // Already an object - return as is
     if (typeof result === 'object') {
-      return JSON.stringify(result, null, 2);
+      return result;
     }
-    
+
     return String(result);
   }
 
@@ -343,24 +382,62 @@ export class LangSmithTracer {
    */
   private sanitize(data: any): any {
     if (!this.config.sanitizeSensitiveData) return data;
-    
-    const dataStr = JSON.stringify(data);
-    
-    // Remove API keys
-    let sanitized = dataStr.replace(/sk-[a-zA-Z0-9]{48}/g, 'sk-***');
-    sanitized = sanitized.replace(/Bearer [a-zA-Z0-9\-._~+\/]+=*/g, 'Bearer ***');
-    
-    // Remove emails
-    sanitized = sanitized.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '***@***.com');
-    
-    // Remove phone numbers
-    sanitized = sanitized.replace(/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g, '***-***-****');
-    
-    try {
-      return JSON.parse(sanitized);
-    } catch {
+
+    // If data is already an object/array, work with it directly
+    if (typeof data === 'object' && data !== null) {
+      // For arrays and objects, return as-is for LangSmith
+      // We'll only sanitize strings that contain sensitive patterns
+      return this.sanitizeObject(data);
+    }
+
+    // For string data, apply sanitization
+    if (typeof data === 'string') {
+      let sanitized = data;
+
+      // Only sanitize actual API keys and sensitive data patterns
+      // Don't sanitize JSON structure or normal content
+      sanitized = sanitized.replace(/sk-[a-zA-Z0-9]{48,}/g, 'sk-***');
+      sanitized = sanitized.replace(/Bearer [a-zA-Z0-9\-._~+\/]{20,}/g, 'Bearer ***');
+
+      // Only replace emails that are clearly personal (not in JSON keys)
+      sanitized = sanitized.replace(/[a-zA-Z0-9._%+-]+@(gmail|yahoo|hotmail|outlook)\.[a-zA-Z]{2,}/gi, '***@***.com');
+
       return sanitized;
     }
+
+    return data;
+  }
+
+  /**
+   * Recursively sanitize an object while preserving structure
+   */
+  private sanitizeObject(obj: any): any {
+    if (obj === null || obj === undefined) return obj;
+
+    if (Array.isArray(obj)) {
+      return obj.map(item => this.sanitizeObject(item));
+    }
+
+    if (typeof obj === 'object') {
+      const sanitized: any = {};
+      for (const key in obj) {
+        // Skip sanitizing the key itself
+        const value = obj[key];
+        if (typeof value === 'string') {
+          // Only sanitize string values that look like sensitive data
+          if (value.match(/^sk-[a-zA-Z0-9]{48,}/) || value.match(/^Bearer /)) {
+            sanitized[key] = '***REDACTED***';
+          } else {
+            sanitized[key] = value;
+          }
+        } else {
+          sanitized[key] = this.sanitizeObject(value);
+        }
+      }
+      return sanitized;
+    }
+
+    return obj;
   }
 
   /**
