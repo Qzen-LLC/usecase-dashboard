@@ -87,9 +87,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if ((type === QuestionType.CHECKBOX || type === QuestionType.RADIO) && (!optionTemplates || optionTemplates.length === 0)) {
+    if ((type === QuestionType.CHECKBOX || type === QuestionType.RADIO || type === QuestionType.RISK) && (!optionTemplates || optionTemplates.length === 0)) {
       return NextResponse.json(
-        { error: 'Options are required for checkbox and radio questions' },
+        { error: 'Options are required for checkbox, radio and risk questions' },
         { status: 400 }
       );
     }
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
         type,
         stage,
         optionTemplates: {
-          create: (type === QuestionType.CHECKBOX || type === QuestionType.RADIO) 
+          create: (type === QuestionType.CHECKBOX || type === QuestionType.RADIO || type === QuestionType.RISK) 
             ? optionTemplates.filter((opt: string) => opt.trim()).map((opt: string) => ({ text: opt.trim() }))
             : []
         }

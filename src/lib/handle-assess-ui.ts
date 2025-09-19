@@ -47,5 +47,35 @@ export const useAnswerHandlers = (
     [onAnswerChange]
   );
 
-  return { handleCheckboxChange, handleRadioChange, handleSliderChange, handleTextChange };
+  const handleRiskGroupChange = useCallback(
+    (
+      questionId: string,
+      newChecked: { probability: AnswerProps | null; impact: AnswerProps | null }
+    ) => {
+      // Parse the individual values to extract the actual data
+      const probabilityData = newChecked.probability 
+        ? JSON.parse(newChecked.probability.value)
+        : null;
+      const impactData = newChecked.impact 
+        ? JSON.parse(newChecked.impact.value)
+        : null;
+
+      const riskValue = {
+        probability: probabilityData,
+        impact: impactData,
+      };
+
+      const riskAnswer: AnswerProps = {
+        id: `${questionId}-risk`,
+        value: JSON.stringify(riskValue), // store as JSON string
+        questionId,
+      };
+
+      console.log("Risk group changed for question:", questionId, riskAnswer);
+      onAnswerChange(questionId, [riskAnswer]);
+    },
+    [onAnswerChange]
+  );
+
+  return { handleCheckboxChange, handleRadioChange, handleSliderChange, handleTextChange, handleRiskGroupChange };
 };

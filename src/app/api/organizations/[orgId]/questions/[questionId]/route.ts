@@ -83,9 +83,9 @@ export async function PUT(
     }
 
     // For CHECKBOX and RADIO questions, options are required
-    if ((type === QuestionType.CHECKBOX || type === QuestionType.RADIO) && (!options || options.length === 0)) {
+    if ((type === QuestionType.CHECKBOX || type === QuestionType.RADIO || type === QuestionType.RISK) && (!options || options.length === 0)) {
       return NextResponse.json(
-        { error: 'Options are required for checkbox and radio questions' },
+        { error: 'Options are required for checkbox, radio and risk questions' },
         { status: 400 }
       );
     }
@@ -108,7 +108,7 @@ export async function PUT(
       });
 
       // Create new options if needed
-      if (type === QuestionType.CHECKBOX || type === QuestionType.RADIO) {
+      if (type === QuestionType.CHECKBOX || type === QuestionType.RADIO || type === QuestionType.RISK) {
         await tx.option.createMany({
           data: options
             .filter((opt: string) => opt.trim())

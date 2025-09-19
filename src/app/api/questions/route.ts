@@ -93,9 +93,9 @@ export async function POST(request: NextRequest) {
     }
 
     // For CHECKBOX and RADIO questions, options are required
-    if ((type === QuestionType.CHECKBOX || type === QuestionType.RADIO) && (!options || options.length === 0)) {
+    if ((type === QuestionType.CHECKBOX || type === QuestionType.RADIO || type === QuestionType.RISK) && (!options || options.length === 0)) {
       return NextResponse.json(
-        { error: 'Options are required for checkbox and radio questions' },
+        { error: 'Options are required for checkbox, radio and risk questions' },
         { status: 400 }
       );
     }
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
         stage,
         organizationId: userRecord.organizationId!,
         options: {
-          create: (type === QuestionType.CHECKBOX || type === QuestionType.RADIO) 
+          create: (type === QuestionType.CHECKBOX || type === QuestionType.RADIO || type === QuestionType.RISK) 
             ? options.filter((opt: string) => opt.trim()).map((opt: string) => ({ text: opt.trim() }))
             : []
         }

@@ -946,6 +946,7 @@ enum QuestionType {
   RADIO
   TEXT
   SLIDER
+  RISK
 }
 
 enum RiskStatus {
