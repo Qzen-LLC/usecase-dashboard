@@ -114,17 +114,37 @@ export class GuardrailsEngine {
       const agentGuardrails = await this.orchestrator.generateGuardrails(assessment);
 
       // Step 3: Synthesize LLM and agent recommendations
+      // Count actual agent guardrails properly
+      let agentGuardrailCount = 0;
+      if (agentGuardrails.guardrails?.rules) {
+        Object.values(agentGuardrails.guardrails.rules).forEach((ruleSet: any) => {
+          if (Array.isArray(ruleSet)) {
+            agentGuardrailCount += ruleSet.length;
+          }
+        });
+      }
+
       guardrailLogger.logOrchestratorAction('SYNTHESIZE_RECOMMENDATIONS', {
         llmPerspectives: perspectives.length,
-        agentGuardrails: Object.keys(agentGuardrails.guardrails?.rules || {}).length
+        agentGuardrails: agentGuardrailCount
       });
       const synthesized = await this.synthesizeRecommendations(
         perspectives,
         agentGuardrails,
         assessment
       );
+      // Extract all agent guardrails for logging
+      const agentGuardrailsList: any[] = [];
+      if (agentGuardrails.guardrails?.rules) {
+        Object.values(agentGuardrails.guardrails.rules).forEach((ruleSet: any) => {
+          if (Array.isArray(ruleSet)) {
+            agentGuardrailsList.push(...ruleSet);
+          }
+        });
+      }
+
       guardrailLogger.logSynthesis(
-        { perspectives, agentGuardrails: agentGuardrails.guardrails?.rules },
+        { perspectives, agentGuardrails: agentGuardrailsList },
         synthesized
       );
 
@@ -553,22 +573,130 @@ export class GuardrailsEngine {
       console.log('⚠️ No LLM perspectives available, using agent guardrails only');
     }
 
-    // Remove duplicates and resolve conflicts
-    const synthesized = this.deduplicateAndResolve(allGuardrails);
+    // Apply smart deduplication - remove only true duplicates
+    const synthesized = this.smartDeduplication(allGuardrails);
 
     // Prioritize based on severity and consensus
     return this.prioritizeGuardrails(synthesized);
   }
 
   /**
-   * Remove duplicate guardrails and resolve conflicts
+   * Smart deduplication - removes duplicates based on similar titles/rules
+   */
+  private smartDeduplication(guardrails: Guardrail[]): Guardrail[] {
+    const seen = new Map<string, Guardrail>();
+    const ruleMap = new Map<string, Guardrail>();
+    const duplicateLog: { [key: string]: number } = {};
+
+    guardrails.forEach(guardrail => {
+      // Normalize the rule name for comparison
+      const normalizedRule = this.normalizeString(guardrail.rule || '');
+
+      // Check if we've seen this exact rule before
+      if (normalizedRule && ruleMap.has(normalizedRule)) {
+        // Found duplicate by rule name
+        const existing = ruleMap.get(normalizedRule)!;
+        duplicateLog[normalizedRule] = (duplicateLog[normalizedRule] || 1) + 1;
+
+        // Keep the one with more complete information
+        const existingScore = this.getCompletenessScore(existing);
+        const newScore = this.getCompletenessScore(guardrail);
+
+        if (newScore > existingScore) {
+          // Replace with better version
+          const existingKey = this.getGuardrailKey(existing);
+          seen.delete(existingKey);
+          ruleMap.set(normalizedRule, guardrail);
+          seen.set(this.getGuardrailKey(guardrail), guardrail);
+        }
+      } else {
+        // Check for near-duplicates using a composite key
+        const key = this.getGuardrailKey(guardrail);
+
+        if (!seen.has(key)) {
+          seen.set(key, guardrail);
+          if (normalizedRule) {
+            ruleMap.set(normalizedRule, guardrail);
+          }
+        } else {
+          // Track duplicates for logging
+          duplicateLog[key] = (duplicateLog[key] || 1) + 1;
+
+          // Keep the one with more complete information
+          const existing = seen.get(key)!;
+          const existingScore = this.getCompletenessScore(existing);
+          const newScore = this.getCompletenessScore(guardrail);
+
+          if (newScore > existingScore) {
+            seen.set(key, guardrail);
+            if (normalizedRule) {
+              ruleMap.set(normalizedRule, guardrail);
+            }
+          }
+        }
+      }
+    });
+
+    const deduped = Array.from(seen.values());
+    console.log(`🔄 Deduplication: ${guardrails.length} → ${deduped.length} guardrails`);
+    if (Object.keys(duplicateLog).length > 0) {
+      console.log(`   Removed ${guardrails.length - deduped.length} duplicates (by rule or description)`);
+    }
+
+    return deduped;
+  }
+
+  /**
+   * Normalize string for comparison (removes spaces, special chars, makes lowercase)
+   */
+  private normalizeString(str: string): string {
+    return str
+      .toLowerCase()
+      .replace(/[\s\-_]/g, '') // Remove spaces, hyphens, underscores
+      .replace(/[^a-z0-9]/g, '') // Remove special characters
+      .trim();
+  }
+
+  /**
+   * Get a unique key for a guardrail based on type and normalized description
+   */
+  private getGuardrailKey(guardrail: Guardrail): string {
+    // Use normalized description as primary differentiator
+    const normalizedDesc = this.normalizeString(guardrail.description || guardrail.rule || '');
+    return [
+      guardrail.type || 'unknown',
+      normalizedDesc,
+      guardrail.severity || 'medium'
+    ].join('|');
+  }
+
+  /**
+   * Calculate completeness score for a guardrail
+   */
+  private getCompletenessScore(guardrail: Guardrail): number {
+    let score = 0;
+    if (guardrail.id) score += 1;
+    if (guardrail.type) score += 2;
+    if (guardrail.severity) score += 2;
+    if (guardrail.rule) score += 2;
+    if (guardrail.description) score += 2;
+    if (guardrail.rationale) score += 1;
+    if (guardrail.implementation) score += 3;
+    if (guardrail.implementation?.monitoring?.length) score += 2;
+    if (guardrail.conditions?.length) score += 1;
+    if (guardrail.exceptions?.length) score += 1;
+    return score;
+  }
+
+  /**
+   * Remove duplicate guardrails and resolve conflicts (legacy method)
    */
   private deduplicateAndResolve(guardrails: Guardrail[]): Guardrail[] {
     const seen = new Map<string, Guardrail>();
 
     guardrails.forEach(guardrail => {
       const key = `${guardrail.type}-${guardrail.rule}`;
-      
+
       if (!seen.has(key)) {
         seen.set(key, guardrail);
       } else {
@@ -646,17 +774,39 @@ export class GuardrailsEngine {
   }
 
   /**
-   * Check if a guardrail is valid
+   * Check if a guardrail is valid - more permissive to preserve all guardrails
    */
   private isValidGuardrail(guardrail: Guardrail): boolean {
-    return !!(
+    // Only require essential fields
+    const isValid = !!(
       guardrail.id &&
       guardrail.type &&
       guardrail.severity &&
       guardrail.rule &&
-      guardrail.description &&
-      guardrail.implementation
+      guardrail.description
     );
+
+    // If implementation is missing, add a basic one
+    if (isValid && !guardrail.implementation) {
+      guardrail.implementation = {
+        platform: ['all'],
+        configuration: {},
+        monitoring: []
+      };
+    }
+
+    // Log validation issues for debugging
+    if (!isValid) {
+      console.log(`Validation failed for guardrail: ${JSON.stringify({
+        id: guardrail.id || 'missing',
+        type: guardrail.type || 'missing',
+        severity: guardrail.severity || 'missing',
+        rule: guardrail.rule || 'missing',
+        description: guardrail.description || 'missing'
+      })}`);
+    }
+
+    return isValid;
   }
 
   /**
@@ -668,14 +818,39 @@ export class GuardrailsEngine {
   ): Promise<ImplementationConfig> {
     console.log('🔧 Generating implementation configurations...');
 
-    // Group guardrails by category
-    const grouped = {
+    // Group guardrails more comprehensively to preserve all
+    const grouped: any = {
+      // Group by severity (all guardrails will be in one of these)
       critical: guardrails.filter(g => g.severity === 'critical'),
-      operational: guardrails.filter(g => ['performance', 'cost_control'].includes(g.type)),
-      ethical: guardrails.filter(g => ['ethical', 'bias_mitigation'].includes(g.type)),
-      economic: guardrails.filter(g => g.type === 'cost_control'),
-      evolutionary: guardrails.filter(g => g.evolutionStrategy !== undefined)
+      high: guardrails.filter(g => g.severity === 'high'),
+      medium: guardrails.filter(g => g.severity === 'medium'),
+      low: guardrails.filter(g => g.severity === 'low'),
+
+      // Legacy categories for backward compatibility
+      operational: guardrails.filter(g =>
+        ['performance', 'cost_control', 'operational', 'integration'].includes(g.type)),
+      ethical: guardrails.filter(g =>
+        ['ethical', 'bias_mitigation', 'bias_testing', 'bias-testing'].includes(g.type)),
+      economic: guardrails.filter(g =>
+        ['cost_control', 'economic'].includes(g.type)),
+      evolutionary: guardrails.filter(g =>
+        g.evolutionStrategy !== undefined || g.type === 'evolutionary'),
+
+      // All guardrails preserved
+      all: guardrails
     };
+
+    // Group by type for better organization
+    grouped.byType = guardrails.reduce((acc: any, g) => {
+      const type = g.type || 'uncategorized';
+      if (!acc[type]) acc[type] = [];
+      acc[type].push(g);
+      return acc;
+    }, {});
+
+    console.log(`📊 Guardrails preserved: ${guardrails.length} total`);
+    console.log(`   By severity: Critical=${grouped.critical.length}, High=${grouped.high.length}, Medium=${grouped.medium.length}, Low=${grouped.low.length}`);
+    console.log(`   By type: ${Object.keys(grouped.byType).length} unique types`);
 
     // Determine platform
     const platform = this.determinePlatform(assessment);

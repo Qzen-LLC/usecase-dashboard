@@ -245,9 +245,14 @@ export class ObservabilityManager {
       summary.errors.push(String(error));
     }
 
+    // Capture LangSmith identifiers before ending the session
+    const traceUrlBeforeEnd = langsmithTracer.getTraceUrl();
+    const runIdBeforeEnd = langsmithTracer.getCurrentRunId();
+
     // End LangSmith session
     await langsmithTracer.endSession(outputs, error);
-    const traceUrl = langsmithTracer.getTraceUrl();
+    // Use captured identifiers (current run is cleared after end)
+    const traceUrl = traceUrlBeforeEnd;
 
     // Save session to database directly
     try {
@@ -271,7 +276,7 @@ export class ObservabilityManager {
         totalCost: summary.totalCost,
         agentsInvolved: summary.agentsInvolved,
         langsmithUrl: traceUrl || undefined,
-        langsmithRunId: langsmithTracer.getCurrentRunId() || undefined,
+        langsmithRunId: runIdBeforeEnd || undefined,
         metadata: outputs ? { outputs } : undefined,
         errors: summary.errors.length > 0 ? summary.errors : undefined,
       };

@@ -5,7 +5,7 @@
 import { langsmithTracer } from './LangSmithTracer';
 import { observabilityManager } from './ObservabilityManager';
 import OpenAI from 'openai';
-import { TraceMetadata, LLMCallMetrics } from './types';
+import { TraceMetadata, LLMCallMetrics, MODEL_PRICING } from './types';
 
 export class AgentTracer {
   private agentName: string;
@@ -88,18 +88,26 @@ export class AgentTracer {
     if (result && typeof result === 'object' && 'usage' in result) {
       const usage = (result as any).usage;
       if (usage) {
-        this.totalTokens += usage.total_tokens || 0;
-        // Calculate cost based on model
-        const costPerToken = this.getModelCostPerToken(metadata.model);
-        this.totalCost += (usage.total_tokens || 0) * costPerToken;
-        
+        const promptTokens = usage.prompt_tokens || 0;
+        const completionTokens = usage.completion_tokens || 0;
+        const totalTokens = usage.total_tokens || promptTokens + completionTokens || 0;
+
+        this.totalTokens += totalTokens;
+
+        // Calculate cost using MODEL_PRICING (per 1K tokens)
+        const pricing = MODEL_PRICING[metadata.model as keyof typeof MODEL_PRICING];
+        const cost = pricing
+          ? (promptTokens / 1000) * pricing.input + (completionTokens / 1000) * pricing.output
+          : 0;
+        this.totalCost += cost;
+
         // Update session metrics
         if (this.sessionId) {
           await observabilityManager.trackLLMCall(
             {
-              tokens: usage.total_tokens || 0,
-              cost: (usage.total_tokens || 0) * costPerToken,
-              latency: 0 // Will be tracked by LangSmith
+              tokens: totalTokens,
+              cost,
+              latency: 0 // Detailed latency is captured within LangSmith
             },
             this.sessionId
           );

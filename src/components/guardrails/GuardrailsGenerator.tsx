@@ -45,7 +45,7 @@ export default function GuardrailsGenerator({ useCaseId, assessmentData, useCase
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [guardrails, setGuardrails] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('all');
   const [progress, setProgress] = useState(0);
   const [agentStatus, setAgentStatus] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -681,7 +681,8 @@ export default function GuardrailsGenerator({ useCaseId, assessmentData, useCase
             </CardHeader>
             <CardContent>
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid grid-cols-6 w-full">
+                <TabsList className="grid grid-cols-7 w-full">
+                  <TabsTrigger value="all">All Guardrails</TabsTrigger>
                   <TabsTrigger value="overview">Overview</TabsTrigger>
                   <TabsTrigger value="critical">Critical</TabsTrigger>
                   <TabsTrigger value="operational">Operational</TabsTrigger>
@@ -689,6 +690,105 @@ export default function GuardrailsGenerator({ useCaseId, assessmentData, useCase
                   <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
                   <TabsTrigger value="reasoning">Reasoning</TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="all" className="space-y-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold">
+                      All Guardrails
+                      <Badge className="ml-2" variant="secondary">
+                        {guardrails.guardrails?.rules ?
+                          Object.values(guardrails.guardrails.rules).flat().filter((r: any) => r).length : 0
+                        } rules configured
+                      </Badge>
+                    </h3>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => setEditMode(!editMode)}
+                        variant={editMode ? "default" : "outline"}
+                        size="sm"
+                      >
+                        <Edit2 className="w-4 h-4 mr-2" />
+                        {editMode ? 'View Mode' : 'Edit Mode'}
+                      </Button>
+                      {hasUnsavedChanges && (
+                        <Button
+                          onClick={handleSaveChanges}
+                          disabled={savingChanges}
+                          size="sm"
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          {savingChanges ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Collect all guardrails from all categories */}
+                    {guardrails.guardrails?.rules && (() => {
+                      const allRules: any[] = [];
+
+                      // Add rules from standard categories
+                      ['critical', 'high', 'medium', 'low', 'operational', 'ethical', 'economic', 'evolutionary'].forEach(category => {
+                        if (Array.isArray(guardrails.guardrails.rules[category])) {
+                          guardrails.guardrails.rules[category].forEach((rule: any) => {
+                            allRules.push({ ...rule, category });
+                          });
+                        }
+                      });
+
+                      // Add rules from byType if it exists
+                      if (guardrails.guardrails.rules.byType) {
+                        Object.entries(guardrails.guardrails.rules.byType).forEach(([type, rules]: [string, any]) => {
+                          if (Array.isArray(rules)) {
+                            rules.forEach((rule: any) => {
+                              // Avoid duplicates
+                              if (!allRules.find((r: any) => r.id === rule.id)) {
+                                allRules.push({ ...rule, category: type });
+                              }
+                            });
+                          }
+                        });
+                      }
+
+                      // Add rules from "all" if it exists
+                      if (Array.isArray(guardrails.guardrails.rules.all)) {
+                        guardrails.guardrails.rules.all.forEach((rule: any) => {
+                          // Avoid duplicates
+                          if (!allRules.find((r: any) => r.id === rule.id)) {
+                            allRules.push(rule);
+                          }
+                        });
+                      }
+
+                      // Sort by severity
+                      const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+                      allRules.sort((a, b) => {
+                        const aSeverity = severityOrder[a.severity as keyof typeof severityOrder] ?? 4;
+                        const bSeverity = severityOrder[b.severity as keyof typeof severityOrder] ?? 4;
+                        return aSeverity - bSeverity;
+                      });
+
+                      return allRules.map((rule: any, idx: number) => (
+                        <EditableGuardrailCard
+                          key={`all-${rule.id || rule.rule}-${idx}`}
+                          rule={{
+                            ...rule,
+                            id: rule.id || `all-${idx}-${Date.now()}`,
+                            status: rule.status || 'PENDING'
+                          }}
+                          editMode={editMode}
+                          onEdit={handleRuleEdit}
+                          onApprove={handleApprove}
+                          onReject={handleReject}
+                          onDelete={handleDelete}
+                          canEdit={true}
+                          canApprove={true}
+                        />
+                      ));
+                    })()}
+                  </div>
+                </TabsContent>
 
                 <TabsContent value="overview" className="space-y-4">
                   <div className="prose dark:prose-invert max-w-none">

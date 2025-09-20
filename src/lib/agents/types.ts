@@ -293,7 +293,7 @@ export interface Guardrail {
   evolutionStrategy?: EvolutionStrategy;
 }
 
-export type GuardrailType = 
+export type GuardrailType =
   | 'content_safety'
   | 'data_protection'
   | 'token_limit'
@@ -305,7 +305,37 @@ export type GuardrailType =
   | 'cost_control'
   | 'performance'
   | 'compliance'
-  | 'ethical';
+  | 'ethical'
+  // Additional types from agents/LLMs
+  | 'security'
+  | 'data_governance'
+  | 'accuracy'
+  | 'quality'
+  | 'governance'
+  | 'safety'
+  | 'integration'
+  | 'evolutionary'
+  | 'user_experience'
+  | 'operational'
+  | 'economic'
+  | 'critical'
+  // Specific validation types
+  | 'input_validation'
+  | 'input-validation'
+  | 'data_privacy'
+  | 'data-privacy'
+  | 'data_access_control'
+  | 'data-access-control'
+  | 'content_validation'
+  | 'content-validation'
+  | 'response_accuracy'
+  | 'bias_testing'
+  | 'bias-testing'
+  | 'data_encryption'
+  | 'data-encryption'
+  | 'network_security'
+  // Allow any string as fallback
+  | string;
 
 // Agent response structure
 export interface AgentResponse {

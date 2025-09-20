@@ -134,23 +134,45 @@ export class LangSmithTracer {
 
     // Create child run for this LLM call
     let childRun: RunTree | null = null;
-    
+
     if (this.config.enabled && parentRun) {
+      // Prepare standardized chat messages for better LangSmith rendering
+      const messages = this.config.capturePrompts
+        ? [
+            ...(metadata.systemPrompt
+              ? [{ role: 'system', content: this.sanitize(metadata.systemPrompt) } as any]
+              : []),
+            { role: 'user', content: this.sanitize(metadata.prompt) } as any,
+          ]
+        : undefined;
+
       childRun = parentRun.createChild({
         name: `LLM Call: ${metadata.agentName || 'Direct'}`,
         run_type: 'llm',
-        inputs: this.config.capturePrompts ? {
-          prompt: this.sanitize(metadata.prompt),
-          systemPrompt: metadata.systemPrompt ? this.sanitize(metadata.systemPrompt) : undefined,
-          model: metadata.model,
-          temperature: metadata.temperature,
-          maxTokens: metadata.maxTokens,
-        } : { model: metadata.model },
+        inputs: this.config.capturePrompts
+          ? {
+              messages,
+              model: metadata.model,
+              temperature: metadata.temperature,
+              max_tokens: metadata.maxTokens,
+            }
+          : { model: metadata.model },
         tags: [...(metadata.tags || []), metadata.model, 'llm-call'],
       });
 
-      await childRun.postRun();
-      this.runStack.push(childRun);
+      console.log(`🔄 Creating LLM run: ${childRun.id} for ${metadata.agentName || 'Direct'}`);
+
+      try {
+        await childRun.postRun();
+        console.log(`✅ Posted LLM run: ${childRun.id}`);
+      } catch (postError) {
+        console.error(`❌ Failed to post LLM run: ${childRun.id}`, postError);
+        childRun = null; // Don't track if we can't post
+      }
+
+      if (childRun) {
+        this.runStack.push(childRun);
+      }
     }
 
     try {
@@ -184,45 +206,93 @@ export class LangSmithTracer {
         // Get the raw content string from OpenAI response
         let rawContent = '';
         if (result && typeof result === 'object' && 'choices' in result) {
-          rawContent = (result as any).choices[0]?.message?.content || '';
+          rawContent = (result as any).choices?.[0]?.message?.content || '';
         }
 
-        // For debugging - log the actual response
-        console.log(`🔍 LangSmith Response Capture [${metadata.agentName || 'Direct'}]:`);
-        console.log(`  - Raw content length: ${rawContent.length} chars`);
-        if (rawContent.length < 500) {
-          console.log(`  - Raw content: ${rawContent}`);
-        } else {
-          console.log(`  - Raw content preview: ${rawContent.substring(0, 200)}...`);
+        // Fallback: extract response from other result shapes
+        if (!rawContent) {
+          const extracted = this.extractResponse(result);
+          if (typeof extracted === 'string') {
+            rawContent = extracted;
+          } else if (extracted != null) {
+            try {
+              rawContent = JSON.stringify(extracted);
+            } catch {
+              rawContent = String(extracted);
+            }
+          }
+        }
+
+        // Final fallback: ensure we always have some content
+        if (!rawContent) {
+          console.warn(`⚠️ Could not extract response content for ${metadata.agentName}`);
+          rawContent = 'No response content';
         }
 
         // Apply sanitization to the raw string if enabled
         const outputToSend = this.config.sanitizeSensitiveData ? this.sanitize(rawContent) : rawContent;
 
-        // Log what we're sending to LangSmith
-        console.log(`  - Sending to LangSmith: string of ${outputToSend.length} chars`);
+        console.log(`📝 Ending LLM run: ${childRun.id} with ${outputToSend.length} chars`);
 
-        // For LLM runs, use LangChain's expected format
-        await childRun.end({
-          outputs: this.config.captureResponses ? {
-            // LangSmith expects this format for LLM runs
-            generations: [[{
-              text: outputToSend,
-              message: {
-                content: outputToSend,
-                role: 'assistant'
-              }
-            }]],
-            llm_output: {
-              token_usage: {
-                prompt_tokens: metrics?.promptTokens || 0,
-                completion_tokens: metrics?.completionTokens || 0,
-                total_tokens: metrics?.totalTokens || 0
-              },
-              model_name: metadata.model
+        try {
+          // Simplified format for LLM runs - matching LangSmith's expected structure
+          const endPayload = {
+            outputs: this.config.captureResponses
+              ? {
+                  // LangSmith expects generations for LLM runs
+                  generations: [[{
+                    text: outputToSend,
+                    message: {
+                      role: 'assistant',
+                      content: outputToSend
+                    }
+                  }]],
+                  llm_output: {
+                    token_usage: {
+                      prompt_tokens: metrics?.promptTokens || 0,
+                      completion_tokens: metrics?.completionTokens || 0,
+                      total_tokens: metrics?.totalTokens || 0,
+                    },
+                    model_name: metadata.model,
+                  },
+                }
+              : {
+                  llm_output: {
+                    token_usage: {
+                      total_tokens: metrics?.totalTokens || 0
+                    }
+                  }
+                },
+          };
+
+          await childRun.end(endPayload);
+          console.log(`✅ Ended LLM run: ${childRun.id}`);
+
+          // CRITICAL: Must call patchRun to send the update to LangSmith
+          try {
+            await childRun.patchRun();
+            console.log(`✅ Patched LLM run to LangSmith: ${childRun.id}`);
+          } catch (patchError) {
+            console.error(`❌ Failed to patch LLM run ${childRun.id}:`, patchError);
+          }
+        } catch (endError) {
+          console.error(`❌ Failed to end LLM run ${childRun.id}:`, endError);
+          // Try minimal end format as fallback
+          try {
+            await childRun.end({});
+            console.log(`⚠️ Ended LLM run with empty output: ${childRun.id}`);
+
+            // Still try to patch even with empty output
+            try {
+              await childRun.patchRun();
+              console.log(`⚠️ Patched empty LLM run: ${childRun.id}`);
+            } catch (patchError) {
+              console.error(`❌ Failed to patch empty run ${childRun.id}:`, patchError);
             }
-          } : { metrics },
-        });
+          } catch (fallbackError) {
+            console.error(`❌ Complete failure to end run ${childRun.id}:`, fallbackError);
+          }
+        }
 
         this.runStack.pop();
 
@@ -241,10 +311,24 @@ export class LangSmithTracer {
     } catch (error) {
       // Log error to run
       if (childRun) {
-        await childRun.end({
-          error: String(error),
-          outputs: { error: String(error) },
-        });
+        console.log(`❌ Ending LLM run with error: ${childRun.id}`);
+        try {
+          await childRun.end({
+            error: String(error),
+            outputs: { error: String(error) },
+          });
+          console.log(`✅ Ended errored LLM run: ${childRun.id}`);
+
+          // Patch the error state to LangSmith
+          try {
+            await childRun.patchRun();
+            console.log(`✅ Patched errored run to LangSmith: ${childRun.id}`);
+          } catch (patchError) {
+            console.error(`❌ Failed to patch errored run ${childRun.id}:`, patchError);
+          }
+        } catch (endError) {
+          console.error(`❌ Failed to end errored run ${childRun.id}:`, endError);
+        }
         this.runStack.pop();
       }
       
@@ -274,10 +358,11 @@ export class LangSmithTracer {
         tags: [agentType || 'agent', agentName],
       });
 
+      // Post the agent run to LangSmith
       await childRun.postRun();
       this.runStack.push(childRun);
-      
-      console.log(`🤖 Started agent trace: ${agentName}`);
+
+      console.log(`🤖 Started agent trace: ${agentName} (run: ${childRun.id})`);
       return childRun;
     } catch (error) {
       console.error(`Failed to start agent trace for ${agentName}:`, error);
@@ -295,12 +380,35 @@ export class LangSmithTracer {
     if (!run) return;
 
     try {
+      let preparedOutputs: any = undefined;
+      if (this.config.captureResponses && outputs !== undefined) {
+        const sanitized = this.sanitize(outputs);
+        const outputText =
+          typeof sanitized === 'string'
+            ? sanitized
+            : (() => {
+                try { return JSON.stringify(sanitized); } catch { return String(sanitized); }
+              })();
+
+        preparedOutputs = {
+          output: outputText,
+          data: sanitized,
+          messages: [ { role: 'assistant', content: outputText } ],
+        };
+      }
+
       await run.end({
-        outputs: this.config.captureResponses ? this.sanitize(outputs) : undefined,
+        outputs: preparedOutputs,
         error: error ? String(error) : undefined,
       });
-      
-      console.log(`✅ Ended agent trace: ${run.name}`);
+
+      // CRITICAL: Must patch to send update to LangSmith
+      try {
+        await run.patchRun();
+        console.log(`✅ Ended and patched agent trace: ${run.name}`);
+      } catch (patchError) {
+        console.error(`❌ Failed to patch agent trace ${run.name}:`, patchError);
+      }
     } catch (err) {
       console.error('Failed to end agent trace:', err);
     }
@@ -318,17 +426,46 @@ export class LangSmithTracer {
         const run = this.runStack.pop();
         if (run) {
           await run.end({ outputs: { status: 'parent-ended' } });
+          // Patch each remaining run
+          try {
+            await run.patchRun();
+          } catch (patchError) {
+            console.error(`Failed to patch remaining run:`, patchError);
+          }
         }
+      }
+
+      // Prepare outputs for session (chain) run
+      let preparedOutputs: any = undefined;
+      if (this.config.captureResponses && outputs !== undefined) {
+        const sanitized = this.sanitize(outputs);
+        const outputText =
+          typeof sanitized === 'string'
+            ? sanitized
+            : (() => { try { return JSON.stringify(sanitized); } catch { return String(sanitized); } })();
+
+        preparedOutputs = {
+          output: outputText,
+          data: sanitized,
+          messages: [ { role: 'assistant', content: outputText } ],
+        };
       }
 
       // End the main session
       await this.currentRun.end({
-        outputs: this.config.captureResponses ? this.sanitize(outputs) : undefined,
+        outputs: preparedOutputs,
         error: error ? String(error) : undefined,
       });
 
-      console.log(`🏁 Ended LangSmith session: ${this.currentRun.id}`);
-      console.log(`📊 View trace at: https://smith.langchain.com/public/${this.config.langsmithProject}/r/${this.currentRun.id}`);
+      // CRITICAL: Patch the main session to finalize in LangSmith
+      try {
+        await this.currentRun.patchRun();
+        console.log(`🏁 Ended and patched LangSmith session: ${this.currentRun.id}`);
+        console.log(`📊 View trace at: https://smith.langchain.com/public/${this.config.langsmithProject}/r/${this.currentRun.id}`);
+      } catch (patchError) {
+        console.error(`❌ Failed to patch main session:`, patchError);
+        console.log(`📊 Trace may be incomplete at: https://smith.langchain.com/public/${this.config.langsmithProject}/r/${this.currentRun.id}`);
+      }
       
       this.currentRun = null;
       this.runStack = [];
