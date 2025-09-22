@@ -179,15 +179,12 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
         <div className="text-xs text-foreground line-clamp-2 leading-relaxed">{stripHtmlTags(useCase.description)}</div>
         <div className="flex items-center gap-3 mt-2">
           <div className="flex items-center gap-1 text-xs text-primary">
-            <TrendingUp className="w-3 h-3 flex-shrink-0" />
             <span>{useCase.scores.operational}</span>
           </div>
           <div className="flex items-center gap-1 text-xs text-primary">
-            <Zap className="w-3 h-3 flex-shrink-0" />
             <span>{useCase.scores.productivity}</span>
           </div>
           <div className="flex items-center gap-1 text-xs text-success">
-            <DollarSign className="w-3 h-3 flex-shrink-0" />
             <span>{useCase.scores.revenue}</span>
           </div>
         </div>
@@ -256,6 +253,17 @@ const Dashboard = () => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [deletingUseCaseId, setDeletingUseCaseId] = useState<string | null>(null);
   const [deletedUseCaseIds, setDeletedUseCaseIds] = useState<Set<string>>(new Set());
+  
+  // Refs for scroll synchronization
+  const scrollBarRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  
+  // Scroll synchronization handler
+  const handleScrollBarScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (contentRef.current) {
+      contentRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
   
   const businessFunctions = [
     'Sales',
@@ -357,29 +365,7 @@ const Dashboard = () => {
     }
   }, [userData?.role]);
 
-  // Sync pending changes on component mount
-  useEffect(() => {
-    const pendingChanges = JSON.parse(localStorage.getItem('pendingStageChanges') || '[]');
-    if (pendingChanges.length > 0) {
-      console.log(`Found ${pendingChanges.length} pending changes, syncing...`);
-      syncPendingChanges();
-    }
-  }, []);
 
-  // Add state for pending changes indicator
-  const [pendingChangesCount, setPendingChangesCount] = useState(0);
-
-  // Monitor pending changes
-  useEffect(() => {
-    const checkPendingChanges = () => {
-      const pendingChanges = JSON.parse(localStorage.getItem('pendingStageChanges') || '[]');
-      setPendingChangesCount(pendingChanges.length);
-    };
-
-    checkPendingChanges();
-    const interval = setInterval(checkPendingChanges, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Clear deleted use case IDs on component mount to ensure fresh data
   useEffect(() => {
@@ -671,35 +657,14 @@ const Dashboard = () => {
     );
     setSelectedUseCase(null);
     
-    // Store the change in local storage for persistence
-    const pendingChanges = JSON.parse(localStorage.getItem('pendingStageChanges') || '[]');
-    pendingChanges.push({
-      useCaseId,
-      oldStage: useCase?.stage,
-      newStage,
-      timestamp: Date.now()
-    });
-    localStorage.setItem('pendingStageChanges', JSON.stringify(pendingChanges));
-    
-    // Update backend in the background (non-blocking)
+    // Update backend
     updateStageMutation.mutateAsync({ useCaseId, newStage })
-      .then(() => {
-        console.log(`Successfully moved use case ${useCaseId} to stage ${newStage}`);
-        // Remove from pending changes on success
-        const updatedPendingChanges = JSON.parse(localStorage.getItem('pendingStageChanges') || '[]')
-          .filter((change: any) => !(change.useCaseId === useCaseId && change.newStage === newStage));
-        localStorage.setItem('pendingStageChanges', JSON.stringify(updatedPendingChanges));
-      })
       .catch((error) => {
         console.error("Unable to update stage", error);
         // Revert the frontend update on error
         if (useCase) {
           updateUseCase(useCaseId, { stage: useCase.stage });
         }
-        // Remove from pending changes on error
-        const updatedPendingChanges = JSON.parse(localStorage.getItem('pendingStageChanges') || '[]')
-          .filter((change: any) => !(change.useCaseId === useCaseId && change.newStage === newStage));
-        localStorage.setItem('pendingStageChanges', JSON.stringify(updatedPendingChanges));
       });
   };
 
@@ -722,42 +687,6 @@ const Dashboard = () => {
     }
   };
 
-  // Function to sync pending changes with backend
-  const syncPendingChanges = async () => {
-    try {
-      const pendingChanges = JSON.parse(localStorage.getItem('pendingStageChanges') || '[]');
-      if (pendingChanges.length === 0) return;
-
-      console.log(`Syncing ${pendingChanges.length} pending changes...`);
-      
-      for (const change of pendingChanges) {
-        try {
-          await updateStageMutation.mutateAsync({ 
-            useCaseId: change.useCaseId, 
-            newStage: change.newStage 
-          });
-          console.log(`Synced change for use case ${change.useCaseId}`);
-        } catch (error) {
-          console.error(`Failed to sync change for use case ${change.useCaseId}:`, error);
-        }
-      }
-      
-      // Clear pending changes after successful sync
-      localStorage.removeItem('pendingStageChanges');
-      console.log('All pending changes synced successfully');
-    } catch (error) {
-      console.error('Error syncing pending changes:', error);
-    }
-  };
-
-  // Function to retry failed changes
-  const retryFailedChanges = () => {
-    const pendingChanges = JSON.parse(localStorage.getItem('pendingStageChanges') || '[]');
-    if (pendingChanges.length > 0) {
-      console.log(`Retrying ${pendingChanges.length} failed changes...`);
-      syncPendingChanges();
-    }
-  };
 
   // Drag and Drop handlers
   const handleDragStart = (event: DragStartEvent) => {
@@ -811,33 +740,12 @@ const Dashboard = () => {
         // Clear any validation errors
         setValidationError({ show: false, fields: [], useCaseTitle: '' });
         
-        // Store the change in local storage for persistence
-        const pendingChanges = JSON.parse(localStorage.getItem('pendingStageChanges') || '[]');
-        pendingChanges.push({
-          useCaseId,
-          oldStage: useCase.stage,
-          newStage: targetId,
-          timestamp: Date.now()
-        });
-        localStorage.setItem('pendingStageChanges', JSON.stringify(pendingChanges));
-        
-        // Update backend in the background (non-blocking)
+        // Update backend
         updateStageMutation.mutateAsync({ useCaseId, newStage: targetId })
-          .then(() => {
-            console.log(`Successfully moved use case ${useCaseId} to stage ${targetId}`);
-            // Remove from pending changes on success
-            const updatedPendingChanges = JSON.parse(localStorage.getItem('pendingStageChanges') || '[]')
-              .filter((change: any) => !(change.useCaseId === useCaseId && change.newStage === targetId));
-            localStorage.setItem('pendingStageChanges', JSON.stringify(updatedPendingChanges));
-          })
           .catch((error) => {
             console.error("Unable to update stage", error);
             // Revert the frontend update on error
             updateUseCase(useCaseId, { stage: useCase.stage });
-            // Remove from pending changes on error
-            const updatedPendingChanges = JSON.parse(localStorage.getItem('pendingStageChanges') || '[]')
-              .filter((change: any) => !(change.useCaseId === useCaseId && change.newStage === targetId));
-            localStorage.setItem('pendingStageChanges', JSON.stringify(updatedPendingChanges));
           });
       } else {
         console.log('Use case not found or already in target stage');
@@ -919,12 +827,11 @@ const Dashboard = () => {
         {/* Search and Filter Section */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6 flex-shrink-0">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input
               placeholder="Search use cases..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-standard pl-12"
+              className="input-standard"
             />
           </div>
           <div className="flex gap-3 flex-wrap items-center justify-end">
@@ -971,16 +878,6 @@ const Dashboard = () => {
               <RefreshCw className="w-4 h-4" />
               Refresh
             </Button>
-            {pendingChangesCount > 0 && (
-              <Button 
-                onClick={retryFailedChanges} 
-                variant="outline" 
-                className="btn-outline flex items-center gap-2 bg-warning/10 border-warning/20 text-warning hover:bg-warning/20"
-              >
-                <AlertTriangle className="w-4 h-4" />
-                Sync Changes ({pendingChangesCount})
-              </Button>
-            )}
           </div>
         </div>
 
@@ -1044,53 +941,75 @@ const Dashboard = () => {
              onDragEnd={handleDragEnd}
 
            >
-          <div className="relative w-full h-full">
-            <div className="w-full h-full pb-6 overflow-x-auto">
-              <div className="flex flex-row gap-6 min-w-[2000px] px-2 h-full">
-                {stages.map((stage, idx) => {
-                  const stageUseCases = getUseCasesByStage(stage.id);
-                  return (
-                    <div key={stage.id} className="flex flex-col items-center w-60 h-full">
-                      {/* Summary card */}
-                      <div className="card-interactive w-60 h-24 mb-4 flex flex-col items-center justify-center group flex-shrink-0">
-                        <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">
-                          {idx === 0 && <Search className="text-primary w-6 h-6" />}
-                          {idx === 1 && <DollarSign className="text-success w-6 h-6" />}
-                          {idx === 2 && <TrendingUp className="text-primary w-6 h-6" />}
-                          {idx === 3 && <Clock className="text-warning w-6 h-6" />}
-                          {idx === 4 && <Zap className="text-primary w-6 h-6" />}
-                          {idx === 5 && <Users className="text-primary w-6 h-6" />}
-                                                     {idx === 6 && <User className="text-primary w-6 h-6" />}
-                          {idx === 7 && <Clock className="text-destructive w-6 h-6" />}
+          <div className="relative w-full h-full flex flex-col">
+            {/* Scroll bar container - fixed at top */}
+            <div 
+              ref={scrollBarRef}
+              className="w-full overflow-x-auto flex-shrink-0"
+              onScroll={handleScrollBarScroll}
+            >
+              <div className="flex flex-row gap-6 px-2 pb-2" style={{ width: `${stages.length * 240 + (stages.length - 1) * 24 + 16}px` }}>
+                {/* Invisible spacer to match stage cards exactly */}
+                {stages.map((stage, idx) => (
+                  <div key={`spacer-${stage.id}`} className="w-60 h-0 flex-shrink-0"></div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Content container - synchronized with scroll bar */}
+            <div 
+              ref={contentRef}
+              className="w-full flex-1 min-h-0 overflow-x-auto overflow-y-hidden"
+            >
+              <div className="flex flex-col gap-0 px-2 h-full" style={{ width: `${stages.length * 240 + (stages.length - 1) * 24 + 16}px` }}>
+                {/* Stage cards row */}
+                <div className="flex flex-row gap-6 pb-2 flex-shrink-0">
+                  {stages.map((stage, idx) => {
+                    const stageUseCases = getUseCasesByStage(stage.id);
+                    return (
+                      <div key={`header-${stage.id}`} className="flex flex-col items-center w-60">
+                        {/* Summary card */}
+                        <div className="card-interactive w-60 h-24 mb-4 flex flex-col items-center justify-center group flex-shrink-0">
+                          <div className="font-semibold text-muted-foreground text-sm group-hover:text-primary transition-colors mb-1">{stage.title}</div>
+                          <div className="text-2xl font-extrabold text-foreground group-hover:text-primary transition-colors">{stageUseCases.length}</div>
                         </div>
-                        <div className="font-semibold text-muted-foreground text-sm group-hover:text-primary transition-colors mb-1">{stage.title}</div>
-                        <div className="text-2xl font-extrabold text-foreground group-hover:text-primary transition-colors">{stageUseCases.length}</div>
                       </div>
-                      {/* Use case column */}
-                      <div className="flex-1 w-60 min-h-0">
-                                                 <DroppableStageColumn stage={stage} stageUseCases={stageUseCases}>
-                                                      <SortableContext id={stage.id} items={stageUseCases.map(uc => uc.id)} strategy={verticalListSortingStrategy}>
-                             {stageUseCases.length === 0 ? (
-                               <div className="bg-muted rounded-lg p-4 text-center text-muted-foreground border border-dashed text-xs">No use cases in this stage</div>
-                             ) : stageUseCases.map((useCase) => (
-                                 <DraggableUseCaseCard
-                                   key={useCase.id}
-                                   useCase={useCase}
-                                   onClick={() => { setModalUseCase(useCase); setIsSheetOpen(true); }}
-                                   handlePriorityChange={handlePriorityChange}
-                                   formatAiucId={formatAiucId}
-                                   stripHtmlTags={stripHtmlTags}
-                                   _priorities={_priorities}
-                                   handleDelete={handleDelete}
-                                   isDeleting={deletingUseCaseId === useCase.id}
-                                 />
-                               ))}
-                           </SortableContext>
-                         </DroppableStageColumn>
+                    );
+                  })}
+                </div>
+                
+                {/* Use cases row */}
+                <div className="flex flex-row gap-6 flex-1 min-h-0">
+                  {stages.map((stage, idx) => {
+                    const stageUseCases = getUseCasesByStage(stage.id);
+                    return (
+                      <div key={`content-${stage.id}`} className="flex flex-col items-center w-60 h-full">
+                        {/* Use case column */}
+                        <div className="flex-1 w-60 min-h-0 overflow-y-auto">
+                          <DroppableStageColumn stage={stage} stageUseCases={stageUseCases}>
+                            <SortableContext id={stage.id} items={stageUseCases.map(uc => uc.id)} strategy={verticalListSortingStrategy}>
+                              {stageUseCases.length === 0 ? (
+                                <div className="bg-muted rounded-lg p-4 text-center text-muted-foreground border border-dashed text-xs">No use cases in this stage</div>
+                              ) : stageUseCases.map((useCase) => (
+                                  <DraggableUseCaseCard
+                                    key={useCase.id}
+                                    useCase={useCase}
+                                    onClick={() => { setModalUseCase(useCase); setIsSheetOpen(true); }}
+                                    handlePriorityChange={handlePriorityChange}
+                                    formatAiucId={formatAiucId}
+                                    stripHtmlTags={stripHtmlTags}
+                                    _priorities={_priorities}
+                                    handleDelete={handleDelete}
+                                    isDeleting={deletingUseCaseId === useCase.id}
+                                  />
+                                ))}
+                            </SortableContext>
+                          </DroppableStageColumn>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -1116,15 +1035,12 @@ const Dashboard = () => {
                       <div className="text-xs text-foreground line-clamp-2 leading-relaxed">{stripHtmlTags(useCase.description)}</div>
                       <div className="flex items-center gap-3 mt-2">
                         <div className="flex items-center gap-1 text-xs text-primary">
-                          <TrendingUp className="w-3 h-3 flex-shrink-0" />
                           <span>{useCase.scores.operational}</span>
                         </div>
                         <div className="flex items-center gap-1 text-xs text-primary">
-                          <Zap className="w-3 h-3 flex-shrink-0" />
                           <span>{useCase.scores.productivity}</span>
                         </div>
                         <div className="flex items-center gap-1 text-xs text-success">
-                          <DollarSign className="w-3 h-3 flex-shrink-0" />
                           <span>{useCase.scores.revenue}</span>
                         </div>
                       </div>
@@ -1159,9 +1075,9 @@ const Dashboard = () => {
                 <div className="flex flex-col gap-3 p-4">
                   <div className="text-xs text-muted-foreground mb-3">ID: {formatAiucId(modalUseCase.aiucId, modalUseCase.id)}</div>
                   <div className="flex items-center gap-4 mb-3">
-                    <div className="flex items-center gap-1 text-xs text-primary"><TrendingUp className="w-4 h-4" />{modalUseCase.scores.operational}</div>
-                    <div className="flex items-center gap-1 text-xs text-primary"><Zap className="w-4 h-4" />{modalUseCase.scores.productivity}</div>
-                    <div className="flex items-center gap-1 text-xs text-success"><DollarSign className="w-4 h-4" />{modalUseCase.scores.revenue}</div>
+                    <div className="flex items-center gap-1 text-xs text-primary">{modalUseCase.scores.operational}</div>
+                    <div className="flex items-center gap-1 text-xs text-primary">{modalUseCase.scores.productivity}</div>
+                    <div className="flex items-center gap-1 text-xs text-success">{modalUseCase.scores.revenue}</div>
                     <div className="flex items-center gap-1 text-xs text-primary font-bold">{getOverallScore(modalUseCase.scores)}</div>
                   </div>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
@@ -1200,7 +1116,7 @@ const Dashboard = () => {
                     )}
                     {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER' || userData?.role === 'QZEN_ADMIN') && modalUseCase.stage !== 'discovery' && (
                       <Button size="sm" className='text-dark' variant="outline" onClick={() => { handleAssess(modalUseCase.id); setIsSheetOpen(false); }}>
-                        <Zap className="w-4 h-4 mr-2" /> Assess
+                        Assess
                       </Button>
                     )}
                   </div>
