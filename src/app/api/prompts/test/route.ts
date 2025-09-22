@@ -183,17 +183,17 @@ export async function POST(request: NextRequest) {
         const promptTemplate = await prismaClient.promptTemplate.findUnique({
           where: { id: promptId },
           include: {
-            versions: {
+            PromptVersion: {
               orderBy: { createdAt: 'desc' },
               take: 1,
             }
           }
         });
 
-        if (promptTemplate && promptTemplate.versions[0]) {
+        if (promptTemplate && promptTemplate.PromptVersion[0]) {
           await prismaClient.promptTestRun.create({
             data: {
-              versionId: promptTemplate.versions[0].id,
+              versionId: promptTemplate.PromptVersion[0].id,
               variables: variables || {},
               requestContent: {
                 content,
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
               settings: settings || {},
             },
           });
-          console.log('[CRUD_LOG] Prompt Test Run created:', { templateId: promptId, versionId: promptTemplate.versions[0].id, model: settings.model || 'unknown', tokensUsed, cost, authoredBy: userRecord.id });
+          console.log('[CRUD_LOG] Prompt Test Run created:', { templateId: promptId, versionId: promptTemplate.PromptVersion[0].id, model: settings.model || 'unknown', tokensUsed, cost, authoredBy: userRecord.id });
         }
       }
 
@@ -231,17 +231,17 @@ export async function POST(request: NextRequest) {
         const promptTemplate = await prismaClient.promptTemplate.findUnique({
           where: { id: promptId },
           include: {
-            versions: {
+            PromptVersion: {
               orderBy: { createdAt: 'desc' },
               take: 1,
             }
           }
         });
 
-        if (promptTemplate && promptTemplate.versions[0]) {
+        if (promptTemplate && promptTemplate.PromptVersion[0]) {
           await prismaClient.promptTestRun.create({
             data: {
-              versionId: promptTemplate.versions[0].id,
+              versionId: promptTemplate.PromptVersion[0].id,
               variables: variables || {},
               requestContent: {
                 content,
@@ -260,7 +260,7 @@ export async function POST(request: NextRequest) {
               settings: settings || {},
             },
           });
-          console.log('[CRUD_LOG] Prompt Test Run created (error):', { templateId: promptId, versionId: promptTemplate.versions[0].id, model: settings?.model || 'unknown', error: error.message, authoredBy: userRecord.id });
+          console.log('[CRUD_LOG] Prompt Test Run created (error):', { templateId: promptId, versionId: promptTemplate.PromptVersion[0].id, model: settings?.model || 'unknown', error: error.message, authoredBy: userRecord.id });
         }
       }
 
