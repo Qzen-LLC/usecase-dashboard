@@ -57,6 +57,7 @@ export default function AssessmentPage() {
   const budgetPlanningRef = useRef<any>(null);
   const approvalsPageRef = useRef<any>(null);
   const pageTopRef = useRef<HTMLDivElement>(null);
+  const navigationRef = useRef<HTMLDivElement>(null);
 
   // Add readonly styles to the document when in readonly mode
   useEffect(() => {
@@ -168,15 +169,35 @@ export default function AssessmentPage() {
     });
   }, [useCaseId, hasAttemptedLockAcquisition, acquireExclusiveLock]); // Only run once per useCaseId
 
+  // Memoized function to scroll to current step in navigation
+  const scrollToCurrentStep = useMemo(() => {
+    return () => {
+      if (navigationRef.current) {
+        const currentStepElement = navigationRef.current.querySelector(`[data-step="${currentStep}"]`);
+        if (currentStepElement) {
+          currentStepElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'center'
+          });
+        }
+      }
+    };
+  }, [currentStep]);
+
   // Update current step when URL parameters change
   useEffect(() => {
     if (stepParam) {
       const step = parseInt(stepParam);
-      if (step >= 1 && step <= 9) {
+      if (step >= 1 && step <= 12) {
         setCurrentStep(step);
+        // Scroll to the step after a short delay to ensure DOM is ready
+        setTimeout(() => {
+          scrollToCurrentStep();
+        }, 200);
       }
     }
-  }, [stepParam]);
+  }, [stepParam, scrollToCurrentStep]);
 
   // Memoize assessment steps to prevent unnecessary re-renders
   const assessmentSteps = useMemo(() => [
@@ -560,6 +581,16 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     });
   }, [isReady]);
 
+  // Auto-scroll to current step when currentStep changes
+  useEffect(() => {
+    // Small delay to ensure DOM is updated
+    const timeoutId = setTimeout(() => {
+      scrollToCurrentStep();
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
+  }, [currentStep, scrollToCurrentStep]);
+
   // Scroll to top when currentStep changes
   useEffect(() => {
     if (currentStep > 1) { // Don't scroll on initial load
@@ -659,14 +690,22 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     }
     if (currentStep < assessmentSteps.length) {
       setCurrentStep((prev) => prev + 1);
+      // Scroll to current step after state update
+      setTimeout(() => {
+        scrollToCurrentStep();
+      }, 100);
     }
-  }, [currentStep]);
+  }, [currentStep, assessmentSteps.length, scrollToCurrentStep]);
 
   const handlePrev = useMemo(() => () => {
     if (!isFirstStep) {
       setCurrentStep((prev) => prev - 1);
+      // Scroll to current step after state update
+      setTimeout(() => {
+        scrollToCurrentStep();
+      }, 100);
     }
-  }, [isFirstStep]);
+  }, [isFirstStep, scrollToCurrentStep]);
 
   // Handle cancel button click
   const handleCancel = async () => {
@@ -763,31 +802,32 @@ const validateAssessmentData = useMemo(() => (data: any) => {
 
 
       {/* Assessment Steps Navigation */}
-      <div className="px-8 py-4 border-b border-border bg-muted overflow-x-auto">
+      <div ref={navigationRef} className="px-8 py-4 border-b border-border bg-muted overflow-x-auto">
         <div className="flex items-center space-x-4">
           {assessmentSteps.map((step, idx) => (
-            <div key={step.id} className="flex items-center">
+            <div key={step.id} className="flex items-center" data-step={step.id}>
               <button
                 type="button"
-                className={`flex items-center justify-center w-10 h-10 rounded-full focus:outline-none transition-colors duration-150 ${currentStep === step.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"} ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`flex items-center justify-center px-4 py-2 rounded-full focus:outline-none transition-all duration-300 transform hover:scale-105 whitespace-nowrap ${
+                  currentStep === step.id 
+                    ? "bg-primary text-primary-foreground scale-110 shadow-lg ring-2 ring-primary/20 ring-offset-2 ring-offset-background" 
+                    : "bg-muted text-muted-foreground hover:bg-accent hover:scale-105"
+                } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                 style={{ cursor: isReadOnly ? 'not-allowed' : 'pointer' }}
                 onClick={() => !isReadOnly && setCurrentStep(step.id)}
                 disabled={isReadOnly}
                 aria-current={currentStep === step.id ? 'step' : undefined}
               >
-                {step.title[0]}
-              </button>
-              <button
-                type="button"
-                className={`ml-2 whitespace-nowrap text-sm font-medium bg-transparent border-none p-0 m-0 focus:outline-none transition-colors duration-150 ${currentStep === step.id ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
-                style={{ cursor: 'pointer' }}
-                onClick={() => setCurrentStep(step.id)}
-                aria-current={currentStep === step.id ? 'step' : undefined}
-              >
                 {step.title}
               </button>
               {idx < assessmentSteps.length - 1 && (
-                <ChevronRight className="w-5 h-5 text-muted-foreground mx-2" />
+                <ChevronRight 
+                  className={`w-5 h-5 mx-2 transition-colors duration-300 ${
+                    currentStep === step.id 
+                      ? "text-primary" 
+                      : "text-muted-foreground"
+                  }`} 
+                />
               )}
             </div>
           ))}
@@ -997,15 +1037,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
             )}
           </>
         )}
-        {currentStep === 10 ? (
-          <button
-            className={`px-4 py-2 w-64 rounded-xl shadow-lg font-semibold text-lg transition ${isReadOnly ? 'bg-gray-400 text-gray-200 cursor-not-allowed opacity-50' : 'bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white hover:shadow-xl'}`}
-            onClick={handleCompleteAssessment}
-            disabled={isReadOnly}
-          >
-            Complete Assessment
-          </button>
-        ) : currentStep < 12 ? (
+        {currentStep < 12 ? (
           <button
             className={`flex items-center px-4 py-2 rounded-md bg-gray-600 dark:bg-gray-700 text-white hover:bg-gray-700 dark:hover:bg-gray-600 ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={handleNext}
@@ -1014,13 +1046,13 @@ const validateAssessmentData = useMemo(() => (data: any) => {
             Next
             <ChevronRight className="w-4 h-4 ml-2" />
           </button>
-        ) : currentStep === 12 ? (
+        ) : currentStep === 10 ? (
           <button
-            className={`px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`px-4 py-2 w-64 rounded-xl shadow-lg font-semibold text-lg transition ${isReadOnly ? 'bg-gray-400 text-gray-200 cursor-not-allowed opacity-50' : 'bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white hover:shadow-xl'}`}
             onClick={handleCompleteAssessment}
             disabled={isReadOnly}
           >
-            Save and Complete Assessment
+            Complete Assessment
           </button>
         ) : (
           <div />
