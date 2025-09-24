@@ -47,7 +47,7 @@ interface AssessmentProgress {
 
 export default function GovernancePage() {
   const [useCases, setUseCases] = useState<UseCase[]>([]);
-  const [assessmentProgress, setAssessmentProgress] = useState<{ [useCaseId: string]: { euAiAct?: AssessmentProgress; iso42001?: AssessmentProgress; uaeAi?: AssessmentProgress } }>({});
+  const [assessmentProgress, setAssessmentProgress] = useState<{ [useCaseId: string]: { euAiAct?: AssessmentProgress; iso42001?: AssessmentProgress; uaeAi?: AssessmentProgress; iso27001?: AssessmentProgress } }>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -114,7 +114,7 @@ export default function GovernancePage() {
       const governanceData = await response.json();
       setUseCases(governanceData);
 
-      const progressData: { [useCaseId: string]: { euAiAct?: AssessmentProgress; iso42001?: AssessmentProgress; uaeAi?: AssessmentProgress } } = {};
+      const progressData: { [useCaseId: string]: { euAiAct?: AssessmentProgress; iso42001?: AssessmentProgress; uaeAi?: AssessmentProgress; iso27001?: AssessmentProgress } } = {};
 
       for (const useCase of governanceData) {
         const useCaseId = useCase.useCaseId;
@@ -124,6 +124,7 @@ export default function GovernancePage() {
         const hasEuAiAct = useCase.regulatoryFrameworks.includes('EU AI Act');
         const hasIso42001 = useCase.industryStandards.some((std: string) => std.includes('ISO/IEC 42001'));
         const hasUaeAi = useCase.regulatoryFrameworks.includes('UAE AI/GenAI Controls');
+        const hasIso27001 = useCase.industryStandards.some((std: string) => std.includes('ISO 27001'));
 
         // Fetch progress for selected frameworks
         const promises = [];
@@ -152,6 +153,15 @@ export default function GovernancePage() {
               .then(res => res.json())
               .then(data => { progressData[useCaseId].uaeAi = data; })
               .catch(err => console.error(`Error fetching UAE AI progress for ${useCaseId}:`, err))
+          );
+        }
+
+        if (hasIso27001) {
+          promises.push(
+            fetch(`/api/iso-27001/progress/${useCaseId}`)
+              .then(res => res.json())
+              .then(data => { progressData[useCaseId].iso27001 = data; })
+              .catch(err => console.error(`Error fetching ISO 27001 progress for ${useCaseId}:`, err))
           );
         }
 
@@ -212,7 +222,8 @@ export default function GovernancePage() {
       const frameworkRoutes = {
         'GOVERNANCE_EU_AI_ACT': `/dashboard/${useCase.useCaseId}/eu-ai-act`,
         'GOVERNANCE_ISO_42001': `/dashboard/${useCase.useCaseId}/iso-42001`,
-        'GOVERNANCE_UAE_AI': `/dashboard/${useCase.useCaseId}/uae-ai`
+        'GOVERNANCE_UAE_AI': `/dashboard/${useCase.useCaseId}/uae-ai`,
+        'GOVERNANCE_ISO_27001': `/dashboard/${useCase.useCaseId}/iso-27001`
       };
       
       const route = frameworkRoutes[framework];
@@ -331,13 +342,15 @@ export default function GovernancePage() {
                 const showEuAiAct = item.regulatoryFrameworks.includes('EU AI Act');
                 const showIso42001 = item.industryStandards.some((std: string) => std.includes('ISO/IEC 42001'));
                 const showUaeAi = item.regulatoryFrameworks.includes('UAE AI/GenAI Controls');
+                const showIso27001 = item.industryStandards.some((std: string) => std.includes('ISO 27001'));
                 
                 // Calculate grid columns based on active sections
                 const activeSections = [
                   true, // Risk Management always shown
                   showEuAiAct,
                   showIso42001,
-                  showUaeAi
+                  showUaeAi,
+                  showIso27001
                 ].filter(Boolean).length;
                 
                 const gridCols = activeSections === 1 ? 'grid-cols-1' :
@@ -513,6 +526,32 @@ export default function GovernancePage() {
                             size="sm" 
                             className="text-xs h-6 px-2 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-100/20"
                             onClick={() => handleStartAssessment(item, 'GOVERNANCE_UAE_AI')}
+                          >
+                            Start
+                          </Button>
+                        </div>
+                      </div>
+                      )}
+
+                      {/* ISO 27001 Section */}
+                      {showIso27001 && (
+                      <div className="border-l-4 border-emerald-400 dark:border-emerald-500 bg-gradient-to-r from-emerald-50 dark:from-emerald-900/20 to-emerald-25 dark:to-emerald-800/10 pl-3 pr-2 py-2.5 rounded-r">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-medium text-emerald-900 dark:text-emerald-100">ISO 27001</span>
+                          <span className="text-xs text-emerald-700 dark:text-emerald-300 font-semibold">{assessmentProgress[item.useCaseId]?.iso27001 ? `${Math.round(assessmentProgress[item.useCaseId].iso27001!.progress)}%` : '0%'}</span>
+                        </div>
+                        <div className="w-full bg-emerald-200/60 dark:bg-emerald-700/40 rounded-full h-1.5 mb-2">
+                          <div className="bg-emerald-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${assessmentProgress[item.useCaseId]?.iso27001?.progress || 0}%` }}></div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${assessmentProgress[item.useCaseId]?.iso27001?.status === 'completed' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' : 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700'}`}>
+                            {assessmentProgress[item.useCaseId]?.iso27001?.status === 'completed' ? 'Completed' : 'In Progress'}
+                          </Badge>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-xs h-6 px-2 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-100/20"
+                            onClick={() => handleStartAssessment(item, 'GOVERNANCE_ISO_27001')}
                           >
                             Start
                           </Button>

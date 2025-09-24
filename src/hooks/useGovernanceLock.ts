@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
-export type GovernanceFramework = 'GOVERNANCE_EU_AI_ACT' | 'GOVERNANCE_ISO_42001' | 'GOVERNANCE_UAE_AI';
+export type GovernanceFramework = 'GOVERNANCE_EU_AI_ACT' | 'GOVERNANCE_ISO_42001' | 'GOVERNANCE_UAE_AI' | 'GOVERNANCE_ISO_27001';
 
 export interface GovernanceLockInfo {
   hasLock: boolean;

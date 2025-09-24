@@ -26,10 +26,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate scope
-    const validScopes = ['ASSESS', 'EDIT', 'GOVERNANCE_EU_AI_ACT', 'GOVERNANCE_ISO_42001', 'GOVERNANCE_UAE_AI'];
+    const validScopes = ['ASSESS', 'EDIT', 'GOVERNANCE_EU_AI_ACT', 'GOVERNANCE_ISO_42001', 'GOVERNANCE_UAE_AI', 'GOVERNANCE_ISO_27001'];
     if (!validScopes.includes(scope)) {
       return NextResponse.json({ 
-        error: 'Invalid scope. Must be one of: ASSESS, EDIT, GOVERNANCE_EU_AI_ACT, GOVERNANCE_ISO_42001, GOVERNANCE_UAE_AI' 
+        error: 'Invalid scope. Must be one of: ASSESS, EDIT, GOVERNANCE_EU_AI_ACT, GOVERNANCE_ISO_42001, GOVERNANCE_UAE_AI, GOVERNANCE_ISO_27001' 
       }, { status: 400 });
     }
 
