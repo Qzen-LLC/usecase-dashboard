@@ -336,348 +336,386 @@ export default function Iso27001AssessmentPage() {
     }
   };
 
-  const handleImplementationChange = async (
+  const handleSubclauseImplementationChange = (
     subclauseId: string,
     implementation: string
   ) => {
-    if (!assessment || !canEdit) return;
+    console.log('🔒 handleSubclauseImplementationChange called:', { subclauseId, canEdit, hasLock: lockInfo?.hasLock });
+    if (!canEdit) {
+      console.log('🔒 User cannot edit, preventing subclause implementation change');
+      return; // Prevent changes if user doesn't have edit access
+    }
+    
+    if (!assessment) return;
 
+    console.log("ISO 27001 Debug - Implementation change:", {
+      subclauseId,
+      implementationLength: implementation.length,
+      currentAssessmentSubclauses: assessment.subclauses.length,
+    });
+
+    // Check if instance already exists
+    const existingInstance = assessment.subclauses.find(
+      (sc) => sc.subclause.subclauseId === subclauseId
+    );
+
+    let updatedSubclauses;
+    if (existingInstance) {
+      // Update existing instance
+      updatedSubclauses = assessment.subclauses.map((sc) =>
+        sc.subclause.subclauseId === subclauseId
+          ? {
+              ...sc,
+              implementation,
+              status: implementation.trim() ? "implemented" : "pending",
+            }
+          : sc
+      );
+    } else {
+      // Create new instance (temporary, will be saved to DB when user clicks Save)
+      const newInstance = {
+        id: `temp-${subclauseId}`,
+        implementation,
+        evidenceFiles: [],
+        status: implementation.trim() ? "implemented" : "pending",
+        subclause: {
+          subclauseId,
+          title: "", // Will be filled when saved
+          summary: "",
+          questions: [],
+          evidenceExamples: [],
+        },
+      };
+      updatedSubclauses = [...assessment.subclauses, newInstance];
+    }
+
+    setAssessment({ ...assessment, subclauses: updatedSubclauses });
+  };
+
+  const handleAnnexImplementationChange = (
+    itemId: string,
+    implementation: string
+  ) => {
+    console.log('🔒 handleAnnexImplementationChange called:', { itemId, canEdit, hasLock: lockInfo?.hasLock });
+    if (!canEdit) {
+      console.log('🔒 User cannot edit, preventing annex implementation change');
+      return; // Prevent changes if user doesn't have edit access
+    }
+    
+    if (!assessment) return;
+
+    console.log("ISO 27001 Debug - Annex implementation change:", {
+      itemId,
+      implementationLength: implementation.length,
+      currentAssessmentAnnexes: assessment.annexes.length,
+    });
+
+    // Check if instance already exists
+    const existingInstance = assessment.annexes.find(
+      (ann) => ann.item.itemId === itemId
+    );
+
+    let updatedAnnexes;
+    if (existingInstance) {
+      // Update existing instance
+      updatedAnnexes = assessment.annexes.map((ann) =>
+        ann.item.itemId === itemId
+          ? {
+              ...ann,
+              implementation,
+              status: implementation.trim() ? "implemented" : "pending",
+            }
+          : ann
+      );
+    } else {
+      // Create new instance (temporary, will be saved to DB when user clicks Save)
+      const newInstance = {
+        id: `temp-${itemId}`,
+        implementation,
+        evidenceFiles: [],
+        status: implementation.trim() ? "implemented" : "pending",
+        item: {
+          itemId,
+          title: "", // Will be filled when saved
+          description: "",
+          guidance: "",
+          categoryId: "",
+          category: { title: "" }, // Add required category property
+        },
+      };
+      updatedAnnexes = [...assessment.annexes, newInstance];
+    }
+
+    setAssessment({ ...assessment, annexes: updatedAnnexes });
+  };
+
+  const handleSaveSubclause = async (subclauseId: string) => {
+    console.log('🔒 handleSaveSubclause called:', { subclauseId, canEdit, hasLock: lockInfo?.hasLock });
+    if (!canEdit) {
+      console.log('🔒 User cannot edit, preventing subclause save');
+      return; // Prevent changes if user doesn't have edit access
+    }
+    
+    const subclauseInstance = assessment?.subclauses.find(
+      (sc) => sc.subclause.subclauseId === subclauseId
+    );
+    if (!subclauseInstance || !assessment) return;
+
+    setSaving(true);
     try {
-      setSaving(true);
       const response = await fetch(
         `/api/iso-27001/subclause/${assessment.id}`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             subclauseId,
-            implementation,
-            evidenceFiles: [], // Keep existing files
+            implementation: subclauseInstance.implementation,
+            evidenceFiles: subclauseInstance.evidenceFiles,
           }),
         }
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('ISO 27001 Subclause API Error:', errorData);
-        
-        // Handle specific error cases
-        if (response.status === 409) {
-          throw new Error("This subclause is already being edited. Please refresh the page and try again.");
-        } else if (response.status === 403) {
-          throw new Error("You don't have permission to edit this assessment.");
-        } else if (response.status === 404) {
-          throw new Error("Assessment not found. Please refresh the page and try again.");
-        } else {
-          throw new Error(errorData.error || "Failed to save implementation");
-        }
+        throw new Error(errorData.error || "Failed to save subclause");
       }
 
-      const updatedInstance = await response.json();
+      const savedInstance = await response.json();
 
-      // Update the assessment state
-      setAssessment((prev) => {
-        if (!prev) return prev;
+      // Update local state with the saved instance
+      setAssessment((currentAssessment) => {
+        if (!currentAssessment) return currentAssessment;
 
-        const updatedSubclauses = prev.subclauses.map((sub) =>
-          sub.subclause.subclauseId === subclauseId
-            ? { ...sub, implementation, status: updatedInstance.status }
-            : sub
+        const updatedSubclauses = currentAssessment.subclauses.map((sc) =>
+          sc.subclause.subclauseId === subclauseId
+            ? { ...sc, ...savedInstance, subclause: sc.subclause }
+            : sc
         );
 
         return {
-          ...prev,
+          ...currentAssessment,
           subclauses: updatedSubclauses,
+          lastUpdated: Date.now(),
         };
       });
 
-      // Update progress
       await updateProgress();
-    } catch (err) {
-      console.error("Error saving implementation:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to save implementation"
-      );
+
+      // Clear any existing errors on successful save
+      if (error) {
+        setError(null);
+      }
+    } catch (error) {
+      console.error("Error saving subclause:", error);
+      setError(error instanceof Error ? error.message : "Failed to save subclause");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleAnnexImplementationChange = async (
-    itemId: string,
-    implementation: string
-  ) => {
-    if (!assessment || !canEdit) return;
+  const handleSaveAnnex = async (itemId: string) => {
+    console.log('🔒 handleSaveAnnex called:', { itemId, canEdit, hasLock: lockInfo?.hasLock });
+    if (!canEdit) {
+      console.log('🔒 User cannot edit, preventing annex save');
+      return; // Prevent changes if user doesn't have edit access
+    }
+    
+    const annexInstance = assessment?.annexes.find(
+      (ann) => ann.item.itemId === itemId
+    );
+    if (!annexInstance || !assessment) return;
 
+    setSaving(true);
     try {
-      setSaving(true);
       const response = await fetch(`/api/iso-27001/annex/${assessment.id}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           itemId,
-          implementation,
-          evidenceFiles: [], // Keep existing files
+          implementation: annexInstance.implementation,
+          evidenceFiles: annexInstance.evidenceFiles,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('ISO 27001 Annex API Error:', errorData);
-        
-        // Handle specific error cases
-        if (response.status === 409) {
-          throw new Error("This annex item is already being edited. Please refresh the page and try again.");
-        } else if (response.status === 403) {
-          throw new Error("You don't have permission to edit this assessment.");
-        } else if (response.status === 404) {
-          throw new Error("Assessment not found. Please refresh the page and try again.");
-        } else {
-          throw new Error(errorData.error || "Failed to save implementation");
-        }
+        throw new Error(errorData.error || "Failed to save annex");
       }
 
-      const updatedInstance = await response.json();
+      const savedInstance = await response.json();
 
-      // Update the assessment state
-      setAssessment((prev) => {
-        if (!prev) return prev;
+      // Update local state with the saved instance
+      setAssessment((currentAssessment) => {
+        if (!currentAssessment) return currentAssessment;
 
-        const updatedAnnexes = prev.annexes.map((annex) =>
-          annex.item.itemId === itemId
-            ? { ...annex, implementation, status: updatedInstance.status }
-            : annex
+        const updatedAnnexes = currentAssessment.annexes.map((ann) =>
+          ann.item.itemId === itemId
+            ? { ...ann, ...savedInstance, item: ann.item }
+            : ann
         );
 
         return {
-          ...prev,
+          ...currentAssessment,
           annexes: updatedAnnexes,
+          lastUpdated: Date.now(),
         };
       });
 
-      // Update progress
       await updateProgress();
-    } catch (err) {
-      console.error("Error saving annex implementation:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to save implementation"
-      );
+
+      // Clear any existing errors on successful save
+      if (error) {
+        setError(null);
+      }
+    } catch (error) {
+      console.error("Error saving annex:", error);
+      setError(error instanceof Error ? error.message : "Failed to save annex");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleEvidenceUpload = async (
+  const handleSubclauseEvidenceChange = async (
     subclauseId: string,
-    files: File[]
+    evidenceFiles: string[]
   ) => {
-    if (!assessment || !canEdit || files.length === 0) return;
-
-    const fileKey = `subclause-${subclauseId}`;
-    setSavingFiles((prev) => new Set(prev).add(fileKey));
-
-    try {
-      // Clear any pending changes for this subclause
-      const existingTimeout = pendingEvidenceChanges.get(subclauseId);
-      if (existingTimeout) {
-        clearTimeout(existingTimeout);
-        pendingEvidenceChanges.delete(subclauseId);
-      }
-
-      // Get current evidence files
-      const currentInstance = assessment.subclauses.find(
-        (sub) => sub.subclause.subclauseId === subclauseId
-      );
-      const currentFiles = currentInstance?.evidenceFiles || [];
-
-      // Upload files and get URLs
-      const uploadedUrls: string[] = [];
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const uploadResponse = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error(`Failed to upload ${file.name}`);
-        }
-
-        const uploadData = await uploadResponse.json();
-        uploadedUrls.push(uploadData.url);
-      }
-
-      // Combine with existing files
-      const allFiles = [...currentFiles, ...uploadedUrls];
-
-      // Debounce the API call
-      const timeoutId = setTimeout(async () => {
-        try {
-          const response = await fetch(
-            `/api/iso-27001/subclause/${assessment.id}`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                subclauseId,
-                implementation: currentInstance?.implementation || "",
-                evidenceFiles: allFiles,
-              }),
-            }
-          );
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Failed to save evidence files");
-          }
-
-          const updatedInstance = await response.json();
-
-          // Update the assessment state
-          setAssessment((prev) => {
-            if (!prev) return prev;
-
-            const updatedSubclauses = prev.subclauses.map((sub) =>
-              sub.subclause.subclauseId === subclauseId
-                ? { ...sub, evidenceFiles: allFiles, status: updatedInstance.status }
-                : sub
-            );
-
-            return {
-              ...prev,
-              subclauses: updatedSubclauses,
-            };
-          });
-
-          // Update progress
-          await updateProgress();
-        } catch (err) {
-          console.error("Error saving evidence files:", err);
-          setError(
-            err instanceof Error ? err.message : "Failed to save evidence files"
-          );
-        } finally {
-          setSavingFiles((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(fileKey);
-            return newSet;
-          });
-        }
-      }, 1000); // 1 second debounce
-
-      setPendingEvidenceChanges((prev) => {
-        const newMap = new Map(prev);
-        newMap.set(subclauseId, timeoutId);
-        return newMap;
-      });
-    } catch (err) {
-      console.error("Error uploading evidence files:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to upload evidence files"
-      );
-      setSavingFiles((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(fileKey);
-        return newSet;
-      });
+    console.log('🔒 handleSubclauseEvidenceChange called:', { subclauseId, canEdit, hasLock: lockInfo?.hasLock });
+    if (!canEdit) {
+      console.log('🔒 User cannot edit, preventing subclause evidence change');
+      return; // Prevent changes if user doesn't have edit access
     }
-  };
+    
+    if (!assessment) return;
 
-  const handleAnnexEvidenceUpload = async (
-    itemId: string,
-    files: File[]
-  ) => {
-    if (!assessment || !canEdit || files.length === 0) return;
+    // Clear any pending timeout for this subclause
+    const existingTimeout = pendingEvidenceChanges.get(subclauseId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
 
-    const fileKey = `annex-${itemId}`;
-    setSavingFiles((prev) => new Set(prev).add(fileKey));
+    const existingInstance = assessment.subclauses.find(
+      (sc) => sc.subclause.subclauseId === subclauseId
+    );
 
-    try {
-      // Get current evidence files
-      const currentInstance = assessment.annexes.find(
-        (annex) => annex.item.itemId === itemId
-      );
-      const currentFiles = currentInstance?.evidenceFiles || [];
-
-      // Upload files and get URLs
-      const uploadedUrls: string[] = [];
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const uploadResponse = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error(`Failed to upload ${file.name}`);
-        }
-
-        const uploadData = await uploadResponse.json();
-        uploadedUrls.push(uploadData.url);
-      }
-
-      // Combine with existing files
-      const allFiles = [...currentFiles, ...uploadedUrls];
-
-      const response = await fetch(`/api/iso-27001/annex/${assessment.id}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          itemId,
-          implementation: currentInstance?.implementation || "",
-          evidenceFiles: allFiles,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to save evidence files");
-      }
-
-      const updatedInstance = await response.json();
-
-      // Update the assessment state
-      setAssessment((prev) => {
-        if (!prev) return prev;
-
-        const updatedAnnexes = prev.annexes.map((annex) =>
-          annex.item.itemId === itemId
-            ? { ...annex, evidenceFiles: allFiles, status: updatedInstance.status }
-            : annex
+    // Set a new timeout for debouncing
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `/api/iso-27001/subclause/${assessment.id}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              subclauseId,
+              implementation: existingInstance?.implementation || "",
+              evidenceFiles,
+            }),
+          }
         );
 
-        return {
-          ...prev,
-          annexes: updatedAnnexes,
-        };
-      });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to save evidence files");
+        }
 
-      // Update progress
-      await updateProgress();
-    } catch (err) {
-      console.error("Error uploading annex evidence files:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to upload evidence files"
-      );
-    } finally {
-      setSavingFiles((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(fileKey);
-        return newSet;
-      });
+        const updatedInstance = await response.json();
+
+        // Update the assessment state
+        setAssessment((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            subclauses: prev.subclauses.map((sc) =>
+              sc.subclause.subclauseId === subclauseId
+                ? { ...sc, evidenceFiles: updatedInstance.evidenceFiles }
+                : sc
+            ),
+          };
+        });
+      } catch (error) {
+        console.error("Error saving evidence files:", error);
+        setError(error instanceof Error ? error.message : "Failed to save evidence files");
+      }
+    }, 1000); // 1 second debounce
+
+    setPendingEvidenceChanges((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(subclauseId, timeoutId);
+      return newMap;
+    });
+  };
+
+  const handleAnnexEvidenceChange = async (
+    itemId: string,
+    evidenceFiles: string[]
+  ) => {
+    console.log('🔒 handleAnnexEvidenceChange called:', { itemId, canEdit, hasLock: lockInfo?.hasLock });
+    if (!canEdit) {
+      console.log('🔒 User cannot edit, preventing annex evidence change');
+      return; // Prevent changes if user doesn't have edit access
     }
+    
+    if (!assessment) return;
+
+    // Clear any pending timeout for this item
+    const existingTimeout = pendingEvidenceChanges.get(itemId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    const existingInstance = assessment.annexes.find(
+      (annex) => annex.item.itemId === itemId
+    );
+    
+
+    // Set a new timeout for debouncing
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/iso-27001/annex/${assessment.id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            itemId,
+            implementation: existingInstance?.implementation || "",
+            evidenceFiles,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to save evidence files");
+        }
+
+        const updatedInstance = await response.json();
+
+        // Update the assessment state
+        setAssessment((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            annexes: prev.annexes.map((annex) =>
+              annex.item.itemId === itemId
+                ? { ...annex, evidenceFiles: updatedInstance.evidenceFiles }
+                : annex
+            ),
+          };
+        });
+      } catch (error) {
+        console.error("Error saving annex evidence files:", error);
+        setError(error instanceof Error ? error.message : "Failed to save evidence files");
+      }
+    }, 1000); // 1 second debounce
+
+    setPendingEvidenceChanges((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(itemId, timeoutId);
+      return newMap;
+    });
   };
 
   const updateProgress = async () => {
@@ -1044,7 +1082,7 @@ export default function Iso27001AssessmentPage() {
                               <textarea
                                 value={instance?.implementation || ""}
                                 onChange={(e) =>
-                                  handleImplementationChange(
+                                  handleSubclauseImplementationChange(
                                     subclause.subclauseId,
                                     e.target.value
                                   )
@@ -1054,6 +1092,28 @@ export default function Iso27001AssessmentPage() {
                                 rows={4}
                                 disabled={!canEdit}
                               />
+                              <div className="flex items-center justify-between pt-2 border-t border-border">
+                                <div className="flex items-center gap-4">
+                                  <div className="text-xs text-muted-foreground">
+                                    {instance?.implementation?.length || 0} characters
+                                  </div>
+                                </div>
+                                <Button
+                                  onClick={() =>
+                                    handleSaveSubclause(subclause.subclauseId)
+                                  }
+                                  disabled={!canEdit || saving}
+                                  size="sm"
+                                  className={`flex items-center gap-2 transition-colors ${
+                                    instance?.status === 'implemented'
+                                      ? "bg-green-600 hover:bg-green-700"
+                                      : "bg-purple-600 hover:bg-purple-700"
+                                  }`}
+                                >
+                                  <Save className="w-4 h-4" />
+                                  {saving ? "Saving..." : "Save"}
+                                </Button>
+                              </div>
                             </div>
 
                             {/* Evidence Files */}
@@ -1062,12 +1122,16 @@ export default function Iso27001AssessmentPage() {
                                 Evidence Files
                               </label>
                               <FileUpload
-                                onUpload={(files) =>
-                                  handleEvidenceUpload(subclause.subclauseId, files)
+                                label="Evidence Files"
+                                value={instance?.evidenceFiles || []}
+                                onChange={(files) =>
+                                  handleSubclauseEvidenceChange(subclause.subclauseId, files)
                                 }
-                                existingFiles={instance?.evidenceFiles || []}
+                                maxFiles={5}
+                                maxSize={10}
                                 disabled={!canEdit}
-                                isUploading={isSaving}
+                                useCaseId={useCaseId}
+                                frameworkType="iso-27001"
                               />
                             </div>
                           </div>
@@ -1173,6 +1237,28 @@ export default function Iso27001AssessmentPage() {
                                 rows={4}
                                 disabled={!canEdit}
                               />
+                              <div className="flex items-center justify-between pt-2 border-t border-border">
+                                <div className="flex items-center gap-4">
+                                  <div className="text-xs text-muted-foreground">
+                                    {instance?.implementation?.length || 0} characters
+                                  </div>
+                                </div>
+                                <Button
+                                  onClick={() =>
+                                    handleSaveAnnex(item.itemId)
+                                  }
+                                  disabled={!canEdit || saving}
+                                  size="sm"
+                                  className={`flex items-center gap-2 transition-colors ${
+                                    instance?.status === 'implemented'
+                                      ? "bg-green-600 hover:bg-green-700"
+                                      : "bg-purple-600 hover:bg-purple-700"
+                                  }`}
+                                >
+                                  <Save className="w-4 h-4" />
+                                  {saving ? "Saving..." : "Save"}
+                                </Button>
+                              </div>
                             </div>
 
                             {/* Evidence Files */}
@@ -1181,12 +1267,16 @@ export default function Iso27001AssessmentPage() {
                                 Evidence Files
                               </label>
                               <FileUpload
-                                onUpload={(files) =>
-                                  handleAnnexEvidenceUpload(item.itemId, files)
+                                label="Evidence Files"
+                                value={instance?.evidenceFiles || []}
+                                onChange={(files) =>
+                                  handleAnnexEvidenceChange(item.itemId, files)
                                 }
-                                existingFiles={instance?.evidenceFiles || []}
+                                maxFiles={5}
+                                maxSize={10}
                                 disabled={!canEdit}
-                                isUploading={isSaving}
+                                useCaseId={useCaseId}
+                                frameworkType="iso-27001"
                               />
                             </div>
                           </div>
