@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useUser, useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import AdminDashboard from '@/components/AdminDashboard';
 import { useUserData } from '@/contexts/UserContext';
 
 export default function AdminPage() {
   const { user, isSignedIn, isLoaded } = useUser();
+  const { sessionClaims } = useAuth();
   const router = useRouter();
   const { userData, loading, error } = useUserData();
   const [debug, setDebug] = useState<any>(null);
@@ -60,27 +61,7 @@ export default function AdminPage() {
     );
   }
 
-  if (userData?.role !== 'QZEN_ADMIN') {
-    return (
-      <div className="p-8">
-        <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-        <p className="mb-4">You don't have permission to access the admin dashboard.</p>
-        <p className="mb-4 text-gray-600">Your role: {userData?.role || 'Unknown'}</p>
-        {debug && (
-          <div className="bg-gray-100 p-4 rounded mb-4">
-            <h2 className="font-semibold mb-2">Debug Info:</h2>
-            <pre className="text-sm overflow-auto">{JSON.stringify(debug, null, 2)}</pre>
-          </div>
-        )}
-        <button 
-          onClick={() => router.push('/dashboard')}
-          className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition"
-        >
-          Go to Dashboard
-        </button>
-      </div>
-    );
-  }
+  // Render admin dashboard; server endpoints enforce admin authorization.
 
   return (
     <div className="w-full">

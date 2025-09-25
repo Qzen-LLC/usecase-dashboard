@@ -83,6 +83,9 @@ export default function AdminDashboard() {
   
   // Use global stable render hook
   const { isReady } = useStableRender();
+  const grafanaPublicUrl =
+    process.env.NEXT_PUBLIC_GRAFANA_PUBLIC_DASHBOARD_URL ||
+    "https://qzenai9.grafana.net";
 
   useEffect(() => {
     if (isReady) {
@@ -336,6 +339,39 @@ export default function AdminDashboard() {
             <span className="text-destructive font-medium">{deleteError}</span>
           </div>
         )}
+
+        {/* Grafana Dashboard (QZEN_ADMIN only via /admin route) */}
+        <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-foreground">Platform Observability</CardTitle>
+                <CardDescription>Embedded Grafana dashboard</CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => window.open(grafanaPublicUrl, "_blank", "noopener,noreferrer")}
+                className="border-border"
+              >
+                Open in Grafana
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="rounded-xl overflow-hidden border border-border">
+              <iframe
+                src={grafanaPublicUrl}
+                width="100%"
+                height="900"
+                style={{ border: 0 }}
+                referrerPolicy="no-referrer"
+                loading="lazy"
+                allow="fullscreen"
+                title="Grafana Dashboard"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Create Organization Modal */}
         {showCreateOrg && (

@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
-import { prismaClient } from '@/utils/db';
 
 
 // In-memory cache for development
@@ -45,92 +43,17 @@ async function invalidateUserCache(clerkId: string) {
   }
 }
 
+// This route is deprecated: user data is now sourced from Clerk JWT claims.
 export async function GET() {
-  try {
-    const user = await currentUser();
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check cache first
-    const cached = await getCachedUser(user.id);
-    if (cached) {
-      return NextResponse.json(cached);
-    }
-
-    // Fetch user data with optimized query
-    const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        organizationId: true,
-        organization: {
-          select: {
-            id: true,
-            name: true,
-            domain: true,
-          }
-        },
-      },
-    });
-
-    if (!userRecord) {
-      return NextResponse.json({ 
-        error: 'User not found in database',
-        clerkId: user.id,
-        email: user.emailAddresses[0]?.emailAddress 
-      }, { status: 404 });
-    }
-
-    const responseData = {
-      user: {
-        id: userRecord.id,
-        email: userRecord.email,
-        firstName: userRecord.firstName,
-        lastName: userRecord.lastName,
-        role: userRecord.role,
-        organizationId: userRecord.organizationId,
-        organization: userRecord.organization,
-      },
-    };
-
-    // Cache the response
-    await setCachedUser(user.id, responseData);
-
-    return NextResponse.json(responseData);
-
-  } catch (error) {
-    console.error('Error fetching user:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
-  }
+  return NextResponse.json({
+    deprecated: true,
+    message: 'Use Clerk session claims via auth() on the server or useAuth()/useUser() on the client.'
+  }, { status: 410 });
 }
 
 export async function POST() {
-  try {
-    const user = await currentUser();
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Invalidate cache for this user
-    await invalidateUserCache(user.id);
-
-    return NextResponse.json({ success: true, message: 'Cache invalidated' });
-
-  } catch (error) {
-    console.error('Error invalidating cache:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
-  }
-} 
+  return NextResponse.json({
+    deprecated: true,
+    message: 'No cache. User info comes from Clerk claims.'
+  }, { status: 410 });
+}

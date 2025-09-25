@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useUser, useAuth } from '@clerk/nextjs';
 
 interface UserData {
   id: string;
@@ -28,6 +28,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const { user, isSignedIn, isLoaded } = useUser();
+  const { sessionClaims } = useAuth();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,24 +36,31 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [dataReady, setDataReady] = useState(false);
 
   const fetchUserData = async () => {
-    if (!isSignedIn) {
+    if (!isSignedIn || !user) {
       setLoading(false);
+      setUserData(null);
       return;
     }
-
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/user/me');
-      if (response.ok) {
-        const data = await response.json();
-        setUserData(data.user);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to fetch user data');
-      }
+      const role = (sessionClaims as any)?.appRole as string | undefined;
+      const organizationId = (sessionClaims as any)?.organizationId as string | undefined;
+      const dbUserId = (sessionClaims as any)?.dbUserId as string | undefined;
+
+      const nextUser: UserData = {
+        id: dbUserId || user.id,
+        email: user.emailAddresses?.[0]?.emailAddress || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        role: role || 'USER',
+        organizationId: organizationId || '',
+        organization: null,
+      };
+      setUserData(nextUser);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch user data');
+      setError(err instanceof Error ? err.message : 'Failed to read session claims');
+      setUserData(null);
     } finally {
       setLoading(false);
     }
@@ -79,7 +87,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setDataReady(true);
     }, 100);
     return () => clearTimeout(timer);
-  }, [mounted, isLoaded, isSignedIn]);
+  }, [mounted, isLoaded, isSignedIn, sessionClaims, user]);
 
   // Don't provide context until mounted and data is ready to prevent hydration mismatch
   if (!mounted || !dataReady) {

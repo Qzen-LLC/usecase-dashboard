@@ -1,29 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
+import { requireAuthContext, isQzenAdmin } from '@/utils/authz';
 
 export async function GET(request: NextRequest) {
   try {
     console.log('[LOCK STATUS] Starting lock status check...');
     
-    const user = await currentUser();
-    if (!user) {
-      console.log('[LOCK STATUS] No user found');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const authCtx = requireAuthContext();
+    if (!authCtx.dbUserId) {
+      return NextResponse.json({ error: 'Missing dbUserId claim. Configure Clerk JWT with dbUserId.' }, { status: 400 });
     }
-
-    console.log('[LOCK STATUS] User found:', user.id);
-
-    const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
-    });
-
-    if (!userRecord) {
-      console.log('[LOCK STATUS] User record not found for clerk ID:', user.id);
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    console.log('[LOCK STATUS] User record found:', userRecord.id);
+    console.log('[LOCK STATUS] User found:', authCtx.userId);
 
     const { searchParams } = new URL(request.url);
     const useCaseId = searchParams.get('useCaseId');
@@ -61,14 +48,15 @@ export async function GET(request: NextRequest) {
 
     console.log('[LOCK STATUS] Use case found:', useCase.id);
 
-    // Check permissions based on role
-    if (userRecord.role !== 'QZEN_ADMIN') {
-      if (userRecord.role === 'USER') {
-        if (useCase.userId !== userRecord.id) {
+    // Check permissions based on role from claims
+    if (!isQzenAdmin(authCtx)) {
+      const role = authCtx.role;
+      if (role === 'USER') {
+        if (useCase.userId !== authCtx.dbUserId) {
           return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
-      } else if (userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') {
-        if (useCase.organizationId !== userRecord.organizationId) {
+      } else if (role === 'ORG_ADMIN' || role === 'ORG_USER') {
+        if (!authCtx.organizationId || useCase.organizationId !== authCtx.organizationId) {
           return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
       }
@@ -152,7 +140,7 @@ export async function GET(request: NextRequest) {
       };
     } else if (sharedLocks.length > 0) {
       // There are shared locks but no exclusive lock
-      const currentUserSharedLock = sharedLocks.find(lock => lock.userId === userRecord.id);
+      const currentUserSharedLock = sharedLocks.find(lock => lock.userId === authCtx.dbUserId);
       
       lockInfo = {
         hasLock: !!currentUserSharedLock,

@@ -21,68 +21,38 @@ export default function ClerkInvitationHandler({ onInvitationAccepted }: ClerkIn
   useEffect(() => {
     if (!user || invitationAccepted) return;
 
-    // Check if user has invitation metadata
-    const publicMetadata = user.publicMetadata;
-    const role = publicMetadata?.role as string;
-    const organizationId = publicMetadata?.organizationId as string;
+    // Prefer server-managed session claims; fall back to Clerk org context if needed
+    const claims: any = (user as any)?.sessionClaims || {};
+    const role = claims?.appRole as string | undefined;
+    const organizationId = claims?.organizationId as string | undefined;
 
     if (role && organizationId) {
-      // Check if the user is already part of this organization in the database
       checkIfInvitationAlreadyProcessed(role, organizationId);
     }
   }, [user, invitationAccepted]);
 
-  // Additional effect to check if user is already part of an organization
+  // Additional effect: if claims already have an organization, hide the invitation
   useEffect(() => {
     if (!user || invitationAccepted) return;
-
-    // If user already has organization data, don't show invitation popup
-    const checkExistingOrganization = async () => {
-      try {
-        const response = await fetch('/api/user/me');
-        if (response.ok) {
-          const userData = await response.json();
-          if (userData.organizationId) {
-            console.log('[ClerkInvitationHandler] User already part of organization:', userData.organizationId);
-            setShowInvitation(false);
-            setInvitationAccepted(true);
-            return;
-          }
-        }
-      } catch (error) {
-        console.error('[ClerkInvitationHandler] Error checking existing organization:', error);
-      }
-    };
-
-    checkExistingOrganization();
+    const claims: any = (user as any)?.sessionClaims || {};
+    const organizationId = claims?.organizationId as string | undefined;
+    if (organizationId) {
+      setShowInvitation(false);
+      setInvitationAccepted(true);
+    }
   }, [user, invitationAccepted]);
 
   const checkIfInvitationAlreadyProcessed = async (role: string, organizationId: string) => {
     try {
-      // Check if user already exists in the database with this organization
-      const response = await fetch('/api/user/me');
-      if (response.ok) {
-        const userData = await response.json();
-        
-        // If user already has an organizationId and it matches, don't show invitation
-        if (userData.organizationId === organizationId) {
-          console.log('[ClerkInvitationHandler] User already part of organization, clearing invitation metadata');
-          // Clear the invitation metadata by updating the user
-          await clearInvitationMetadata();
-          setInvitationAccepted(true);
-          setShowInvitation(false);
-          return;
-        }
-        
-        // If user has any organizationId, they're already part of an organization
-        if (userData.organizationId) {
-          console.log('[ClerkInvitationHandler] User already part of different organization:', userData.organizationId);
-          setInvitationAccepted(true);
-          setShowInvitation(false);
-          return;
-        }
+      // If organization already present in claims, treat as accepted
+      const claims: any = (user as any)?.sessionClaims || {};
+      const existingOrgId = claims?.organizationId as string | undefined;
+      if (existingOrgId) {
+        setInvitationAccepted(true);
+        setShowInvitation(false);
+        return;
       }
-      
+
       // Check if this specific invitation has already been accepted
       // We can do this by checking if there's an accepted invitation for this user and organization
       try {

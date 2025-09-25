@@ -1,23 +1,30 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
 import { prismaClient } from '@/utils/db';
 import { createClerkClient } from '@clerk/backend';
+import { isQzenAdmin } from '@/utils/authz';
+import { auth } from '@clerk/nextjs/server';
 
 const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
 // Get all organizations (QZen Admin only)
 export async function GET() {
   try {
-    const user = await currentUser();
-    if (!user) {
+    const { userId, sessionClaims } = await auth();
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const currentUserRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
-    });
-    if (!currentUserRecord || currentUserRecord.role !== 'QZEN_ADMIN') {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    let appRole = (sessionClaims as any)?.appRole as string | undefined;
+    if (appRole !== 'QZEN_ADMIN') {
+      // Fallback to Clerk private metadata if JWT claim missing/outdated
+      try {
+        const clerkUser = await clerk.users.getUser(userId);
+        const metaRole = (clerkUser?.privateMetadata as any)?.appRole as string | undefined;
+        if (metaRole !== 'QZEN_ADMIN') {
+          return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+        }
+      } catch {
+        return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+      }
     }
 
     // Fetch organizations from DB
@@ -54,16 +61,21 @@ export async function GET() {
 // Create new organization (QZen Admin only)
 export async function POST(req: Request) {
   try {
-    const user = await currentUser();
-    if (!user) {
+    const { userId, sessionClaims } = await auth();
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const currentUserRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
-    });
-    if (!currentUserRecord || currentUserRecord.role !== 'QZEN_ADMIN') {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    let appRole = (sessionClaims as any)?.appRole as string | undefined;
+    if (appRole !== 'QZEN_ADMIN') {
+      try {
+        const clerkUser = await clerk.users.getUser(userId);
+        const metaRole = (clerkUser?.privateMetadata as any)?.appRole as string | undefined;
+        if (metaRole !== 'QZEN_ADMIN') {
+          return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+        }
+      } catch {
+        return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+      }
     }
 
     const { name, domain, adminEmail, adminFirstName, adminLastName } = await req.json();
@@ -126,7 +138,7 @@ export async function POST(req: Request) {
           email: adminEmail.trim(),
           role: 'ORG_ADMIN',
           organizationId: org.id,
-          invitedById: currentUserRecord.id,
+          invitedById: '',
           token: `invite-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
         },
@@ -178,16 +190,21 @@ export async function POST(req: Request) {
 // Delete organization (QZen Admin only)
 export async function DELETE(req: Request) {
   try {
-    const user = await currentUser();
-    if (!user) {
+    const { userId, sessionClaims } = await auth();
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const currentUserRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
-    });
-    if (!currentUserRecord || currentUserRecord.role !== 'QZEN_ADMIN') {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    let appRole = (sessionClaims as any)?.appRole as string | undefined;
+    if (appRole !== 'QZEN_ADMIN') {
+      try {
+        const clerkUser = await clerk.users.getUser(userId);
+        const metaRole = (clerkUser?.privateMetadata as any)?.appRole as string | undefined;
+        if (metaRole !== 'QZEN_ADMIN') {
+          return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+        }
+      } catch {
+        return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+      }
     }
 
     const { searchParams } = new URL(req.url);

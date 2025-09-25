@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@clerk/nextjs';
+import { useUser, useAuth } from '@clerk/nextjs';
 import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X, Eye, Trash2, RefreshCw, AlertTriangle, Users, Building2, Edit as EditIcon, ArrowRight as ArrowRightIcon } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -244,6 +244,7 @@ const Dashboard = () => {
   const [selectedUseCase, setSelectedUseCase] = useState<MappedUseCase | null>(null);
   const router = useRouter();
   const { user, isSignedIn, isLoaded } = useUser();
+  const { sessionClaims } = useAuth();
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>(''); // '' means All Organizations
   const [selectedBusinessFunction, setSelectedBusinessFunction] = useState<string>(''); // '' means All Business Functions
@@ -346,24 +347,26 @@ const Dashboard = () => {
   );
 
   useEffect(() => {
-    // Fetch organizations for the dropdown - only for QZEN_ADMIN users
+    // Fetch organizations; server will enforce admin via claims
     const fetchOrganizations = async () => {
       try {
         const res = await fetch('/api/admin/organizations');
+        if (!res.ok) {
+          return; // Not admin or error; do not block dashboard
+        }
         const data = await res.json();
-        if (res.ok && Array.isArray(data.organizations)) {
+        if (Array.isArray(data.organizations)) {
           setOrganizations(data.organizations);
         }
       } catch (err) {
-        // fail silently for now
+        // ignore
       }
     };
-    
-    // Only fetch organizations if user is QZEN_ADMIN
-    if (userData?.role === 'QZEN_ADMIN') {
+
+    if (isLoaded && isSignedIn) {
       fetchOrganizations();
     }
-  }, [userData?.role]);
+  }, [isLoaded, isSignedIn]);
 
 
 

@@ -23,8 +23,8 @@ export default function SignInPage() {
               formFieldLabel: "text-gray-700",
               // Inputs remain white in dark mode
                       formFieldInput: "bg-white text-dark placeholder:text-gray-600 border-border focus:ring-2 focus:ring-ring focus:border-ring",
-        socialButtonsBlockButton: "bg-white text-dark border border-gray-300 hover:bg-gray-50",
-        socialButtonsBlockButtonText: "text-dark",
+        socialButtonsBlockButton: "bg-white text-black border border-gray-300 hover:bg-gray-50",
+        socialButtonsBlockButtonText: "text-black",
               footer: "text-gray-600",
               formButtonPrimary: "bg-gray-600 hover:bg-gray-700 text-white",
             },

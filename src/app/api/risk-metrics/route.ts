@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
 import { prismaClient } from '@/utils/db';
+import { requireAuthContext, isQzenAdmin } from '@/utils/authz';
 
 import { calculateRiskScores, getRiskLevel, getRiskCategoryScores, type StepsData } from '@/lib/risk-calculations';
 
@@ -8,39 +8,14 @@ export async function GET() {
   try {
     console.log('[Risk Metrics] Starting request...');
     
-    // Get current user
-    const user = await currentUser();
-    console.log('[Risk Metrics] Clerk user:', user ? { id: user.id, email: user.emailAddresses[0]?.emailAddress } : 'null');
-    
-    if (!user) {
-      console.log('[Risk Metrics] No user found - returning 401');
-      return NextResponse.json({ 
-        error: 'Unauthorized - No user session found',
-        message: 'Please sign in through the browser first'
-      }, { status: 401 });
-    }
-    
-    // Get user data from database
-    console.log('[Risk Metrics] Looking up user in database...');
-    const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
-    });
-    
-    console.log('[Risk Metrics] Database user record:', userRecord ? { id: userRecord.id, email: userRecord.email, role: userRecord.role } : 'null');
-    
-    if (!userRecord) {
-      console.log('[Risk Metrics] User not found in database - returning 404');
-      return NextResponse.json({ 
-        error: 'User not found in database',
-        clerkId: user.id,
-        email: user.emailAddresses[0]?.emailAddress,
-        message: 'User exists in Clerk but not in database'
-      }, { status: 404 });
+    const authCtx = requireAuthContext();
+    if (!authCtx.dbUserId) {
+      return NextResponse.json({ error: 'Missing dbUserId claim. Configure Clerk JWT with dbUserId.' }, { status: 400 });
     }
 
     // Fetch use cases based on role
     let useCases = [];
-    if (userRecord.role === 'QZEN_ADMIN') {
+    if (isQzenAdmin(authCtx)) {
       useCases = await prismaClient.useCase.findMany({
         include: {
           Approval: true,
@@ -51,7 +26,7 @@ export async function GET() {
       });
     } else {
       useCases = await prismaClient.useCase.findMany({
-        where: { userId: userRecord.id },
+        where: { userId: authCtx.dbUserId },
         include: {
           Approval: true,
           finopsData: true,

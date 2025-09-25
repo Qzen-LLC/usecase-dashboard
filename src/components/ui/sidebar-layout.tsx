@@ -19,7 +19,7 @@ import {
   Code2
 } from 'lucide-react';
 import { Button } from './button';
-import { UserButton, useUser } from '@clerk/nextjs';
+import { UserButton, useUser, useAuth } from '@clerk/nextjs';
 import Image from 'next/image';
 import { useUserData } from '@/contexts/UserContext';
 import ThemeToggle from './theme-toggle';
@@ -93,8 +93,10 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [dataReady, setDataReady] = useState(false);
+  const [hasAdminAccess, setHasAdminAccess] = useState(false);
   const pathname = usePathname();
   const { user, isSignedIn } = useUser();
+  const { sessionClaims } = useAuth();
   const { userData } = useUserData();
 
   // Prevent hydration mismatch by only rendering after mount
@@ -107,13 +109,30 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
     return () => clearTimeout(timer);
   }, []);
 
+  // Probe admin access if claims/context not yet reliable
+  useEffect(() => {
+    if (!isSignedIn) return;
+    const checkAdmin = async () => {
+      try {
+        const res = await fetch('/api/admin/organizations', { method: 'GET' });
+        setHasAdminAccess(res.ok);
+      } catch {
+        setHasAdminAccess(false);
+      }
+    };
+    checkAdmin();
+  }, [isSignedIn]);
+
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
   
   // Build sidebar items, add Admin Dashboard for QZEN_ADMIN and Manage Users for ORG_ADMIN
+  const claimRole = (sessionClaims as any)?.appRole as string | undefined;
+  const isQzenAdmin = hasAdminAccess || userData?.role === 'QZEN_ADMIN' || claimRole === 'QZEN_ADMIN';
+  const isOrgAdmin = userData?.role === 'ORG_ADMIN' || claimRole === 'ORG_ADMIN';
   const sidebarItems = [
-    ...(userData?.role === 'QZEN_ADMIN'
+    ...(isQzenAdmin
       ? [{
           title: 'Admin Dashboard',
           href: '/admin',
@@ -121,7 +140,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
           description: 'Platform Admin'
         }]
       : []),
-    ...(userData?.role === 'ORG_ADMIN'
+    ...(isOrgAdmin
       ? [{
           title: 'Manage Users',
           href: '/dashboard/users',

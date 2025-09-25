@@ -1,6 +1,6 @@
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
-import { WebhookEvent } from '@clerk/nextjs/server';
+import { WebhookEvent, clerkClient } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@/generated/prisma';
 import { validateUserRole } from '@/utils/role-validation';
@@ -47,6 +47,28 @@ export async function POST(req: Request) {
           }
           break;
         }
+        case 'organizationMembership.created':
+        case 'organizationMembership.updated':
+        case 'organizationMembership.deleted': {
+          try {
+            const userId = eventData?.public_user_data?.user_id || eventData?.data?.user_id || eventData?.user_id;
+            const organizationId = eventType === 'organizationMembership.deleted'
+              ? null
+              : (eventData?.organization?.id || eventData?.data?.organization_id || null);
+            if (userId) {
+              const client = await clerkClient();
+              await client.users.updateUser(userId, {
+                privateMetadata: {
+                  organizationId,
+                },
+              });
+              console.log('✅ Synced organizationId to user publicMetadata (dev):', { userId, organizationId });
+            }
+          } catch (err) {
+            console.error('Failed syncing organizationId to user publicMetadata (dev):', err);
+          }
+          break;
+        }
         case 'user.created':
           try {
             const { id: clerkId, email_addresses, first_name, last_name, public_metadata } = eventData;
@@ -67,7 +89,7 @@ export async function POST(req: Request) {
             });
             
             if (email) {
-              await prisma.user.create({
+              const created = await prisma.user.create({
                 data: {
                   clerkId,
                   email,
@@ -77,7 +99,16 @@ export async function POST(req: Request) {
                   organizationId,
                 },
               });
-              console.log('User created successfully:', email, userRole, organizationId || 'No organization');
+              // Mirror minimal identity into Clerk publicMetadata for low-latency claims
+              const client = await clerkClient();
+              await client.users.updateUser(clerkId, {
+                privateMetadata: {
+                  appRole: userRole,
+                  organizationId,
+                  dbUserId: created.id,
+                },
+              });
+              console.log('User created successfully and metadata synced (dev):', email, userRole, organizationId || 'No organization', created.id);
             }
           } catch (error) {
             console.error('Error creating user:', error);
@@ -96,6 +127,18 @@ export async function POST(req: Request) {
                   lastName: last_name || null,
                 },
               });
+              // Keep appRole/org/dbUserId consistent in Clerk publicMetadata based on DB
+              const dbUser = await prisma.user.findUnique({ where: { clerkId } });
+              if (dbUser) {
+                const client = await clerkClient();
+                await client.users.updateUser(clerkId, {
+                  privateMetadata: {
+                    appRole: dbUser.role,
+                    organizationId: dbUser.organizationId || null,
+                    dbUserId: dbUser.id,
+                  },
+                });
+              }
               console.log('User updated successfully:', email);
             }
           } catch (error) {
@@ -186,6 +229,27 @@ export async function POST(req: Request) {
         console.error('Error cleaning inactive locks on session end:', error);
       }
       break;
+    case 'organizationMembership.created':
+    case 'organizationMembership.updated':
+    case 'organizationMembership.deleted':
+      try {
+        const userId: string | undefined = (evt.data as any)?.public_user_data?.user_id || (evt.data as any)?.data?.user_id || (evt.data as any)?.user_id;
+        const organizationId: string | null = eventType === 'organizationMembership.deleted'
+          ? null
+          : ((evt.data as any)?.organization?.id || (evt.data as any)?.data?.organization_id || null);
+        if (userId) {
+          const client = await clerkClient();
+          await client.users.updateUser(userId, {
+            privateMetadata: {
+              organizationId,
+            },
+          });
+          console.log('✅ Synced organizationId to user publicMetadata:', { userId, organizationId });
+        }
+      } catch (error) {
+        console.error('Error syncing organization membership to user metadata:', error);
+      }
+      break;
     case 'user.created':
       try {
                 const { id: clerkId, email_addresses, first_name, last_name, public_metadata } = evt.data;
@@ -236,9 +300,25 @@ export async function POST(req: Request) {
                   organizationId,
                 },
               });
+              const client = await clerkClient();
+              await client.users.updateUser(clerkId, {
+                privateMetadata: {
+                  appRole: userRole,
+                  organizationId,
+                  dbUserId: existingUser.id,
+                },
+              });
               console.log('✅ Webhook - User updated successfully:', email);
             } else {
               console.log('ℹ️ Webhook - User already exists with same clerkId, skipping');
+              const client = await clerkClient();
+              await client.users.updateUser(clerkId, {
+                privateMetadata: {
+                  appRole: existingUser.role,
+                  organizationId: existingUser.organizationId || null,
+                  dbUserId: existingUser.id,
+                },
+              });
             }
           } else {
             // Create new user
@@ -252,6 +332,17 @@ export async function POST(req: Request) {
               organizationId,
             },
           });
+          const created = await prisma.user.findUnique({ where: { clerkId } });
+          if (created) {
+            const client = await clerkClient();
+            await client.users.updateUser(clerkId, {
+              privateMetadata: {
+                appRole: userRole,
+                organizationId,
+                dbUserId: created.id,
+              },
+            });
+          }
           console.log('✅ Webhook - User created successfully:', email, userRole, organizationId || 'No organization');
           }
         }
@@ -272,6 +363,17 @@ export async function POST(req: Request) {
               lastName: last_name || null,
             },
           });
+          const dbUser = await prisma.user.findUnique({ where: { clerkId } });
+          if (dbUser) {
+            const client = await clerkClient();
+            await client.users.updateUser(clerkId, {
+              privateMetadata: {
+                appRole: dbUser.role,
+                organizationId: dbUser.organizationId || null,
+                dbUserId: dbUser.id,
+              },
+            });
+          }
         }
       } catch (error) {
         console.error('Error updating user:', error);

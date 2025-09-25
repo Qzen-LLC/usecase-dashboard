@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
+import { requireAuthContext, isQzenAdmin } from '@/utils/authz';
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
-    });
-
-    if (!userRecord) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    const authCtx = requireAuthContext();
+    if (!authCtx.dbUserId) {
+      return NextResponse.json({ error: 'Missing dbUserId claim. Configure Clerk JWT with dbUserId.' }, { status: 400 });
     }
 
     const { useCaseId, lockType, scope } = await request.json();
@@ -48,14 +40,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Use case not found' }, { status: 404 });
     }
 
-    // Check permissions based on role
-    if (userRecord.role !== 'QZEN_ADMIN') {
-      if (userRecord.role === 'USER') {
-        if (useCase.userId !== userRecord.id) {
+    // Check permissions based on role from claims
+    if (!isQzenAdmin(authCtx)) {
+      const role = authCtx.role;
+      if (role === 'USER') {
+        if (useCase.userId !== authCtx.dbUserId) {
           return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
-      } else if (userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') {
-        if (useCase.organizationId !== userRecord.organizationId) {
+      } else if (role === 'ORG_ADMIN' || role === 'ORG_USER') {
+        if (!authCtx.organizationId || useCase.organizationId !== authCtx.organizationId) {
           return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
       }
@@ -116,12 +109,12 @@ export async function POST(request: NextRequest) {
 
     // Handle exclusive lock acquisition
     if (lockType === 'EXCLUSIVE') {
-      console.log(`[LOCK ACQUIRE] Attempting to acquire EXCLUSIVE lock for useCaseId: ${useCaseId}, scope: ${scope}, userId: ${userRecord.id}`);
+      console.log(`[LOCK ACQUIRE] Attempting to acquire EXCLUSIVE lock for useCaseId: ${useCaseId}, scope: ${scope}, userId: ${authCtx.dbUserId}`);
       console.log(`[LOCK ACQUIRE] Existing exclusive locks: ${exclusiveLocks.length}, shared locks: ${sharedLocks.length}`);
       
       if (exclusiveLocks.length > 0) {
         const lock: any = exclusiveLocks[0];
-        const heldByCurrentUser = lock.userId === userRecord.id;
+        const heldByCurrentUser = lock.userId === authCtx.dbUserId;
         console.log(`[LOCK ACQUIRE] Exclusive lock already exists, held by: ${lock.User?.firstName ?? ''} ${lock.User?.lastName ?? ''} (currentUser=${heldByCurrentUser})`);
         
         if (heldByCurrentUser) {
@@ -148,12 +141,12 @@ export async function POST(request: NextRequest) {
       // If there are shared locks, we can still acquire exclusive lock
       // but we'll notify shared lock holders
       try {
-        console.log(`[LOCK ACQUIRE] Creating new EXCLUSIVE lock for useCaseId: ${useCaseId}, scope: ${scope}, userId: ${userRecord.id}`);
+        console.log(`[LOCK ACQUIRE] Creating new EXCLUSIVE lock for useCaseId: ${useCaseId}, scope: ${scope}, userId: ${authCtx.dbUserId}`);
         
         const lock = await prismaClient.lock.create({
           data: {
             useCaseId,
-            userId: userRecord.id,
+            userId: authCtx.dbUserId,
             type: 'EXCLUSIVE',
             scope,
             expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
@@ -179,7 +172,7 @@ export async function POST(request: NextRequest) {
           const existingLock = await prismaClient.lock.findFirst({
             where: {
               useCaseId,
-              userId: userRecord.id,
+              userId: authCtx.dbUserId,
               type: 'EXCLUSIVE',
               scope
             }
@@ -229,7 +222,7 @@ export async function POST(request: NextRequest) {
 
       // Check if user already has a shared lock
       const existingUserLock = existingLocks.find((lock: any) => 
-        lock.userId === userRecord.id && lock.type === 'SHARED'
+        lock.userId === authCtx.dbUserId && lock.type === 'SHARED'
       );
 
       if (existingUserLock) {
@@ -254,7 +247,7 @@ export async function POST(request: NextRequest) {
         const lock = await prismaClient.lock.create({
           data: {
             useCaseId,
-            userId: userRecord.id,
+            userId: authCtx.dbUserId,
             type: 'SHARED',
             scope,
             expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes

@@ -357,7 +357,16 @@ export const vendorServiceServer = {
   // Update approval area status
   async updateApprovalArea(vendorId: string, area: string, status: string, approvedBy?: string, comments?: string) {
     try {
+      // Validate vendor exists to avoid FK violations
+      const vendor = await prisma.vendor.findUnique({ where: { id: vendorId }, select: { id: true } });
+      if (!vendor) {
+        return { error: `Vendor not found for id: ${vendorId}` };
+      }
+
       const dbArea = reverseApprovalAreaMap[area as keyof typeof reverseApprovalAreaMap];
+      if (!dbArea) {
+        return { error: `Invalid approval area: ${area}` };
+      }
       const dbStatus = status === 'Pending' ? 'PENDING' : status === 'Approved' ? 'APPROVED' : 'REJECTED';
 
       const updateData: any = {
