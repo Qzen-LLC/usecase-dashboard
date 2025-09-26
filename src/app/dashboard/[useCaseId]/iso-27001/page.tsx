@@ -29,6 +29,7 @@ import {
 import Link from "next/link";
 import { FileUpload } from "@/components/ui/file-upload";
 import { useGovernanceLock } from '@/hooks/useGovernanceLock';
+import { GovernanceLockModal } from '@/components/GovernanceLockModal';
 
 interface SubclauseInstance {
   id: string;
@@ -124,6 +125,7 @@ export default function Iso27001AssessmentPage() {
   );
   const [savingFiles, setSavingFiles] = useState<Set<string>>(new Set());
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isLockModalOpen, setIsLockModalOpen] = useState(false);
 
   // Lock management system
   const {
@@ -136,14 +138,6 @@ export default function Iso27001AssessmentPage() {
     loading: lockLoading,
     error: lockError
   } = useGovernanceLock(useCaseId, 'GOVERNANCE_ISO_27001');
-
-  // Auto-acquire lock when component mounts (like other frameworks)
-  useEffect(() => {
-    if (useCaseId && !lockInfo?.hasLock && !lockLoading) {
-      console.log('🔒 Auto-acquiring lock for ISO 27001 assessment...');
-      acquireLock();
-    }
-  }, [useCaseId, lockInfo?.hasLock, lockLoading, acquireLock]);
 
   // Add debounce mechanism to prevent duplicate API calls (only for subclauses now)
   const [pendingEvidenceChanges, setPendingEvidenceChanges] = useState<
@@ -576,7 +570,7 @@ export default function Iso27001AssessmentPage() {
     }
   };
 
-  const handleSubclauseEvidenceChange = async (
+  const handleSubclauseEvidenceChange = (
     subclauseId: string,
     evidenceFiles: string[]
   ) => {
@@ -588,67 +582,46 @@ export default function Iso27001AssessmentPage() {
     
     if (!assessment) return;
 
-    // Clear any pending timeout for this subclause
-    const existingTimeout = pendingEvidenceChanges.get(subclauseId);
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
-    }
-
     const existingInstance = assessment.subclauses.find(
       (sc) => sc.subclause.subclauseId === subclauseId
     );
 
-    // Set a new timeout for debouncing
-    const timeoutId = setTimeout(async () => {
-      try {
-        const response = await fetch(
-          `/api/iso-27001/subclause/${assessment.id}`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              subclauseId,
-              implementation: existingInstance?.implementation || "",
-              evidenceFiles,
-            }),
-          }
+    // Update local state only - no auto-save
+    setAssessment((prevAssessment) => {
+      if (!prevAssessment) return prevAssessment;
+
+      if (existingInstance) {
+        const updatedSubclauses = prevAssessment.subclauses.map((sc) =>
+          sc.subclause.subclauseId === subclauseId
+            ? { ...sc, evidenceFiles: [...evidenceFiles] } // Ensure new array reference
+            : sc
         );
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to save evidence files");
-        }
-
-        const updatedInstance = await response.json();
-
-        // Update the assessment state
-        setAssessment((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            subclauses: prev.subclauses.map((sc) =>
-              sc.subclause.subclauseId === subclauseId
-                ? { ...sc, evidenceFiles: updatedInstance.evidenceFiles }
-                : sc
-            ),
-          };
+        console.log("ISO State Update - existing subclause:", {
+          subclauseId,
+          newFiles: evidenceFiles,
+          updatedInstance: updatedSubclauses.find(
+            (sc) => sc.subclause.subclauseId === subclauseId
+          ),
         });
-      } catch (error) {
-        console.error("Error saving evidence files:", error);
-        setError(error instanceof Error ? error.message : "Failed to save evidence files");
-      }
-    }, 1000); // 1 second debounce
 
-    setPendingEvidenceChanges((prev) => {
-      const newMap = new Map(prev);
-      newMap.set(subclauseId, timeoutId);
-      return newMap;
+        return {
+          ...prevAssessment,
+          subclauses: updatedSubclauses,
+          lastUpdated: Date.now(), // Force re-render
+        };
+      } else {
+        // Instance doesn't exist yet, we'll create it in the API call
+        console.log(
+          "ISO State Update - no existing instance for:",
+          subclauseId
+        );
+        return prevAssessment;
+      }
     });
   };
 
-  const handleAnnexEvidenceChange = async (
+  const handleAnnexEvidenceChange = (
     itemId: string,
     evidenceFiles: string[]
   ) => {
@@ -660,61 +633,42 @@ export default function Iso27001AssessmentPage() {
     
     if (!assessment) return;
 
-    // Clear any pending timeout for this item
-    const existingTimeout = pendingEvidenceChanges.get(itemId);
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
-    }
-
     const existingInstance = assessment.annexes.find(
-      (annex) => annex.item.itemId === itemId
+      (ann) => ann.item.itemId === itemId
     );
-    
 
-    // Set a new timeout for debouncing
-    const timeoutId = setTimeout(async () => {
-      try {
-        const response = await fetch(`/api/iso-27001/annex/${assessment.id}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            itemId,
-            implementation: existingInstance?.implementation || "",
-            evidenceFiles,
-          }),
+    // Update local state only - no auto-save
+    setAssessment((prevAssessment) => {
+      if (!prevAssessment) return prevAssessment;
+
+      if (existingInstance) {
+        const updatedAnnexes = prevAssessment.annexes.map((ann) =>
+          ann.item.itemId === itemId
+            ? { ...ann, evidenceFiles: [...evidenceFiles] } // Ensure new array reference
+            : ann
+        );
+
+        console.log("🔧 ISO State Update - existing annex:", {
+          itemId,
+          newFiles: evidenceFiles,
+          updatedInstance: updatedAnnexes.find(
+            (ann) => ann.item.itemId === itemId
+          ),
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to save evidence files");
-        }
-
-        const updatedInstance = await response.json();
-
-        // Update the assessment state
-        setAssessment((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            annexes: prev.annexes.map((annex) =>
-              annex.item.itemId === itemId
-                ? { ...annex, evidenceFiles: updatedInstance.evidenceFiles }
-                : annex
-            ),
-          };
-        });
-      } catch (error) {
-        console.error("Error saving annex evidence files:", error);
-        setError(error instanceof Error ? error.message : "Failed to save evidence files");
+        return {
+          ...prevAssessment,
+          annexes: updatedAnnexes,
+          lastUpdated: Date.now(), // Force re-render
+        };
+      } else {
+        // Instance doesn't exist yet, we'll create it in the API call
+        console.log(
+          "🔧 ISO State Update - no existing annex instance for:",
+          itemId
+        );
+        return prevAssessment;
       }
-    }, 1000); // 1 second debounce
-
-    setPendingEvidenceChanges((prev) => {
-      const newMap = new Map(prev);
-      newMap.set(itemId, timeoutId);
-      return newMap;
     });
   };
 
@@ -766,58 +720,84 @@ export default function Iso27001AssessmentPage() {
     }
   };
 
-  const toggleClauseExpansion = (clauseId: string) => {
-    setExpandedClauses((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(clauseId)) {
-        newSet.delete(clauseId);
-      } else {
-        newSet.add(clauseId);
-      }
-      return newSet;
-    });
-  };
-
-  const toggleCategoryExpansion = (categoryId: string) => {
-    setExpandedCategories((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(categoryId)) {
-        newSet.delete(categoryId);
-      } else {
-        newSet.add(categoryId);
-      }
-      return newSet;
-    });
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "implemented":
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case "pending":
-        return <Clock className="h-4 w-4 text-yellow-600" />;
-      default:
-        return <AlertCircle className="h-4 w-4 text-gray-400" />;
+  const toggleClause = (clauseId: string) => {
+    if (expandedClauses.has(clauseId)) {
+      // If clicking on an open clause, close it
+      setExpandedClauses(new Set());
+      console.log("ISO 27001 Debug - Collapsed clause:", clauseId);
+    } else {
+      // If clicking on a closed clause, close all others and open this one
+      setExpandedClauses(new Set([clauseId]));
+      console.log("ISO 27001 Debug - Expanded clause:", clauseId);
+      
+      // Scroll to the clause after state update
+      setTimeout(() => {
+        const element = document.getElementById(`clause-${clauseId}`);
+        if (element) {
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 100);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "implemented":
-        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300";
+  const toggleCategory = (categoryId: string) => {
+    if (expandedCategories.has(categoryId)) {
+      // If clicking on an open category, close it
+      setExpandedCategories(new Set());
+    } else {
+      // If clicking on a closed category, close all others and open this one
+      setExpandedCategories(new Set([categoryId]));
+      
+      // Scroll to the category after state update
+      setTimeout(() => {
+        const element = document.getElementById(`category-${categoryId}`);
+        if (element) {
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 100);
     }
+  };
+
+  const getStatusIcon = (status: string, hasImplementation: boolean) => {
+    if (hasImplementation) {
+      return <CheckCircle className="w-5 h-5 text-success" />;
+    }
+    return <Clock className="w-5 h-5 text-muted-foreground" />;
+  };
+
+  const findSubclauseInstance = (subclauseId: string) => {
+    const instance = assessment?.subclauses.find(
+      (sc) => sc.subclause.subclauseId === subclauseId
+    );
+    console.log("ISO 27001 Debug - findSubclauseInstance:", {
+      subclauseId,
+      found: !!instance,
+      isTemporary: instance?.id?.startsWith("temp-"),
+      assessmentSubclausesCount: assessment?.subclauses?.length || 0,
+    });
+    return instance;
+  };
+
+  const findAnnexInstance = (itemId: string) => {
+    return assessment?.annexes.find((ann) => ann.item.itemId === itemId);
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Loading ISO 27001 assessment...</span>
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">
+            Loading ISO 27001 Assessment...
+          </p>
         </div>
       </div>
     );
@@ -825,472 +805,793 @@ export default function Iso27001AssessmentPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <AlertCircle className="h-5 w-5 text-red-500" />
-                <span>Error Loading Assessment</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground whitespace-pre-line">
-                  {error}
-                </p>
-                <div className="flex space-x-2">
-                  <Button onClick={fetchAssessmentData} variant="outline">
-                    Try Again
-                  </Button>
-                  <Link href="/dashboard/governance">
-                    <Button variant="outline">
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      Back to Governance
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle className="text-destructive">Error</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button onClick={fetchAssessmentData}>Try Again</Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard/governance">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
+    <div className="bg-background min-h-full">
+      <div className="px-6 py-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-dark"
+                onClick={async () => {
+                  console.log('🔒 [ISO-27001] Back to Governance button clicked, releasing lock...');
+                  try {
+                    // Release lock if we have one
+                    if (lockInfo?.hasLock && canEdit) {
+                      console.log('🔒 [ISO-27001] Releasing EXCLUSIVE lock before navigation...');
+                      await releaseLock();
+                      console.log('🔒 [ISO-27001] Lock released successfully');
+                    } else {
+                      console.log('🔒 [ISO-27001] No exclusive lock to release');
+                    }
+                    
+                    // Navigate back to governance
+                    console.log('🔒 [ISO-27001] Navigating back to governance dashboard...');
+                    router.push('/dashboard/governance');
+                  } catch (error) {
+                    console.error('🔒 [ISO-27001] Error releasing lock during navigation:', error);
+                    // Navigate anyway even if lock release fails
+                    router.push('/dashboard/governance');
+                  }
+                }}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Governance
               </Button>
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold">ISO 27001 Assessment</h1>
-              <p className="text-muted-foreground">
-                Information Security Management System (ISMS) Assessment
-              </p>
+              
             </div>
-          </div>
 
-          {/* Lock Status */}
-          <div className="flex items-center space-x-4">
-            {lockInfo?.hasLock && canEdit && (
-              <div className="flex items-center space-x-2 px-3 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 rounded-full text-sm">
-                <Lock className="h-4 w-4" />
-                <span>You have edit access</span>
-              </div>
-            )}
-            {lockInfo?.hasLock && !canEdit && (
-              <div className="flex items-center space-x-2 px-3 py-1 bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 rounded-full text-sm">
-                <Lock className="h-4 w-4" />
-                <span>Read-only mode</span>
-              </div>
-            )}
-            {!lockInfo?.hasLock && lockLoading && (
-              <div className="flex items-center space-x-2 px-3 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-full text-sm">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Acquiring lock...</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Progress Overview */}
-        {assessment && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Assessment Progress</span>
-                <Badge
-                  variant={assessment.status === "completed" ? "default" : "secondary"}
-                  className={assessment.status === "completed" ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300" : ""}
-                >
-                  {assessment.status === "completed" ? "Completed" : "In Progress"}
-                </Badge>
-              </CardTitle>
-              <CardDescription>
-                Track your progress through the ISO 27001 requirements
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Overall Progress</span>
-                  <span className="text-sm text-muted-foreground">
-                    {Math.round(assessment.progress)}%
-                  </span>
+            {assessment && (
+              <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground">
+                      Assessment Progress
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      Implement Information Security Management System requirements
+                    </p>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={
+                      assessment.status === "completed"
+                        ? "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400"
+                        : "bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400"
+                    }
+                  >
+                    {assessment.status === "completed"
+                      ? "Completed"
+                      : "In Progress"}
+                  </Badge>
                 </div>
-                <Progress value={assessment.progress} className="h-2" />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span>
-                      {assessment.subclauses.filter(
-                        (sub) => sub.status === "implemented"
-                      ).length}{" "}
-                      Subclauses Completed
-                    </span>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Progress</span>
+                    <span>{Math.round(assessment.progress)}% Complete</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span>
-                      {assessment.annexes.filter(
-                        (annex) => annex.status === "implemented"
-                      ).length}{" "}
-                      Annex Items Completed
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <FileText className="h-4 w-4 text-blue-600" />
-                    <span>
-                      {assessment.subclauses.reduce(
-                        (total, sub) => total + sub.evidenceFiles.length,
+                  <Progress value={assessment.progress} className="h-2" />
+                  {/* Debug progress info */}
+                  <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                    <div>Progress Details:</div>
+                    <div>
+                      • Main Clauses:{" "}
+                      {clauses.reduce(
+                        (total, clause) => total + clause.subclauses.length,
+                        0
+                      )}{" "}
+                      requirements
+                    </div>
+                    <div>
+                      • Annex A:{" "}
+                      {annexCategories.reduce(
+                        (total, category) => total + category.items.length,
+                        0
+                      )}{" "}
+                      controls
+                    </div>
+                    <div>
+                      • Total:{" "}
+                      {clauses.reduce(
+                        (total, clause) => total + clause.subclauses.length,
                         0
                       ) +
-                        assessment.annexes.reduce(
-                          (total, annex) => total + annex.evidenceFiles.length,
+                        annexCategories.reduce(
+                          (total, category) => total + category.items.length,
                           0
                         )}{" "}
-                      Evidence Files
-                    </span>
+                      items
+                    </div>
+                    <div>
+                      • Completed:{" "}
+                      {assessment.subclauses.filter((sc) =>
+                        sc.implementation?.trim()
+                      ).length +
+                        assessment.annexes.filter((ann) =>
+                          ann.implementation?.trim()
+                        ).length}{" "}
+                      items
+                    </div>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Tabs */}
-        <div className="flex space-x-1 mb-6">
-          <Button
-            variant={activeTab === "clauses" ? "default" : "outline"}
-            onClick={() => setActiveTab("clauses")}
-            className="flex items-center space-x-2"
-          >
-            <BookOpen className="h-4 w-4" />
-            <span>Clauses ({clauses.length})</span>
-          </Button>
-          <Button
-            variant={activeTab === "annex" ? "default" : "outline"}
-            onClick={() => setActiveTab("annex")}
-            className="flex items-center space-x-2"
-          >
-            <FileText className="h-4 w-4" />
-            <span>Annex A ({annexCategories.length} categories)</span>
-          </Button>
+            )}
+          </div>
         </div>
 
-        {/* Clauses Tab */}
-        {activeTab === "clauses" && (
-          <div className="space-y-6">
-            {clauses.map((clause) => (
-              <Card key={clause.id}>
-                <CardHeader
-                  className="cursor-pointer"
-                  onClick={() => toggleClauseExpansion(clause.clauseId)}
+        {/* Tabs */}
+        <div className="mb-8">
+          <div className="bg-card rounded-lg shadow-sm border border-border">
+            <div className="px-6 py-4 border-b border-border">
+              <nav className="flex space-x-8">
+                <button
+                  onClick={() => setActiveTab("clauses")}
+                  className={`${
+                    activeTab === "clauses"
+                      ? "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700"
+                      : "bg-muted text-muted-foreground border-border hover:bg-muted/80"
+                  } px-4 py-2 rounded-lg border font-medium text-sm transition-colors flex items-center gap-2`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      {expandedClauses.has(clause.clauseId) ? (
-                        <ChevronDown className="h-5 w-5" />
-                      ) : (
-                        <ChevronRight className="h-5 w-5" />
-                      )}
-                      <div>
-                        <CardTitle className="text-lg">
-                          {clause.clauseId} - {clause.title}
-                        </CardTitle>
-                        <CardDescription className="mt-1">
-                          {clause.description}
-                        </CardDescription>
+                  <div className="bg-emerald-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                    {clauses.length}
+                  </div>
+                  Main Clauses
+                  <span className="text-xs opacity-75">
+                    (
+                    {clauses.reduce(
+                      (total, clause) => total + clause.subclauses.length,
+                      0
+                    )}{" "}
+                    requirements)
+                  </span>
+                </button>
+                <button
+                  onClick={() => setActiveTab("annex")}
+                  className={`${
+                    activeTab === "annex"
+                      ? "bg-teal-100 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 border-teal-300 dark:border-teal-700"
+                      : "bg-muted text-muted-foreground border-border hover:bg-muted/80"
+                  } px-4 py-2 rounded-lg border font-medium text-sm transition-colors flex items-center gap-2`}
+                >
+                  <div className="bg-teal-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                    {annexCategories.length}
+                  </div>
+                  Annex A Controls
+                  <span className="text-xs opacity-75">
+                    (
+                    {annexCategories.reduce(
+                      (total, category) => total + category.items.length,
+                      0
+                    )}{" "}
+                    controls)
+                  </span>
+                </button>
+              </nav>
+            </div>
+
+            {/* Tab Content Header */}
+            <div className="px-6 py-4 bg-muted/50">
+              {activeTab === "clauses" ? (
+                <div className="flex items-center gap-3">
+                  <div className="bg-emerald-100 dark:bg-emerald-900/20 p-2 rounded-lg">
+                    <BookOpen className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">
+                      ISO 27001 Main Clauses
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Implement the core requirements of the Information Security
+                      Management System standard
+                    </p>
+                    <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-xs text-gray-800 dark:text-gray-200">
+                      <strong>How to edit:</strong> Click on any clause header
+                      to expand it, then fill in the implementation details for
+                      each subclause requirement.
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className="bg-teal-100 dark:bg-teal-900/20 p-2 rounded-lg">
+                    <CheckCircle className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">
+                      Annex A Control Objectives
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Additional controls to support the Information Security Management System
+                      implementation
+                    </p>
+                    <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-xs text-gray-800 dark:text-gray-200">
+                      <strong>How to edit:</strong> Click on any category header
+                      to expand it, then fill in the implementation details for
+                      each control objective.
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Assessment Content */}
+        <div className="space-y-6">
+          {activeTab === "clauses" &&
+            clauses.map((clause) => {
+              const completedSubclauses = clause.subclauses.filter((sc) => {
+                const instance = findSubclauseInstance(sc.subclauseId);
+                return instance?.implementation?.trim();
+              }).length;
+
+              return (
+                <Card
+                  key={clause.id}
+                  className="overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <CardHeader
+                    id={`clause-${clause.clauseId}`}
+                    className={`cursor-pointer transition-all duration-200 ${
+                      isDarkMode
+                        ? "bg-gradient-to-r from-emerald-950/30 to-emerald-900/30 hover:from-emerald-950/50 hover:to-emerald-900/50"
+                        : "bg-gradient-to-r from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200"
+                    }`}
+                    onClick={() => toggleClause(clause.clauseId)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 text-white rounded-xl w-12 h-12 flex items-center justify-center text-sm font-bold shadow-lg">
+                          {clause.clauseId}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-1">
+                            <CardTitle className="text-lg text-foreground">
+                              {clause.title}
+                            </CardTitle>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-2 py-1 rounded-full font-medium">
+                                {clause.subclauses.length} requirements
+                              </span>
+                              {completedSubclauses > 0 && (
+                                <span className="text-xs bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-2 py-1 rounded-full font-medium">
+                                  {completedSubclauses} completed
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <CardDescription className="text-sm text-muted-foreground">
+                            {clause.description}
+                          </CardDescription>
+                          <div className="mt-2">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <div className="w-32 bg-muted rounded-full h-1.5">
+                                <div
+                                  className="bg-emerald-600 h-1.5 rounded-full transition-all duration-300"
+                                  style={{
+                                    width: `${
+                                      (completedSubclauses /
+                                        clause.subclauses.length) *
+                                      100
+                                    }%`,
+                                  }}
+                                ></div>
+                              </div>
+                              <span>
+                                {Math.round(
+                                  (completedSubclauses /
+                                    clause.subclauses.length) *
+                                    100
+                                )}
+                                % complete
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {expandedClauses.has(clause.clauseId) ? (
+                          <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                        )}
                       </div>
                     </div>
-                    <Badge variant="outline">
-                      {clause.subclauses.length} subclauses
-                    </Badge>
-                  </div>
-                </CardHeader>
-                {expandedClauses.has(clause.clauseId) && (
-                  <CardContent>
-                    <div className="space-y-4">
-                      {clause.subclauses.map((subclause) => {
-                        const instance = assessment?.subclauses.find(
-                          (sub) => sub.subclause.subclauseId === subclause.subclauseId
+                  </CardHeader>
+
+                  {expandedClauses.has(clause.clauseId) && (
+                    <CardContent className="p-0">
+                      {clause.subclauses.map((subclause, index) => {
+                        const instance = findSubclauseInstance(
+                          subclause.subclauseId
                         );
-                        const isSaving = savingFiles.has(`subclause-${subclause.subclauseId}`);
+                        const isCompleted = !!instance?.implementation?.trim();
 
                         return (
                           <div
                             key={subclause.id}
-                            className="border rounded-lg p-4 space-y-4"
+                            className="border-t border-border last:border-b"
                           >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-sm">
-                                  {subclause.subclauseId} - {subclause.title}
-                                </h4>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {subclause.summary}
-                                </p>
-                              </div>
-                              <div className="flex items-center space-x-2 ml-4">
-                                {getStatusIcon(instance?.status || "not_started")}
-                                <Badge
-                                  variant="outline"
-                                  className={getStatusColor(instance?.status || "not_started")}
-                                >
-                                  {instance?.status || "Not Started"}
-                                </Badge>
-                              </div>
-                            </div>
+                            <div className="p-6 hover:bg-muted/50 transition-colors">
+                              <div className="space-y-4">
+                                <div className="flex items-start gap-4">
+                                  <div className="flex-shrink-0">
+                                    <div
+                                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
+                                        isCompleted
+                                          ? "bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400"
+                                          : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+                                      }`}
+                                    >
+                                      {subclause.subclauseId}
+                                    </div>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      {getStatusIcon(
+                                        instance?.status || "pending",
+                                        isCompleted
+                                      )}
+                                      <h4 className="font-semibold text-foreground text-base">
+                                        {subclause.title}
+                                      </h4>
+                                      <span
+                                        className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                          isCompleted
+                                            ? "bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400"
+                                            : "bg-muted text-muted-foreground"
+                                        }`}
+                                      >
+                                        {isCompleted ? "Completed" : "Pending"}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                                      {subclause.summary}
+                                    </p>
 
-                            {/* Key Questions */}
-                            {subclause.questions.length > 0 && (
-                              <div>
-                                <h5 className="font-medium text-sm mb-2">Key Questions:</h5>
-                                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                                  {subclause.questions.map((question, index) => (
-                                    <li key={index}>{question}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
+                                    {subclause.questions.length > 0 && (
+                                      <div className="mb-4">
+                                        <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+                                          <h5 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2 flex items-center gap-2">
+                                            <div className="w-4 h-4 bg-gray-600 dark:bg-gray-500 rounded-full flex items-center justify-center">
+                                              <span className="text-white text-xs">
+                                                ?
+                                              </span>
+                                            </div>
+                                            Key Questions to Consider:
+                                          </h5>
+                                          <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                                            {subclause.questions.map(
+                                              (question, idx) => (
+                                                <li
+                                                  key={idx}
+                                                  className="flex items-start gap-2"
+                                                >
+                                                  <span className="text-blue-600 dark:text-blue-400 mt-1">
+                                                    •
+                                                  </span>
+                                                  <span>{question}</span>
+                                                </li>
+                                              )
+                                            )}
+                                          </ul>
+                                        </div>
+                                      </div>
+                                    )}
 
-                            {/* Evidence Examples */}
-                            {subclause.evidenceExamples.length > 0 && (
-                              <div>
-                                <h5 className="font-medium text-sm mb-2">Evidence Examples:</h5>
-                                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                                  {subclause.evidenceExamples.map((example, index) => (
-                                    <li key={index}>{example}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
+                                    {subclause.evidenceExamples.length > 0 && (
+                                      <div className="mb-4">
+                                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                          <h5 className="text-sm font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                                            <FileText className="w-4 h-4 text-amber-600" />
+                                            Evidence Examples:
+                                          </h5>
+                                          <ul className="text-sm text-amber-800 space-y-1">
+                                            {subclause.evidenceExamples.map(
+                                              (example, idx) => (
+                                                <li
+                                                  key={idx}
+                                                  className="flex items-start gap-2"
+                                                >
+                                                  <span className="text-amber-600 mt-1">
+                                                    •
+                                                  </span>
+                                                  <span>{example}</span>
+                                                </li>
+                                              )
+                                            )}
+                                          </ul>
+                                        </div>
+                                      </div>
+                                    )}
 
-                            {/* Implementation */}
-                            <div>
-                              <label className="block text-sm font-medium mb-2">
-                                Implementation Details
-                              </label>
-                              <textarea
-                                value={instance?.implementation || ""}
-                                onChange={(e) =>
-                                  handleSubclauseImplementationChange(
-                                    subclause.subclauseId,
-                                    e.target.value
-                                  )
-                                }
-                                placeholder="Describe how this requirement is implemented in your organization..."
-                                className="w-full p-3 border rounded-md resize-none"
-                                rows={4}
-                                disabled={!canEdit}
-                              />
-                              <div className="flex items-center justify-between pt-2 border-t border-border">
-                                <div className="flex items-center gap-4">
-                                  <div className="text-xs text-muted-foreground">
-                                    {instance?.implementation?.length || 0} characters
+                                    <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+                                      <div>
+                                        <label className="block text-sm font-semibold text-foreground mb-2">
+                                          Implementation Details
+                                          <span className="ml-2 text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/20 px-2 py-1 rounded">
+                                            Editable
+                                          </span>
+                                        </label>
+                                        <textarea
+                                          value={instance?.implementation || ""}
+                                          onChange={(e) => {
+                                            console.log(
+                                              "ISO 27001 Debug - Textarea onChange:",
+                                              {
+                                                subclauseId:
+                                                  subclause.subclauseId,
+                                                value: e.target.value,
+                                                instanceExists: !!instance,
+                                              }
+                                            );
+                                            handleSubclauseImplementationChange(
+                                              subclause.subclauseId,
+                                              e.target.value
+                                            );
+                                          }}
+                                          onFocus={() => {
+                                            console.log(
+                                              "ISO 27001 Debug - Textarea onFocus:",
+                                              {
+                                                subclauseId:
+                                                  subclause.subclauseId,
+                                                instanceExists: !!instance,
+                                                currentValue:
+                                                  instance?.implementation ||
+                                                  "",
+                                              }
+                                            );
+                                          }}
+                                          placeholder={canEdit ? `Describe how this requirement is implemented in your organization...
+
+• What processes are in place?
+• Who is responsible?
+• What documentation exists?
+• How is compliance monitored?` : "Assessment is locked by another user"}
+                                          className="w-full p-3 border border-input rounded-lg resize-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                                          rows={5}
+                                          disabled={!canEdit}
+                                        />
+                                      </div>
+
+                                      <div className="mt-4">
+                                        <div className="relative">
+                                          <FileUpload
+                                            label="Evidence Files"
+                                            value={
+                                              instance?.evidenceFiles || []
+                                            }
+                                            onChange={(files) =>
+                                              handleSubclauseEvidenceChange(
+                                                subclause.subclauseId,
+                                                files
+                                              )
+                                            }
+                                            maxFiles={5}
+                                            maxSize={10}
+                                            disabled={!canEdit || savingFiles.has(
+                                              `subclause-${subclause.subclauseId}`
+                                            )}
+                                            useCaseId={
+                                              params.useCaseId as string
+                                            }
+                                            frameworkType="iso-27001"
+                                          />
+                                          {savingFiles.has(
+                                            `subclause-${subclause.subclauseId}`
+                                          ) && (
+                                            <div className="absolute top-0 right-0 bg-green-500 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                                              <Loader2 className="w-3 h-3 animate-spin" />
+                                              Saving...
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center justify-between pt-2 border-t border-border">
+                                        <div className="flex items-center gap-4">
+                                          <div className="text-xs text-muted-foreground">
+                                            {instance?.implementation?.length ||
+                                              0}{" "}
+                                            characters
+                                          </div>
+                                        </div>
+                                        <Button
+                                          onClick={() =>
+                                            handleSaveSubclause(
+                                              subclause.subclauseId
+                                            )
+                                          }
+                                          disabled={!canEdit || saving}
+                                          size="sm"
+                                          className={`flex items-center gap-2 transition-colors ${
+                                            isCompleted
+                                              ? "bg-green-600 hover:bg-green-700"
+                                              : "bg-emerald-600 hover:bg-emerald-700"
+                                          }`}
+                                        >
+                                          <Save className="w-4 h-4" />
+                                          {saving ? "Saving..." : "Save"}
+                                        </Button>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
-                                <Button
-                                  onClick={() =>
-                                    handleSaveSubclause(subclause.subclauseId)
-                                  }
-                                  disabled={!canEdit || saving}
-                                  size="sm"
-                                  className={`flex items-center gap-2 transition-colors ${
-                                    instance?.status === 'implemented'
-                                      ? "bg-green-600 hover:bg-green-700"
-                                      : "bg-purple-600 hover:bg-purple-700"
-                                  }`}
-                                >
-                                  <Save className="w-4 h-4" />
-                                  {saving ? "Saving..." : "Save"}
-                                </Button>
                               </div>
-                            </div>
-
-                            {/* Evidence Files */}
-                            <div>
-                              <label className="block text-sm font-medium mb-2">
-                                Evidence Files
-                              </label>
-                              <FileUpload
-                                label="Evidence Files"
-                                value={instance?.evidenceFiles || []}
-                                onChange={(files) =>
-                                  handleSubclauseEvidenceChange(subclause.subclauseId, files)
-                                }
-                                maxFiles={5}
-                                maxSize={10}
-                                disabled={!canEdit}
-                                useCaseId={useCaseId}
-                                frameworkType="iso-27001"
-                              />
                             </div>
                           </div>
                         );
                       })}
-                    </div>
-                  </CardContent>
-                )}
-              </Card>
-            ))}
-          </div>
-        )}
+                    </CardContent>
+                  )}
+                </Card>
+              );
+            })}
 
-        {/* Annex Tab */}
-        {activeTab === "annex" && (
-          <div className="space-y-6">
-            {annexCategories.map((category) => (
-              <Card key={category.id}>
-                <CardHeader
-                  className="cursor-pointer"
-                  onClick={() => toggleCategoryExpansion(category.categoryId)}
+          {activeTab === "annex" &&
+            annexCategories.map((category) => {
+              const completedItems = category.items.filter((item) => {
+                const instance = findAnnexInstance(item.itemId);
+                return instance?.implementation?.trim();
+              }).length;
+
+              return (
+                <Card
+                  key={category.id}
+                  className="overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      {expandedCategories.has(category.categoryId) ? (
-                        <ChevronDown className="h-5 w-5" />
-                      ) : (
-                        <ChevronRight className="h-5 w-5" />
-                      )}
-                      <div>
-                        <CardTitle className="text-lg">
-                          {category.categoryId} - {category.title}
-                        </CardTitle>
-                        <CardDescription className="mt-1">
-                          {category.description}
-                        </CardDescription>
+                  <CardHeader
+                    id={`category-${category.categoryId}`}
+                    className={`cursor-pointer transition-all duration-200 ${
+                      isDarkMode
+                        ? "bg-gradient-to-r from-teal-950/30 to-teal-900/30 hover:from-teal-950/50 hover:to-teal-900/50"
+                        : "bg-gradient-to-r from-teal-50 to-teal-100 hover:from-teal-100 hover:to-teal-200"
+                    }`}
+                    onClick={() => toggleCategory(category.categoryId)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="bg-gradient-to-br from-teal-600 to-teal-700 text-white rounded-xl w-12 h-12 flex items-center justify-center text-sm font-bold shadow-lg">
+                          {category.categoryId.replace("A.", "")}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-1">
+                            <CardTitle className="text-lg text-foreground">
+                              {category.title}
+                            </CardTitle>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs bg-teal-100 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 px-2 py-1 rounded-full font-medium">
+                                {category.items.length} controls
+                              </span>
+                              {completedItems > 0 && (
+                                <span className="text-xs bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-2 py-1 rounded-full font-medium">
+                                  {completedItems} completed
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <CardDescription className="text-sm text-muted-foreground">
+                            {category.description}
+                          </CardDescription>
+                          <div className="mt-2">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <div className="w-32 bg-muted rounded-full h-1.5">
+                                <div
+                                  className="bg-teal-600 h-1.5 rounded-full transition-all duration-300"
+                                  style={{
+                                    width: `${
+                                      (completedItems / category.items.length) *
+                                      100
+                                    }%`,
+                                  }}
+                                ></div>
+                              </div>
+                              <span>
+                                {Math.round(
+                                  (completedItems / category.items.length) * 100
+                                )}
+                                % complete
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {expandedCategories.has(category.categoryId) ? (
+                          <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                        )}
                       </div>
                     </div>
-                    <Badge variant="outline">
-                      {category.items.length} items
-                    </Badge>
-                  </div>
-                </CardHeader>
-                {expandedCategories.has(category.categoryId) && (
-                  <CardContent>
-                    <div className="space-y-4">
-                      {category.items.map((item) => {
-                        const instance = assessment?.annexes.find(
-                          (annex) => annex.item.itemId === item.itemId
-                        );
-                        const isSaving = savingFiles.has(`annex-${item.itemId}`);
+                  </CardHeader>
+
+                  {expandedCategories.has(category.categoryId) && (
+                    <CardContent className="p-0">
+                      {category.items.map((item, index) => {
+                        const instance = findAnnexInstance(item.itemId);
+                        const isCompleted = !!instance?.implementation?.trim();
 
                         return (
                           <div
                             key={item.id}
-                            className="border rounded-lg p-4 space-y-4"
+                            className="border-t border-border last:border-b"
                           >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-sm">
-                                  {item.itemId} - {item.title}
-                                </h4>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {item.description}
-                                </p>
-                                {item.guidance && (
-                                  <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
-                                    <h5 className="font-medium text-sm text-blue-900 dark:text-blue-100 mb-1">
-                                      Guidance:
-                                    </h5>
-                                    <p className="text-sm text-blue-800 dark:text-blue-200">
-                                      {item.guidance}
-                                    </p>
+                            <div className="p-6 hover:bg-muted/50 transition-colors">
+                              <div className="space-y-4">
+                                <div className="flex items-start gap-4">
+                                  <div className="flex-shrink-0">
+                                    <div
+                                      className={`w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold ${
+                                        isCompleted
+                                          ? "bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400"
+                                          : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+                                      }`}
+                                    >
+                                      {item.itemId.split(".").pop()}
+                                    </div>
                                   </div>
-                                )}
-                              </div>
-                              <div className="flex items-center space-x-2 ml-4">
-                                {getStatusIcon(instance?.status || "NOT_STARTED")}
-                                <Badge
-                                  variant="outline"
-                                  className={getStatusColor(instance?.status || "NOT_STARTED")}
-                                >
-                                  {instance?.status || "Not Started"}
-                                </Badge>
-                              </div>
-                            </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      {getStatusIcon(
+                                        instance?.status || "pending",
+                                        isCompleted
+                                      )}
+                                      <h4 className="font-semibold text-foreground text-base">
+                                        {item.title}
+                                      </h4>
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs bg-muted"
+                                      >
+                                        {item.itemId}
+                                      </Badge>
+                                      <span
+                                        className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                          isCompleted
+                                            ? "bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400"
+                                            : "bg-muted text-muted-foreground"
+                                        }`}
+                                      >
+                                        {isCompleted ? "Completed" : "Pending"}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                                      {item.description}
+                                    </p>
+                                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 mb-4">
+                                      <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-gray-600 dark:bg-gray-500 rounded-full flex items-center justify-center">
+                                          <span className="text-white text-xs">
+                                            i
+                                          </span>
+                                        </div>
+                                        Implementation Guidance:
+                                      </h5>
+                                      <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
+                                        {item.guidance}
+                                      </p>
+                                    </div>
 
-                            {/* Implementation */}
-                            <div>
-                              <label className="block text-sm font-medium mb-2">
-                                Implementation Details
-                              </label>
-                              <textarea
-                                value={instance?.implementation || ""}
-                                onChange={(e) =>
-                                  handleAnnexImplementationChange(
-                                    item.itemId,
-                                    e.target.value
-                                  )
-                                }
-                                placeholder="Describe how this control is implemented in your organization..."
-                                className="w-full p-3 border rounded-md resize-none"
-                                rows={4}
-                                disabled={!canEdit}
-                              />
-                              <div className="flex items-center justify-between pt-2 border-t border-border">
-                                <div className="flex items-center gap-4">
-                                  <div className="text-xs text-muted-foreground">
-                                    {instance?.implementation?.length || 0} characters
+                                    <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+                                      <div>
+                                        <label className="block text-sm font-semibold text-foreground mb-2">
+                                          Implementation Details
+                                        </label>
+                                        <textarea
+                                          value={instance?.implementation || ""}
+                                          onChange={(e) =>
+                                            handleAnnexImplementationChange(
+                                              item.itemId,
+                                              e.target.value
+                                            )
+                                          }
+                                          placeholder={canEdit ? `Describe how this control is implemented in your organization...
+
+• What specific measures are in place?
+• Who is responsible for this control?
+• What processes and procedures exist?
+• How is effectiveness monitored?` : "Assessment is locked by another user"}
+                                          className="w-full p-3 border border-input rounded-lg resize-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                                          rows={5}
+                                          disabled={!canEdit}
+                                        />
+                                      </div>
+
+                                      <div className="mt-4">
+                                        <div className="relative">
+                                          <FileUpload
+                                            label="Evidence Files"
+                                            value={
+                                              instance?.evidenceFiles || []
+                                            }
+                                            onChange={(files) =>
+                                              handleAnnexEvidenceChange(
+                                                item.itemId,
+                                                files
+                                              )
+                                            }
+                                            maxFiles={5}
+                                            maxSize={10}
+                                            disabled={!canEdit}
+                                            useCaseId={
+                                              params.useCaseId as string
+                                            }
+                                            frameworkType="iso-27001"
+                                          />
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center justify-between pt-2 border-t border-border">
+                                        <div className="flex items-center gap-4">
+                                          <div className="text-xs text-muted-foreground">
+                                            {instance?.implementation?.length ||
+                                              0}{" "}
+                                            characters
+                                          </div>
+                                        </div>
+                                        <Button
+                                          onClick={() =>
+                                            handleSaveAnnex(item.itemId)
+                                          }
+                                          disabled={!canEdit || saving}
+                                          size="sm"
+                                          className={`flex items-center gap-2 transition-colors ${
+                                            isCompleted
+                                              ? "bg-green-600 hover:bg-green-700"
+                                              : "bg-teal-600 hover:bg-teal-700"
+                                          }`}
+                                        >
+                                          <Save className="w-4 h-4" />
+                                          {saving ? "Saving..." : "Save"}
+                                        </Button>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
-                                <Button
-                                  onClick={() =>
-                                    handleSaveAnnex(item.itemId)
-                                  }
-                                  disabled={!canEdit || saving}
-                                  size="sm"
-                                  className={`flex items-center gap-2 transition-colors ${
-                                    instance?.status === 'implemented'
-                                      ? "bg-green-600 hover:bg-green-700"
-                                      : "bg-purple-600 hover:bg-purple-700"
-                                  }`}
-                                >
-                                  <Save className="w-4 h-4" />
-                                  {saving ? "Saving..." : "Save"}
-                                </Button>
                               </div>
-                            </div>
-
-                            {/* Evidence Files */}
-                            <div>
-                              <label className="block text-sm font-medium mb-2">
-                                Evidence Files
-                              </label>
-                              <FileUpload
-                                label="Evidence Files"
-                                value={instance?.evidenceFiles || []}
-                                onChange={(files) =>
-                                  handleAnnexEvidenceChange(item.itemId, files)
-                                }
-                                maxFiles={5}
-                                maxSize={10}
-                                disabled={!canEdit}
-                                useCaseId={useCaseId}
-                                frameworkType="iso-27001"
-                              />
                             </div>
                           </div>
                         );
                       })}
-                    </div>
-                  </CardContent>
-                )}
-              </Card>
-            ))}
-          </div>
-        )}
-
+                    </CardContent>
+                  )}
+                </Card>
+              );
+            })}
+        </div>
       </div>
+
+      {/* Lock Management Modal */}
+      <GovernanceLockModal
+        isOpen={isLockModalOpen}
+        onClose={() => setIsLockModalOpen(false)}
+        lockInfo={lockInfo}
+        framework="GOVERNANCE_ISO_27001"
+        useCaseId={useCaseId}
+        useCaseName={`AIUC-${useCaseId}`}
+        onAcquireLock={() => acquireLock()}
+        onReleaseLock={() => releaseLock()}
+        loading={lockLoading}
+      />
     </div>
   );
 }
