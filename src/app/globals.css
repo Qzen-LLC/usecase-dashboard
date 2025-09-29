@@ -77,24 +77,26 @@
     --neutral-900: 23 23 23;
     
     /* Semantic Colors */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 0%; /* Pure black for better readability */
+    /* Subtle light grey background to reduce harsh whiteness */
+    --background: 0 0% 97%;
+    --foreground: 0 0% 9%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%; /* Pure black for better readability */
+    --card-foreground: 0 0% 9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%; /* Pure black for better readability */
+    --popover-foreground: 0 0% 9%;
     --primary: 59 130 246;
     --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 25%; /* Darker gray for better readability in light mode */
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 15%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 30%;
+    --accent: 0 0% 95%;
+    --accent-foreground: 0 0% 15%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
+    /* Slightly stronger borders for clearer separation */
+    --border: 0 0% 85%;
+    --input: 0 0% 85%;
     --ring: 59 130 246;
     --radius: 0.75rem;
     
@@ -189,6 +191,8 @@
   
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    /* Provide a subtle texture with gradient to reduce flatness */
+    background-image: linear-gradient(to bottom, hsl(var(--background)) 0%, hsl(var(--background)) 60%, hsl(0 0% 96%) 100%);
   }
   
   /* Custom utility classes for better dark mode colors */
