@@ -114,6 +114,69 @@ export default function ConfigureQuestionTemplatesPage() {
   });
   
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [pendingOperations, setPendingOperations] = useState<Map<string, 'add' | 'edit' | 'delete'>>(new Map());
+  const [operationStatus, setOperationStatus] = useState<Map<string, 'pending' | 'success' | 'error'>>(new Map());
+
+  // Helper function to generate temporary ID for optimistic updates
+  const generateTempId = () => `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  // Helper function to perform background operation with retry
+  const performBackgroundOperation = async (
+    operationId: string,
+    operation: () => Promise<any>,
+    onSuccess: () => void,
+    onError: (error: string) => void,
+    maxRetries: number = 3
+  ) => {
+    let retries = 0;
+    
+    while (retries < maxRetries) {
+      try {
+        await operation();
+        setOperationStatus(prev => new Map(prev).set(operationId, 'success'));
+        onSuccess();
+        
+        // Remove from pending operations after a delay
+        setTimeout(() => {
+          setPendingOperations(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(operationId);
+            return newMap;
+          });
+          setOperationStatus(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(operationId);
+            return newMap;
+          });
+        }, 2000);
+        
+        return;
+      } catch (error: any) {
+        retries++;
+        if (retries >= maxRetries) {
+          setOperationStatus(prev => new Map(prev).set(operationId, 'error'));
+          onError(error.message || 'Operation failed');
+          
+          // Remove from pending operations after showing error
+          setTimeout(() => {
+            setPendingOperations(prev => {
+              const newMap = new Map(prev);
+              newMap.delete(operationId);
+              return newMap;
+            });
+            setOperationStatus(prev => {
+              const newMap = new Map(prev);
+              newMap.delete(operationId);
+              return newMap;
+            });
+          }, 5000);
+        } else {
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+        }
+      }
+    }
+  };
 
   const fetchQuestionTemplates = async () => {
     setLoading(true);
@@ -147,61 +210,90 @@ export default function ConfigureQuestionTemplatesPage() {
       return;
     }
 
-    setActionLoading("add");
-    setError(null);
-    setSuccess(null);
-
-    try {
-      // Prepare the data to send
-      let dataToSend = { ...newQuestionTemplate };
+    // Prepare the data to send
+    let dataToSend = { ...newQuestionTemplate };
+    
+    // For RISK questions, combine probability and impact options with prefixes
+    if (newQuestionTemplate.type === QuestionType.RISK) {
+      const probabilityOptions = newRiskOptions.probability.filter(opt => opt.trim());
+      const impactOptions = newRiskOptions.impact.filter(opt => opt.trim());
       
-      // For RISK questions, combine probability and impact options with prefixes
-      if (newQuestionTemplate.type === QuestionType.RISK) {
-        const probabilityOptions = newRiskOptions.probability.filter(opt => opt.trim());
-        const impactOptions = newRiskOptions.impact.filter(opt => opt.trim());
-        
-        if (probabilityOptions.length === 0 || impactOptions.length === 0) {
-          setError("Both probability and impact options are required for risk questions");
-          setActionLoading(null);
-          return;
-        }
-        
-        // Create combined options with prefixes
-        dataToSend.optionTemplates = [
-          ...probabilityOptions.map(opt => `pro:${opt.trim()}`),
-          ...impactOptions.map(opt => `imp:${opt.trim()}`)
-        ];
+      if (probabilityOptions.length === 0 || impactOptions.length === 0) {
+        setError("Both probability and impact options are required for risk questions");
+        return;
       }
-
-      const response = await fetch(`/api/question-templates`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dataToSend),
-      });
-      const data = await response.json();
-      console.log(data)
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create question template");
-      }
-
-      setSuccess("Question template created successfully!");
-      setNewQuestionTemplate({
-        text: "",
-        type: QuestionType.TEXT,
-        stage: Stage.TECHNICAL_FEASIBILITY,
-        optionTemplates: [""],
-      });
-      setNewRiskOptions({
-        probability: ["LOW", "MEDIUM", "HIGH"],
-        impact: ["LOW", "MEDIUM", "HIGH"]
-      });
-      setIsAddDialogOpen(false);
-      fetchQuestionTemplates();
-    } catch (err: any) {
-      setError(err.message || "Failed to create question template");
-    } finally {
-      setActionLoading(null);
+      
+      // Create combined options with prefixes
+      dataToSend.optionTemplates = [
+        ...probabilityOptions.map(opt => `pro:${opt.trim()}`),
+        ...impactOptions.map(opt => `imp:${opt.trim()}`)
+      ];
     }
+
+    // Generate temporary ID for optimistic update
+    const tempId = generateTempId();
+    const operationId = `add_${tempId}`;
+
+    // Create optimistic question template object
+    const optimisticQuestionTemplate: QuestionTemplate = {
+      id: tempId,
+      text: dataToSend.text,
+      type: dataToSend.type,
+      stage: dataToSend.stage,
+      optionTemplates: dataToSend.optionTemplates.map(opt => ({
+        id: `temp_opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        text: opt,
+        questionTemplateId: tempId
+      }))
+    };
+
+    // Optimistically add the question template to the UI
+    setQuestionTemplates(prev => [optimisticQuestionTemplate, ...prev]);
+    setPendingOperations(prev => new Map(prev).set(operationId, 'add'));
+    setOperationStatus(prev => new Map(prev).set(operationId, 'pending'));
+
+    // Clear form and close dialog immediately
+    setNewQuestionTemplate({
+      text: "",
+      type: QuestionType.TEXT,
+      stage: Stage.TECHNICAL_FEASIBILITY,
+      optionTemplates: [""],
+    });
+    setNewRiskOptions({
+      probability: ["LOW", "MEDIUM", "HIGH"],
+      impact: ["LOW", "MEDIUM", "HIGH"]
+    });
+    setIsAddDialogOpen(false);
+    setError(null);
+    setSuccess("Question template added! Processing in background...");
+
+    // Perform background operation
+    performBackgroundOperation(
+      operationId,
+      async () => {
+        const response = await fetch(`/api/question-templates`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dataToSend),
+        });
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to create question template");
+        }
+
+        // Replace optimistic question template with real one
+        setQuestionTemplates(prev => prev.map(q => q.id === tempId ? data.questionTemplate : q));
+      },
+      () => {
+        setSuccess("Question template created successfully!");
+      },
+      (error) => {
+        // Rollback optimistic update
+        setQuestionTemplates(prev => prev.filter(q => q.id !== tempId));
+        setError(`Failed to create question template: ${error}`);
+      }
+    );
   };
 
   const handleEditQuestion = async () => {
@@ -210,52 +302,86 @@ export default function ConfigureQuestionTemplatesPage() {
       return;
     }
 
-    setActionLoading("edit");
-    setError(null);
-    setSuccess(null);
-
-    try {
-      // Prepare the data to send
-      let dataToSend = { ...editQuestionTemplate };
+    // Prepare the data to send
+    let dataToSend = { ...editQuestionTemplate };
+    
+    // For RISK questions, combine probability and impact options with prefixes
+    if (editQuestionTemplate.type === QuestionType.RISK) {
+      const probabilityOptions = editRiskOptions.probability.filter(opt => opt.trim());
+      const impactOptions = editRiskOptions.impact.filter(opt => opt.trim());
       
-      // For RISK questions, combine probability and impact options with prefixes
-      if (editQuestionTemplate.type === QuestionType.RISK) {
-        const probabilityOptions = editRiskOptions.probability.filter(opt => opt.trim());
-        const impactOptions = editRiskOptions.impact.filter(opt => opt.trim());
-        
-        if (probabilityOptions.length === 0 || impactOptions.length === 0) {
-          setError("Both probability and impact options are required for risk questions");
-          setActionLoading(null);
-          return;
-        }
-        
-        // Create combined options with prefixes
-        dataToSend.optionTemplates = [
-          ...probabilityOptions.map(opt => `pro:${opt.trim()}`),
-          ...impactOptions.map(opt => `imp:${opt.trim()}`)
-        ];
+      if (probabilityOptions.length === 0 || impactOptions.length === 0) {
+        setError("Both probability and impact options are required for risk questions");
+        return;
       }
-
-      const response = await fetch(`/api/question-templates/${editingQuestionTemplate.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dataToSend),
-      });
-      const data = await response.json();
       
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update question template");
-      }
-
-      setSuccess("Question template updated successfully!");
-      setEditingQuestionTemplate(null);
-      setIsEditDialogOpen(false);
-      fetchQuestionTemplates();
-    } catch (err: any) {
-      setError(err.message || "Failed to update question template");
-    } finally {
-      setActionLoading(null);
+      // Create combined options with prefixes
+      dataToSend.optionTemplates = [
+        ...probabilityOptions.map(opt => `pro:${opt.trim()}`),
+        ...impactOptions.map(opt => `imp:${opt.trim()}`)
+      ];
     }
+
+    const operationId = `edit_${editingQuestionTemplate.id}`;
+    const originalQuestionTemplate = questionTemplates.find(q => q.id === editingQuestionTemplate.id);
+
+    // Store original question template for rollback
+    if (!originalQuestionTemplate) {
+      setError("Question template not found");
+      return;
+    }
+
+    // Create optimistic question template object
+    const optimisticQuestionTemplate: QuestionTemplate = {
+      ...originalQuestionTemplate,
+      text: dataToSend.text,
+      type: dataToSend.type,
+      stage: dataToSend.stage,
+      optionTemplates: dataToSend.optionTemplates.map(opt => ({
+        id: `temp_opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        text: opt,
+        questionTemplateId: editingQuestionTemplate.id
+      }))
+    };
+
+    // Optimistically update the question template in the UI
+    setQuestionTemplates(prev => prev.map(q => q.id === editingQuestionTemplate.id ? optimisticQuestionTemplate : q));
+    setPendingOperations(prev => new Map(prev).set(operationId, 'edit'));
+    setOperationStatus(prev => new Map(prev).set(operationId, 'pending'));
+
+    // Close dialog immediately
+    setEditingQuestionTemplate(null);
+    setIsEditDialogOpen(false);
+    setError(null);
+    setSuccess("Question template updated! Processing in background...");
+
+    // Perform background operation
+    performBackgroundOperation(
+      operationId,
+      async () => {
+        const response = await fetch(`/api/question-templates/${editingQuestionTemplate.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dataToSend),
+        });
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to update question template");
+        }
+
+        // Replace optimistic question template with real one
+        setQuestionTemplates(prev => prev.map(q => q.id === editingQuestionTemplate.id ? data.questionTemplate : q));
+      },
+      () => {
+        setSuccess("Question template updated successfully!");
+      },
+      (error) => {
+        // Rollback optimistic update
+        setQuestionTemplates(prev => prev.map(q => q.id === editingQuestionTemplate.id ? originalQuestionTemplate : q));
+        setError(`Failed to update question template: ${error}`);
+      }
+    );
   };
 
   const handleDeleteQuestion = async (questionTemplateId: string, questionText: string) => {
@@ -263,27 +389,45 @@ export default function ConfigureQuestionTemplatesPage() {
       return;
     }
 
-    setActionLoading(questionTemplateId);
-    setError(null);
-    setSuccess(null);
+    const operationId = `delete_${questionTemplateId}`;
+    const originalQuestionTemplate = questionTemplates.find(q => q.id === questionTemplateId);
 
-    try {
-      const response = await fetch(`/api/question-templates/${questionTemplateId}`, {
-        method: "DELETE",
-      });
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to delete question template");
-      }
-
-      setSuccess("Question template deleted successfully!");
-      fetchQuestionTemplates();
-    } catch (err: any) {
-      setError(err.message || "Failed to delete question template");
-    } finally {
-      setActionLoading(null);
+    // Store original question template for rollback
+    if (!originalQuestionTemplate) {
+      setError("Question template not found");
+      return;
     }
+
+    // Optimistically remove the question template from the UI
+    setQuestionTemplates(prev => prev.filter(q => q.id !== questionTemplateId));
+    setPendingOperations(prev => new Map(prev).set(operationId, 'delete'));
+    setOperationStatus(prev => new Map(prev).set(operationId, 'pending'));
+
+    setError(null);
+    setSuccess("Question template deleted! Processing in background...");
+
+    // Perform background operation
+    performBackgroundOperation(
+      operationId,
+      async () => {
+        const response = await fetch(`/api/question-templates/${questionTemplateId}`, {
+          method: "DELETE",
+        });
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to delete question template");
+        }
+      },
+      () => {
+        setSuccess("Question template deleted successfully!");
+      },
+      (error) => {
+        // Rollback optimistic update
+        setQuestionTemplates(prev => [...prev, originalQuestionTemplate].sort((a, b) => a.text.localeCompare(b.text)));
+        setError(`Failed to delete question template: ${error}`);
+      }
+    );
   };
 
   const openEditDialog = (questionTemplate: QuestionTemplate) => {
@@ -838,24 +982,52 @@ export default function ConfigureQuestionTemplatesPage() {
                   )}
                 </div>
 
-                {filteredQuestionTemplates.map((questionTemplate) => (
-                  <div
-                    key={questionTemplate.id}
-                    className="border border-border rounded-xl p-6 hover:shadow-md transition-shadow duration-200"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-3">
-                          <h3 className="text-lg font-semibold text-foreground">
-                            {questionTemplate.text}
-                          </h3>
-                          <Badge variant="secondary" className="px-3 py-1 rounded-full">
-                            {getQuestionTypeLabel(questionTemplate.type)}
-                          </Badge>
-                          <Badge variant="outline" className="px-3 py-1 rounded-full">
-                            {getStageLabel(questionTemplate.stage)}
-                          </Badge>
-                        </div>
+                {filteredQuestionTemplates.map((questionTemplate) => {
+                  const isPending = Array.from(pendingOperations.entries()).some(([opId, op]) => 
+                    (op === 'add' && opId.includes(questionTemplate.id)) ||
+                    (op === 'edit' && opId.includes(questionTemplate.id)) ||
+                    (op === 'delete' && opId.includes(questionTemplate.id))
+                  );
+                  const currentOperationStatus = Array.from(operationStatus.entries()).find(([opId, status]) => 
+                    opId.includes(questionTemplate.id)
+                  )?.[1] || 'success';
+
+                  return (
+                    <div
+                      key={questionTemplate.id}
+                      className={`border rounded-xl p-6 hover:shadow-md transition-all duration-200 ${
+                        isPending 
+                          ? 'border-yellow-300 bg-yellow-50/50' 
+                          : currentOperationStatus === 'error'
+                          ? 'border-red-300 bg-red-50/50'
+                          : 'border-border'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-3">
+                            <h3 className="text-lg font-semibold text-foreground">
+                              {questionTemplate.text}
+                            </h3>
+                            {isPending && (
+                              <Badge variant="outline" className="px-3 py-1 rounded-full border-yellow-300 text-yellow-700 bg-yellow-100">
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                Processing...
+                              </Badge>
+                            )}
+                            {currentOperationStatus === 'error' && (
+                              <Badge variant="outline" className="px-3 py-1 rounded-full border-red-300 text-red-700 bg-red-100">
+                                <AlertCircle className="w-3 h-3 mr-1" />
+                                Failed
+                              </Badge>
+                            )}
+                            <Badge variant="secondary" className="px-3 py-1 rounded-full">
+                              {getQuestionTypeLabel(questionTemplate.type)}
+                            </Badge>
+                            <Badge variant="outline" className="px-3 py-1 rounded-full">
+                              {getStageLabel(questionTemplate.stage)}
+                            </Badge>
+                          </div>
                         
                         {questionTemplate.optionTemplates.length > 0 && (
                           <div className="mt-3">
@@ -919,7 +1091,8 @@ export default function ConfigureQuestionTemplatesPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => openEditDialog(questionTemplate)}
-                          className="border-border text-foreground hover:bg-muted"
+                          disabled={isPending}
+                          className="border-border text-foreground hover:bg-muted disabled:opacity-50"
                         >
                           <Edit className="w-4 h-4 mr-2" />
                           Edit
@@ -928,20 +1101,17 @@ export default function ConfigureQuestionTemplatesPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDeleteQuestion(questionTemplate.id, questionTemplate.text)}
-                          disabled={actionLoading === questionTemplate.id}
-                          className="border-destructive text-destructive hover:bg-destructive/10"
+                          disabled={isPending}
+                          className="border-destructive text-destructive hover:bg-destructive/10 disabled:opacity-50"
                         >
-                          {actionLoading === questionTemplate.id ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4 mr-2" />
-                          )}
+                          <Trash2 className="w-4 h-4 mr-2" />
                           Delete
                         </Button>
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>

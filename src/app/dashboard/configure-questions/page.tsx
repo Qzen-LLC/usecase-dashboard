@@ -228,61 +228,91 @@ export default function ConfigureQuestionsPage() {
       return;
     }
 
-    setActionLoading("add");
-    setError(null);
-    setSuccess(null);
-
-    try {
-      // Prepare the data to send
-      let dataToSend = { ...newQuestion };
+    // Prepare the data to send
+    let dataToSend = { ...newQuestion };
+    
+    // For RISK questions, combine probability and impact options with prefixes
+    if (newQuestion.type === QuestionType.RISK) {
+      const probabilityOptions = newRiskOptions.probability.filter(opt => opt.trim());
+      const impactOptions = newRiskOptions.impact.filter(opt => opt.trim());
       
-      // For RISK questions, combine probability and impact options with prefixes
-      if (newQuestion.type === QuestionType.RISK) {
-        const probabilityOptions = newRiskOptions.probability.filter(opt => opt.trim());
-        const impactOptions = newRiskOptions.impact.filter(opt => opt.trim());
-        
-        if (probabilityOptions.length === 0 || impactOptions.length === 0) {
-          setError("Both probability and impact options are required for risk questions");
-          setActionLoading(null);
-          return;
-        }
-        
-        // Create combined options with prefixes
-        dataToSend.options = [
-          ...probabilityOptions.map(opt => `pro:${opt.trim()}`),
-          ...impactOptions.map(opt => `imp:${opt.trim()}`)
-        ];
+      if (probabilityOptions.length === 0 || impactOptions.length === 0) {
+        setError("Both probability and impact options are required for risk questions");
+        return;
       }
-
-      const response = await fetch(`/api/organizations/${organizationId}/questions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dataToSend),
-      });
-      const data = await response.json();
       
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create question");
-      }
-
-      setSuccess("Question created successfully!");
-      setNewQuestion({
-        text: "",
-        type: QuestionType.TEXT,
-        stage: Stage.TECHNICAL_FEASIBILITY,
-        options: [""],
-      });
-      setNewRiskOptions({
-        probability: ["LOW", "MEDIUM", "HIGH"],
-        impact: ["LOW", "MEDIUM", "HIGH"]
-      });
-      setIsAddDialogOpen(false);
-      fetchQuestions();
-    } catch (err: any) {
-      setError(err.message || "Failed to create question");
-    } finally {
-      setActionLoading(null);
+      // Create combined options with prefixes
+      dataToSend.options = [
+        ...probabilityOptions.map(opt => `pro:${opt.trim()}`),
+        ...impactOptions.map(opt => `imp:${opt.trim()}`)
+      ];
     }
+
+    // Generate temporary ID for optimistic update
+    const tempId = generateTempId();
+    const operationId = `add_${tempId}`;
+
+    // Create optimistic question object
+    const optimisticQuestion: Question = {
+      id: tempId,
+      text: dataToSend.text,
+      type: dataToSend.type,
+      stage: dataToSend.stage,
+      organizationId: organizationId,
+      options: dataToSend.options.map(opt => ({
+        id: `temp_opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        text: opt,
+        questionId: tempId
+      }))
+    };
+
+    // Optimistically add the question to the UI
+    setQuestions(prev => [optimisticQuestion, ...prev]);
+    setPendingOperations(prev => new Map(prev).set(operationId, 'add'));
+    setOperationStatus(prev => new Map(prev).set(operationId, 'pending'));
+
+    // Clear form and close dialog immediately
+    setNewQuestion({
+      text: "",
+      type: QuestionType.TEXT,
+      stage: Stage.TECHNICAL_FEASIBILITY,
+      options: [""],
+    });
+    setNewRiskOptions({
+      probability: ["LOW", "MEDIUM", "HIGH"],
+      impact: ["LOW", "MEDIUM", "HIGH"]
+    });
+    setIsAddDialogOpen(false);
+    setError(null);
+    setSuccess("Question added! Processing in background...");
+
+    // Perform background operation
+    performBackgroundOperation(
+      operationId,
+      async () => {
+        const response = await fetch(`/api/organizations/${organizationId}/questions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dataToSend),
+        });
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to create question");
+        }
+
+        // Replace optimistic question with real one
+        setQuestions(prev => prev.map(q => q.id === tempId ? data.question : q));
+      },
+      () => {
+        setSuccess("Question created successfully!");
+      },
+      (error) => {
+        // Rollback optimistic update
+        setQuestions(prev => prev.filter(q => q.id !== tempId));
+        setError(`Failed to create question: ${error}`);
+      }
+    );
   };
 
   const handleEditQuestion = async () => {
@@ -296,52 +326,86 @@ export default function ConfigureQuestionsPage() {
       return;
     }
 
-    setActionLoading("edit");
-    setError(null);
-    setSuccess(null);
-
-    try {
-      // Prepare the data to send
-      let dataToSend = { ...editQuestion };
+    // Prepare the data to send
+    let dataToSend = { ...editQuestion };
+    
+    // For RISK questions, combine probability and impact options with prefixes
+    if (editQuestion.type === QuestionType.RISK) {
+      const probabilityOptions = editRiskOptions.probability.filter(opt => opt.trim());
+      const impactOptions = editRiskOptions.impact.filter(opt => opt.trim());
       
-      // For RISK questions, combine probability and impact options with prefixes
-      if (editQuestion.type === QuestionType.RISK) {
-        const probabilityOptions = editRiskOptions.probability.filter(opt => opt.trim());
-        const impactOptions = editRiskOptions.impact.filter(opt => opt.trim());
-        
-        if (probabilityOptions.length === 0 || impactOptions.length === 0) {
-          setError("Both probability and impact options are required for risk questions");
-          setActionLoading(null);
-          return;
-        }
-        
-        // Create combined options with prefixes
-        dataToSend.options = [
-          ...probabilityOptions.map(opt => `pro:${opt.trim()}`),
-          ...impactOptions.map(opt => `imp:${opt.trim()}`)
-        ];
+      if (probabilityOptions.length === 0 || impactOptions.length === 0) {
+        setError("Both probability and impact options are required for risk questions");
+        return;
       }
-
-      const response = await fetch(`/api/organizations/${organizationId}/questions/${editingQuestion.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dataToSend),
-      });
-      const data = await response.json();
       
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update question");
-      }
-
-      setSuccess("Question updated successfully!");
-      setEditingQuestion(null);
-      setIsEditDialogOpen(false);
-      fetchQuestions();
-    } catch (err: any) {
-      setError(err.message || "Failed to update question");
-    } finally {
-      setActionLoading(null);
+      // Create combined options with prefixes
+      dataToSend.options = [
+        ...probabilityOptions.map(opt => `pro:${opt.trim()}`),
+        ...impactOptions.map(opt => `imp:${opt.trim()}`)
+      ];
     }
+
+    const operationId = `edit_${editingQuestion.id}`;
+    const originalQuestion = questions.find(q => q.id === editingQuestion.id);
+
+    // Store original question for rollback
+    if (!originalQuestion) {
+      setError("Question not found");
+      return;
+    }
+
+    // Create optimistic question object
+    const optimisticQuestion: Question = {
+      ...originalQuestion,
+      text: dataToSend.text,
+      type: dataToSend.type,
+      stage: dataToSend.stage,
+      options: dataToSend.options.map(opt => ({
+        id: `temp_opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        text: opt,
+        questionId: editingQuestion.id
+      }))
+    };
+
+    // Optimistically update the question in the UI
+    setQuestions(prev => prev.map(q => q.id === editingQuestion.id ? optimisticQuestion : q));
+    setPendingOperations(prev => new Map(prev).set(operationId, 'edit'));
+    setOperationStatus(prev => new Map(prev).set(operationId, 'pending'));
+
+    // Close dialog immediately
+    setEditingQuestion(null);
+    setIsEditDialogOpen(false);
+    setError(null);
+    setSuccess("Question updated! Processing in background...");
+
+    // Perform background operation
+    performBackgroundOperation(
+      operationId,
+      async () => {
+        const response = await fetch(`/api/organizations/${organizationId}/questions/${editingQuestion.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dataToSend),
+        });
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to update question");
+        }
+
+        // Replace optimistic question with real one
+        setQuestions(prev => prev.map(q => q.id === editingQuestion.id ? data.question : q));
+      },
+      () => {
+        setSuccess("Question updated successfully!");
+      },
+      (error) => {
+        // Rollback optimistic update
+        setQuestions(prev => prev.map(q => q.id === editingQuestion.id ? originalQuestion : q));
+        setError(`Failed to update question: ${error}`);
+      }
+    );
   };
 
   const handleDeleteQuestion = async (questionId: string, questionText: string) => {
@@ -354,27 +418,45 @@ export default function ConfigureQuestionsPage() {
       return;
     }
 
-    setActionLoading(questionId);
-    setError(null);
-    setSuccess(null);
+    const operationId = `delete_${questionId}`;
+    const originalQuestion = questions.find(q => q.id === questionId);
 
-    try {
-      const response = await fetch(`/api/organizations/${organizationId}/questions/${questionId}`, {
-        method: "DELETE",
-      });
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to delete question");
-      }
-
-      setSuccess("Question deleted successfully!");
-      fetchQuestions();
-    } catch (err: any) {
-      setError(err.message || "Failed to delete question");
-    } finally {
-      setActionLoading(null);
+    // Store original question for rollback
+    if (!originalQuestion) {
+      setError("Question not found");
+      return;
     }
+
+    // Optimistically remove the question from the UI
+    setQuestions(prev => prev.filter(q => q.id !== questionId));
+    setPendingOperations(prev => new Map(prev).set(operationId, 'delete'));
+    setOperationStatus(prev => new Map(prev).set(operationId, 'pending'));
+
+    setError(null);
+    setSuccess("Question deleted! Processing in background...");
+
+    // Perform background operation
+    performBackgroundOperation(
+      operationId,
+      async () => {
+        const response = await fetch(`/api/organizations/${organizationId}/questions/${questionId}`, {
+          method: "DELETE",
+        });
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to delete question");
+        }
+      },
+      () => {
+        setSuccess("Question deleted successfully!");
+      },
+      (error) => {
+        // Rollback optimistic update
+        setQuestions(prev => [...prev, originalQuestion].sort((a, b) => a.text.localeCompare(b.text)));
+        setError(`Failed to delete question: ${error}`);
+      }
+    );
   };
 
   const openEditDialog = (question: Question) => {
@@ -1001,24 +1083,52 @@ export default function ConfigureQuestionsPage() {
                   )}
                 </div>
 
-                {filteredQuestions.map((question) => (
-                  <div
-                    key={question.id}
-                    className="border border-border rounded-xl p-6 hover:shadow-md transition-shadow duration-200"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-3">
-                          <h3 className="text-lg font-semibold text-foreground">
-                            {question.text}
-                          </h3>
-                          <Badge variant="secondary" className="px-3 py-1 rounded-full">
-                            {getQuestionTypeLabel(question.type)}
-                          </Badge>
-                          <Badge variant="outline" className="px-3 py-1 rounded-full">
-                            {getStageLabel(question.stage)}
-                          </Badge>
-                        </div>
+                {filteredQuestions.map((question) => {
+                  const isPending = Array.from(pendingOperations.entries()).some(([opId, op]) => 
+                    (op === 'add' && opId.includes(question.id)) ||
+                    (op === 'edit' && opId.includes(question.id)) ||
+                    (op === 'delete' && opId.includes(question.id))
+                  );
+                  const currentOperationStatus = Array.from(operationStatus.entries()).find(([opId, status]) => 
+                    opId.includes(question.id)
+                  )?.[1] || 'success';
+
+                  return (
+                    <div
+                      key={question.id}
+                      className={`border rounded-xl p-6 hover:shadow-md transition-all duration-200 ${
+                        isPending 
+                          ? 'border-yellow-300 bg-yellow-50/50' 
+                          : currentOperationStatus === 'error'
+                          ? 'border-red-300 bg-red-50/50'
+                          : 'border-border'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-3">
+                            <h3 className="text-lg font-semibold text-foreground">
+                              {question.text}
+                            </h3>
+                            {isPending && (
+                              <Badge variant="outline" className="px-3 py-1 rounded-full border-yellow-300 text-yellow-700 bg-yellow-100">
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                Processing...
+                              </Badge>
+                            )}
+                            {currentOperationStatus === 'error' && (
+                              <Badge variant="outline" className="px-3 py-1 rounded-full border-red-300 text-red-700 bg-red-100">
+                                <AlertCircle className="w-3 h-3 mr-1" />
+                                Failed
+                              </Badge>
+                            )}
+                            <Badge variant="secondary" className="px-3 py-1 rounded-full">
+                              {getQuestionTypeLabel(question.type)}
+                            </Badge>
+                            <Badge variant="outline" className="px-3 py-1 rounded-full">
+                              {getStageLabel(question.stage)}
+                            </Badge>
+                          </div>
                         
                         {question.options.length > 0 && (
                           <div className="mt-3">
@@ -1082,7 +1192,8 @@ export default function ConfigureQuestionsPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => openEditDialog(question)}
-                          className="border-border text-foreground hover:bg-muted"
+                          disabled={isPending}
+                          className="border-border text-foreground hover:bg-muted disabled:opacity-50"
                         >
                           <Edit className="w-4 h-4 mr-2" />
                           Edit
@@ -1091,20 +1202,17 @@ export default function ConfigureQuestionsPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDeleteQuestion(question.id, question.text)}
-                          disabled={actionLoading === question.id}
-                          className="border-destructive text-destructive hover:bg-destructive/10"
+                          disabled={isPending}
+                          className="border-destructive text-destructive hover:bg-destructive/10 disabled:opacity-50"
                         >
-                          {actionLoading === question.id ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4 mr-2" />
-                          )}
+                          <Trash2 className="w-4 h-4 mr-2" />
                           Delete
                         </Button>
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
