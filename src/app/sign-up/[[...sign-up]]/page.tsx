@@ -1,15 +1,16 @@
 'use client';
 
-import { SignUp } from "@clerk/nextjs";
+import { SignUp } from "@/components/auth";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useUserClient } from "@/hooks/useAuthClient";
 
 export default function SignUpPage() {
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect_url') || '/dashboard';
   const invitationToken = searchParams.get('invitation_token');
-  const { user, isSignedIn } = useUser();
+  const { user, isLoaded } = useUserClient();
+  const isSignedIn = !!user;
 
   // Debug logging
   console.log('[SignUpPage] URL parameters:', {

@@ -703,8 +703,15 @@ const Dashboard = () => {
       });
   };
 
-  // Add a handler to update priority (stub for now)
+  // Update priority with optimistic UI and rollback on failure
   const handlePriorityChange = async (useCaseId: string, newPriority: string) => {
+    const existing = useCases.find((uc: any) => uc.id === useCaseId);
+    const prevPriority = existing?.priority;
+
+    // Optimistic UI update
+    updateUseCase(useCaseId, { priority: newPriority });
+    setModalUseCase((prev) => (prev?.id === useCaseId ? { ...prev, priority: newPriority } : prev));
+
     try {
       const response = await fetch('/api/update-priority', {
         method: 'POST',
@@ -712,13 +719,18 @@ const Dashboard = () => {
         body: JSON.stringify({ useCaseId, priority: newPriority })
       });
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to update priority');
+        const data = await response.json().catch(() => ({}));
+        throw new Error((data as any).error || 'Failed to update priority');
       }
-      // Fetch fresh data from the backend to ensure consistency
-      await refetch();
+      // Optionally refresh in background to sync with backend later
+      // void refetch();
     } catch (err) {
-      alert((err as Error).message);
+      // Rollback on failure
+      if (typeof prevPriority !== 'undefined') {
+        updateUseCase(useCaseId, { priority: prevPriority });
+        setModalUseCase((prev) => (prev?.id === useCaseId ? { ...prev, priority: prevPriority } : prev));
+      }
+      alert(err instanceof Error ? err.message : 'Failed to update priority');
     }
   };
 

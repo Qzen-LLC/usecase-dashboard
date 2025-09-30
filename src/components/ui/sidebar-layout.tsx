@@ -19,7 +19,8 @@ import {
   Code2
 } from 'lucide-react';
 import { Button } from './button';
-import { UserButton, useUser } from '@clerk/nextjs';
+import { UserButton } from '@/components/auth';
+import { useUserClient, useAuthClient } from '@/hooks/useAuthClient';
 import Image from 'next/image';
 import { useUserData } from '@/contexts/UserContext';
 import ThemeToggle from './theme-toggle';
@@ -94,7 +95,8 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
   const [mounted, setMounted] = useState(false);
   const [dataReady, setDataReady] = useState(false);
   const pathname = usePathname();
-  const { user, isSignedIn } = useUser();
+  const { user, isLoaded: userLoaded } = useUserClient();
+  const { isSignedIn } = useAuthClient();
   const { userData } = useUserData();
 
   // Prevent hydration mismatch by only rendering after mount
@@ -134,7 +136,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
   ];
 
   // Don't render until mounted and data is ready to prevent hydration mismatch
-  if (!mounted || !dataReady) {
+  if (!mounted || !dataReady || !userLoaded) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
@@ -276,7 +278,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
                 <div className="flex items-center gap-2">
                   <UserButton afterSignOutUrl="/" />
                   <span className="text-sm text-muted-foreground font-medium">
-                    {user.fullName || user.emailAddresses[0]?.emailAddress}
+                    {user?.fullName || user?.emailAddresses?.[0]?.emailAddress || 'User'}
                   </span>
                 </div>
               ) : (
