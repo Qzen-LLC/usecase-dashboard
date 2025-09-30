@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useUserClient, useAuthClient } from '@/hooks/useAuthClient';
 
 interface UserData {
   id: string;
@@ -27,7 +27,7 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const { user, isSignedIn, isLoaded } = useUser();
+  const { isSignedIn, isLoaded } = useAuthClient();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

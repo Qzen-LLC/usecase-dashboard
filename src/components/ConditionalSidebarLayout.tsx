@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser } from '@clerk/nextjs';
+import { useAuthClient } from '@/hooks/useAuthClient';
 import { usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
@@ -36,7 +36,7 @@ const SIDEBAR_ROUTES = [
 ];
 
 function ConditionalSidebarLayoutContent({ children }: { children: React.ReactNode }) {
-  const { isSignedIn, isLoaded } = useUser();
+  const { isSignedIn, isLoaded } = useAuthClient();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [dataReady, setDataReady] = useState(false);

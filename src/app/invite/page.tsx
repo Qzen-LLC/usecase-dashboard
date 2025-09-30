@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useUser } from '@clerk/nextjs';
+import { useAuthClient } from '@/hooks/useAuthClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 function InvitePageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user, isSignedIn } = useUser();
+  const { isSignedIn } = useAuthClient();
   const [invitation, setInvitation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

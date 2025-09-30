@@ -41,7 +41,35 @@ const eslintConfig = [
       "@typescript-eslint/no-require-imports": "off",
       "@typescript-eslint/no-unused-expressions": "warn",
       "@typescript-eslint/no-this-alias": "warn",
+      // Prevent direct client-side Clerk imports; use unified modules instead
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@clerk/nextjs",
+              message:
+                "Do not import from @clerk/nextjs directly. Use '@/hooks/useAuthClient' for hooks and '@/components/auth' for UI components.",
+            },
+          ],
+          patterns: [
+            {
+              group: ["@clerk/nextjs/*"],
+              message:
+                "Do not import from @clerk/nextjs/* directly. Use '@/hooks/useAuthClient' or '@/components/auth'.",
+            },
+          ],
+        },
+      ],
     }
+  },
+
+  // Allow client-side Clerk imports inside the auth client service implementation
+  {
+    files: ["src/services/auth/client/**"],
+    rules: {
+      "no-restricted-imports": "off",
+    },
   },
 
   {

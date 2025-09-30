@@ -16,7 +16,7 @@ import {
   Rocket,
   Clock
 } from 'lucide-react';
-import { useUser } from '@clerk/nextjs';
+import { useUserClient } from '@/hooks/useAuthClient';
 
 interface UseCase {
   id: string;
@@ -43,7 +43,7 @@ const stageBadgeColors: Record<string, string> = {
 
 export default function UseCaseDevelopmentDashboard() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user } = useUserClient<any>();
   const [useCases, setUseCases] = useState<UseCase[]>([]);
   const [filteredUseCases, setFilteredUseCases] = useState<UseCase[]>([]);
   const [loading, setLoading] = useState(true);

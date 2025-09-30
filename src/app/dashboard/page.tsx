@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@clerk/nextjs';
+import { useUserClient, useAuthClient } from '@/hooks/useAuthClient';
 import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X, Eye, Trash2, RefreshCw, AlertTriangle, Users, Building2, Edit as EditIcon, ArrowRight as ArrowRightIcon, GripVertical } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -253,7 +253,8 @@ const Dashboard = () => {
   const [selectedUseCase, setSelectedUseCase] = useState<MappedUseCase | null>(null);
   // Compact, professional default layout (removed detailed toggle)
   const router = useRouter();
-  const { user, isSignedIn, isLoaded } = useUser();
+  const { user, isLoaded } = useUserClient<any>();
+  const { isSignedIn } = useAuthClient();
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>(''); // '' means All Organizations
   const [selectedBusinessFunction, setSelectedBusinessFunction] = useState<string>(''); // '' means All Business Functions
