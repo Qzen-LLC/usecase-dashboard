@@ -52,27 +52,22 @@ export const useAnswerHandlers = (
       questionId: string,
       newChecked: { probability: AnswerProps | null; impact: AnswerProps | null }
     ) => {
-      // Parse the individual values to extract the actual data
-      const probabilityData = newChecked.probability 
-        ? JSON.parse(newChecked.probability.value)
-        : null;
-      const impactData = newChecked.impact 
-        ? JSON.parse(newChecked.impact.value)
-        : null;
+      // Send individual answers like checkbox/radio questions
+      // The backend will construct the labels and optionIds arrays
+      const answers: AnswerProps[] = [];
 
-      const riskValue = {
-        probability: probabilityData,
-        impact: impactData,
-      };
+      if (newChecked.probability) {
+        console.log("Adding probability answer:", newChecked.probability);
+        answers.push(newChecked.probability);
+      }
 
-      const riskAnswer: AnswerProps = {
-        id: `${questionId}-risk`,
-        value: JSON.stringify(riskValue), // store as JSON string
-        questionId,
-      };
+      if (newChecked.impact) {
+        console.log("Adding impact answer:", newChecked.impact);
+        answers.push(newChecked.impact);
+      }
 
-      console.log("Risk group changed for question:", questionId, riskAnswer);
-      onAnswerChange(questionId, [riskAnswer]);
+      console.log("Risk group changed for question:", questionId, answers);
+      onAnswerChange(questionId, answers);
     },
     [onAnswerChange]
   );

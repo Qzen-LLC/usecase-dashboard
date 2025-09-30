@@ -13,6 +13,7 @@ import { RadioGroupQuestion } from './questionComps/radioQuestion';
 import { SliderQuestion } from './questionComps/SliderQuestion';
 import { TextQuestion } from './questionComps/TextQuestion';
 import { useAnswerHandlers } from '@/lib/handle-assess-ui';
+import { RiskQuestion } from './questionComps/riskQuestion';
 
 interface QnAProps {
   id: string,
@@ -60,7 +61,7 @@ type Props = {
 };
 
 export default function RiskAssessment({ value, onChange, questions, questionsLoading, questionAnswers, onAnswerChange }: Props) {
-  const { handleCheckboxChange, handleRadioChange, handleSliderChange, handleTextChange } = useAnswerHandlers(onAnswerChange);
+  const { handleCheckboxChange, handleRadioChange, handleSliderChange, handleTextChange, handleRiskGroupChange } = useAnswerHandlers(onAnswerChange);
 
   return (
     <div className="space-y-10">
@@ -78,7 +79,7 @@ export default function RiskAssessment({ value, onChange, questions, questionsLo
         questions.map((q) => {
           const currentAnswers = questionAnswers[q.id] || q.answers || [];
           
-          console.log(`Question ${q.id} answers:`, currentAnswers);
+          // console.log(`Question ${q.id} answers:`, currentAnswers);
           
           if (q.stage === Stage.RISK_ASSESSMENT) {
             if (q.type === QuestionType.CHECKBOX) {
@@ -127,6 +128,69 @@ export default function RiskAssessment({ value, onChange, questions, questionsLo
                   value={currentValue}
                   placeholder="Enter your answer..."
                   onChange={(newValue) => handleTextChange(q.id, newValue)}
+                />
+              );
+            } else if (q.type === QuestionType.RISK) {
+              // Filter options by prefix for RISK questions
+              const probabilityOptions = q.options.filter(opt => opt.text.startsWith("pro:"));
+              const impactOptions = q.options.filter(opt => opt.text.startsWith("imp:"));
+              
+              // Get current answers - RISK questions store both probability and impact in a single answer
+              const riskAnswer = currentAnswers.length > 0 ? currentAnswers[0] : null;
+              
+              // For RISK questions, find the individual probability and impact answers
+              // These come as separate answers from the backend
+              let probabilityAnswer = null;
+              let impactAnswer = null;
+              
+              // Look for probability and impact answers in the current answers
+              const probAnswer = currentAnswers.find(a => a.id.includes('probability'));
+              const impAnswer = currentAnswers.find(a => a.id.includes('impact'));
+              
+              console.log('RISK Question Debug:', {
+                questionId: q.id,
+                currentAnswers,
+                probAnswer,
+                impAnswer
+              });
+              
+              if (probAnswer) {
+                // Remove prefix for display (handle both cases)
+                const cleanValue = probAnswer.value.startsWith('pro:') 
+                  ? probAnswer.value.replace(/^pro:/, '') 
+                  : probAnswer.value;
+                probabilityAnswer = {
+                  id: probAnswer.id,
+                  value: cleanValue, // Clean string like "LOW" for display
+                  questionId: probAnswer.questionId,
+                  optionId: probAnswer.optionId
+                };
+              }
+              
+              if (impAnswer) {
+                // Remove prefix for display (handle both cases)
+                const cleanValue = impAnswer.value.startsWith('imp:') 
+                  ? impAnswer.value.replace(/^imp:/, '') 
+                  : impAnswer.value;
+                impactAnswer = {
+                  id: impAnswer.id,
+                  value: cleanValue, // Clean string like "HIGH" for display
+                  questionId: impAnswer.questionId,
+                  optionId: impAnswer.optionId
+                };
+              }
+            
+              return (
+                <RiskQuestion
+                  key={q.id}
+                  label={q.text}
+                  probabilityOptions={probabilityOptions}
+                  impactOptions={impactOptions}
+                  checkedAnswers={{
+                    probability: probabilityAnswer,
+                    impact: impactAnswer
+                  }}
+                  onChange={(newChecked) => handleRiskGroupChange(q.id, newChecked)}
                 />
               );
             }

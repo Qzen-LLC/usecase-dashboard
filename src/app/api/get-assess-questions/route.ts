@@ -46,13 +46,40 @@ export async function GET(request: NextRequest) {
       let answers = [];
       if (answerData) {
         if (answerData.optionIds && answerData.labels) {
-          // For CHECKBOX and RADIO questions
-          answers = answerData.optionIds.map((optionId: string, index: number) => ({
-            id: `${q.id}-${optionId}`,
-            value: answerData.labels[index],
-            questionId: q.id,
-            optionId: optionId,
-          }));
+          // For CHECKBOX, RADIO, and RISK questions
+          if (q.type === 'RISK') {
+            // For RISK questions, create probability and impact answers
+            const probLabel = answerData.labels.find((label: string) => label.startsWith('pro:'));
+            const impactLabel = answerData.labels.find((label: string) => label.startsWith('imp:'));
+            const probOptionId = answerData.optionIds[answerData.labels.findIndex((label: string) => label.startsWith('pro:'))];
+            const impactOptionId = answerData.optionIds[answerData.labels.findIndex((label: string) => label.startsWith('imp:'))];
+            
+            if (probLabel && probOptionId) {
+              answers.push({
+                id: `${q.id}-probability`,
+                value: probLabel,
+                questionId: q.id,
+                optionId: probOptionId,
+              });
+            }
+            
+            if (impactLabel && impactOptionId) {
+              answers.push({
+                id: `${q.id}-impact`,
+                value: impactLabel,
+                questionId: q.id,
+                optionId: impactOptionId,
+              });
+            }
+          } else {
+            // For CHECKBOX and RADIO questions
+            answers = answerData.optionIds.map((optionId: string, index: number) => ({
+              id: `${q.id}-${optionId}`,
+              value: answerData.labels[index],
+              questionId: q.id,
+              optionId: optionId,
+            }));
+          }
         } else if (answerData.text) {
           // For TEXT and SLIDER questions
           answers = [{

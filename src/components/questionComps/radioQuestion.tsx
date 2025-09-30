@@ -29,7 +29,7 @@ export function RadioGroupQuestion({
   checkedOption = null,
   onChange,
 }: RadioGroupProps) {
-  console.log('RadioGroupQuestion rendered with checkedOption:', checkedOption); // Debug log
+  // console.log('RadioGroupQuestion rendered with checkedOption:', checkedOption); // Debug log
   
   const handleValueChange = (value: string) => {
     if (value) {
@@ -58,7 +58,7 @@ export function RadioGroupQuestion({
         className="space-y-3"
       >
         {options.map((option) => {
-          console.log(`Radio option ${option.text} is selected:`, checkedOption?.value === option.text); // Debug log
+          // console.log(`Radio option ${option.text} is selected:`, checkedOption?.value === option.text); // Debug log
           
           return (
             <div key={`${option.questionId}-${option.id}`} className="flex items-center space-x-2">

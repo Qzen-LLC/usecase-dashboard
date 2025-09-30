@@ -79,7 +79,7 @@ export default function BusinessFeasibility({ value, onChange, questions, questi
         questions.map((q) => {
           const currentAnswers = questionAnswers[q.id] || q.answers || [];
           
-          console.log(`Question ${q.id} answers:`, currentAnswers);
+          // console.log(`Question ${q.id} answers:`, currentAnswers);
           
           if (q.stage === Stage.BUSINESS_FEASIBILITY) {
             if (q.type === QuestionType.CHECKBOX) {
@@ -138,36 +138,46 @@ export default function BusinessFeasibility({ value, onChange, questions, questi
               // Get current answers - RISK questions store both probability and impact in a single answer
               const riskAnswer = currentAnswers.length > 0 ? currentAnswers[0] : null;
               
-              // Parse the JSON value to extract probability and impact
+              // For RISK questions, find the individual probability and impact answers
+              // These come as separate answers from the backend
               let probabilityAnswer = null;
               let impactAnswer = null;
               
-              if (riskAnswer && riskAnswer.value) {
-                try {
-                  const parsedValue = typeof riskAnswer.value === 'string' 
-                    ? JSON.parse(riskAnswer.value) 
-                    : riskAnswer.value;
-                  
-                  if (parsedValue.probability) {
-                    probabilityAnswer = {
-                      id: `${q.id}-probability`,
-                      value: JSON.stringify(parsedValue.probability),
-                      questionId: q.id,
-                      optionId: parsedValue.probability.optionId
-                    };
-                  }
-                  
-                  if (parsedValue.impact) {
-                    impactAnswer = {
-                      id: `${q.id}-impact`,
-                      value: JSON.stringify(parsedValue.impact),
-                      questionId: q.id,
-                      optionId: parsedValue.impact.optionId
-                    };
-                  }
-                } catch (error) {
-                  console.error('Error parsing risk answer:', error);
-                }
+              // Look for probability and impact answers in the current answers
+              const probAnswer = currentAnswers.find(a => a.id.includes('probability'));
+              const impAnswer = currentAnswers.find(a => a.id.includes('impact'));
+              
+              console.log('RISK Question Debug:', {
+                questionId: q.id,
+                currentAnswers,
+                probAnswer,
+                impAnswer
+              });
+              
+              if (probAnswer) {
+                // Remove prefix for display (handle both cases)
+                const cleanValue = probAnswer.value.startsWith('pro:') 
+                  ? probAnswer.value.replace(/^pro:/, '') 
+                  : probAnswer.value;
+                probabilityAnswer = {
+                  id: probAnswer.id,
+                  value: cleanValue, // Clean string like "LOW" for display
+                  questionId: probAnswer.questionId,
+                  optionId: probAnswer.optionId
+                };
+              }
+              
+              if (impAnswer) {
+                // Remove prefix for display (handle both cases)
+                const cleanValue = impAnswer.value.startsWith('imp:') 
+                  ? impAnswer.value.replace(/^imp:/, '') 
+                  : impAnswer.value;
+                impactAnswer = {
+                  id: impAnswer.id,
+                  value: cleanValue, // Clean string like "HIGH" for display
+                  questionId: impAnswer.questionId,
+                  optionId: impAnswer.optionId
+                };
               }
             
               return (

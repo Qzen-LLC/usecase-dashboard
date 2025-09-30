@@ -441,7 +441,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         });
         const qnAData = await response.json();
         
-        console.log('Fetched questions data:', qnAData); // Debug log
+        // console.log('Fetched questions data:', qnAData); // Debug log
         
         const formattedQuestions = qnAData.map((q: QnAProps) => ({
           id: q.id,
@@ -463,7 +463,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         formattedQuestions.forEach((q: QnAProps) => {
           if (q.answers && q.answers.length > 0) {
             initialAnswers[q.id] = q.answers;
-            console.log(`Initialized answers for question ${q.id}:`, q.answers); // Debug log
+            // console.log(`Initialized answers for question ${q.id}:`, q.answers); // Debug log
           }
         });
         setQuestionAnswers(initialAnswers);
@@ -781,8 +781,12 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               <ReadOnlyEthicalImpact data={assessmentData.ethicalImpact} />
             ) : (
               <EthicalImpact
-                value={assessmentData.ethicalImpact}
+                value={assessmentData.businessFeasibility}
                 onChange={data => handleAssessmentChange('ethicalImpact', data)}
+                questions={questions}
+                questionsLoading={questionsLoading}
+                questionAnswers={questionAnswers}
+                onAnswerChange={handleAnswerChange}
               />
             )
           ) : currentStep === 4 ? (

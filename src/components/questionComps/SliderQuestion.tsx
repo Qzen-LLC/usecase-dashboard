@@ -20,7 +20,7 @@ export function SliderQuestion({
   step = 1,
   onChange,
 }: SliderQuestionProps) {
-  console.log('SliderQuestion rendered with value:', value); // Debug log
+  // console.log('SliderQuestion rendered with value:', value); // Debug log
   
   const handleValueChange = (newValue: number[]) => {
     // Slider returns an array, we take the first value

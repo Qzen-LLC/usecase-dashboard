@@ -105,11 +105,85 @@ export default function ConfigureQuestionsPage() {
     stage: Stage.TECHNICAL_FEASIBILITY,
     options: [""],
   });
+
+  // RISK question specific states
+  const [newRiskOptions, setNewRiskOptions] = useState({
+    probability: ["LOW", "MEDIUM", "HIGH"],
+    impact: ["LOW", "MEDIUM", "HIGH"]
+  });
+  
+  const [editRiskOptions, setEditRiskOptions] = useState({
+    probability: ["LOW", "MEDIUM", "HIGH"],
+    impact: ["LOW", "MEDIUM", "HIGH"]
+  });
   
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [pendingOperations, setPendingOperations] = useState<Map<string, 'add' | 'edit' | 'delete'>>(new Map());
+  const [operationStatus, setOperationStatus] = useState<Map<string, 'pending' | 'success' | 'error'>>(new Map());
 
   // Determine which organizationId to use
   const organizationId = userData?.role === 'QZEN_ADMIN' ? orgIdFromUrl : userData?.organizationId;
+
+  // Helper function to generate temporary ID for optimistic updates
+  const generateTempId = () => `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  // Helper function to perform background operation with retry
+  const performBackgroundOperation = async (
+    operationId: string,
+    operation: () => Promise<any>,
+    onSuccess: () => void,
+    onError: (error: string) => void,
+    maxRetries: number = 3
+  ) => {
+    let retries = 0;
+    
+    while (retries < maxRetries) {
+      try {
+        await operation();
+        setOperationStatus(prev => new Map(prev).set(operationId, 'success'));
+        onSuccess();
+        
+        // Remove from pending operations after a delay
+        setTimeout(() => {
+          setPendingOperations(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(operationId);
+            return newMap;
+          });
+          setOperationStatus(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(operationId);
+            return newMap;
+          });
+        }, 2000);
+        
+        return;
+      } catch (error: any) {
+        retries++;
+        if (retries >= maxRetries) {
+          setOperationStatus(prev => new Map(prev).set(operationId, 'error'));
+          onError(error.message || 'Operation failed');
+          
+          // Remove from pending operations after showing error
+          setTimeout(() => {
+            setPendingOperations(prev => {
+              const newMap = new Map(prev);
+              newMap.delete(operationId);
+              return newMap;
+            });
+            setOperationStatus(prev => {
+              const newMap = new Map(prev);
+              newMap.delete(operationId);
+              return newMap;
+            });
+          }, 5000);
+        } else {
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+        }
+      }
+    }
+  };
 
   const fetchQuestions = async () => {
     if (!organizationId) {
@@ -159,10 +233,31 @@ export default function ConfigureQuestionsPage() {
     setSuccess(null);
 
     try {
+      // Prepare the data to send
+      let dataToSend = { ...newQuestion };
+      
+      // For RISK questions, combine probability and impact options with prefixes
+      if (newQuestion.type === QuestionType.RISK) {
+        const probabilityOptions = newRiskOptions.probability.filter(opt => opt.trim());
+        const impactOptions = newRiskOptions.impact.filter(opt => opt.trim());
+        
+        if (probabilityOptions.length === 0 || impactOptions.length === 0) {
+          setError("Both probability and impact options are required for risk questions");
+          setActionLoading(null);
+          return;
+        }
+        
+        // Create combined options with prefixes
+        dataToSend.options = [
+          ...probabilityOptions.map(opt => `pro:${opt.trim()}`),
+          ...impactOptions.map(opt => `imp:${opt.trim()}`)
+        ];
+      }
+
       const response = await fetch(`/api/organizations/${organizationId}/questions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newQuestion),
+        body: JSON.stringify(dataToSend),
       });
       const data = await response.json();
       
@@ -176,6 +271,10 @@ export default function ConfigureQuestionsPage() {
         type: QuestionType.TEXT,
         stage: Stage.TECHNICAL_FEASIBILITY,
         options: [""],
+      });
+      setNewRiskOptions({
+        probability: ["LOW", "MEDIUM", "HIGH"],
+        impact: ["LOW", "MEDIUM", "HIGH"]
       });
       setIsAddDialogOpen(false);
       fetchQuestions();
@@ -202,10 +301,31 @@ export default function ConfigureQuestionsPage() {
     setSuccess(null);
 
     try {
+      // Prepare the data to send
+      let dataToSend = { ...editQuestion };
+      
+      // For RISK questions, combine probability and impact options with prefixes
+      if (editQuestion.type === QuestionType.RISK) {
+        const probabilityOptions = editRiskOptions.probability.filter(opt => opt.trim());
+        const impactOptions = editRiskOptions.impact.filter(opt => opt.trim());
+        
+        if (probabilityOptions.length === 0 || impactOptions.length === 0) {
+          setError("Both probability and impact options are required for risk questions");
+          setActionLoading(null);
+          return;
+        }
+        
+        // Create combined options with prefixes
+        dataToSend.options = [
+          ...probabilityOptions.map(opt => `pro:${opt.trim()}`),
+          ...impactOptions.map(opt => `imp:${opt.trim()}`)
+        ];
+      }
+
       const response = await fetch(`/api/organizations/${organizationId}/questions/${editingQuestion.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editQuestion),
+        body: JSON.stringify(dataToSend),
       });
       const data = await response.json();
       
@@ -265,6 +385,31 @@ export default function ConfigureQuestionsPage() {
       stage: question.stage,
       options: question.options.length > 0 ? question.options.map(o => o.text) : [""],
     });
+    
+    // Handle RISK question options
+    if (question.type === QuestionType.RISK) {
+      const probabilityOptions: string[] = [];
+      const impactOptions: string[] = [];
+      
+      question.options.forEach(option => {
+        if (option.text.startsWith('pro:')) {
+          probabilityOptions.push(option.text.replace('pro:', ''));
+        } else if (option.text.startsWith('imp:')) {
+          impactOptions.push(option.text.replace('imp:', ''));
+        }
+      });
+      
+      setEditRiskOptions({
+        probability: probabilityOptions.length > 0 ? probabilityOptions : ["LOW", "MEDIUM", "HIGH"],
+        impact: impactOptions.length > 0 ? impactOptions : ["LOW", "MEDIUM", "HIGH"]
+      });
+    } else {
+      setEditRiskOptions({
+        probability: ["LOW", "MEDIUM", "HIGH"],
+        impact: ["LOW", "MEDIUM", "HIGH"]
+      });
+    }
+    
     setIsEditDialogOpen(true);
   };
 
@@ -310,12 +455,55 @@ export default function ConfigureQuestionsPage() {
     }
   };
 
+  const updateRiskOption = (type: 'probability' | 'impact', index: number, value: string, isEdit: boolean = false) => {
+    if (isEdit) {
+      setEditRiskOptions(prev => ({
+        ...prev,
+        [type]: prev[type].map((opt, i) => i === index ? value : opt)
+      }));
+    } else {
+      setNewRiskOptions(prev => ({
+        ...prev,
+        [type]: prev[type].map((opt, i) => i === index ? value : opt)
+      }));
+    }
+  };
+
+  const addRiskOption = (type: 'probability' | 'impact', isEdit: boolean = false) => {
+    if (isEdit) {
+      setEditRiskOptions(prev => ({
+        ...prev,
+        [type]: [...prev[type], ""]
+      }));
+    } else {
+      setNewRiskOptions(prev => ({
+        ...prev,
+        [type]: [...prev[type], ""]
+      }));
+    }
+  };
+
+  const removeRiskOption = (type: 'probability' | 'impact', index: number, isEdit: boolean = false) => {
+    if (isEdit) {
+      setEditRiskOptions(prev => ({
+        ...prev,
+        [type]: prev[type].filter((_, i) => i !== index)
+      }));
+    } else {
+      setNewRiskOptions(prev => ({
+        ...prev,
+        [type]: prev[type].filter((_, i) => i !== index)
+      }));
+    }
+  };
+
   const getQuestionTypeLabel = (type: QuestionType) => {
     switch (type) {
       case QuestionType.CHECKBOX: return "Checkbox";
       case QuestionType.RADIO: return "Radio";
       case QuestionType.TEXT: return "Text";
       case QuestionType.SLIDER: return "Slider";
+      case QuestionType.RISK: return "Risk";
       default: return type;
     }
   };
@@ -334,7 +522,7 @@ export default function ConfigureQuestionsPage() {
   };
 
   const needsOptions = (type: QuestionType) => {
-    return type === QuestionType.CHECKBOX || type === QuestionType.RADIO;
+    return type === QuestionType.CHECKBOX || type === QuestionType.RADIO || type === QuestionType.RISK;
   };
 
   const clearFilter = () => {
@@ -537,6 +725,7 @@ export default function ConfigureQuestionsPage() {
                           <SelectItem value={QuestionType.CHECKBOX}>Checkbox</SelectItem>
                           <SelectItem value={QuestionType.RADIO}>Radio</SelectItem>
                           <SelectItem value={QuestionType.SLIDER}>Slider</SelectItem>
+                          <SelectItem value={QuestionType.RISK}>Risk</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -565,39 +754,119 @@ export default function ConfigureQuestionsPage() {
 
                   {needsOptions(newQuestion.type) && (
                     <div>
-                      <Label>Options *</Label>
-                      <div className="space-y-2 mt-1">
-                        {newQuestion.options.map((option, index) => (
-                          <div key={index} className="flex gap-2">
-                            <Input
-                              value={option}
-                              onChange={(e) => updateOption(index, e.target.value, false)}
-                              placeholder={`Option ${index + 1}`}
-                              className="flex-1"
-                            />
-                            {newQuestion.options.length > 1 && (
+                      {newQuestion.type === QuestionType.RISK ? (
+                        <div className="space-y-6">
+                          {/* Probability Options */}
+                          <div>
+                            <Label>Probability Options *</Label>
+                            <div className="space-y-2 mt-1">
+                              {newRiskOptions.probability.map((option, index) => (
+                                <div key={index} className="flex gap-2">
+                                  <Input
+                                    value={option}
+                                    onChange={(e) => updateRiskOption('probability', index, e.target.value, false)}
+                                    placeholder={`Probability option ${index + 1}`}
+                                    className="flex-1"
+                                  />
+                                  {newRiskOptions.probability.length > 1 && (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => removeRiskOption('probability', index, false)}
+                                      className="shrink-0"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
                               <Button
                                 type="button"
                                 variant="outline"
-                                size="icon"
-                                onClick={() => removeOption(index, false)}
-                                className="shrink-0"
+                                onClick={() => addRiskOption('probability', false)}
+                                className="w-full"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Probability Option
                               </Button>
-                            )}
+                            </div>
                           </div>
-                        ))}
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => addOption(false)}
-                          className="w-full"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add Option
-                        </Button>
-                      </div>
+
+                          {/* Impact Options */}
+                          <div>
+                            <Label>Impact Options *</Label>
+                            <div className="space-y-2 mt-1">
+                              {newRiskOptions.impact.map((option, index) => (
+                                <div key={index} className="flex gap-2">
+                                  <Input
+                                    value={option}
+                                    onChange={(e) => updateRiskOption('impact', index, e.target.value, false)}
+                                    placeholder={`Impact option ${index + 1}`}
+                                    className="flex-1"
+                                  />
+                                  {newRiskOptions.impact.length > 1 && (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => removeRiskOption('impact', index, false)}
+                                      className="shrink-0"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => addRiskOption('impact', false)}
+                                className="w-full"
+                              >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Impact Option
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <Label>Options *</Label>
+                          <div className="space-y-2 mt-1">
+                            {newQuestion.options.map((option, index) => (
+                              <div key={index} className="flex gap-2">
+                                <Input
+                                  value={option}
+                                  onChange={(e) => updateOption(index, e.target.value, false)}
+                                  placeholder={`Option ${index + 1}`}
+                                  className="flex-1"
+                                />
+                                {newQuestion.options.length > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => removeOption(index, false)}
+                                    className="shrink-0"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => addOption(false)}
+                              className="w-full"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add Option
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -757,15 +1026,52 @@ export default function ConfigureQuestionsPage() {
                               Options:
                             </p>
                             <div className="flex flex-wrap gap-2">
-                              {question.options.map((option, index) => (
-                                <Badge
-                                  key={index}
-                                  variant="outline"
-                                  className="px-2 py-1 text-xs"
-                                >
-                                  {option.text}
-                                </Badge>
-                              ))}
+                              {question.type === QuestionType.RISK ? (
+                                <div className="space-y-2">
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground">Probability:</span>
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {question.options
+                                        .filter(opt => opt.text.startsWith('pro:'))
+                                        .map((option, index) => (
+                                          <Badge
+                                            key={index}
+                                            variant="outline"
+                                            className="px-2 py-1 text-xs"
+                                          >
+                                            {option.text.replace('pro:', '')}
+                                          </Badge>
+                                        ))}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground">Impact:</span>
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {question.options
+                                        .filter(opt => opt.text.startsWith('imp:'))
+                                        .map((option, index) => (
+                                          <Badge
+                                            key={index}
+                                            variant="outline"
+                                            className="px-2 py-1 text-xs"
+                                          >
+                                            {option.text.replace('imp:', '')}
+                                          </Badge>
+                                        ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                question.options.map((option, index) => (
+                                  <Badge
+                                    key={index}
+                                    variant="outline"
+                                    className="px-2 py-1 text-xs"
+                                  >
+                                    {option.text}
+                                  </Badge>
+                                ))
+                              )}
                             </div>
                           </div>
                         )}
@@ -844,6 +1150,7 @@ export default function ConfigureQuestionsPage() {
                       <SelectItem value={QuestionType.CHECKBOX}>Checkbox</SelectItem>
                       <SelectItem value={QuestionType.RADIO}>Radio</SelectItem>
                       <SelectItem value={QuestionType.SLIDER}>Slider</SelectItem>
+                      <SelectItem value={QuestionType.RISK}>Risk</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -872,39 +1179,119 @@ export default function ConfigureQuestionsPage() {
 
               {needsOptions(editQuestion.type) && (
                 <div>
-                  <Label>Options *</Label>
-                  <div className="space-y-2 mt-1">
-                    {editQuestion.options.map((option, index) => (
-                      <div key={index} className="flex gap-2">
-                        <Input
-                          value={option}
-                          onChange={(e) => updateOption(index, e.target.value, true)}
-                          placeholder={`Option ${index + 1}`}
-                          className="flex-1"
-                        />
-                        {editQuestion.options.length > 1 && (
+                  {editQuestion.type === QuestionType.RISK ? (
+                    <div className="space-y-6">
+                      {/* Probability Options */}
+                      <div>
+                        <Label>Probability Options *</Label>
+                        <div className="space-y-2 mt-1">
+                          {editRiskOptions.probability.map((option, index) => (
+                            <div key={index} className="flex gap-2">
+                              <Input
+                                value={option}
+                                onChange={(e) => updateRiskOption('probability', index, e.target.value, true)}
+                                placeholder={`Probability option ${index + 1}`}
+                                className="flex-1"
+                              />
+                              {editRiskOptions.probability.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => removeRiskOption('probability', index, true)}
+                                  className="shrink-0"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          ))}
                           <Button
                             type="button"
                             variant="outline"
-                            size="icon"
-                            onClick={() => removeOption(index, true)}
-                            className="shrink-0"
+                            onClick={() => addRiskOption('probability', true)}
+                            className="w-full"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Probability Option
                           </Button>
-                        )}
+                        </div>
                       </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => addOption(true)}
-                      className="w-full"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Option
-                    </Button>
-                  </div>
+
+                      {/* Impact Options */}
+                      <div>
+                        <Label>Impact Options *</Label>
+                        <div className="space-y-2 mt-1">
+                          {editRiskOptions.impact.map((option, index) => (
+                            <div key={index} className="flex gap-2">
+                              <Input
+                                value={option}
+                                onChange={(e) => updateRiskOption('impact', index, e.target.value, true)}
+                                placeholder={`Impact option ${index + 1}`}
+                                className="flex-1"
+                              />
+                              {editRiskOptions.impact.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => removeRiskOption('impact', index, true)}
+                                  className="shrink-0"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => addRiskOption('impact', true)}
+                            className="w-full"
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Impact Option
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <Label>Options *</Label>
+                      <div className="space-y-2 mt-1">
+                        {editQuestion.options.map((option, index) => (
+                          <div key={index} className="flex gap-2">
+                            <Input
+                              value={option}
+                              onChange={(e) => updateOption(index, e.target.value, true)}
+                              placeholder={`Option ${index + 1}`}
+                              className="flex-1"
+                            />
+                            {editQuestion.options.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                onClick={() => removeOption(index, true)}
+                                className="shrink-0"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => addOption(true)}
+                          className="w-full"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Option
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

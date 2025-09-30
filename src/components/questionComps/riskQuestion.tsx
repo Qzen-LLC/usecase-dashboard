@@ -47,32 +47,32 @@ export function RiskQuestion({
     const selected = probabilityOptions.find((o) => o.id === optionId);
     if (selected) {
       const cleanLabel = selected.text.replace(/^pro:/, "");
-      const probabilityData = { optionId: selected.id, label: cleanLabel };
+      const prefixedValue = `pro:${cleanLabel}`;
       
-      // Create or update the combined answer
-      const currentProbability = checkedAnswers.probability;
-      const currentImpact = checkedAnswers.impact;
+      console.log('Probability change:', {
+        selected,
+        cleanLabel,
+        prefixedValue,
+        optionId,
+        currentImpact: checkedAnswers.impact
+      });
       
-      const combinedValue = {
-        probability: probabilityData,
-        impact: currentImpact ? JSON.parse(currentImpact.value) : null
-      };
-      
-      const newAnswer: AnswerProps = {
-        id: `${selected.questionId}-risk`,
-        value: JSON.stringify(combinedValue),
-        questionId: selected.questionId,
-        optionId: selected.id,
-      };
+      // Ensure impact has prefix if it exists
+      const impactAnswer = checkedAnswers.impact ? {
+        ...checkedAnswers.impact,
+        value: checkedAnswers.impact.value.startsWith('imp:') 
+          ? checkedAnswers.impact.value 
+          : `imp:${checkedAnswers.impact.value}`
+      } : null;
       
       onChange({
         probability: {
           id: `${selected.questionId}-probability`,
-          value: JSON.stringify(probabilityData),
+          value: prefixedValue, // Add prefix in frontend
           questionId: selected.questionId,
           optionId: selected.id,
         },
-        impact: currentImpact
+        impact: impactAnswer
       });
     }
   };
@@ -81,29 +81,29 @@ export function RiskQuestion({
     const selected = impactOptions.find((o) => o.id === optionId);
     if (selected) {
       const cleanLabel = selected.text.replace(/^imp:/, "");
-      const impactData = { optionId: selected.id, label: cleanLabel };
+      const prefixedValue = `imp:${cleanLabel}`;
       
-      // Create or update the combined answer
-      const currentProbability = checkedAnswers.probability;
-      const currentImpact = checkedAnswers.impact;
+      console.log('Impact change:', {
+        selected,
+        cleanLabel,
+        prefixedValue,
+        optionId,
+        currentProbability: checkedAnswers.probability
+      });
       
-      const combinedValue = {
-        probability: currentProbability ? JSON.parse(currentProbability.value) : null,
-        impact: impactData
-      };
-      
-      const newAnswer: AnswerProps = {
-        id: `${selected.questionId}-risk`,
-        value: JSON.stringify(combinedValue),
-        questionId: selected.questionId,
-        optionId: selected.id,
-      };
+      // Ensure probability has prefix if it exists
+      const probabilityAnswer = checkedAnswers.probability ? {
+        ...checkedAnswers.probability,
+        value: checkedAnswers.probability.value.startsWith('pro:') 
+          ? checkedAnswers.probability.value 
+          : `pro:${checkedAnswers.probability.value}`
+      } : null;
       
       onChange({
-        probability: currentProbability,
+        probability: probabilityAnswer,
         impact: {
           id: `${selected.questionId}-impact`,
-          value: JSON.stringify(impactData),
+          value: prefixedValue, // Add prefix in frontend
           questionId: selected.questionId,
           optionId: selected.id,
         }
@@ -111,13 +111,9 @@ export function RiskQuestion({
     }
   };
 
-  // Extract stored values for select (use optionId inside JSONB)
-  const probabilityValue = checkedAnswers.probability
-    ? JSON.parse(checkedAnswers.probability.value).optionId
-    : "";
-  const impactValue = checkedAnswers.impact
-    ? JSON.parse(checkedAnswers.impact.value).optionId
-    : "";
+  // Extract stored values for select
+  const probabilityValue = checkedAnswers.probability?.optionId || "";
+  const impactValue = checkedAnswers.impact?.optionId || "";
 
   return (
     <div>

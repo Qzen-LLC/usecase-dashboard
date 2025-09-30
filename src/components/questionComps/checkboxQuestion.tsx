@@ -29,7 +29,7 @@ export function CheckboxGroup({
   checkedOptions = [],
   onChange,
 }: CheckboxGroupProps) {
-  console.log('CheckboxGroup rendered with checkedOptions:', checkedOptions); // Debug log
+  // console.log('CheckboxGroup rendered with checkedOptions:', checkedOptions); // Debug log
   
   const toggleOption = (option: OptionProps, isChecked: boolean) => {
     if (isChecked) {
@@ -52,7 +52,7 @@ export function CheckboxGroup({
         {options.map((option) => {
           // Match by optionId instead of value
           const isChecked = checkedOptions.some((a) => a.optionId === option.id);
-          console.log(`Option ${option.text} is checked:`, isChecked, 'checkedOptions:', checkedOptions); // Debug log
+          // console.log(`Option ${option.text} is checked:`, isChecked, 'checkedOptions:', checkedOptions); // Debug log
           
           return (
             <Label

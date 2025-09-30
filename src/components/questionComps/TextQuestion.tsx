@@ -16,7 +16,7 @@ export function TextQuestion({
   placeholder = "Enter your answer...",
   onChange,
 }: TextQuestionProps) {
-  console.log('TextQuestion rendered with value:', value); // Debug log
+  // console.log('TextQuestion rendered with value:', value); // Debug log
   
   const handleValueChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     onChange(event.target.value);
