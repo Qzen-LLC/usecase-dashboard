@@ -6,6 +6,7 @@
 
 import { prismaClient } from '@/utils/db';
 import { GuardrailsConfig, ComprehensiveAssessment } from '@/lib/agents/types';
+import { cleanAssessmentData } from '@/lib/utils/assessment-cleaner';
 
 export interface EvaluationContext {
   useCase: {
@@ -216,7 +217,7 @@ export class EvaluationContextAggregator {
     const assessData = await prismaClient.assess.findUnique({
       where: { useCaseId }
     });
-    
+
     // If no assess data, return empty assessments
     if (!assessData || !assessData.stepsData) {
       return {
@@ -228,22 +229,24 @@ export class EvaluationContextAggregator {
         compliance: null
       };
     }
-    
+
     // Parse the JSON stepsData to get individual assessments
     const stepsData = assessData.stepsData as any;
-    
+
+    console.log('🧹 Cleaning assessment data loaded from database...');
+
     // The stepsData contains assessment data organized by steps
-    // Map the steps to our assessment categories
+    // Map the steps to our assessment categories and clean each one
     const assessmentMap: any = {
-      technical: stepsData?.step2 || null,  // Technical feasibility
-      business: stepsData?.step3 || null,   // Business feasibility  
-      ethical: stepsData?.step4 || null,    // Ethical impact
-      risk: stepsData?.step5 || null,       // Risk assessment
-      data: stepsData?.step1 || null,       // Data readiness
-      compliance: stepsData?.compliance || null,
-      // Store the full data for reference
-      raw: stepsData
+      technical: stepsData?.step2 ? cleanAssessmentData(stepsData.step2, { logChanges: false }) : null,
+      business: stepsData?.step3 ? cleanAssessmentData(stepsData.step3, { logChanges: false }) : null,
+      ethical: stepsData?.step4 ? cleanAssessmentData(stepsData.step4, { logChanges: false }) : null,
+      risk: stepsData?.step5 ? cleanAssessmentData(stepsData.step5, { logChanges: false }) : null,
+      data: stepsData?.step1 ? cleanAssessmentData(stepsData.step1, { logChanges: false }) : null,
+      compliance: stepsData?.compliance ? cleanAssessmentData(stepsData.compliance, { logChanges: false }) : null
     };
+
+    console.log('✅ Assessment data cleaned - only user-filled fields loaded');
 
     return assessmentMap;
   }

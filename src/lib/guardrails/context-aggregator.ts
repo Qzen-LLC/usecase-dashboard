@@ -1,4 +1,5 @@
 import { prismaClient } from '@/utils/db';
+import { cleanAssessmentData } from '@/lib/utils/assessment-cleaner';
 
 /**
  * Comprehensive Context Aggregator for Guardrail Generation
@@ -517,14 +518,17 @@ export class ContextAggregator {
       budget: frontendData?.budgetPlanning
     };
 
-    // If database has data, merge it
+    // If database has data, merge it (and clean it to remove empty fields)
     if (dbData?.stepsData) {
       const dbSteps = dbData.stepsData as any;
+      console.log('🧹 Cleaning assessment data from database before merging...');
       Object.keys(merged).forEach(key => {
         if (!merged[key] && dbSteps[key]) {
-          merged[key] = dbSteps[key];
+          // Clean database data to remove empty fields
+          merged[key] = cleanAssessmentData(dbSteps[key], { logChanges: false });
         }
       });
+      console.log('✅ Database assessment data cleaned');
     }
 
     return merged;

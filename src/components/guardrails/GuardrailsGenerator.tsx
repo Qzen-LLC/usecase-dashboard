@@ -9,12 +9,13 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import EditableGuardrailCard from './EditableGuardrailCard';
 import AddGuardrailModal from './AddGuardrailModal';
-import { 
-  Shield, 
-  Brain, 
-  Sparkles, 
-  AlertTriangle, 
-  CheckCircle, 
+import { cleanWithDefaults } from '@/lib/utils/assessment-cleaner';
+import {
+  Shield,
+  Brain,
+  Sparkles,
+  AlertTriangle,
+  CheckCircle,
   Clock,
   Download,
   RefreshCw,
@@ -125,13 +126,18 @@ export default function GuardrailsGenerator({ useCaseId, assessmentData, useCase
         setProgress(prev => Math.min(prev + 10, 90));
       }, 500);
 
-      // Call API to generate guardrails with COMPLETE context
+      // Clean assessment data before sending - only pass user-filled fields
+      console.log('🧹 Cleaning assessment data before sending to API...');
+      const cleanedAssessmentData = cleanWithDefaults(assessmentData);
+      console.log('✅ Assessment data cleaned - only user-filled fields will be sent');
+
+      // Call API to generate guardrails with CLEANED context
       const response = await fetch('/api/guardrails/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           useCaseId,
-          assessmentData,
+          assessmentData: cleanedAssessmentData,  // Send cleaned data
           useCase  // Pass complete use case object
         })
       });
