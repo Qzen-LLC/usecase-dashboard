@@ -48,6 +48,7 @@ model UseCase {
   finopsData               FinOps?
   goldenDatasets           GoldenDataset[]
   guardrails               Guardrail[]
+  iso27001Assessments      Iso27001Assessment?
   iso42001Assessments      Iso42001Assessment?
   Lock                     Lock[]
   promptTemplates          PromptTemplate[]
@@ -412,6 +413,103 @@ model Iso42001AnnexInstance {
   assessment     Iso42001Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
   @@unique([assessmentId, itemId], map: "Iso42001AnnexInstance_assessmentId_annexItemId_key")
+  @@index([assessmentId])
+}
+
+model Iso27001Clause {
+  id          String              @id @default(uuid())
+  clauseId    String              @unique
+  title       String
+  description String
+  orderIndex  Int
+  subclauses  Iso27001Subclause[]
+
+  @@index([orderIndex])
+}
+
+model Iso27001Subclause {
+  id               String                      @id @default(uuid())
+  subclauseId      String                      @unique
+  title            String
+  summary          String
+  questions        String[]
+  evidenceExamples String[]
+  orderIndex       Int
+  clauseId         String
+  clause           Iso27001Clause              @relation(fields: [clauseId], references: [clauseId])
+  instances        Iso27001SubclauseInstance[]
+
+  @@index([clauseId, orderIndex])
+}
+
+model Iso27001SubclauseInstance {
+  id             String             @id @default(uuid())
+  implementation String?
+  evidenceFiles  String[]
+  status         String             @default("pending")
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @default(now()) @updatedAt
+  subclauseId    String
+  assessmentId   String
+  assessment     Iso27001Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  subclause      Iso27001Subclause  @relation(fields: [subclauseId], references: [subclauseId])
+
+  @@unique([subclauseId, assessmentId])
+  @@index([assessmentId])
+}
+
+model Iso27001Assessment {
+  id         String                      @id @default(uuid())
+  useCaseId  String                      @unique
+  status     String                      @default("in_progress")
+  progress   Float                       @default(0)
+  createdAt  DateTime                    @default(now())
+  updatedAt  DateTime                    @default(now()) @updatedAt
+  annexes    Iso27001AnnexInstance[]
+  useCase    UseCase                     @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  subclauses Iso27001SubclauseInstance[]
+
+  @@index([status])
+}
+
+model Iso27001AnnexCategory {
+  id          String              @id @default(uuid())
+  categoryId  String              @unique
+  title       String
+  description String
+  orderIndex  Int
+  items       Iso27001AnnexItem[]
+
+  @@index([orderIndex])
+}
+
+model Iso27001AnnexItem {
+  id          String                  @id @default(uuid())
+  itemId      String                  @unique
+  title       String
+  description String
+  guidance    String
+  orderIndex  Int
+  categoryId  String
+  instances   Iso27001AnnexInstance[]
+  category    Iso27001AnnexCategory   @relation(fields: [categoryId], references: [categoryId])
+
+  @@index([categoryId, orderIndex])
+}
+
+model Iso27001AnnexInstance {
+  id             String             @id @default(uuid())
+  assessmentId   String
+  status         String             @default("NOT_STARTED")
+  evidenceFiles  String[]
+  implementation String?
+  itemId         String
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  assessment     Iso27001Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  item           Iso27001AnnexItem  @relation(fields: [itemId], references: [itemId])
+
+  @@unique([assessmentId, itemId])
   @@index([assessmentId])
 }
 
@@ -802,7 +900,7 @@ model EvaluationResult {
 }
 
 model Guardrail {
-  id              String          @id @default(uuid())
+  id              String           @id @default(uuid())
   useCaseId       String
   name            String
   description     String?
@@ -810,22 +908,22 @@ model Guardrail {
   configuration   Json
   reasoning       Json?
   confidence      Float?
-  status          String          @default("draft") // draft, pending_approval, approved, rejected
-  version         Int             @default(1)
-  isEdited        Boolean         @default(false)
-  editedBy        String?
-  editedAt        DateTime?
-  approvedBy      String?
-  approvedAt      DateTime?
-  rejectedBy      String?
-  rejectedAt      DateTime?
-  rejectionReason String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  status          String           @default("draft")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   publishedAt     DateTime?
-  useCase         UseCase         @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
-  rules           GuardrailRule[]
+  approvedAt      DateTime?
+  approvedBy      String?
+  editedAt        DateTime?
+  editedBy        String?
+  isEdited        Boolean          @default(false)
+  rejectedAt      DateTime?
+  rejectedBy      String?
+  rejectionReason String?
+  version         Int              @default(1)
+  useCase         UseCase          @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
   auditLogs       GuardrailAudit[]
+  rules           GuardrailRule[]
 
   @@index([useCaseId])
   @@index([status])
@@ -833,7 +931,7 @@ model Guardrail {
 }
 
 model GuardrailRule {
-  id              String             @id @default(uuid())
+  id              String              @id @default(uuid())
   guardrailId     String
   type            String
   severity        String
@@ -843,21 +941,21 @@ model GuardrailRule {
   implementation  Json
   conditions      Json?
   exceptions      Json?
-  status          GuardrailRuleStatus @default(PENDING)
-  isCustom        Boolean            @default(false)
-  isEdited        Boolean            @default(false)
-  originalValue   Json?              // Store original AI-generated value
-  editedBy        String?
-  editedAt        DateTime?
-  approvedBy      String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
   approvedAt      DateTime?
-  rejectedBy      String?
+  approvedBy      String?
+  editedAt        DateTime?
+  editedBy        String?
+  isCustom        Boolean             @default(false)
+  isEdited        Boolean             @default(false)
+  originalValue   Json?
   rejectedAt      DateTime?
+  rejectedBy      String?
   rejectionReason String?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  guardrail       Guardrail          @relation(fields: [guardrailId], references: [id], onDelete: Cascade)
+  status          GuardrailRuleStatus @default(PENDING)
   comments        GuardrailComment[]
+  guardrail       Guardrail           @relation(fields: [guardrailId], references: [id], onDelete: Cascade)
 
   @@index([guardrailId])
   @@index([type])
@@ -883,15 +981,42 @@ model GuardrailAudit {
   id          String    @id @default(uuid())
   guardrailId String
   ruleId      String?
-  action      String    // create, edit, approve, reject, delete, add_rule, remove_rule
+  action      String
   userId      String
   userName    String
-  changes     Json?     // before/after values
+  changes     Json?
   timestamp   DateTime  @default(now())
   guardrail   Guardrail @relation(fields: [guardrailId], references: [id], onDelete: Cascade)
 
   @@index([guardrailId])
   @@index([timestamp])
+}
+
+model ObservabilitySession {
+  id             String    @id @default(dbgenerated("gen_random_uuid()"))
+  sessionId      String    @unique
+  useCaseId      String?
+  useCaseTitle   String?
+  sessionType    String
+  status         String    @default("running")
+  startTime      DateTime  @default(now())
+  endTime        DateTime?
+  duration       Int?
+  totalLLMCalls  Int       @default(0)
+  totalTokens    Int       @default(0)
+  totalCost      Float     @default(0)
+  agentsInvolved String[]
+  langsmithUrl   String?
+  langsmithRunId String?
+  metadata       Json?
+  errors         Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+
+  @@index([useCaseId])
+  @@index([sessionType])
+  @@index([status])
+  @@index([startTime])
 }
 
 enum GuardrailRuleStatus {
@@ -961,32 +1086,5 @@ enum LockScope {
   GOVERNANCE_EU_AI_ACT
   GOVERNANCE_ISO_42001
   GOVERNANCE_UAE_AI
-}
-
-// Observability Models
-model ObservabilitySession {
-  id              String    @id @default(uuid())
-  sessionId       String    @unique
-  useCaseId       String?
-  useCaseTitle    String?
-  sessionType     String    // 'guardrails' | 'evaluation'
-  status          String    @default("running") // 'running' | 'completed' | 'failed'
-  startTime       DateTime  @default(now())
-  endTime         DateTime?
-  duration        Int?      // milliseconds
-  totalLLMCalls   Int       @default(0)
-  totalTokens     Int       @default(0)
-  totalCost       Float     @default(0)
-  agentsInvolved  String[]
-  langsmithUrl    String?
-  langsmithRunId  String?
-  metadata        Json?
-  errors          Json?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  @@index([useCaseId])
-  @@index([sessionType])
-  @@index([status])
-  @@index([startTime])
+  GOVERNANCE_ISO_27001
 }
