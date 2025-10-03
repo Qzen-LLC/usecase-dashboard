@@ -1,34 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prismaClient, retryDatabaseOperation } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
 
 
-export async function GET(request: Request) {
+export const GET = withAuth(async (request, { auth }) => {
   try {
     // Check for cache-busting parameter
     const { searchParams } = new URL(request.url);
     const cacheBust = searchParams.get('t');
     
-    // TEMPORARY: Auth bypass for testing
-    const user = await currentUser();
-    let userRecord;
-    
-    if (!user) {
-      // Use bypass user for testing
-      console.log('[API] Using bypass user for testing');
-      userRecord = await prismaClient.user.findFirst({
-        where: { role: 'QZEN_ADMIN' }
-      });
-      if (!userRecord) {
-        return NextResponse.json({ error: 'No admin user found for bypass' }, { status: 500 });
-      }
-    } else {
-      userRecord = await prismaClient.user.findUnique({
-        where: { clerkId: user.id },
-      });
-      if (!userRecord) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
+    // auth context is provided by withAuth wrapper
+    const clerkId = auth.userId!;
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId },
+    });
+    if (!userRecord) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     
 
@@ -130,14 +117,15 @@ export async function GET(request: Request) {
       }));
     }
 
-    const governanceData = useCases
+    const governanceData = (useCases as any[])
       .map((useCase) => {
+        const uc = useCase as any;
         const regulatoryFrameworks: string[] = [];
         const industryStandards: string[] = [];
 
         // Extract regulatory frameworks and standards from risk assessment if available
-        if (useCase.assessData?.stepsData) {
-          const stepsData = useCase.assessData.stepsData as any;
+        if (uc.assessData?.stepsData) {
+          const stepsData = uc.assessData.stepsData as any;
           const riskAssessment = stepsData.riskAssessment;
 
           if (riskAssessment) {
@@ -161,39 +149,42 @@ export async function GET(request: Request) {
 
         // Only show use cases that have regulatory frameworks or industry standards selected
         const hasFrameworks = regulatoryFrameworks.length > 0 || industryStandards.length > 0;
-        const euAiActAssessments = Array.isArray(useCase.euAiActAssessments) ? useCase.euAiActAssessments : [];
-        const iso42001Assessments = Array.isArray(useCase.iso42001Assessments) ? useCase.iso42001Assessments : [];
-        const uaeAiAssessments = Array.isArray(useCase.uaeAiAssessments) ? useCase.uaeAiAssessments : [];
+        const euAiActAssessments = Array.isArray(uc.euAiActAssessments) ? (uc.euAiActAssessments as any[]) : [];
+        const iso42001Assessments = Array.isArray(uc.iso42001Assessments) ? (uc.iso42001Assessments as any[]) : [];
+        const uaeAiAssessments = Array.isArray(uc.uaeAiAssessments) ? (uc.uaeAiAssessments as any[]) : [];
         const hasAssessments = euAiActAssessments.length > 0 || iso42001Assessments.length > 0 || uaeAiAssessments.length > 0;
         
         // Do not filter out use cases; include even if no frameworks/assessments yet
 
         // Debug log for progress values
         if (euAiActAssessments.length > 0 || iso42001Assessments.length > 0 || uaeAiAssessments.length > 0) {
-          console.log(`🔍 Governance Data - Use Case ${useCase.aiucId}:`, {
-            euProgress: euAiActAssessments[0]?.progress || 0,
-            isoProgress: iso42001Assessments[0]?.progress || 0,
-            uaeProgress: uaeAiAssessments[0]?.progress || 0,
-            euStatus: euAiActAssessments[0]?.status || 'N/A',
-            isoStatus: iso42001Assessments[0]?.status || 'N/A',
-            uaeStatus: uaeAiAssessments[0]?.status || 'N/A'
+          const euFirst: any = euAiActAssessments[0] ?? {};
+          const isoFirst: any = iso42001Assessments[0] ?? {};
+          const uaeFirst: any = uaeAiAssessments[0] ?? {};
+          console.log(`🔍 Governance Data - Use Case ${uc.aiucId}:`, {
+            euProgress: euFirst.progress || 0,
+            isoProgress: isoFirst.progress || 0,
+            uaeProgress: uaeFirst.progress || 0,
+            euStatus: euFirst.status || 'N/A',
+            isoStatus: isoFirst.status || 'N/A',
+            uaeStatus: uaeFirst.status || 'N/A'
           });
         }
 
         return {
-          useCaseId: useCase.id,
-          useCaseNumber: useCase.aiucId,
-          useCaseName: useCase.title,
-          useCaseType: useCase.stage || 'N/A',
-          department: useCase.businessFunction,
+          useCaseId: uc.id,
+          useCaseNumber: uc.aiucId,
+          useCaseName: uc.title,
+          useCaseType: uc.stage || 'N/A',
+          department: uc.businessFunction,
           regulatoryFrameworks,
           industryStandards,
-          lastUpdated: useCase.assessData?.updatedAt?.toISOString() || useCase.updatedAt.toISOString(),
+          lastUpdated: uc.assessData?.updatedAt?.toISOString() || uc.updatedAt.toISOString(),
           euAiActAssessments,
           iso42001Assessments,
           uaeAiAssessments,
-          assessData: useCase.assessData,
-          risks: useCase.risks || [],
+          assessData: uc.assessData,
+          risks: (uc as any).risks || [],
         };
       })
       .filter((item) => item !== null);
@@ -208,4 +199,14 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-}
+}, { 
+  requireUser: true,
+  // Use DB-backed authorization to avoid relying on Clerk  
+  customAuthorize: async (ctx) => {
+    const record = await prismaClient.user.findUnique({
+      where: { clerkId: ctx.userId! },
+      select: { role: true },
+    });
+    return record?.role === 'QZEN_ADMIN';
+  }
+});

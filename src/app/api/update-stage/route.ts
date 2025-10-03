@@ -1,16 +1,13 @@
 import { prismaClient } from "@/utils/db";
 import { NextResponse } from "next/server";
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (req, { auth }) => {
     try {
-        const user = await currentUser();
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-        
+        // auth context is provided by withAuth wrapper
+        const clerkId = auth.userId!;
         const userRecord = await prismaClient.user.findUnique({
-            where: { clerkId: user.id },
+            where: { clerkId },
         });
         
         if (!userRecord) {
@@ -61,4 +58,4 @@ export async function POST(req: Request) {
         console.error("Unable to update stage", error);
         return NextResponse.json({ success: false, error: 'Unable to update stage' }, { status: 500 });
     }
-}
+}, { requireUser: true, requireOrganization: true });
