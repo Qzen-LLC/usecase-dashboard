@@ -53,6 +53,7 @@ interface QuestionTemplate {
   type: QuestionType;
   stage: Stage;
   optionTemplates: OptionTemplate[];
+  isInactive: boolean;
 }
 
 interface OptionTemplate {
@@ -240,6 +241,7 @@ export default function ConfigureQuestionTemplatesPage() {
       text: dataToSend.text,
       type: dataToSend.type,
       stage: dataToSend.stage,
+      isInactive: false,
       optionTemplates: dataToSend.optionTemplates.map(opt => ({
         id: `temp_opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         text: opt,
@@ -426,6 +428,54 @@ export default function ConfigureQuestionTemplatesPage() {
         // Rollback optimistic update
         setQuestionTemplates(prev => [...prev, originalQuestionTemplate].sort((a, b) => a.text.localeCompare(b.text)));
         setError(`Failed to delete question template: ${error}`);
+      }
+    );
+  };
+
+  const handleToggleInactive = async (questionTemplateId: string, currentStatus: boolean) => {
+    const operationId = `toggle_${questionTemplateId}`;
+    const originalQuestionTemplate = questionTemplates.find(q => q.id === questionTemplateId);
+
+    if (!originalQuestionTemplate) {
+      setError("Question template not found");
+      return;
+    }
+
+    // Optimistically update the question template status
+    setQuestionTemplates(prev => prev.map(q => 
+      q.id === questionTemplateId ? { ...q, isInactive: !currentStatus } : q
+    ));
+    setPendingOperations(prev => new Map(prev).set(operationId, 'edit'));
+    setOperationStatus(prev => new Map(prev).set(operationId, 'pending'));
+
+    setError(null);
+    setSuccess(`Question template ${!currentStatus ? 'deactivated' : 'activated'}! Processing in background...`);
+
+    // Perform background operation
+    performBackgroundOperation(
+      operationId,
+      async () => {
+        const response = await fetch(`/api/question-templates/${questionTemplateId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isInactive: !currentStatus }),
+        });
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to update question template status");
+        }
+
+        // Update with real data
+        setQuestionTemplates(prev => prev.map(q => q.id === questionTemplateId ? data.questionTemplate : q));
+      },
+      () => {
+        setSuccess(`Question template ${!currentStatus ? 'deactivated' : 'activated'} successfully!`);
+      },
+      (error) => {
+        // Rollback optimistic update
+        setQuestionTemplates(prev => prev.map(q => q.id === questionTemplateId ? originalQuestionTemplate : q));
+        setError(`Failed to update question template status: ${error}`);
       }
     );
   };
@@ -1021,6 +1071,12 @@ export default function ConfigureQuestionTemplatesPage() {
                                 Failed
                               </Badge>
                             )}
+                            {questionTemplate.isInactive && (
+                              <Badge variant="outline" className="px-3 py-1 rounded-full border-orange-300 text-orange-700 bg-orange-100">
+                                <X className="w-3 h-3 mr-1" />
+                                Inactive
+                              </Badge>
+                            )}
                             <Badge variant="secondary" className="px-3 py-1 rounded-full">
                               {getQuestionTypeLabel(questionTemplate.type)}
                             </Badge>
@@ -1087,6 +1143,29 @@ export default function ConfigureQuestionTemplatesPage() {
                       </div>
                       
                       <div className="flex items-center gap-2 flex-shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleToggleInactive(questionTemplate.id, questionTemplate.isInactive)}
+                          disabled={isPending}
+                          className={`border-border hover:bg-muted disabled:opacity-50 ${
+                            questionTemplate.isInactive 
+                              ? 'text-orange-600 border-orange-300 hover:bg-orange-50' 
+                              : 'text-green-600 border-green-300 hover:bg-green-50'
+                          }`}
+                        >
+                          {questionTemplate.isInactive ? (
+                            <>
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Activate
+                            </>
+                          ) : (
+                            <>
+                              <X className="w-4 h-4 mr-2" />
+                              Deactivate
+                            </>
+                          )}
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"

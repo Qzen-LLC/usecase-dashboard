@@ -30,6 +30,10 @@ export async function GET(request: NextRequest) {
 
     // Fetch questions with options and answers
     const questions = await prisma.question.findMany({
+      where: {
+        organizationId: useCase.organizationId,
+        isInactive: false  // Only fetch active questions
+      },
       include: {
         options: true,
         answers: {

@@ -54,6 +54,7 @@ interface Question {
   stage: Stage;
   options: Option[];
   organizationId: string;
+  isInactive: boolean;
 }
 
 interface Option {
@@ -259,6 +260,7 @@ export default function ConfigureQuestionsPage() {
       type: dataToSend.type,
       stage: dataToSend.stage,
       organizationId: organizationId,
+      isInactive: false,
       options: dataToSend.options.map(opt => ({
         id: `temp_opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         text: opt,
@@ -455,6 +457,59 @@ export default function ConfigureQuestionsPage() {
         // Rollback optimistic update
         setQuestions(prev => [...prev, originalQuestion].sort((a, b) => a.text.localeCompare(b.text)));
         setError(`Failed to delete question: ${error}`);
+      }
+    );
+  };
+
+  const handleToggleInactive = async (questionId: string, currentStatus: boolean) => {
+    if (!organizationId) {
+      setError("Organization ID not found");
+      return;
+    }
+
+    const operationId = `toggle_${questionId}`;
+    const originalQuestion = questions.find(q => q.id === questionId);
+
+    if (!originalQuestion) {
+      setError("Question not found");
+      return;
+    }
+
+    // Optimistically update the question status
+    setQuestions(prev => prev.map(q => 
+      q.id === questionId ? { ...q, isInactive: !currentStatus } : q
+    ));
+    setPendingOperations(prev => new Map(prev).set(operationId, 'edit'));
+    setOperationStatus(prev => new Map(prev).set(operationId, 'pending'));
+
+    setError(null);
+    setSuccess(`Question ${!currentStatus ? 'deactivated' : 'activated'}! Processing in background...`);
+
+    // Perform background operation
+    performBackgroundOperation(
+      operationId,
+      async () => {
+        const response = await fetch(`/api/organizations/${organizationId}/questions/${questionId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isInactive: !currentStatus }),
+        });
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to update question status");
+        }
+
+        // Update with real data
+        setQuestions(prev => prev.map(q => q.id === questionId ? data.question : q));
+      },
+      () => {
+        setSuccess(`Question ${!currentStatus ? 'deactivated' : 'activated'} successfully!`);
+      },
+      (error) => {
+        // Rollback optimistic update
+        setQuestions(prev => prev.map(q => q.id === questionId ? originalQuestion : q));
+        setError(`Failed to update question status: ${error}`);
       }
     );
   };
@@ -1122,6 +1177,12 @@ export default function ConfigureQuestionsPage() {
                                 Failed
                               </Badge>
                             )}
+                            {question.isInactive && (
+                              <Badge variant="outline" className="px-3 py-1 rounded-full border-orange-300 text-orange-700 bg-orange-100">
+                                <X className="w-3 h-3 mr-1" />
+                                Inactive
+                              </Badge>
+                            )}
                             <Badge variant="secondary" className="px-3 py-1 rounded-full">
                               {getQuestionTypeLabel(question.type)}
                             </Badge>
@@ -1188,6 +1249,29 @@ export default function ConfigureQuestionsPage() {
                       </div>
                       
                       <div className="flex items-center gap-2 flex-shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleToggleInactive(question.id, question.isInactive)}
+                          disabled={isPending}
+                          className={`border-border hover:bg-muted disabled:opacity-50 ${
+                            question.isInactive 
+                              ? 'text-orange-600 border-orange-300 hover:bg-orange-50' 
+                              : 'text-green-600 border-green-300 hover:bg-green-50'
+                          }`}
+                        >
+                          {question.isInactive ? (
+                            <>
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Activate
+                            </>
+                          ) : (
+                            <>
+                              <X className="w-4 h-4 mr-2" />
+                              Deactivate
+                            </>
+                          )}
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"

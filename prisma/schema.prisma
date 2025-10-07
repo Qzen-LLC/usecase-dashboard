@@ -901,6 +901,7 @@ model QuestionTemplate {
   text            String
   type            QuestionType
   stage           Stage
+  isInactive      Boolean          @default(false)
   optionTemplates OptionTemplate[]
   questions       Question[]
 }
@@ -919,6 +920,7 @@ model Question {
   templateId     String?
   organizationId String            @default("1d431de5-265f-455b-88ca-76b2d2934e8f")
   stage          Stage
+  isInactive     Boolean           @default(false)
   answers        Answer[]
   options        Option[]
   Organization   Organization      @relation(fields: [organizationId], references: [id])
@@ -937,7 +939,7 @@ model Answer {
   questionId String
   value      Json
   useCaseId  String
-  question   Question @relation(fields: [questionId], references: [id])
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
   useCase    UseCase  @relation(fields: [useCaseId], references: [id])
 }
 

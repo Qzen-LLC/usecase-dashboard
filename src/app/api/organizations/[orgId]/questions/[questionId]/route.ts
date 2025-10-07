@@ -42,25 +42,28 @@ export async function PUT(
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
-    const { text, type, stage, options } = await request.json();
+    const { text, type, stage, options, isInactive } = await request.json();
 
-    if (!text || !type || !stage) {
+    // Check if this is a partial update (only isInactive field)
+    const isPartialUpdate = isInactive !== undefined && text === undefined && type === undefined && stage === undefined;
+
+    if (!isPartialUpdate && (!text || !type || !stage)) {
       return NextResponse.json(
         { error: 'Question text, type, and stage are required' },
         { status: 400 }
       );
     }
 
-    // Validate question type
-    if (!Object.values(QuestionType).includes(type)) {
+    // Validate question type (only if provided)
+    if (type !== undefined && !Object.values(QuestionType).includes(type)) {
       return NextResponse.json(
         { error: 'Invalid question type' },
         { status: 400 }
       );
     }
 
-    // Validate stage
-    if (!Object.values(Stage).includes(stage)) {
+    // Validate stage (only if provided)
+    if (stage !== undefined && !Object.values(Stage).includes(stage)) {
       return NextResponse.json(
         { error: 'Invalid stage' },
         { status: 400 }
@@ -82,8 +85,8 @@ export async function PUT(
       );
     }
 
-    // For CHECKBOX and RADIO questions, options are required
-    if ((type === QuestionType.CHECKBOX || type === QuestionType.RADIO || type === QuestionType.RISK) && (!options || options.length === 0)) {
+    // For CHECKBOX and RADIO questions, options are required (only if type is being updated)
+    if (type !== undefined && (type === QuestionType.CHECKBOX || type === QuestionType.RADIO || type === QuestionType.RISK) && (!options || options.length === 0)) {
       return NextResponse.json(
         { error: 'Options are required for checkbox, radio and risk questions' },
         { status: 400 }
@@ -92,31 +95,37 @@ export async function PUT(
 
     // Update the question and its options
     const question = await prismaClient.$transaction(async (tx) => {
-      // Delete existing options
-      await tx.option.deleteMany({
-        where: { questionId }
-      });
+      // Build update data object with only provided fields
+      const updateData: any = {};
+      if (text !== undefined) updateData.text = text;
+      if (type !== undefined) updateData.type = type;
+      if (stage !== undefined) updateData.stage = stage;
+      if (isInactive !== undefined) updateData.isInactive = isInactive;
 
       // Update the question
       const updatedQuestion = await tx.question.update({
         where: { id: questionId },
-        data: {
-          text,
-          type,
-          stage,
-        }
+        data: updateData
       });
 
-      // Create new options if needed
-      if (type === QuestionType.CHECKBOX || type === QuestionType.RADIO || type === QuestionType.RISK) {
-        await tx.option.createMany({
-          data: options
-            .filter((opt: string) => opt.trim())
-            .map((opt: string) => ({
-              text: opt.trim(),
-              questionId
-            }))
+      // Handle options only if type is being updated
+      if (type !== undefined) {
+        // Delete existing options
+        await tx.option.deleteMany({
+          where: { questionId }
         });
+
+        // Create new options if needed
+        if (type === QuestionType.CHECKBOX || type === QuestionType.RADIO || type === QuestionType.RISK) {
+          await tx.option.createMany({
+            data: options
+              .filter((opt: string) => opt.trim())
+              .map((opt: string) => ({
+                text: opt.trim(),
+                questionId
+              }))
+          });
+        }
       }
 
       // Return the updated question with options
