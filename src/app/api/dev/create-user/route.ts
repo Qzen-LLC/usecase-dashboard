@@ -1,35 +1,32 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { PrismaClient } from '@/generated/prisma';
 
 const prisma = new PrismaClient();
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: Request, { auth }) => {
   // Only allow in development
   if (process.env.NODE_ENV === 'production') {
     return NextResponse.json({ error: 'Not available in production' }, { status: 403 });
   }
 
   try {
-    const user = await currentUser();
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const { role = 'USER' } = await req.json();
 
-    console.log('Creating user with Clerk ID:', user.id, 'Role:', role);
+    console.log('Creating user with Clerk ID:', auth.userId!, 'Role:', role);
 
     // Check if user already exists
     let userRecord = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
 
     if (userRecord) {
       // Update existing user
       userRecord = await prisma.user.update({
-        where: { clerkId: user.id },
+        where: { clerkId: auth.userId! },
         data: { role: role as any },
       });
       console.log('User updated:', userRecord.email);
@@ -37,10 +34,10 @@ export async function POST(req: Request) {
       // Create new user
       userRecord = await prisma.user.create({
         data: {
-          clerkId: user.id,
-          email: user.emailAddresses[0]?.emailAddress || '',
-          firstName: user.firstName || null,
-          lastName: user.lastName || null,
+          clerkId: auth.userId!,
+          email: auth.user?.email || '',
+          firstName: auth.user?.firstName || null,
+          lastName: auth.user?.lastName || null,
           role: role as any,
         },
       });
@@ -64,4 +61,4 @@ export async function POST(req: Request) {
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-} 
+}, { requireUser: true });

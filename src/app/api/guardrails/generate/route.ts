@@ -1,46 +1,42 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { GuardrailsEngine } from '@/lib/agents/guardrails-engine';
 import { ComprehensiveAssessment } from '@/lib/agents/types';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
+
 import { ContextAggregator } from '@/lib/guardrails/context-aggregator';
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: Request, { auth }) => {
   try {
     // Check authentication
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const body = await request.json();
     const { useCaseId, assessmentData, useCase: frontendUseCase } = body;
 
     if (!useCaseId) {
-      return NextResponse.json(
-        { error: 'Missing use case ID' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Missing use case ID' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Check if LLM is configured FIRST - no point continuing without it
     if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json({
+      return new Response(JSON.stringify({
         success: false,
         error: 'LLM_CONFIGURATION_REQUIRED',
         message: 'Guardrail generation requires LLM configuration. Please set up your OpenAI API key.',
         instructions: 'Add OPENAI_API_KEY to your environment variables (.env file)',
         requiresConfiguration: true
-      }, { status: 503 });
+      }), { status: 503, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Build complete context using the aggregator
     console.log('📊 Building comprehensive context for guardrail generation...');
     const aggregator = new ContextAggregator();
+    const currentUser = await prismaClient.user.findUnique({ where: { clerkId: auth.userId! } });
+    const currentEmail = currentUser?.email || 'user';
     const completeContext = await aggregator.buildCompleteContext(
       useCaseId,
       assessmentData,
-      user.emailAddresses?.[0]?.emailAddress || 'user'
+      currentEmail
     );
 
     // Transform to ComprehensiveAssessment format for the engine
@@ -49,7 +45,7 @@ export async function POST(request: NextRequest) {
       useCaseId,
       useCaseTitle: completeContext.useCase.title,
       department: completeContext.useCase.businessFunction || 'Unknown',
-      owner: user.emailAddresses?.[0]?.emailAddress || 'Unknown',
+      owner: currentEmail || 'Unknown',
       
       // Core use case data - NOW INCLUDED!
       problemStatement: completeContext.useCase.problemStatement,
@@ -88,9 +84,7 @@ export async function POST(request: NextRequest) {
       
       // Organization policies from actual data
       organizationPolicies: completeContext.organization?.policies || {
-        aiEthics: ['Transparency', 'Accountability', 'Fairness', 'Privacy'],
-        dataGovernance: ['Data minimization', 'Purpose limitation', 'Accuracy'],
-        riskAppetite: 'moderate',
+        responsibleAI: ['Transparency', 'Accountability', 'Fairness', 'Privacy'],
         prohibitedUses: [
           'No automated decisions without human oversight',
           'No biometric identification without consent',
@@ -101,8 +95,9 @@ export async function POST(request: NextRequest) {
           'Incident response procedures',
           'Performance monitoring',
           'Human oversight mechanisms'
-        ]
-      },
+        ],
+        complianceFrameworks: ['GDPR', 'ISO 42001']
+      } as any,
       
       // Add governance context
       approvalStatus: completeContext.governance.finalQualification,
@@ -111,7 +106,7 @@ export async function POST(request: NextRequest) {
         completeContext.governance.approvals?.risk?.comment,
         completeContext.governance.approvals?.legal?.comment,
         completeContext.governance.approvals?.business?.comment
-      ].filter(Boolean),
+      ].filter((x): x is string => !!x),
       
       // Add risk context
       identifiedRisks: completeContext.risks.identified,
@@ -140,18 +135,19 @@ export async function POST(request: NextRequest) {
       engine = new GuardrailsEngine();
     } catch (engineError) {
       console.error('Failed to initialize guardrails engine:', engineError);
-      return NextResponse.json({
+      return new Response(JSON.stringify({
         success: false,
         error: 'LLM_INITIALIZATION_FAILED',
         message: engineError instanceof Error ? engineError.message : 'Failed to initialize LLM service',
         requiresConfiguration: true
-      }, { status: 503 });
+      }), { status: 503, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Generate guardrails using the agentic system with COMPLETE context
     console.log(`🚀 Generating comprehensive guardrails for use case: ${useCaseId}`);
+    const enabledComplianceCount = Object.values(completeContext.compliance as any).filter(Boolean).length;
     console.log(`📊 Context includes: ${completeContext.risks.identified.length} risks, ` +
-                `${Object.keys(completeContext.compliance).filter(k => completeContext.compliance[k]).length} compliance frameworks, ` +
+                `${enabledComplianceCount} compliance frameworks, ` +
                 `${completeContext.useCase.primaryStakeholders.length + completeContext.useCase.secondaryStakeholders.length} stakeholders`);
     
     const guardrails = await engine.generateGuardrails(
@@ -169,21 +165,21 @@ export async function POST(request: NextRequest) {
       // Create or update the guardrail record
       const guardrailRecord = await prismaClient.guardrail.upsert({
         where: {
-          id: guardrails.id || `${useCaseId}-${Date.now()}`
+          id: ((guardrails as any).id as string) || `${useCaseId}-${Date.now()}`
         },
         create: {
           useCaseId,
           name: 'AI Guardrails Configuration',
           description: `Generated guardrails for ${completeContext.useCase.title}`,
           approach: 'multi-agent',
-          configuration: guardrails,
-          reasoning: guardrails.reasoning || {},
+          configuration: JSON.parse(JSON.stringify(guardrails)) as any,
+          reasoning: JSON.parse(JSON.stringify((guardrails as any).reasoning || {})) as any,
           confidence: guardrails.confidence?.overall || 0.8,
           status: 'draft'
         },
         update: {
-          configuration: guardrails,
-          reasoning: guardrails.reasoning || {},
+          configuration: JSON.parse(JSON.stringify(guardrails)) as any,
+          reasoning: JSON.parse(JSON.stringify((guardrails as any).reasoning || {})) as any,
           confidence: guardrails.confidence?.overall || 0.8,
           status: 'draft',
           updatedAt: new Date()
@@ -228,27 +224,24 @@ export async function POST(request: NextRequest) {
       }
 
       // Return guardrails with database ID
-      return NextResponse.json({
+      return new Response(JSON.stringify({
         ...guardrails,
         id: guardrailRecord.id,
         saved: true,
         message: 'Guardrails generated and saved successfully'
-      });
+      }), { headers: { 'Content-Type': 'application/json' } });
 
     } catch (saveError) {
       console.error('Error saving guardrails to database:', saveError);
       // Still return the generated guardrails even if save fails
-      return NextResponse.json({
+      return new Response(JSON.stringify({
         ...guardrails,
         saved: false,
         saveError: 'Failed to save to database but guardrails were generated successfully'
-      });
+      }), { headers: { 'Content-Type': 'application/json' } });
     }
   } catch (error) {
     console.error('Error generating guardrails:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate guardrails', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Failed to generate guardrails', details: error instanceof Error ? error.message : 'Unknown error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: true });

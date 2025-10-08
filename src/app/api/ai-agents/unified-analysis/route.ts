@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { AIAgentManager } from '@/lib/ai-agents/ai-agent-manager';
 
-export async function GET(request: Request) {
+export const GET = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const { searchParams } = new URL(request.url);
     const useCaseId = searchParams.get('useCaseId');
@@ -42,14 +40,11 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });
 
-export async function POST(request: Request) {
+export const POST = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const body = await request.json();
     const { action, organizationId } = body;
@@ -69,4 +64,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

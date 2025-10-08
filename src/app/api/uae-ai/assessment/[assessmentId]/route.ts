@@ -1,19 +1,17 @@
 import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
+
 import { calculateMaturityScore } from '@/lib/framework-data/uae-ai-scoring';
 
-export async function PATCH(
+export const PATCH = withAuth(async (
   request: Request,
-  { params }: { params: { assessmentId: string } }
-) {
+  { params, auth }: { params: { assessmentId: string }, auth: any }
+) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
-    const { assessmentId } = await params;
+    const { assessmentId } = params;
     const body = await request.json();
     const { riskImpactLevel } = body;
 
@@ -29,7 +27,7 @@ export async function PATCH(
 
     // Check user permission
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id }
+      where: { clerkId: auth.userId! }
     });
 
     if (!userRecord) {
@@ -74,21 +72,11 @@ export async function PATCH(
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });
 
 async function recalculateAssessmentScores(assessmentId: string, riskImpactLevel: string) {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
-    });
-    if (!userRecord) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    // No auth required here; called from authenticated handler
 
     // Get all control instances for this assessment
     const controlInstances = await prismaClient.uaeAiControlInstance.findMany({
@@ -122,7 +110,7 @@ async function recalculateAssessmentScores(assessmentId: string, riskImpactLevel
         riskImpactLevel
       }
     });
-    console.log('[CRUD_LOG] UAE AI Assessment scores updated:', { id: assessmentId, totalScore: maturityData.totalScore, weightedScore: maturityData.weightedScore, maturityLevel: maturityData.maturityLevel, updatedAt: new Date(), authoredBy: userRecord.id });
+    console.log('[CRUD_LOG] UAE AI Assessment scores updated:', { id: assessmentId, totalScore: maturityData.totalScore, weightedScore: maturityData.weightedScore, maturityLevel: maturityData.maturityLevel, updatedAt: new Date() });
   } catch (error) {
     console.error('Error recalculating assessment scores:', error);
   }

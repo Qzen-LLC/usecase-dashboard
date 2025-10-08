@@ -1,20 +1,18 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { prismaClient } from '@/utils/db';
 import { createClerkClient } from '@clerk/backend';
 
 const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
 // Get all organizations (QZen Admin only)
-export async function GET() {
+export const GET = withAuth(async (request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const currentUserRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
     if (!currentUserRecord || currentUserRecord.role !== 'QZEN_ADMIN') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
@@ -49,18 +47,15 @@ export async function GET() {
     console.error('Error fetching organizations:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+}, { requireUser: true });
 
 // Create new organization (QZen Admin only)
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const currentUserRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
     if (!currentUserRecord || currentUserRecord.role !== 'QZEN_ADMIN') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
@@ -173,18 +168,15 @@ export async function POST(req: Request) {
     console.error('Error creating organization:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+}, { requireUser: true });
 
 // Delete organization (QZen Admin only)
-export async function DELETE(req: Request) {
+export const DELETE = withAuth(async (req: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const currentUserRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
     if (!currentUserRecord || currentUserRecord.role !== 'QZEN_ADMIN') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
@@ -255,4 +247,4 @@ export async function DELETE(req: Request) {
     console.error('Error deleting organization:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}, { requireUser: true });

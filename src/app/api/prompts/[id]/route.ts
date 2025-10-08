@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { prismaClient } from '@/utils/db';
 import crypto from 'crypto';
+import type { Prisma } from '@/generated/prisma';
 
 // Helper function to detect variables in prompt content
 function detectVariables(content: any): string[] {
@@ -46,18 +48,15 @@ function generateVersionSha(content: any, settings: any): string {
 }
 
 // GET /api/prompts/[id] - Get a specific prompt
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export const GET = withAuth(async (
+  request: Request,
+  { params, auth }: { params: { id: string }, auth: any }
+) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
 
     if (!userRecord) {
@@ -118,21 +117,18 @@ export async function GET(
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });
 
 // PUT /api/prompts/[id] - Update a prompt template
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export const PUT = withAuth(async (
+  request: Request,
+  { params, auth }: { params: { id: string }, auth: any }
+) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
 
     if (!userRecord) {
@@ -155,7 +151,7 @@ export async function PUT(
     const existingPrompt = await prismaClient.promptTemplate.findUnique({
       where: { id: params.id },
       include: {
-        versions: {
+        PromptVersion: {
           orderBy: { versionNumber: 'desc' },
           take: 1,
         }
@@ -186,9 +182,9 @@ export async function PUT(
         name,
         description,
         tags,
-        content,
+        content: content as unknown as Prisma.InputJsonValue,
         variables,
-        settings,
+        settings: settings as unknown as Prisma.InputJsonValue,
         type,
         service,
       },
@@ -196,7 +192,7 @@ export async function PUT(
     console.log('[CRUD_LOG] Prompt Template updated:', { id: params.id, name: updatedPrompt.name, updatedAt: updatedPrompt.updatedAt, authoredBy: userRecord.id });
 
     // Create new version if content or settings changed
-    const lastVersion = existingPrompt.versions[0];
+    const lastVersion = (existingPrompt as any).PromptVersion?.[0];
     const contentChanged = JSON.stringify(content) !== JSON.stringify(existingPrompt.content);
     const settingsChanged = JSON.stringify(settings) !== JSON.stringify(existingPrompt.settings);
 
@@ -208,8 +204,8 @@ export async function PUT(
         data: {
           versionSha,
           versionNumber: newVersionNumber,
-          content,
-          settings,
+          content: content as unknown as Prisma.InputJsonValue,
+          settings: settings as unknown as Prisma.InputJsonValue,
           variables,
           commitMessage: versionNotes || `Update prompt - v${newVersionNumber}`,
           versionNotes: versionNotes || null,
@@ -228,21 +224,18 @@ export async function PUT(
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });
 
 // DELETE /api/prompts/[id] - Delete a prompt template
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export const DELETE = withAuth(async (
+  request: Request,
+  { params, auth }: { params: { id: string }, auth: any }
+) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
 
     if (!userRecord) {
@@ -282,4 +275,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

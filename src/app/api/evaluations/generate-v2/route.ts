@@ -1,17 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { EvaluationContextAggregator } from '@/lib/evals/evaluation-context-aggregator';
 import { EvaluationGenerationEngine, GenerationStrategy } from '@/lib/evals/evaluation-generation-engine';
 import { EvaluationGenerationOrchestrator } from '@/lib/evals/evaluation-generation-orchestrator';
 import { prismaClient } from '@/utils/db';
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: Request, { auth }) => {
   try {
     // Check authentication
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const body = await request.json();
     const { 
@@ -76,8 +74,10 @@ export async function POST(request: NextRequest) {
       };
       
       evaluationConfig = await engine.generateEvaluations(context, strategy);
-      
-      console.log(`✅ LLM generation complete: ${evaluationConfig.metadata.totalScenarios} scenarios`);
+      const totalScenarios = Array.isArray(evaluationConfig?.testSuites)
+        ? evaluationConfig.testSuites.reduce((sum: number, suite: any) => sum + (suite?.scenarios?.length || 0), 0)
+        : 0;
+      console.log(`✅ LLM generation complete: ${totalScenarios} scenarios`);
     }
 
     // Step 3: Save the generated evaluation configuration
@@ -104,17 +104,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 4: Return the evaluation configuration
+    const totalScenarios = Array.isArray(evaluationConfig?.testSuites)
+      ? evaluationConfig.testSuites.reduce((sum: number, suite: any) => sum + (suite?.scenarios?.length || 0), 0)
+      : 0;
     return NextResponse.json({
       success: true,
       evaluationConfig,
       summary: {
         totalSuites: evaluationConfig.testSuites.length,
-        totalScenarios: evaluationConfig.metadata.totalScenarios || 
-                       evaluationConfig.testSuites.reduce((sum, suite) => sum + suite.scenarios.length, 0),
-        coverage: evaluationConfig.metadata.coverage || 'Not calculated',
+        totalScenarios: totalScenarios,
+        coverage: (evaluationConfig as any).metadata?.coverage || 'Not calculated',
         confidence: evaluationConfig.scoringFramework?.confidence?.overall || 0.85,
         generationMethod: useOrchestrator ? 'multi-agent' : 'direct-llm',
-        estimatedDuration: evaluationConfig.metadata.estimatedDuration || 
+        estimatedDuration: (evaluationConfig as any).metadata?.estimatedDuration ||
                           evaluationConfig.testSuites.length * 5000 // Rough estimate
       },
       message: 'Evaluation configuration generated successfully using AI'
@@ -163,17 +165,14 @@ export async function POST(request: NextRequest) {
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-}
+}, { requireUser: true });
 
 // GET endpoint to check generation status or retrieve existing evaluation
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
-    const searchParams = request.nextUrl.searchParams;
+    const searchParams = new URL(request.url).searchParams;
     const useCaseId = searchParams.get('useCaseId');
     const evaluationId = searchParams.get('evaluationId');
 
@@ -193,7 +192,7 @@ export async function GET(request: NextRequest) {
       // Get the latest AI-generated evaluation for the use case
       evaluation = await prismaClient.evaluation.findFirst({
         where: { 
-          useCaseId,
+          useCaseId: useCaseId as string,
           description: { contains: 'LLM-powered' }
         },
         orderBy: { createdAt: 'desc' }
@@ -226,4 +225,4 @@ export async function GET(request: NextRequest) {
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-}
+}, { requireUser: true });

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { PrismaClient } from '@/generated/prisma';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
@@ -28,9 +28,9 @@ function extractErrorMessage(err: unknown): string {
   );
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: Request, { auth }) => {
   try {
-    const { userId } = await auth();
+    const { userId } = auth;
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -266,12 +266,12 @@ export async function POST(request: NextRequest) {
     console.error('Error executing prompt:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
-}
+}, { requireUser: true });
 
 // Get execution history for a prompt
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: Request, { auth }) => {
   try {
-    const { userId } = await auth();
+    const { userId } = auth;
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -319,4 +319,4 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching execution history:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
-}
+}, { requireUser: true });

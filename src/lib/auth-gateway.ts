@@ -44,6 +44,16 @@ function authorizeOrganization(ctx: AuthContext, requirement?: boolean | string[
   return { ok: true, status: 200 };
 }
 
+function authorizePermissions(ctx: AuthContext, required?: string[] | undefined): AuthorizationResult {
+  if (!required || required.length === 0) return { ok: true, status: 200 };
+  const granted = ctx.user?.permissions || [];
+  if (granted.includes("*")) return { ok: true, status: 200 };
+  for (const need of required) {
+    if (granted.includes(need)) return { ok: true, status: 200 };
+  }
+  return { ok: false, status: 403, code: "FORBIDDEN", reason: "Required permission missing" };
+}
+
 export function withAuth<Extra = unknown>(
   handler: WithAuthHandler<Extra>,
   options: AuthorizationOptions = {}
@@ -54,6 +64,7 @@ export function withAuth<Extra = unknown>(
     denyRoles,
     requireOrganization,
     customAuthorize,
+    allowApiKey,
   } = options;
 
   return async (req: Request, ctx: { auth: AuthContext } & Extra) => {
@@ -71,6 +82,20 @@ export function withAuth<Extra = unknown>(
       return json(401, { success: false, error: { code: "UNAUTHENTICATED", message: "Authentication required" } });
     }
 
+    // Detect method if not already set by service
+    if (!authCtx.method) {
+      const header = req.headers.get("authorization") || req.headers.get("Authorization");
+      const apiKey = req.headers.get("x-api-key") || req.headers.get("X-API-Key");
+      if (apiKey) authCtx.method = "api_key";
+      else if (header && header.toLowerCase().startsWith("bearer ")) authCtx.method = "bearer";
+      else authCtx.method = "session";
+    }
+
+    // Enforce API key allowance if applicable
+    if (authCtx.method === "api_key" && allowApiKey === false) {
+      return json(403, { success: false, error: { code: "FORBIDDEN", message: "API key authentication not allowed" } });
+    }
+
     const roleCheck = authorizeRoles(authCtx, allowRoles, denyRoles);
     if (!roleCheck.ok) {
       return json(roleCheck.status, { success: false, error: { code: roleCheck.code, message: "Access denied" }, details: { reason: roleCheck.reason } });
@@ -79,6 +104,11 @@ export function withAuth<Extra = unknown>(
     const orgCheck = authorizeOrganization(authCtx, requireOrganization);
     if (!orgCheck.ok) {
       return json(orgCheck.status, { success: false, error: { code: orgCheck.code, message: "Organization required" }, details: { reason: orgCheck.reason } });
+    }
+
+    const permCheck = authorizePermissions(authCtx, options.permissions);
+    if (!permCheck.ok) {
+      return json(permCheck.status, { success: false, error: { code: permCheck.code, message: "Insufficient permissions" }, details: { reason: permCheck.reason } });
     }
 
     if (customAuthorize) {

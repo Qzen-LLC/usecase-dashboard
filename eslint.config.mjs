@@ -72,6 +72,18 @@ const eslintConfig = [
     },
   },
 
+  // Allow server-side Clerk imports where required (middleware, server auth service, Clerk webhook)
+  {
+    files: [
+      "src/middleware.ts",
+      "src/services/auth/**",
+      "src/app/api/webhook/clerk/**",
+    ],
+    rules: {
+      "no-restricted-imports": "off",
+    },
+  },
+
   {
     files: [
       "**/api/**/*.ts",

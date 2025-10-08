@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { PrismaClient } from '@/generated/prisma';
 
 const prisma = new PrismaClient();
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export const GET = withAuth(async (
+  request: Request,
+  { params, auth }: { params: { id: string }, auth: any }
+) => {
   try {
-    const { userId } = auth();
+    const { userId } = auth;
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -26,7 +26,7 @@ export async function GET(
       },
       take: 50,
       include: {
-        promptTemplate: {
+        PromptTemplate: {
           select: {
             name: true
           }
@@ -38,7 +38,7 @@ export async function GET(
       executions: executions.map(exec => ({
         id: exec.id,
         promptId: exec.promptTemplateId,
-        promptName: exec.promptTemplate.name,
+        promptName: exec.PromptTemplate.name,
         versionId: exec.versionId,
         provider: exec.service,
         model: exec.model,
@@ -60,4 +60,4 @@ export async function GET(
     console.error('Error fetching execution history:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
-}
+}, { requireUser: true });

@@ -1,24 +1,21 @@
 import { prismaClient } from "@/utils/db";
-import { NextResponse } from "next/server";
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 // Removed: import redis from '@/lib/redis';
 
-export async function GET(req: Request) {
+export const GET = withAuth(async (req: Request, { auth }) => {
     try {
-        const user = await currentUser();
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        // auth context is provided by withAuth wrapper
         const userRecord = await prismaClient.user.findUnique({
-            where: { clerkId: user.id },
+            where: { clerkId: auth.userId! },
         });
         if (!userRecord) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+            return new Response(JSON.stringify({ error: 'User not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
         }
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
         if (!id) {
-            return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+            return new Response(JSON.stringify({ error: 'Missing id' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
         }
         // Removed Redis cache check and cacheKey logic
         // Check use case ownership for USER role
@@ -27,7 +24,7 @@ export async function GET(req: Request) {
                 where: { id },
             });
             if (!useCase || useCase.userId !== userRecord.id) {
-                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+                return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
             }
         }
         const res = await prismaClient.finOps.findMany({
@@ -36,11 +33,14 @@ export async function GET(req: Request) {
             },
         });
         // Removed Redis set logic
-        const response = NextResponse.json(res);
-        response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
-        return response;
+        return new Response(JSON.stringify(res), {
+            headers: {
+                'Content-Type': 'application/json',
+                'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120'
+            }
+        });
     } catch(error) {
         console.error("Unable to fetch FinOps", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        return new Response(JSON.stringify({ error: "Internal Server Error" }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
-}
+}, { requireUser: true });

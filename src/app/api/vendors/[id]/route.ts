@@ -1,21 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { vendorServiceServer } from '@/lib/vendorServiceServer';
-import { currentUser } from '@clerk/nextjs/server';
+
 import { prismaClient } from '@/utils/db';
 
 interface Params {
   id: string;
 }
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<Params> }) {
+export const PUT = withAuth(async (
+  request: Request,
+  { params, auth }: { params: Params, auth: any }
+) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
     
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
     
     if (!userRecord) {
@@ -23,7 +24,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<Pa
     }
 
     const vendorData = await request.json();
-    const resolvedParams = await params;
+    const resolvedParams = params;
 
     // Get the vendor to check ownership
     const vendor = await prismaClient.vendor.findUnique({
@@ -60,24 +61,24 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<Pa
     console.error('Vendor PUT API error:', error);
     return NextResponse.json({ error: 'Failed to update vendor' }, { status: 500 });
   }
-}
+}, { requireUser: true });
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<Params> }) {
+export const DELETE = withAuth(async (
+  request: Request,
+  { params, auth }: { params: Params, auth: any }
+) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
     
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
     
     if (!userRecord) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const resolvedParams = await params;
+    const resolvedParams = params;
 
     // Get the vendor to check ownership
     const vendor = await prismaClient.vendor.findUnique({
@@ -114,4 +115,4 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     console.error('Vendor DELETE API error:', error);
     return NextResponse.json({ error: 'Failed to delete vendor' }, { status: 500 });
   }
-}
+}, { requireUser: true });

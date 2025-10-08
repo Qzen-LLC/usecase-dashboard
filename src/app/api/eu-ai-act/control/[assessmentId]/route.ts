@@ -1,26 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ assessmentId: string }> }
-) {
+
+export const POST = withAuth(async (
+  request: Request,
+  { params, auth }: { params: { assessmentId: string }, auth: any }
+) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
     
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
     
     if (!userRecord) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { assessmentId } = await params;
+    const { assessmentId } = params;
     const { controlId, status, notes, evidenceFiles } = await request.json();
 
     // Get the assessment to check ownership
@@ -103,4 +101,4 @@ export async function POST(
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

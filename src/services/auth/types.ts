@@ -36,6 +36,7 @@ export interface AuthenticatedUser {
   firstName?: string | null;
   lastName?: string | null;
   roles?: UserRole[]; // normalized roles
+  permissions?: string[]; // derived or stored permissions
   organizationId?: string | null;
   claims?: Record<string, unknown>; // provider specific claims
   raw?: unknown; // provider raw user object for debugging
@@ -48,6 +49,8 @@ export interface AuthContext {
   organizationId?: string | null;
   tokenClaims?: Record<string, unknown> | null;
   provider: "CLERK" | "CUSTOM" | "NONE" | string;
+  /** Which auth method authenticated the request */
+  method?: "session" | "bearer" | "api_key";
 }
 
 export interface AuthorizationOptions {
@@ -57,6 +60,10 @@ export interface AuthorizationOptions {
   requireOrganization?: boolean | string[]; // true = any org; string[] = allowed org IDs
   customAuthorize?: (ctx: AuthContext, req: Request) => boolean | Promise<boolean>;
   scopes?: string[]; // reserved for future use (locks/permissions)
+  /** If false, blocks requests authenticated via API key */
+  allowApiKey?: boolean;
+  /** Required permissions; any match passes */
+  permissions?: string[];
 }
 
 export interface AuthorizationResult {

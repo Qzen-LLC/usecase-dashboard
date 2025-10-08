@@ -12,7 +12,7 @@ export async function GET(req: NextRequest, { params }: { params: { useCaseId: s
         where: { useCaseId },
         include: {
           subclauses: { include: { subclause: true } },
-          annexes: { include: { annexItem: true } },
+          annexes: { include: { item: true } },
         },
       }),
     ]);
