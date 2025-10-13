@@ -44,8 +44,52 @@ import {
   Loader2,
   Filter,
   X,
+  GripVertical,
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { QuestionType, Stage } from "@/generated/prisma";
+
+// Helper functions for labels
+const getQuestionTypeLabel = (type: QuestionType) => {
+  switch (type) {
+    case QuestionType.CHECKBOX: return "Checkbox";
+    case QuestionType.RADIO: return "Radio";
+    case QuestionType.TEXT: return "Text";
+    case QuestionType.SLIDER: return "Slider";
+    case QuestionType.RISK: return "Risk";
+    default: return type;
+  }
+};
+
+const getStageLabel = (stage: Stage) => {
+  switch (stage) {
+    case Stage.TECHNICAL_FEASIBILITY: return "Technical Feasibility";
+    case Stage.BUSINESS_FEASIBILITY: return "Business Feasibility";
+    case Stage.ETHICAL_IMPACT: return "Ethical Impact";
+    case Stage.RISK_ASSESSMENT: return "Risk Assessment";
+    case Stage.DATA_READINESS: return "Data Readiness";
+    case Stage.ROADMAP_POSITION: return "Roadmap Position";
+    case Stage.BUDGET_PLANNING: return "Budget Planning";
+    default: return stage;
+  }
+};
 
 interface Question {
   id: string;
@@ -55,6 +99,13 @@ interface Question {
   options: Option[];
   organizationId: string;
   isInactive: boolean;
+  technicalOrderIndex?: number;
+  businessOrderIndex?: number;
+  ethicalOrderIndex?: number;
+  riskOrderIndex?: number;
+  dataOrderIndex?: number;
+  roadmapOrderIndex?: number;
+  budgetOrderIndex?: number;
 }
 
 interface Option {
@@ -62,6 +113,191 @@ interface Option {
   text: string;
   questionId: string;
 }
+
+// Sortable Question Component
+const SortableQuestion = ({ question, isPending, currentOperationStatus, reorderMode, handleToggleInactive, openEditDialog, handleDeleteQuestion }: {
+  question: Question;
+  isPending: boolean;
+  currentOperationStatus: string;
+  reorderMode: boolean;
+  handleToggleInactive: (id: string, currentStatus: boolean) => void;
+  openEditDialog: (question: Question) => void;
+  handleDeleteQuestion: (id: string, text: string) => void;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: question.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`border rounded-xl p-6 hover:shadow-md transition-all duration-200 ${
+        isPending 
+          ? 'border-yellow-300 bg-yellow-50/50' 
+          : currentOperationStatus === 'error'
+          ? 'border-red-300 bg-red-50/50'
+          : 'border-border'
+      } ${reorderMode ? 'cursor-move' : ''}`}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 mb-3">
+            {reorderMode && (
+              <div 
+                className="flex items-center justify-center w-6 h-6 text-muted-foreground cursor-move"
+                {...attributes}
+                {...listeners}
+              >
+                <GripVertical className="w-4 h-4" />
+              </div>
+            )}
+            <h3 className="text-lg font-semibold text-foreground">
+              {question.text}
+            </h3>
+            {isPending && (
+              <Badge variant="outline" className="px-3 py-1 rounded-full border-yellow-300 text-yellow-700 bg-yellow-100">
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                Processing...
+              </Badge>
+            )}
+            {currentOperationStatus === 'error' && (
+              <Badge variant="outline" className="px-3 py-1 rounded-full border-red-300 text-red-700 bg-red-100">
+                <AlertCircle className="w-3 h-3 mr-1" />
+                Failed
+              </Badge>
+            )}
+            {question.isInactive && (
+              <Badge variant="outline" className="px-3 py-1 rounded-full border-orange-300 text-orange-700 bg-orange-100">
+                <X className="w-3 h-3 mr-1" />
+                Inactive
+              </Badge>
+            )}
+            <Badge variant="secondary" className="px-3 py-1 rounded-full">
+              {getQuestionTypeLabel(question.type)}
+            </Badge>
+            <Badge variant="outline" className="px-3 py-1 rounded-full">
+              {getStageLabel(question.stage)}
+            </Badge>
+          </div>
+        
+          {question.options.length > 0 && (
+            <div className="mt-3">
+              <p className="text-sm font-medium text-muted-foreground mb-2">
+                Options:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {question.type === QuestionType.RISK ? (
+                  <div className="space-y-2">
+                    <div>
+                      <span className="text-xs font-medium text-muted-foreground">Probability:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {question.options
+                          .filter(opt => opt.text.startsWith('pro:'))
+                          .map((option, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="px-2 py-1 text-xs"
+                            >
+                              {option.text.replace('pro:', '')}
+                            </Badge>
+                          ))}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs font-medium text-muted-foreground">Impact:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {question.options
+                          .filter(opt => opt.text.startsWith('imp:'))
+                          .map((option, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="px-2 py-1 text-xs"
+                            >
+                              {option.text.replace('imp:', '')}
+                            </Badge>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  question.options.map((option, index) => (
+                    <Badge
+                      key={index}
+                      variant="outline"
+                      className="px-2 py-1 text-xs"
+                    >
+                      {option.text}
+                    </Badge>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleToggleInactive(question.id, question.isInactive)}
+            disabled={isPending || reorderMode}
+            className={`border-border hover:bg-muted disabled:opacity-50 ${
+              question.isInactive 
+                ? 'text-orange-600 border-orange-300 hover:bg-orange-50' 
+                : 'text-green-600 border-green-300 hover:bg-green-50'
+            }`}
+          >
+            {question.isInactive ? (
+              <>
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Activate
+              </>
+            ) : (
+              <>
+                <X className="w-4 h-4 mr-2" />
+                Deactivate
+              </>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => openEditDialog(question)}
+            disabled={isPending || reorderMode}
+            className="border-border text-foreground hover:bg-muted disabled:opacity-50"
+          >
+            <Edit className="w-4 h-4 mr-2" />
+            Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleDeleteQuestion(question.id, question.text)}
+            disabled={isPending || reorderMode}
+            className="border-destructive text-destructive hover:bg-destructive/10 disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface NewQuestion {
   text: string;
@@ -121,6 +357,15 @@ export default function ConfigureQuestionsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [pendingOperations, setPendingOperations] = useState<Map<string, 'add' | 'edit' | 'delete'>>(new Map());
   const [operationStatus, setOperationStatus] = useState<Map<string, 'pending' | 'success' | 'error'>>(new Map());
+  const [reorderMode, setReorderMode] = useState(false);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Determine which organizationId to use
   const organizationId = userData?.role === 'QZEN_ADMIN' ? orgIdFromUrl : userData?.organizationId;
@@ -214,7 +459,14 @@ export default function ConfigureQuestionsPage() {
     if (selectedStage === "all") {
       setFilteredQuestions(questions);
     } else {
-      setFilteredQuestions(questions.filter(q => q.stage === selectedStage));
+      const filtered = questions.filter(q => q.stage === selectedStage);
+      // Sort by order index for the selected stage
+      filtered.sort((a, b) => {
+        const orderA = getOrderIndex(a, selectedStage as Stage);
+        const orderB = getOrderIndex(b, selectedStage as Stage);
+        return orderA - orderB;
+      });
+      setFilteredQuestions(filtered);
     }
   }, [questions, selectedStage]);
 
@@ -634,36 +886,117 @@ export default function ConfigureQuestionsPage() {
     }
   };
 
-  const getQuestionTypeLabel = (type: QuestionType) => {
-    switch (type) {
-      case QuestionType.CHECKBOX: return "Checkbox";
-      case QuestionType.RADIO: return "Radio";
-      case QuestionType.TEXT: return "Text";
-      case QuestionType.SLIDER: return "Slider";
-      case QuestionType.RISK: return "Risk";
-      default: return type;
-    }
-  };
-
-  const getStageLabel = (stage: Stage) => {
-    switch (stage) {
-      case Stage.TECHNICAL_FEASIBILITY: return "Technical Feasibility";
-      case Stage.BUSINESS_FEASIBILITY: return "Business Feasibility";
-      case Stage.ETHICAL_IMPACT: return "Ethical Impact";
-      case Stage.RISK_ASSESSMENT: return "Risk Assessment";
-      case Stage.DATA_READINESS: return "Data Readiness";
-      case Stage.ROADMAP_POSITION: return "Roadmap Position";
-      case Stage.BUDGET_PLANNING: return "Budget Planning";
-      default: return stage;
-    }
-  };
-
   const needsOptions = (type: QuestionType) => {
     return type === QuestionType.CHECKBOX || type === QuestionType.RADIO || type === QuestionType.RISK;
   };
 
   const clearFilter = () => {
     setSelectedStage("all");
+  };
+
+  // Helper function to get order index for a specific stage
+  const getOrderIndex = (question: Question, stage: Stage) => {
+    switch (stage) {
+      case Stage.TECHNICAL_FEASIBILITY:
+        return question.technicalOrderIndex || 0;
+      case Stage.BUSINESS_FEASIBILITY:
+        return question.businessOrderIndex || 0;
+      case Stage.ETHICAL_IMPACT:
+        return question.ethicalOrderIndex || 0;
+      case Stage.RISK_ASSESSMENT:
+        return question.riskOrderIndex || 0;
+      case Stage.DATA_READINESS:
+        return question.dataOrderIndex || 0;
+      case Stage.ROADMAP_POSITION:
+        return question.roadmapOrderIndex || 0;
+      case Stage.BUDGET_PLANNING:
+        return question.budgetOrderIndex || 0;
+      default:
+        return 0;
+    }
+  };
+
+  // Handle drag end for reordering
+  const handleDragEnd = async (event: any) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id && selectedStage !== "all") {
+      const oldIndex = filteredQuestions.findIndex((item) => item.id === active.id);
+      const newIndex = filteredQuestions.findIndex((item) => item.id === over.id);
+
+      // Update local state optimistically
+      const newQuestions = arrayMove(filteredQuestions, oldIndex, newIndex);
+      setFilteredQuestions(newQuestions);
+
+      // Update the order indices for the selected stage
+      const stage = selectedStage as Stage;
+      const operationId = `reorder_${Date.now()}`;
+      
+      setPendingOperations(prev => new Map(prev).set(operationId, 'edit'));
+      setOperationStatus(prev => new Map(prev).set(operationId, 'pending'));
+
+      try {
+        // Update order indices for all questions in the new order
+        const updatePromises = newQuestions.map((question, index) => {
+          const orderField = getOrderFieldName(stage);
+          return fetch(`/api/organizations/${organizationId}/questions/${question.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ [orderField]: index }),
+          });
+        });
+
+        await Promise.all(updatePromises);
+        
+        setOperationStatus(prev => new Map(prev).set(operationId, 'success'));
+        setSuccess("Questions reordered successfully!");
+        
+        // Update the main questions list with the new order indices
+        setQuestions(prev => prev.map(q => {
+          const updatedQ = newQuestions.find(nq => nq.id === q.id);
+          if (updatedQ) {
+            const orderField = getOrderFieldName(stage);
+            const newOrderIndex = newQuestions.indexOf(updatedQ);
+            return { ...q, [orderField]: newOrderIndex };
+          }
+          return q;
+        }));
+      } catch (error) {
+        setOperationStatus(prev => new Map(prev).set(operationId, 'error'));
+        setError(`Failed to reorder questions: ${error}`);
+        
+        // Revert optimistic update by restoring original order
+        setFilteredQuestions(filteredQuestions);
+      } finally {
+        setPendingOperations(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(operationId);
+          return newMap;
+        });
+      }
+    }
+  };
+
+  // Helper function to get order field name for a stage
+  const getOrderFieldName = (stage: Stage) => {
+    switch (stage) {
+      case Stage.TECHNICAL_FEASIBILITY:
+        return 'technicalOrderIndex';
+      case Stage.BUSINESS_FEASIBILITY:
+        return 'businessOrderIndex';
+      case Stage.ETHICAL_IMPACT:
+        return 'ethicalOrderIndex';
+      case Stage.RISK_ASSESSMENT:
+        return 'riskOrderIndex';
+      case Stage.DATA_READINESS:
+        return 'dataOrderIndex';
+      case Stage.ROADMAP_POSITION:
+        return 'roadmapOrderIndex';
+      case Stage.BUDGET_PLANNING:
+        return 'budgetOrderIndex';
+      default:
+        return 'technicalOrderIndex';
+    }
   };
 
   // All hooks must be called before any conditional returns
@@ -1091,6 +1424,27 @@ export default function ConfigureQuestionsPage() {
                     Clear
                   </Button>
                 )}
+                
+                {/* Reorder Mode Toggle */}
+                <div className="flex items-center gap-2 ml-4 pl-4 border-l border-border">
+                  <Button
+                    variant={reorderMode ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setReorderMode(!reorderMode)}
+                    disabled={selectedStage === "all"}
+                    className={`flex items-center gap-1 ${
+                      selectedStage === "all" ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    <Settings className="w-4 h-4" />
+                    {reorderMode ? "Exit Reorder" : "Reorder Mode"}
+                  </Button>
+                  {selectedStage === "all" && (
+                    <div className="text-xs text-muted-foreground">
+                      Select a stage to reorder questions
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -1138,165 +1492,42 @@ export default function ConfigureQuestionsPage() {
                   )}
                 </div>
 
-                {filteredQuestions.map((question) => {
-                  const isPending = Array.from(pendingOperations.entries()).some(([opId, op]) => 
-                    (op === 'add' && opId.includes(question.id)) ||
-                    (op === 'edit' && opId.includes(question.id)) ||
-                    (op === 'delete' && opId.includes(question.id))
-                  );
-                  const currentOperationStatus = Array.from(operationStatus.entries()).find(([opId, status]) => 
-                    opId.includes(question.id)
-                  )?.[1] || 'success';
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={filteredQuestions.map(q => q.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-4">
+                      {filteredQuestions.map((question) => {
+                        const isPending = Array.from(pendingOperations.entries()).some(([opId, op]) => 
+                          (op === 'add' && opId.includes(question.id)) ||
+                          (op === 'edit' && opId.includes(question.id)) ||
+                          (op === 'delete' && opId.includes(question.id))
+                        );
+                        const currentOperationStatus = Array.from(operationStatus.entries()).find(([opId, status]) => 
+                          opId.includes(question.id)
+                        )?.[1] || 'success';
 
-                  return (
-                    <div
-                      key={question.id}
-                      className={`border rounded-xl p-6 hover:shadow-md transition-all duration-200 ${
-                        isPending 
-                          ? 'border-yellow-300 bg-yellow-50/50' 
-                          : currentOperationStatus === 'error'
-                          ? 'border-red-300 bg-red-50/50'
-                          : 'border-border'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-3">
-                            <h3 className="text-lg font-semibold text-foreground">
-                              {question.text}
-                            </h3>
-                            {isPending && (
-                              <Badge variant="outline" className="px-3 py-1 rounded-full border-yellow-300 text-yellow-700 bg-yellow-100">
-                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                Processing...
-                              </Badge>
-                            )}
-                            {currentOperationStatus === 'error' && (
-                              <Badge variant="outline" className="px-3 py-1 rounded-full border-red-300 text-red-700 bg-red-100">
-                                <AlertCircle className="w-3 h-3 mr-1" />
-                                Failed
-                              </Badge>
-                            )}
-                            {question.isInactive && (
-                              <Badge variant="outline" className="px-3 py-1 rounded-full border-orange-300 text-orange-700 bg-orange-100">
-                                <X className="w-3 h-3 mr-1" />
-                                Inactive
-                              </Badge>
-                            )}
-                            <Badge variant="secondary" className="px-3 py-1 rounded-full">
-                              {getQuestionTypeLabel(question.type)}
-                            </Badge>
-                            <Badge variant="outline" className="px-3 py-1 rounded-full">
-                              {getStageLabel(question.stage)}
-                            </Badge>
-                          </div>
-                        
-                        {question.options.length > 0 && (
-                          <div className="mt-3">
-                            <p className="text-sm font-medium text-muted-foreground mb-2">
-                              Options:
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              {question.type === QuestionType.RISK ? (
-                                <div className="space-y-2">
-                                  <div>
-                                    <span className="text-xs font-medium text-muted-foreground">Probability:</span>
-                                    <div className="flex flex-wrap gap-1 mt-1">
-                                      {question.options
-                                        .filter(opt => opt.text.startsWith('pro:'))
-                                        .map((option, index) => (
-                                          <Badge
-                                            key={index}
-                                            variant="outline"
-                                            className="px-2 py-1 text-xs"
-                                          >
-                                            {option.text.replace('pro:', '')}
-                                          </Badge>
-                                        ))}
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <span className="text-xs font-medium text-muted-foreground">Impact:</span>
-                                    <div className="flex flex-wrap gap-1 mt-1">
-                                      {question.options
-                                        .filter(opt => opt.text.startsWith('imp:'))
-                                        .map((option, index) => (
-                                          <Badge
-                                            key={index}
-                                            variant="outline"
-                                            className="px-2 py-1 text-xs"
-                                          >
-                                            {option.text.replace('imp:', '')}
-                                          </Badge>
-                                        ))}
-                                    </div>
-                                  </div>
-                                </div>
-                              ) : (
-                                question.options.map((option, index) => (
-                                  <Badge
-                                    key={index}
-                                    variant="outline"
-                                    className="px-2 py-1 text-xs"
-                                  >
-                                    {option.text}
-                                  </Badge>
-                                ))
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleToggleInactive(question.id, question.isInactive)}
-                          disabled={isPending}
-                          className={`border-border hover:bg-muted disabled:opacity-50 ${
-                            question.isInactive 
-                              ? 'text-orange-600 border-orange-300 hover:bg-orange-50' 
-                              : 'text-green-600 border-green-300 hover:bg-green-50'
-                          }`}
-                        >
-                          {question.isInactive ? (
-                            <>
-                              <CheckCircle className="w-4 h-4 mr-2" />
-                              Activate
-                            </>
-                          ) : (
-                            <>
-                              <X className="w-4 h-4 mr-2" />
-                              Deactivate
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEditDialog(question)}
-                          disabled={isPending}
-                          className="border-border text-foreground hover:bg-muted disabled:opacity-50"
-                        >
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteQuestion(question.id, question.text)}
-                          disabled={isPending}
-                          className="border-destructive text-destructive hover:bg-destructive/10 disabled:opacity-50"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </Button>
-                      </div>
+                        return (
+                          <SortableQuestion
+                            key={question.id}
+                            question={question}
+                            isPending={isPending}
+                            currentOperationStatus={currentOperationStatus}
+                            reorderMode={reorderMode}
+                            handleToggleInactive={handleToggleInactive}
+                            openEditDialog={openEditDialog}
+                            handleDeleteQuestion={handleDeleteQuestion}
+                          />
+                        );
+                      })}
                     </div>
-                  </div>
-                  );
-                })}
+                  </SortableContext>
+                </DndContext>
               </div>
             )}
           </CardContent>

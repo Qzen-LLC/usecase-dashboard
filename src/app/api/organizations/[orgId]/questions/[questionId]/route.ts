@@ -22,7 +22,7 @@ export async function PUT(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { orgId, questionId } = params;
+    const { orgId, questionId } = await params;
 
     // Check if organization exists
     const organization = await prismaClient.organization.findUnique({
@@ -42,10 +42,13 @@ export async function PUT(
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
-    const { text, type, stage, options, isInactive } = await request.json();
+    const { text, type, stage, options, isInactive, technicalOrderIndex, businessOrderIndex, ethicalOrderIndex, riskOrderIndex, dataOrderIndex, roadmapOrderIndex, budgetOrderIndex } = await request.json();
 
-    // Check if this is a partial update (only isInactive field)
-    const isPartialUpdate = isInactive !== undefined && text === undefined && type === undefined && stage === undefined;
+    // Check if this is a partial update (only order fields or isInactive field)
+    const isPartialUpdate = (isInactive !== undefined && text === undefined && type === undefined && stage === undefined) ||
+                           (technicalOrderIndex !== undefined || businessOrderIndex !== undefined || ethicalOrderIndex !== undefined || 
+                            riskOrderIndex !== undefined || dataOrderIndex !== undefined || roadmapOrderIndex !== undefined || 
+                            budgetOrderIndex !== undefined);
 
     if (!isPartialUpdate && (!text || !type || !stage)) {
       return NextResponse.json(
@@ -101,6 +104,13 @@ export async function PUT(
       if (type !== undefined) updateData.type = type;
       if (stage !== undefined) updateData.stage = stage;
       if (isInactive !== undefined) updateData.isInactive = isInactive;
+      if (technicalOrderIndex !== undefined) updateData.technicalOrderIndex = technicalOrderIndex;
+      if (businessOrderIndex !== undefined) updateData.businessOrderIndex = businessOrderIndex;
+      if (ethicalOrderIndex !== undefined) updateData.ethicalOrderIndex = ethicalOrderIndex;
+      if (riskOrderIndex !== undefined) updateData.riskOrderIndex = riskOrderIndex;
+      if (dataOrderIndex !== undefined) updateData.dataOrderIndex = dataOrderIndex;
+      if (roadmapOrderIndex !== undefined) updateData.roadmapOrderIndex = roadmapOrderIndex;
+      if (budgetOrderIndex !== undefined) updateData.budgetOrderIndex = budgetOrderIndex;
 
       // Update the question
       const updatedQuestion = await tx.question.update({
@@ -170,7 +180,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { orgId, questionId } = params;
+    const { orgId, questionId } = await params;
 
     // Check if organization exists
     const organization = await prismaClient.organization.findUnique({

@@ -44,8 +44,52 @@ import {
   Loader2,
   Filter,
   X,
+  GripVertical,
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { QuestionType, Stage } from "@/generated/prisma";
+
+// Helper functions for labels
+const getQuestionTypeLabel = (type: QuestionType) => {
+  switch (type) {
+    case QuestionType.CHECKBOX: return "Checkbox";
+    case QuestionType.RADIO: return "Radio";
+    case QuestionType.TEXT: return "Text";
+    case QuestionType.SLIDER: return "Slider";
+    case QuestionType.RISK: return "Risk";
+    default: return type;
+  }
+};
+
+const getStageLabel = (stage: Stage) => {
+  switch (stage) {
+    case Stage.TECHNICAL_FEASIBILITY: return "Technical Feasibility";
+    case Stage.BUSINESS_FEASIBILITY: return "Business Feasibility";
+    case Stage.ETHICAL_IMPACT: return "Ethical Impact";
+    case Stage.RISK_ASSESSMENT: return "Risk Assessment";
+    case Stage.DATA_READINESS: return "Data Readiness";
+    case Stage.ROADMAP_POSITION: return "Roadmap Position";
+    case Stage.BUDGET_PLANNING: return "Budget Planning";
+    default: return stage;
+  }
+};
 
 interface QuestionTemplate {
   id: string;
@@ -54,6 +98,13 @@ interface QuestionTemplate {
   stage: Stage;
   optionTemplates: OptionTemplate[];
   isInactive: boolean;
+  technicalOrderIndex?: number;
+  businessOrderIndex?: number;
+  ethicalOrderIndex?: number;
+  riskOrderIndex?: number;
+  dataOrderIndex?: number;
+  roadmapOrderIndex?: number;
+  budgetOrderIndex?: number;
 }
 
 interface OptionTemplate {
@@ -61,6 +112,191 @@ interface OptionTemplate {
   text: string;
   questionTemplateId: string;
 }
+
+// Sortable Question Template Component
+const SortableQuestionTemplate = ({ questionTemplate, isPending, currentOperationStatus, reorderMode, handleToggleInactive, openEditDialog, handleDeleteQuestion }: {
+  questionTemplate: QuestionTemplate;
+  isPending: boolean;
+  currentOperationStatus: string;
+  reorderMode: boolean;
+  handleToggleInactive: (id: string, currentStatus: boolean) => void;
+  openEditDialog: (questionTemplate: QuestionTemplate) => void;
+  handleDeleteQuestion: (id: string, text: string) => void;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: questionTemplate.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`border rounded-xl p-6 hover:shadow-md transition-all duration-200 ${
+        isPending 
+          ? 'border-yellow-300 bg-yellow-50/50' 
+          : currentOperationStatus === 'error'
+          ? 'border-red-300 bg-red-50/50'
+          : 'border-border'
+      } ${reorderMode ? 'cursor-move' : ''}`}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 mb-3">
+            {reorderMode && (
+              <div 
+                className="flex items-center justify-center w-6 h-6 text-muted-foreground cursor-move"
+                {...attributes}
+                {...listeners}
+              >
+                <GripVertical className="w-4 h-4" />
+              </div>
+            )}
+            <h3 className="text-lg font-semibold text-foreground">
+              {questionTemplate.text}
+            </h3>
+            {isPending && (
+              <Badge variant="outline" className="px-3 py-1 rounded-full border-yellow-300 text-yellow-700 bg-yellow-100">
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                Processing...
+              </Badge>
+            )}
+            {currentOperationStatus === 'error' && (
+              <Badge variant="outline" className="px-3 py-1 rounded-full border-red-300 text-red-700 bg-red-100">
+                <AlertCircle className="w-3 h-3 mr-1" />
+                Failed
+              </Badge>
+            )}
+            {questionTemplate.isInactive && (
+              <Badge variant="outline" className="px-3 py-1 rounded-full border-orange-300 text-orange-700 bg-orange-100">
+                <X className="w-3 h-3 mr-1" />
+                Inactive
+              </Badge>
+            )}
+            <Badge variant="secondary" className="px-3 py-1 rounded-full">
+              {getQuestionTypeLabel(questionTemplate.type)}
+            </Badge>
+            <Badge variant="outline" className="px-3 py-1 rounded-full">
+              {getStageLabel(questionTemplate.stage)}
+            </Badge>
+          </div>
+        
+          {questionTemplate.optionTemplates.length > 0 && (
+            <div className="mt-3">
+              <p className="text-sm font-medium text-muted-foreground mb-2">
+                Options:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {questionTemplate.type === QuestionType.RISK ? (
+                  <div className="space-y-2">
+                    <div>
+                      <span className="text-xs font-medium text-muted-foreground">Probability:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {questionTemplate.optionTemplates
+                          .filter(opt => opt.text.startsWith('pro:'))
+                          .map((option, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="px-2 py-1 text-xs"
+                            >
+                              {option.text.replace('pro:', '')}
+                            </Badge>
+                          ))}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs font-medium text-muted-foreground">Impact:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {questionTemplate.optionTemplates
+                          .filter(opt => opt.text.startsWith('imp:'))
+                          .map((option, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="px-2 py-1 text-xs"
+                            >
+                              {option.text.replace('imp:', '')}
+                            </Badge>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  questionTemplate.optionTemplates.map((option, index) => (
+                    <Badge
+                      key={index}
+                      variant="outline"
+                      className="px-2 py-1 text-xs"
+                    >
+                      {option.text}
+                    </Badge>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleToggleInactive(questionTemplate.id, questionTemplate.isInactive)}
+            disabled={isPending || reorderMode}
+            className={`border-border hover:bg-muted disabled:opacity-50 ${
+              questionTemplate.isInactive 
+                ? 'text-orange-600 border-orange-300 hover:bg-orange-50' 
+                : 'text-green-600 border-green-300 hover:bg-green-50'
+            }`}
+          >
+            {questionTemplate.isInactive ? (
+              <>
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Activate
+              </>
+            ) : (
+              <>
+                <X className="w-4 h-4 mr-2" />
+                Deactivate
+              </>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => openEditDialog(questionTemplate)}
+            disabled={isPending || reorderMode}
+            className="border-border text-foreground hover:bg-muted disabled:opacity-50"
+          >
+            <Edit className="w-4 h-4 mr-2" />
+            Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleDeleteQuestion(questionTemplate.id, questionTemplate.text)}
+            disabled={isPending || reorderMode}
+            className="border-destructive text-destructive hover:bg-destructive/10 disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface NewQuestionTemplate {
   text: string;
@@ -117,6 +353,15 @@ export default function ConfigureQuestionTemplatesPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [pendingOperations, setPendingOperations] = useState<Map<string, 'add' | 'edit' | 'delete'>>(new Map());
   const [operationStatus, setOperationStatus] = useState<Map<string, 'pending' | 'success' | 'error'>>(new Map());
+  const [reorderMode, setReorderMode] = useState(false);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Helper function to generate temporary ID for optimistic updates
   const generateTempId = () => `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -201,7 +446,14 @@ export default function ConfigureQuestionTemplatesPage() {
     if (selectedStage === "all") {
       setFilteredQuestionTemplates(questionTemplates);
     } else {
-      setFilteredQuestionTemplates(questionTemplates.filter(q => q.stage === selectedStage));
+      const filtered = questionTemplates.filter(q => q.stage === selectedStage);
+      // Sort by order index for the selected stage
+      filtered.sort((a, b) => {
+        const orderA = getOrderIndex(a, selectedStage as Stage);
+        const orderB = getOrderIndex(b, selectedStage as Stage);
+        return orderA - orderB;
+      });
+      setFilteredQuestionTemplates(filtered);
     }
   }, [questionTemplates, selectedStage]);
 
@@ -632,6 +884,111 @@ export default function ConfigureQuestionTemplatesPage() {
     setSelectedStage("all");
   };
 
+  // Helper function to get order index for a specific stage
+  const getOrderIndex = (questionTemplate: QuestionTemplate, stage: Stage) => {
+    switch (stage) {
+      case Stage.TECHNICAL_FEASIBILITY:
+        return questionTemplate.technicalOrderIndex || 0;
+      case Stage.BUSINESS_FEASIBILITY:
+        return questionTemplate.businessOrderIndex || 0;
+      case Stage.ETHICAL_IMPACT:
+        return questionTemplate.ethicalOrderIndex || 0;
+      case Stage.RISK_ASSESSMENT:
+        return questionTemplate.riskOrderIndex || 0;
+      case Stage.DATA_READINESS:
+        return questionTemplate.dataOrderIndex || 0;
+      case Stage.ROADMAP_POSITION:
+        return questionTemplate.roadmapOrderIndex || 0;
+      case Stage.BUDGET_PLANNING:
+        return questionTemplate.budgetOrderIndex || 0;
+      default:
+        return 0;
+    }
+  };
+
+  // Handle drag end for reordering
+  const handleDragEnd = async (event: any) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id && selectedStage !== "all") {
+      const oldIndex = filteredQuestionTemplates.findIndex((item) => item.id === active.id);
+      const newIndex = filteredQuestionTemplates.findIndex((item) => item.id === over.id);
+
+      // Update local state optimistically
+      const newQuestionTemplates = arrayMove(filteredQuestionTemplates, oldIndex, newIndex);
+      setFilteredQuestionTemplates(newQuestionTemplates);
+
+      // Update the order indices for the selected stage
+      const stage = selectedStage as Stage;
+      const operationId = `reorder_${Date.now()}`;
+      
+      setPendingOperations(prev => new Map(prev).set(operationId, 'edit'));
+      setOperationStatus(prev => new Map(prev).set(operationId, 'pending'));
+
+      try {
+        // Update order indices for all question templates in the new order
+        const updatePromises = newQuestionTemplates.map((questionTemplate, index) => {
+          const orderField = getOrderFieldName(stage);
+          return fetch(`/api/question-templates/${questionTemplate.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ [orderField]: index }),
+          });
+        });
+
+        await Promise.all(updatePromises);
+        
+        setOperationStatus(prev => new Map(prev).set(operationId, 'success'));
+        setSuccess("Question templates reordered successfully!");
+        
+        // Update the main question templates list with the new order indices
+        setQuestionTemplates(prev => prev.map(q => {
+          const updatedQ = newQuestionTemplates.find(nq => nq.id === q.id);
+          if (updatedQ) {
+            const orderField = getOrderFieldName(stage);
+            const newOrderIndex = newQuestionTemplates.indexOf(updatedQ);
+            return { ...q, [orderField]: newOrderIndex };
+          }
+          return q;
+        }));
+      } catch (error) {
+        setOperationStatus(prev => new Map(prev).set(operationId, 'error'));
+        setError(`Failed to reorder question templates: ${error}`);
+        
+        // Revert optimistic update by restoring original order
+        setFilteredQuestionTemplates(filteredQuestionTemplates);
+      } finally {
+        setPendingOperations(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(operationId);
+          return newMap;
+        });
+      }
+    }
+  };
+
+  // Helper function to get order field name for a stage
+  const getOrderFieldName = (stage: Stage) => {
+    switch (stage) {
+      case Stage.TECHNICAL_FEASIBILITY:
+        return 'technicalOrderIndex';
+      case Stage.BUSINESS_FEASIBILITY:
+        return 'businessOrderIndex';
+      case Stage.ETHICAL_IMPACT:
+        return 'ethicalOrderIndex';
+      case Stage.RISK_ASSESSMENT:
+        return 'riskOrderIndex';
+      case Stage.DATA_READINESS:
+        return 'dataOrderIndex';
+      case Stage.ROADMAP_POSITION:
+        return 'roadmapOrderIndex';
+      case Stage.BUDGET_PLANNING:
+        return 'budgetOrderIndex';
+      default:
+        return 'technicalOrderIndex';
+    }
+  };
+
   // All hooks must be called before any conditional returns
   useEffect(() => {
     if (isReady) {
@@ -985,6 +1342,27 @@ export default function ConfigureQuestionTemplatesPage() {
                     Clear
                   </Button>
                 )}
+                
+                {/* Reorder Mode Toggle */}
+                <div className="flex items-center gap-2 ml-4 pl-4 border-l border-border">
+                  <Button
+                    variant={reorderMode ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setReorderMode(!reorderMode)}
+                    disabled={selectedStage === "all"}
+                    className={`flex items-center gap-1 ${
+                      selectedStage === "all" ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    <Settings className="w-4 h-4" />
+                    {reorderMode ? "Exit Reorder" : "Reorder Mode"}
+                  </Button>
+                  {selectedStage === "all" && (
+                    <div className="text-xs text-muted-foreground">
+                      Select a stage to reorder questions
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -1032,165 +1410,42 @@ export default function ConfigureQuestionTemplatesPage() {
                   )}
                 </div>
 
-                {filteredQuestionTemplates.map((questionTemplate) => {
-                  const isPending = Array.from(pendingOperations.entries()).some(([opId, op]) => 
-                    (op === 'add' && opId.includes(questionTemplate.id)) ||
-                    (op === 'edit' && opId.includes(questionTemplate.id)) ||
-                    (op === 'delete' && opId.includes(questionTemplate.id))
-                  );
-                  const currentOperationStatus = Array.from(operationStatus.entries()).find(([opId, status]) => 
-                    opId.includes(questionTemplate.id)
-                  )?.[1] || 'success';
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={filteredQuestionTemplates.map(q => q.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-4">
+                      {filteredQuestionTemplates.map((questionTemplate) => {
+                        const isPending = Array.from(pendingOperations.entries()).some(([opId, op]) => 
+                          (op === 'add' && opId.includes(questionTemplate.id)) ||
+                          (op === 'edit' && opId.includes(questionTemplate.id)) ||
+                          (op === 'delete' && opId.includes(questionTemplate.id))
+                        );
+                        const currentOperationStatus = Array.from(operationStatus.entries()).find(([opId, status]) => 
+                          opId.includes(questionTemplate.id)
+                        )?.[1] || 'success';
 
-                  return (
-                    <div
-                      key={questionTemplate.id}
-                      className={`border rounded-xl p-6 hover:shadow-md transition-all duration-200 ${
-                        isPending 
-                          ? 'border-yellow-300 bg-yellow-50/50' 
-                          : currentOperationStatus === 'error'
-                          ? 'border-red-300 bg-red-50/50'
-                          : 'border-border'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-3">
-                            <h3 className="text-lg font-semibold text-foreground">
-                              {questionTemplate.text}
-                            </h3>
-                            {isPending && (
-                              <Badge variant="outline" className="px-3 py-1 rounded-full border-yellow-300 text-yellow-700 bg-yellow-100">
-                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                Processing...
-                              </Badge>
-                            )}
-                            {currentOperationStatus === 'error' && (
-                              <Badge variant="outline" className="px-3 py-1 rounded-full border-red-300 text-red-700 bg-red-100">
-                                <AlertCircle className="w-3 h-3 mr-1" />
-                                Failed
-                              </Badge>
-                            )}
-                            {questionTemplate.isInactive && (
-                              <Badge variant="outline" className="px-3 py-1 rounded-full border-orange-300 text-orange-700 bg-orange-100">
-                                <X className="w-3 h-3 mr-1" />
-                                Inactive
-                              </Badge>
-                            )}
-                            <Badge variant="secondary" className="px-3 py-1 rounded-full">
-                              {getQuestionTypeLabel(questionTemplate.type)}
-                            </Badge>
-                            <Badge variant="outline" className="px-3 py-1 rounded-full">
-                              {getStageLabel(questionTemplate.stage)}
-                            </Badge>
-                          </div>
-                        
-                        {questionTemplate.optionTemplates.length > 0 && (
-                          <div className="mt-3">
-                            <p className="text-sm font-medium text-muted-foreground mb-2">
-                              Options:
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              {questionTemplate.type === QuestionType.RISK ? (
-                                <div className="space-y-2">
-                                  <div>
-                                    <span className="text-xs font-medium text-muted-foreground">Probability:</span>
-                                    <div className="flex flex-wrap gap-1 mt-1">
-                                      {questionTemplate.optionTemplates
-                                        .filter(opt => opt.text.startsWith('pro:'))
-                                        .map((option, index) => (
-                                          <Badge
-                                            key={index}
-                                            variant="outline"
-                                            className="px-2 py-1 text-xs"
-                                          >
-                                            {option.text.replace('pro:', '')}
-                                          </Badge>
-                                        ))}
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <span className="text-xs font-medium text-muted-foreground">Impact:</span>
-                                    <div className="flex flex-wrap gap-1 mt-1">
-                                      {questionTemplate.optionTemplates
-                                        .filter(opt => opt.text.startsWith('imp:'))
-                                        .map((option, index) => (
-                                          <Badge
-                                            key={index}
-                                            variant="outline"
-                                            className="px-2 py-1 text-xs"
-                                          >
-                                            {option.text.replace('imp:', '')}
-                                          </Badge>
-                                        ))}
-                                    </div>
-                                  </div>
-                                </div>
-                              ) : (
-                                questionTemplate.optionTemplates.map((option, index) => (
-                                  <Badge
-                                    key={index}
-                                    variant="outline"
-                                    className="px-2 py-1 text-xs"
-                                  >
-                                    {option.text}
-                                  </Badge>
-                                ))
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleToggleInactive(questionTemplate.id, questionTemplate.isInactive)}
-                          disabled={isPending}
-                          className={`border-border hover:bg-muted disabled:opacity-50 ${
-                            questionTemplate.isInactive 
-                              ? 'text-orange-600 border-orange-300 hover:bg-orange-50' 
-                              : 'text-green-600 border-green-300 hover:bg-green-50'
-                          }`}
-                        >
-                          {questionTemplate.isInactive ? (
-                            <>
-                              <CheckCircle className="w-4 h-4 mr-2" />
-                              Activate
-                            </>
-                          ) : (
-                            <>
-                              <X className="w-4 h-4 mr-2" />
-                              Deactivate
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEditDialog(questionTemplate)}
-                          disabled={isPending}
-                          className="border-border text-foreground hover:bg-muted disabled:opacity-50"
-                        >
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteQuestion(questionTemplate.id, questionTemplate.text)}
-                          disabled={isPending}
-                          className="border-destructive text-destructive hover:bg-destructive/10 disabled:opacity-50"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </Button>
-                      </div>
+                        return (
+                          <SortableQuestionTemplate
+                            key={questionTemplate.id}
+                            questionTemplate={questionTemplate}
+                            isPending={isPending}
+                            currentOperationStatus={currentOperationStatus}
+                            reorderMode={reorderMode}
+                            handleToggleInactive={handleToggleInactive}
+                            openEditDialog={openEditDialog}
+                            handleDeleteQuestion={handleDeleteQuestion}
+                          />
+                        );
+                      })}
                     </div>
-                  </div>
-                  );
-                })}
+                  </SortableContext>
+                </DndContext>
               </div>
             )}
           </CardContent>

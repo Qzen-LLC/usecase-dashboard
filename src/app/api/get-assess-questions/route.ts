@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     // Fetch questions with options and answers
     const questions = await prisma.question.findMany({
       where: {
-        organizationId: useCase.organizationId,
+        organizationId: useCase.organizationId || undefined,
         isInactive: false  // Only fetch active questions
       },
       include: {
@@ -42,8 +42,40 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Group questions by stage and sort by order index
+    const questionsByStage = questions.reduce((acc, question) => {
+      const stage = question.stage;
+      if (!acc[stage]) {
+        acc[stage] = [];
+      }
+      acc[stage].push(question);
+      return acc;
+    }, {} as Record<string, typeof questions>);
+
+    // Sort questions within each stage by their order index
+    Object.keys(questionsByStage).forEach(stage => {
+      questionsByStage[stage].sort((a, b) => {
+        const getOrderIndex = (q: any, s: string) => {
+          switch (s) {
+            case 'TECHNICAL_FEASIBILITY': return q.technicalOrderIndex || 0;
+            case 'BUSINESS_FEASIBILITY': return q.businessOrderIndex || 0;
+            case 'ETHICAL_IMPACT': return q.ethicalOrderIndex || 0;
+            case 'RISK_ASSESSMENT': return q.riskOrderIndex || 0;
+            case 'DATA_READINESS': return q.dataOrderIndex || 0;
+            case 'ROADMAP_POSITION': return q.roadmapOrderIndex || 0;
+            case 'BUDGET_PLANNING': return q.budgetOrderIndex || 0;
+            default: return 0;
+          }
+        };
+        return getOrderIndex(a, stage) - getOrderIndex(b, stage);
+      });
+    });
+
+    // Flatten back to a single array
+    const orderedQuestions = Object.values(questionsByStage).flat();
+
     // Transform the data to match the expected format
-    const formattedQuestions = questions.map(q => {
+    const formattedQuestions = orderedQuestions.map((q: any) => {
       // Get the answer data for this question
       const answerData = q.answers.length > 0 ? q.answers[0].value : null;
       
@@ -99,7 +131,7 @@ export async function GET(request: NextRequest) {
         text: q.text,
         type: q.type,
         stage: q.stage,
-        options: q.options.map(o => ({
+        options: q.options.map((o: any) => ({
           id: o.id,
           text: o.text,
           questionId: q.id,
