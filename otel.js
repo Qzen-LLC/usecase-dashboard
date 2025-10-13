@@ -7,21 +7,29 @@ const { PeriodicExportingMetricReader } = require("@opentelemetry/sdk-metrics");
 const { LoggerProvider, SimpleLogRecordProcessor } = require("@opentelemetry/sdk-logs");
 const { getNodeAutoInstrumentations } = require("@opentelemetry/auto-instrumentations-node");
 const { resourceFromAttributes } = require("@opentelemetry/resources");
+require('dotenv').config();
 
 const resource = resourceFromAttributes({
   "service.name": "usecase-dashboard",
+  "service.namespace": "my-application-group",
   "service.version": "1.0.0",
+  "deployment.environment": "production",
 });
-
 
 // --- Trace exporter ---
 const traceExporter = new OTLPTraceExporter({
-  url: "http://localhost:4318/v1/traces",
+  url: "https://otlp-gateway-prod-us-west-0.grafana.net/otlp/v1/traces",
+  headers: {
+    "Authorization": `Basic ${process.env.OTLP_TOKEN}`
+  }
 });
 
 // --- Metrics exporter ---
 const metricExporter = new OTLPMetricExporter({
-  url: "http://localhost:4318/v1/metrics",
+  url: "https://otlp-gateway-prod-us-west-0.grafana.net/otlp/v1/metrics",
+  headers: {
+    "Authorization": `Basic ${process.env.OTLP_TOKEN}`
+  }
 });
 const metricReader = new PeriodicExportingMetricReader({
   exporter: metricExporter,
@@ -30,7 +38,10 @@ const metricReader = new PeriodicExportingMetricReader({
 
 // --- Logs exporter ---
 const logExporter = new OTLPLogExporter({
-  url: "http://localhost:4318/v1/logs",
+  url: "https://otlp-gateway-prod-us-west-0.grafana.net/otlp/v1/logs",
+  headers: {
+    "Authorization": `Basic ${process.env.OTLP_TOKEN}`
+  }
 });
 const loggerProvider = new LoggerProvider({
   resource,
@@ -101,9 +112,12 @@ async function sendLogToLGTM(severity, message, args = []) {
       ]
     };
 
-    await fetch("http://localhost:4318/v1/logs", {
+    await fetch("https://otlp-gateway-prod-us-west-0.grafana.net/otlp/v1/logs", {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${process.env.OTLP_TOKEN}`
+      },
       body: JSON.stringify(logData)
     });
   } catch (error) {
@@ -173,9 +187,12 @@ async function sendCrudLogToAuditLog(message, args = []) {
       ]
     };
 
-    await fetch("http://localhost:4318/v1/logs", {
+    await fetch("https://otlp-gateway-prod-us-west-0.grafana.net/otlp/v1/logs", {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${process.env.OTLP_TOKEN}`
+      },
       body: JSON.stringify(logData)
     });
   } catch (error) {
