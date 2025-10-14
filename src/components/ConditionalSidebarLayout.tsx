@@ -41,6 +41,11 @@ function ConditionalSidebarLayoutContent({ children }: { children: React.ReactNo
   const [mounted, setMounted] = useState(false);
   const [dataReady, setDataReady] = useState(false);
 
+  // For known public routes, render immediately without waiting for client mount timers
+  if (NO_SIDEBAR_ROUTES.includes(pathname)) {
+    return <>{children}</>;
+  }
+
   useEffect(() => {
     setMounted(true);
     // Wait a bit for Clerk to be fully loaded

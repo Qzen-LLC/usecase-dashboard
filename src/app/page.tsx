@@ -16,28 +16,42 @@ export default function HomePage() {
   const { userData, loading } = useUserData();
   const [isCheckingRole, setIsCheckingRole] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [fallbackTriggered, setFallbackTriggered] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Kick off a safe redirect for signed-in users once Clerk is loaded.
+  // Prefer role from userData, but fall back after a short timeout to avoid indefinite loading.
   useEffect(() => {
-    if (!isLoaded || loading) return;
+    if (!isLoaded || !isSignedIn) return;
 
-    if (isSignedIn && userData) {
+    // If userData arrived, redirect by role immediately
+    if (userData && !loading) {
       setIsCheckingRole(true);
-      // Check user role and redirect accordingly
       if (userData.role === 'QZEN_ADMIN') {
         router.push('/admin');
       } else {
         router.push('/dashboard');
       }
       setIsCheckingRole(false);
+      return;
     }
+
+    // Otherwise set a short fallback timer to avoid hanging
+    const t = setTimeout(() => {
+      setFallbackTriggered(true);
+      setIsCheckingRole(true);
+      router.push('/dashboard');
+      setIsCheckingRole(false);
+    }, 1200);
+
+    return () => clearTimeout(t);
   }, [isSignedIn, isLoaded, userData, loading, router]);
 
   // Show loading state while checking role
-  if (isSignedIn && isCheckingRole) {
+  if (isSignedIn && (isCheckingRole || (!userData && !fallbackTriggered))) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#f5f7fa] to-[#c3cfe2] flex items-center justify-center">
         <div className="text-center">
