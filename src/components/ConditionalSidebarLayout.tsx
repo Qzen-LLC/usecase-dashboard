@@ -50,15 +50,6 @@ function ConditionalSidebarLayoutContent({ children }: { children: React.ReactNo
     return () => clearTimeout(timer);
   }, []);
 
-  // Don't render until mounted and data is ready to prevent hydration mismatch
-  if (!mounted || !dataReady) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
   // Don't show sidebar for unauthenticated users
   if (!isLoaded || !isSignedIn) {
     return <>{children}</>;
@@ -67,6 +58,15 @@ function ConditionalSidebarLayoutContent({ children }: { children: React.ReactNo
   // Don't show sidebar for specific routes
   if (NO_SIDEBAR_ROUTES.includes(pathname)) {
     return <>{children}</>;
+  }
+
+  // Don't render sidebar until mounted and data is ready to prevent hydration mismatch
+  if (!mounted || !dataReady) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
   }
 
   // Show sidebar for authenticated routes
