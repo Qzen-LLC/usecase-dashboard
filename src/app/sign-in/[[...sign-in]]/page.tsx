@@ -1,7 +1,33 @@
+'use client';
+
 import { SignIn } from "@clerk/nextjs";
 import { QubeLandingLayout } from "@/components/QubeLandingLayout";
+import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 
 export default function SignInPage() {
+  const searchParams = useSearchParams();
+  const { user, isSignedIn } = useUser();
+  const invitationToken = searchParams.get('invitation_token');
+
+  useEffect(() => {
+    const accept = async () => {
+      if (!invitationToken || !isSignedIn || !user) return;
+      try {
+        await fetch('/api/organizations/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invitationToken }),
+        });
+        window.location.href = '/dashboard';
+      } catch {
+        window.location.href = '/dashboard';
+      }
+    };
+    accept();
+  }, [invitationToken, isSignedIn, user]);
+
   return (
     <QubeLandingLayout>
       <div className="-mt-10 md:-mt-16">

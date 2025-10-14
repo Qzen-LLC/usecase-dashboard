@@ -139,9 +139,15 @@ export async function POST(req: Request) {
     try {
       // Automatically detect current environment's URL for invitations
       const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-      const host = process.env.NEXT_PUBLIC_APP_URL || 'localhost:3000';
-      const baseUrl = `${protocol}://${host}`;
-      
+      const rawHost = (process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL || 'localhost:3000').trim();
+      let baseUrl: string;
+      try {
+        const parsed = rawHost.startsWith('http') ? new URL(rawHost) : new URL(`${protocol}://${rawHost}`);
+        baseUrl = `${parsed.protocol}//${parsed.host}`; // normalize
+      } catch {
+        baseUrl = `${protocol}://${rawHost.replace(/^https?:\/\//, '')}`;
+      }
+
       console.log('[Organization Creation] Using baseUrl:', baseUrl);
       
       await clerk.invitations.createInvitation({
@@ -150,7 +156,7 @@ export async function POST(req: Request) {
           role: 'ORG_ADMIN', 
           organizationId: result.org.id 
         },
-        redirectUrl: `${baseUrl}/dashboard`,
+        redirectUrl: `${baseUrl}/sign-up?invitation_token=${result.invitation.token}`,
       });
       console.log('Email invitation sent to:', adminEmail.trim());
     } catch (error: any) {
