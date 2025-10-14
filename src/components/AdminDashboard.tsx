@@ -287,7 +287,15 @@ export default function AdminDashboard() {
             <CardContent>
               <p className="text-destructive mb-4">{error}</p>
               <Button
-                onClick={fetchOrganizations}
+                onClick={() => {
+                  setError(null);
+                  setNewOrgName("");
+                  setNewOrgDomain("");
+                  setAdminEmail("");
+                  setAdminFirstName("");
+                  setAdminLastName("");
+                  setShowCreateOrg(true);
+                }}
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 Retry
