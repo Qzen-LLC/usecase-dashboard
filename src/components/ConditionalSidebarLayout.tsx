@@ -41,11 +41,6 @@ function ConditionalSidebarLayoutContent({ children }: { children: React.ReactNo
   const [mounted, setMounted] = useState(false);
   const [dataReady, setDataReady] = useState(false);
 
-  // For known public routes, render immediately without waiting for client mount timers
-  if (NO_SIDEBAR_ROUTES.includes(pathname)) {
-    return <>{children}</>;
-  }
-
   useEffect(() => {
     setMounted(true);
     // Wait a bit for Clerk to be fully loaded
@@ -55,7 +50,12 @@ function ConditionalSidebarLayoutContent({ children }: { children: React.ReactNo
     return () => clearTimeout(timer);
   }, []);
 
-  // Don't render until mounted and data is ready to prevent hydration mismatch
+  // Public routes: render immediately, skip sidebar and loading gates
+  if (NO_SIDEBAR_ROUTES.includes(pathname)) {
+    return <>{children}</>;
+  }
+
+  // For non-public routes, don't render until mounted and data is ready to prevent hydration mismatch
   if (!mounted || !dataReady) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
