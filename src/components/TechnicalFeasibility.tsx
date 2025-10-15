@@ -692,7 +692,8 @@ export default function TechnicalFeasibility({ value, onChange }: Props) {
                   <Input 
                     type="number" 
                     value={value.avgInputTokens || ''} 
-                    onChange={(e) => onChange({ ...value, avgInputTokens: parseInt(e.target.value) || 0 })}
+                    min={0}
+                    onChange={(e) => onChange({ ...value, avgInputTokens: Math.max(0, parseInt(e.target.value) || 0) })}
                     placeholder="e.g., 500"
                     className="w-full"
                   />
@@ -702,7 +703,8 @@ export default function TechnicalFeasibility({ value, onChange }: Props) {
                   <Input 
                     type="number" 
                     value={value.avgOutputTokens || ''} 
-                    onChange={(e) => onChange({ ...value, avgOutputTokens: parseInt(e.target.value) || 0 })}
+                    min={0}
+                    onChange={(e) => onChange({ ...value, avgOutputTokens: Math.max(0, parseInt(e.target.value) || 0) })}
                     placeholder="e.g., 1000"
                     className="w-full"
                   />
@@ -712,7 +714,8 @@ export default function TechnicalFeasibility({ value, onChange }: Props) {
                   <Input 
                     type="number" 
                     value={value.expectedRequestsPerDay || ''} 
-                    onChange={(e) => onChange({ ...value, expectedRequestsPerDay: parseInt(e.target.value) || 0 })}
+                    min={0}
+                    onChange={(e) => onChange({ ...value, expectedRequestsPerDay: Math.max(0, parseInt(e.target.value) || 0) })}
                     placeholder="e.g., 10000"
                     className="w-full"
                   />

@@ -173,12 +173,12 @@ export default function UseCasePromptManagement() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl font-bold text-foreground mb-2">
               {useCase?.title}
             </h1>
             <div className="flex items-center gap-4">
               <Badge>{useCase?.stage}</Badge>
-              <span className="text-sm text-gray-600">{useCase?.businessFunction}</span>
+              <span className="text-sm text-muted-foreground">{useCase?.businessFunction}</span>
             </div>
           </div>
           <Button onClick={handleCreatePrompt}>
