@@ -104,10 +104,7 @@ export class GuardrailsEngine {
         console.error('LLM generation failed, using fallback agent-only approach:', llmError);
         // Fallback: Use empty perspectives and rely on agent guardrails
         perspectives = [];
-        guardrailLogger.log('llm_fallback', {
-          error: llmError instanceof Error ? llmError.message : 'Unknown error',
-          fallbackStrategy: 'agent-only'
-        });
+        console.log('Using fallback strategy: agent-only');
       }
 
       // Step 2: Let orchestrator coordinate specialist agents
@@ -990,15 +987,6 @@ export class GuardrailsEngine {
     console.log('🔍 Running comprehensive validation...');
     
     const report = await validateGuardrails(guardrails, assessment);
-    
-    // Log validation results
-    guardrailLogger.log('validation', {
-      score: report.score,
-      isValid: report.isValid,
-      errorCount: report.issues.filter(i => i.type === 'error').length,
-      warningCount: report.issues.filter(i => i.type === 'warning').length,
-      coverage: report.coverage
-    });
     
     // If validation fails critically, log issues
     if (!report.isValid) {
