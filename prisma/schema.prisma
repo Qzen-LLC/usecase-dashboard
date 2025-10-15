@@ -41,6 +41,7 @@ model UseCase {
   plannedStartDate         String?             @default("")
   organizationId           String?
   userId                   String?
+  answers                  Answer[]
   Approval                 Approval?
   assessData               Assess?
   euAiActAssessments       EuAiActAssessment?
@@ -600,6 +601,7 @@ model Organization {
   updatedAt      DateTime         @updatedAt
   invitations    Invitation[]     @relation("OrganizationInvitations")
   PromptTemplate PromptTemplate[]
+  Question       Question[]
   useCases       UseCase[]
   users          User[]
   vendors        Vendor[]
@@ -799,27 +801,6 @@ model Lock {
   @@index([useCaseId])
   @@index([userId])
   @@index([scope])
-}
-
-model GoldenDataset {
-  id               String        @id @default(uuid())
-  useCaseId        String
-  version          String        @default("1.0.0")
-  name             String
-  description      String
-  metadata         Json
-  statistics       Json?
-  qualityMetrics   Json?
-  validationStatus Json?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  publishedAt      DateTime?
-  useCase          UseCase       @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
-  entries          GoldenEntry[]
-
-  @@index([useCaseId])
-  @@index([createdAt])
-  @@index([publishedAt])
 }
 
 model GoldenEntry {
@@ -1026,6 +1007,102 @@ enum GuardrailRuleStatus {
   EDITED
 }
 
+model GoldenDataset {
+  id               String        @id
+  useCaseId        String
+  version          String        @default("1.0.0")
+  name             String
+  description      String
+  metadata         Json
+  statistics       Json?
+  qualityMetrics   Json?
+  validationStatus Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime
+  publishedAt      DateTime?
+  UseCase          UseCase       @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  GoldenEntry      GoldenEntry[]
+
+  @@index([createdAt])
+  @@index([publishedAt])
+  @@index([useCaseId])
+}
+
+model QuestionTemplate {
+  id              String           @id @default(uuid())
+  text            String
+  type            QuestionType
+  stage           Stage
+  isInactive      Boolean          @default(false)
+  
+  // Ordering fields for each stage
+  technicalOrderIndex   Int?              @default(0)
+  businessOrderIndex    Int?              @default(0)
+  ethicalOrderIndex     Int?              @default(0)
+  riskOrderIndex        Int?              @default(0)
+  dataOrderIndex        Int?              @default(0)
+  roadmapOrderIndex     Int?              @default(0)
+  budgetOrderIndex      Int?              @default(0)
+  
+  optionTemplates OptionTemplate[]
+  questions       Question[]
+}
+
+model OptionTemplate {
+  id                 String           @id @default(uuid())
+  text               String
+  questionTemplateId String
+  questionTemplate   QuestionTemplate @relation(fields: [questionTemplateId], references: [id], onDelete: Cascade)
+}
+
+model Question {
+  id                    String            @id @default(uuid())
+  text                  String
+  type                  QuestionType
+  templateId            String?
+  organizationId        String            @default("1d431de5-265f-455b-88ca-76b2d2934e8f")
+  stage                 Stage
+  isInactive            Boolean           @default(false)
+  
+  // Ordering fields for each stage
+  technicalOrderIndex   Int?              @default(0)
+  businessOrderIndex    Int?              @default(0)
+  ethicalOrderIndex     Int?              @default(0)
+  riskOrderIndex        Int?              @default(0)
+  dataOrderIndex        Int?              @default(0)
+  roadmapOrderIndex     Int?              @default(0)
+  budgetOrderIndex      Int?              @default(0)
+  
+  answers               Answer[]
+  options               Option[]
+  Organization          Organization      @relation(fields: [organizationId], references: [id])
+  template              QuestionTemplate? @relation(fields: [templateId], references: [id])
+}
+
+model Option {
+  id         String   @id @default(uuid())
+  text       String
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model Answer {
+  id         String   @id @default(uuid())
+  questionId String
+  value      Json
+  useCaseId  String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  useCase    UseCase  @relation(fields: [useCaseId], references: [id])
+}
+
+enum QuestionType {
+  CHECKBOX
+  RADIO
+  TEXT
+  SLIDER
+  RISK
+}
+
 enum RiskStatus {
   OPEN
   IN_PROGRESS
@@ -1087,4 +1164,14 @@ enum LockScope {
   GOVERNANCE_ISO_42001
   GOVERNANCE_UAE_AI
   GOVERNANCE_ISO_27001
+}
+
+enum Stage {
+  TECHNICAL_FEASIBILITY
+  BUSINESS_FEASIBILITY
+  ETHICAL_IMPACT
+  RISK_ASSESSMENT
+  DATA_READINESS
+  ROADMAP_POSITION
+  BUDGET_PLANNING
 }

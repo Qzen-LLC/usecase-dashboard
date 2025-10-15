@@ -142,16 +142,16 @@ function PromptEditorV2({
   return (
     <div className="max-w-6xl mx-auto">
       {/* Prompt Configuration Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-          <h3 className="text-base font-semibold text-gray-900">Prompt Configuration</h3>
-          <p className="text-sm text-gray-500 mt-1">Set up your prompt template</p>
+      <div className="bg-card rounded-lg shadow-sm border border-border mb-6">
+        <div className="bg-muted px-6 py-4 border-b border-border">
+          <h3 className="text-base font-semibold text-foreground">Prompt Configuration</h3>
+          <p className="text-sm text-muted-foreground mt-1">Set up your prompt template</p>
         </div>
 
         <div className="p-6 space-y-5">
           {/* Name Field */}
           <div>
-            <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="name" className="text-sm font-medium text-foreground">
               Prompt Name *
             </Label>
             <Input
@@ -169,7 +169,7 @@ function PromptEditorV2({
           {/* Tags and Version Notes */}
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <Label htmlFor="tags" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="tags" className="text-sm font-medium text-foreground">
                 Tags (Optional)
               </Label>
               <Input
@@ -179,11 +179,11 @@ function PromptEditorV2({
                 placeholder="e.g., legal, contracts, NDA, MSA"
                 className="mt-1.5"
               />
-              <p className="text-xs text-gray-500 mt-1">Comma-separated tags for easy searching</p>
+              <p className="text-xs text-muted-foreground mt-1">Comma-separated tags for easy searching</p>
             </div>
 
             <div>
-              <Label htmlFor="versionNotes" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="versionNotes" className="text-sm font-medium text-foreground">
                 Version Notes (Optional)
               </Label>
               <Input
@@ -193,13 +193,13 @@ function PromptEditorV2({
                 placeholder="e.g., Added risk scoring section"
                 className="mt-1.5"
               />
-              <p className="text-xs text-gray-500 mt-1">What changed in this version</p>
+              <p className="text-xs text-muted-foreground mt-1">What changed in this version</p>
             </div>
           </div>
 
           {/* Type Only - Service will be selected at runtime */}
           <div>
-            <Label htmlFor="type" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="type" className="text-sm font-medium text-foreground">
               Prompt Type
             </Label>
             <Select value={type} onValueChange={setType}>
@@ -221,21 +221,21 @@ function PromptEditorV2({
                 </SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-gray-500 mt-1">AI Service and Model will be selected when running the prompt</p>
+            <p className="text-xs text-muted-foreground mt-1">AI Service and Model will be selected when running the prompt</p>
           </div>
         </div>
       </div>
 
       {/* Prompt Content Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-          <h3 className="text-base font-semibold text-gray-900">Prompt Content</h3>
-          <p className="text-sm text-gray-500 mt-1">Use {'{'}variableName{'}'} syntax to create dynamic variables</p>
+      <div className="bg-card rounded-lg shadow-sm border border-border mb-6">
+        <div className="bg-muted px-6 py-4 border-b border-border">
+          <h3 className="text-base font-semibold text-foreground">Prompt Content</h3>
+          <p className="text-sm text-muted-foreground mt-1">Use {'{'}variableName{'}'} syntax to create dynamic variables</p>
         </div>
 
         <div className="p-6">
           <Tabs value={type} onValueChange={setType}>
-            <TabsList className="mb-4 bg-gray-100">
+            <TabsList className="mb-4 bg-muted">
               <TabsTrigger value="PROMPT">Simple Prompt</TabsTrigger>
               <TabsTrigger value="CHAT">Chat Conversation</TabsTrigger>
             </TabsList>
@@ -298,10 +298,10 @@ function PromptEditorV2({
 
           {/* Detected Variables */}
           {detectedVariables.length > 0 && (
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+            <div className="mt-6 p-4 bg-primary/10 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
-                <Variable className="w-4 h-4 text-blue-600" />
-                <span className="font-semibold text-blue-900">Detected Variables</span>
+                <Variable className="w-4 h-4 text-primary" />
+                <span className="font-semibold text-foreground">Detected Variables</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {detectedVariables.map((variable) => (
@@ -329,7 +329,7 @@ function PromptEditorV2({
             </Button>
           )}
           {(!prompt || !prompt.id) && (
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-muted-foreground">
               Save the prompt first to enable the Run button
             </div>
           )}

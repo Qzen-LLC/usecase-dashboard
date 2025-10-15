@@ -50,7 +50,12 @@ function ConditionalSidebarLayoutContent({ children }: { children: React.ReactNo
     return () => clearTimeout(timer);
   }, []);
 
-  // Don't render until mounted and data is ready to prevent hydration mismatch
+  // Public routes: render immediately, skip sidebar and loading gates
+  if (NO_SIDEBAR_ROUTES.includes(pathname)) {
+    return <>{children}</>;
+  }
+
+  // For non-public routes, don't render until mounted and data is ready to prevent hydration mismatch
   if (!mounted || !dataReady) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">

@@ -28,6 +28,7 @@ import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { useStableRender } from '@/hooks/useStableRender';
 import { useLock } from '@/hooks/useLock';
 import { mapUIToTypeDefinition, mapTypeDefinitionToUI, ensureCompatibility } from '@/lib/assessment/field-mapper';
+import { QuestionType, Stage } from '@/generated/prisma';
 
 
 interface UseCase {
@@ -38,12 +39,36 @@ interface UseCase {
   stage: string; // Added stage to the interface
 }
 
+// Add interfaces for the question data
+interface QnAProps {
+  id: string,
+  text: string,
+  type: QuestionType,
+  stage: Stage,
+  options: OptionProps[],
+  answers: AnswerProps[], // This will now contain all answers for the question
+}
+
+interface OptionProps {
+  id: string,
+  text: string,
+  questionId: string,
+}
+
+// Update the AnswerProps interface to match the new structure
+interface AnswerProps {
+  id: string;        
+  value: string;     
+  questionId: string;
+  optionId?: string;  // Make optionId optional since TEXT and SLIDER don't have options
+}
+
 export default function AssessmentPage() {
+
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
   const useCaseId = params.useCaseId as string;
-  
   // Get step and readonly from URL parameters
   const stepParam = searchParams.get('step');
   const readonlyParam = searchParams.get('readonly');
@@ -57,6 +82,9 @@ export default function AssessmentPage() {
   const budgetPlanningRef = useRef<any>(null);
   const approvalsPageRef = useRef<any>(null);
   const pageTopRef = useRef<HTMLDivElement>(null);
+  const [questions, setQuestions] = useState<QnAProps[]>([]);
+  const [questionsLoading, setQuestionsLoading] = useState(true);
+  const [questionAnswers, setQuestionAnswers] = useState<Record<string, AnswerProps[]>>({});
   const navigationRef = useRef<HTMLDivElement>(null);
 
   // Add readonly styles to the document when in readonly mode
@@ -487,7 +515,13 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     });
   }, [canEdit]);
 
-  // Auto-save disabled: save only on explicit user actions (Save/Complete)
+  // Handler for answer changes
+  const handleAnswerChange = (questionId: string, answers: AnswerProps[]) => {
+    setQuestionAnswers(prev => ({
+      ...prev,
+      [questionId]: answers
+    }));
+  };
 
   useEffect(() => {
     if (!useCaseId || !isReady) return;
@@ -558,38 +592,65 @@ const validateAssessmentData = useMemo(() => (data: any) => {
   useEffect(() => {
     if (!isReady) return;
     setAssessmentData((prev: any) => {
-      // Only merge defaults if we don't have saved data yet
-      // This prevents overwriting saved assessment data
-      if (!prev || Object.keys(prev).length === 0) {
-        return defaultAssessmentData;
+      const next = { ...defaultAssessmentData, ...prev };
+      for (const key in defaultAssessmentData) {
+        if (!next[key]) next[key] = (defaultAssessmentData as any)[key];
       }
-      
-      // Deep merge to preserve saved data while ensuring all default fields exist
-      const merged = { ...defaultAssessmentData };
-      Object.keys(defaultAssessmentData).forEach(key => {
-        const typedKey = key as keyof typeof defaultAssessmentData;
-        if (prev[key] && typeof prev[key] === 'object' && !Array.isArray(prev[key])) {
-          // Deep merge objects
-          (merged as any)[key] = { ...(defaultAssessmentData as any)[key], ...prev[key] };
-        } else if (prev[key] !== undefined) {
-          // Use saved value if it exists
-          (merged as any)[key] = prev[key];
-        }
-      });
-      
-      return merged;
+      return next;
     });
-  }, [isReady]);
+  }, []);
 
-  // Auto-scroll to current step when currentStep changes
+  // Update the useEffect to fetch questions with answers
   useEffect(() => {
-    // Small delay to ensure DOM is updated
-    const timeoutId = setTimeout(() => {
-      scrollToCurrentStep();
-    }, 100);
-    
-    return () => clearTimeout(timeoutId);
-  }, [currentStep, scrollToCurrentStep]);
+    const fetchQuestions = async () => {
+      try {
+        setQuestionsLoading(true);
+        const response = await fetch(`/api/get-assess-questions?useCaseId=${useCaseId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        const qnAData = await response.json();
+        
+        // console.log('Fetched questions data:', qnAData); // Debug log
+        
+        const formattedQuestions = qnAData.map((q: QnAProps) => ({
+          id: q.id,
+          text: q.text,
+          type: q.type,
+          stage: q.stage,
+          options: q.options.map((o) => ({
+            id: o.id,            
+            text: o.text,
+            questionId: q.id,    
+          })),
+          answers: q.answers || [], // Initialize with empty array if no answers
+        }));
+        
+        setQuestions(formattedQuestions);
+        
+        // Initialize questionAnswers with fetched answers
+        const initialAnswers: Record<string, AnswerProps[]> = {};
+        formattedQuestions.forEach((q: QnAProps) => {
+          if (q.answers && q.answers.length > 0) {
+            initialAnswers[q.id] = q.answers;
+            // console.log(`Initialized answers for question ${q.id}:`, q.answers); // Debug log
+          }
+        });
+        setQuestionAnswers(initialAnswers);
+        
+      } catch (error) {
+        console.error('Error fetching questions:', error);
+      } finally {
+        setQuestionsLoading(false);
+      }
+    };
+
+    if (useCaseId) {
+      fetchQuestions();
+    }
+  }, [useCaseId]);
 
   // Scroll to top when currentStep changes
   useEffect(() => {
@@ -663,6 +724,18 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         body: JSON.stringify({ useCaseId, assessData: transformedData }),
       });
 
+      // Save question answers
+      if (Object.keys(questionAnswers).length > 0) {
+        await fetch("/api/save-question-answers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            useCaseId, 
+            answers: questionAnswers 
+          }),
+        });
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to save assessment data');
@@ -682,7 +755,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     } finally {
       setSaving(false);
     }
-  }, [useCaseId, assessmentData]);
+  }, [useCaseId, assessmentData, questionAnswers]);
 
   const handleNext = useMemo(() => async () => {
     if (currentStep === 7 && budgetPlanningRef.current) {
@@ -890,6 +963,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               <TechnicalFeasibility
                 value={assessmentData.technicalFeasibility}
                 onChange={data => handleAssessmentChange('technicalFeasibility', data)}
+                questions={questions}
+                questionsLoading={questionsLoading}
+                questionAnswers={questionAnswers}
+                onAnswerChange={handleAnswerChange}
               />
             )
           ) : currentStep === 2 ? (
@@ -899,6 +976,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               <BusinessFeasibility
                 value={assessmentData.businessFeasibility}
                 onChange={data => handleAssessmentChange('businessFeasibility', data)}
+                questions={questions}
+                questionsLoading={questionsLoading}
+                questionAnswers={questionAnswers}
+                onAnswerChange={handleAnswerChange}
               />
             )
           ) : currentStep === 3 ? (
@@ -906,8 +987,12 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               <ReadOnlyEthicalImpact data={assessmentData.ethicalImpact} />
             ) : (
               <EthicalImpact
-                value={assessmentData.ethicalImpact}
+                value={assessmentData.businessFeasibility}
                 onChange={data => handleAssessmentChange('ethicalImpact', data)}
+                questions={questions}
+                questionsLoading={questionsLoading}
+                questionAnswers={questionAnswers}
+                onAnswerChange={handleAnswerChange}
               />
             )
           ) : currentStep === 4 ? (
@@ -917,6 +1002,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               <RiskAssessment
                 value={assessmentData.riskAssessment}
                 onChange={data => handleAssessmentChange('riskAssessment', data)}
+                questions={questions}
+                questionsLoading={questionsLoading}
+                questionAnswers={questionAnswers}
+                onAnswerChange={handleAnswerChange}
               />
             )
           ) : currentStep === 5 ? (
@@ -926,6 +1015,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               <DataReadiness
                 value={assessmentData.dataReadiness}
                 onChange={data => handleAssessmentChange('dataReadiness', data)}
+                questions={questions}
+                questionsLoading={questionsLoading}
+                questionAnswers={questionAnswers}
+                onAnswerChange={handleAnswerChange}
               />
             )
           ) : currentStep === 6 ? (
@@ -935,6 +1028,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               <RoadmapPosition
                 value={assessmentData.roadmapPosition}
                 onChange={data => handleAssessmentChange('roadmapPosition', data)}
+                questions={questions}
+                questionsLoading={questionsLoading}
+                questionAnswers={questionAnswers}
+                onAnswerChange={handleAnswerChange}
               />
             )
           ) : currentStep === 7 ? (
@@ -942,9 +1039,13 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               <ReadOnlyBudgetPlanning data={assessmentData.budgetPlanning} />
             ) : (
               <BudgetPlanning
-                ref={budgetPlanningRef}
+                // ref={budgetPlanningRef}
                 value={assessmentData.budgetPlanning}
                 onChange={data => handleAssessmentChange('budgetPlanning', data)}
+                questions={questions}
+                questionsLoading={questionsLoading}
+                questionAnswers={questionAnswers}
+                onAnswerChange={handleAnswerChange}
               />
             )
           ) : currentStep === 8 ? (

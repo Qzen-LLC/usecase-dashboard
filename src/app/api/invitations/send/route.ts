@@ -31,10 +31,18 @@ export async function POST(req: Request) {
       currentUserRecord.role === 'QZEN_ADMIN' ||
       (currentUserRecord.role === 'ORG_ADMIN' && currentUserRecord.organizationId === organizationId)
     ) {
-      // Automatically detect current environment's URL for invitations
+      // Build a correct base URL without double protocol
       const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-      const host = process.env.NEXT_PUBLIC_APP_URL || 'localhost:3000';
-      const baseUrl = `${protocol}://${host}`;
+      const rawHost = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL || 'localhost:3000';
+      let baseUrl: string;
+      try {
+        const parsed = rawHost.startsWith('http') ? new URL(rawHost) : new URL(`${protocol}://${rawHost}`);
+        // Normalize to protocol + host only (strip any paths)
+        baseUrl = `${parsed.protocol}//${parsed.host}`;
+      } catch {
+        // Fallback: strip any existing protocol manually
+        baseUrl = `${protocol}://${rawHost.replace(/^https?:\/\//, '')}`;
+      }
       
       console.log('[Invitation] Using baseUrl:', baseUrl);
       

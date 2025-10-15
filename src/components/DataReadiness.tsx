@@ -1,701 +1,203 @@
-'use client';
-import React from 'react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Slider } from '@/components/ui/slider';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
+import React, { useEffect, useState } from 'react';
+import {
+  Checkbox
+} from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
 import { Label } from '@/components/ui/label';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Database, BarChart3, FileText, Shield, Globe, Clock, BookOpen, Brain } from 'lucide-react';
+import { Brain, Server, Plug, Shield as ShieldIcon, Check } from 'lucide-react';
+import { PrismaClient, QuestionType, Stage } from '@/generated/prisma';
+import { CheckboxGroup } from './questionComps/checkboxQuestion';
+import { RadioGroupQuestion } from './questionComps/radioQuestion';
+import { SliderQuestion } from './questionComps/SliderQuestion';
+import { TextQuestion } from './questionComps/TextQuestion';
+import { useAnswerHandlers } from '@/lib/handle-assess-ui';
+import { RiskQuestion } from './questionComps/riskQuestion';
 
-const DATA_TYPES = [
-  'Personal Identifiable Information (PII)',
-  'Sensitive Personal Data (race, religion, politics)',
-  'Financial Records',
-  'Health/Medical Records',
-  'Biometric Data',
-  'Location/GPS Data',
-  'Behavioral Data',
-  'Communications (emails, messages)',
-  'Images/Video of People',
-  'Voice Recordings',
-  'Genetic Data',
-  "Children's Data (under 16)",
-  'Criminal Records',
-  'Employment Records',
-  'Educational Records',
-  'Publicly Available Data',
-  'Proprietary Business Data',
-  'Trade Secrets',
-  'Third-party Data',
-];
+interface QnAProps {
+  id: string,
+  text: string,
+  type: QuestionType,
+  stage: Stage,
+  options: OptionProps[],
+  answers: AnswerProps[], // This will now contain all answers for the question
+}
 
-const DATA_VOLUME_OPTIONS = [
-  '< 1 GB',
-  '1 GB - 100 GB',
-  '100 GB - 1 TB',
-  '1 TB - 10 TB',
-  '10 TB - 100 TB',
-  '> 100 TB',
-];
+interface OptionProps {
+  id: string,
+  text: string,
+  questionId: string,
+}
 
-const GROWTH_RATE_OPTIONS = [
-  '< 10%',
-  '10-50%',
-  '50-100%',
-  '100-500%',
-  '> 500%',
-];
-
-const NUM_RECORDS_OPTIONS = [
-  '< 10,000',
-  '10,000 - 100,000',
-  '100,000 - 1 million',
-  '1 million - 10 million',
-  '10 million - 100 million',
-  '> 100 million',
-];
-
-const PRIMARY_DATA_SOURCES = [
-  'Internal Databases',
-  'Customer Input Forms',
-  'IoT Devices/Sensors',
-  'Mobile Applications',
-  'Web Applications',
-  'Third-party APIs',
-  'Public Datasets',
-  'Social Media',
-  'Partner Organizations',
-  'Government Databases',
-  'Purchased Data',
-  'Web Scraping',
-  'Manual Entry',
-  'Legacy Systems',
-  'Cloud Storage',
-  'Edge Devices',
-];
-
-const FRESHNESS_OPTIONS = [
-  'Real-time (< 1 second)',
-  'Near real-time (1-60 seconds)',
-  'Micro-batch (1-5 minutes)',
-  'Batch (hourly)',
-  'Daily',
-  'Weekly or less frequent',
-];
-
-const RETENTION_OPTIONS = [
-  '< 30 days',
-  '30 days - 1 year',
-  '1-3 years',
-  '3-7 years',
-  '7+ years',
-  'Indefinite',
-  'Varies by data type',
-];
-
-// Gen AI Specific Constants
-const TRAINING_DATA_TYPES = [
-  'Instruction Datasets',
-  'Human Preference Data',
-  'Domain-specific Corpus',
-  'Few-shot Examples',
-  'Negative Examples',
-  'Test/Validation Sets',
-  'Synthetic Data',
-  'Reinforcement Learning Data',
-];
-
-const PROMPT_ENGINEERING_ITEMS = [
-  'System Prompts Defined',
-  'Prompt Templates Created',
-  'Few-shot Examples Prepared',
-  'Chain-of-thought Examples',
-  'Output Format Specifications',
-  'Error Handling Prompts',
-  'Safety Prompts',
-  'Context Management',
-];
-
-const KNOWLEDGE_SOURCES = [
-  'Internal Documentation',
-  'External APIs',
-  'Web Content',
-  'Databases',
-  'Expert Knowledge',
-  'User Feedback',
-  'Research Papers',
-  'Industry Reports',
-];
-
-const UPDATE_STRATEGIES = [
-  'Continuous Learning',
-  'Periodic Retraining',
-  'Manual Updates',
-  'Event-triggered',
-  'Incremental Learning',
-  'Batch Updates',
-];
-
-const FACT_VERIFICATION = [
-  'Manual Verification',
-  'Automated Verification',
-  'Hybrid Approach',
-  'Crowdsourced',
-  'Expert Review',
-];
-
-// Controlled component props
-type DataReadinessValue = {
-  dataTypes: string[];
-  dataVolume: string;
-  growthRate: string;
-  numRecords: string;
-  primarySources: string[];
-  dataQualityScore: number;
-  dataCompleteness: number;
-  dataAccuracyConfidence: number;
-  dataFreshness: string;
-  dataSubjectLocations: string;
-  dataStorageLocations: string;
-  dataProcessingLocations: string;
-  crossBorderTransfer: boolean;
-  dataLocalization: string;
-  dataRetention: string;
-  // Gen AI specific fields
-  trainingDataTypes?: string[];
-  instructionClarityScore?: number;
-  responseQualityScore?: number;
-  diversityIndex?: number;
-  toxicityScore?: number;
-  promptEngineering?: string[];
-  knowledgeSources?: string[];
-  updateStrategy?: string;
-  factVerificationProcess?: string;
-  updateFrequency?: string;
-  versionControl?: boolean;
-};
+interface AnswerProps {
+  id: string;        
+  value: string;     
+  questionId: string;
+  optionId?: string;  // Make optionId optional since TEXT and SLIDER don't have options
+}
 
 type Props = {
-  value: DataReadinessValue;
-  onChange: (data: DataReadinessValue) => void;
+  value: {
+    modelTypes: string[];
+    modelSizes: string[];
+    deploymentModels: string[];
+    cloudProviders: string[];
+    computeRequirements: string[];
+    integrationPoints: string[];
+    apiSpecs: string[];
+    authMethods: string[];
+    encryptionStandards: string[];
+    technicalComplexity: number;
+    outputTypes: string[];
+    confidenceScore: string;
+    modelUpdateFrequency: string;
+  };
+  onChange: (data: Props['value']) => void;
+  questions: QnAProps[];
+  questionsLoading: boolean;
+  questionAnswers: Record<string, AnswerProps[]>;
+  onAnswerChange: (questionId: string, answers: AnswerProps[]) => void;
 };
 
-export default function DataReadiness({ value, onChange }: Props) {
-  // Multi-select checkbox handler
-  function handleMultiSelect(field: keyof DataReadinessValue, option: string) {
-    const arr = value[field] as string[];
-    if (arr.includes(option)) {
-      onChange({ ...value, [field]: arr.filter((x) => x !== option) });
-    } else {
-      onChange({ ...value, [field]: [...arr, option] });
-    }
-  }
+export default function DataReadiness({ value, onChange, questions, questionsLoading, questionAnswers, onAnswerChange }: Props) {
+  const { handleCheckboxChange, handleRadioChange, handleSliderChange, handleTextChange, handleRiskGroupChange } = useAnswerHandlers(onAnswerChange);
 
   return (
     <div className="space-y-10">
-      <div className="bg-gradient-to-r from-cyan-100 via-blue-100 to-indigo-100 dark:from-cyan-900/20 dark:via-blue-900/20 dark:to-indigo-900/20 p-4 mb-8 rounded-2xl flex items-center gap-3 shadow-md border-l-4 border-cyan-400 dark:border-cyan-300">
-        <div className="font-semibold text-cyan-800 dark:text-cyan-200 text-lg mb-1">Data Readiness Assessment</div>
-        <div className="text-cyan-700 dark:text-cyan-300">Comprehensive data characteristics, quality, and governance inputs.</div>
+      <div className="bg-gradient-to-r from-primary/10 via-primary/20 to-primary/10 border-l-4 border-primary p-4 mb-8 rounded-2xl flex items-center gap-3 shadow-md">
+        <div className="font-semibold text-foreground text-lg mb-1">Technical Feasibility Assessment</div>
+        <div className="text-muted-foreground">Evaluate the technical requirements and constraints for implementing this AI solution.</div>
       </div>
-
-      {/* Data Classification Section */}
-      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-        <div className="border-b border-border pb-4 mb-6">
-          <div className="flex items-center gap-3">
-            <Database className="w-6 h-6 text-primary" />
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-1">Data Classification</h3>
-              <p className="text-sm text-muted-foreground">Identify the types of data that will be used in your AI system</p>
-            </div>
-          </div>
+      
+      {questionsLoading || !questions ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <span className="ml-2 text-muted-foreground">Loading questions...</span>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {DATA_TYPES.map((type) => (
-            <label key={type} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
-              <Checkbox
-                checked={value.dataTypes.includes(type)}
-                onCheckedChange={(checked) => handleMultiSelect('dataTypes', type)}
-              />
-              <span className="text-sm text-foreground">{type}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Data Volume & Scale Section */}
-      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-        <div className="border-b border-border pb-4 mb-6">
-          <div className="flex items-center gap-3">
-            <BarChart3 className="w-6 h-6 text-success" />
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-1">Data Volume & Scale</h3>
-              <p className="text-sm text-muted-foreground">Define the current and expected data volume characteristics</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="space-y-6">
-          <div>
-            <Label className="block font-medium mb-4 text-foreground">Data Volume</Label>
-            <RadioGroup value={value.dataVolume} onValueChange={(newValue) => onChange({ ...value, dataVolume: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {DATA_VOLUME_OPTIONS.map((option) => (
-                <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
-                  <RadioGroupItem value={option} />
-                  <span className="text-sm text-foreground">{option}</span>
-                </Label>
-              ))}
-            </RadioGroup>
-          </div>
+      ) : (
+        questions.map((q) => {
+          const currentAnswers = questionAnswers[q.id] || q.answers || [];
           
-          <div>
-            <Label className="block font-medium mb-4 text-foreground">Growth Rate</Label>
-            <RadioGroup value={value.growthRate} onValueChange={(newValue) => onChange({ ...value, growthRate: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {GROWTH_RATE_OPTIONS.map((option) => (
-                <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
-                  <RadioGroupItem value={option} />
-                  <span className="text-sm text-foreground">{option}</span>
-                </Label>
-              ))}
-            </RadioGroup>
-          </div>
+          // console.log(`Question ${q.id} answers:`, currentAnswers);
           
-          <div>
-            <Label className="block font-medium mb-4 text-foreground">Number of Records</Label>
-            <RadioGroup value={value.numRecords} onValueChange={(newValue) => onChange({ ...value, numRecords: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {NUM_RECORDS_OPTIONS.map((option) => (
-                <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
-                  <RadioGroupItem value={option} />
-                  <span className="text-sm text-foreground">{option}</span>
-                </Label>
-              ))}
-            </RadioGroup>
-          </div>
-        </div>
-      </div>
-
-      {/* Data Sources Section */}
-      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-        <div className="border-b border-border pb-4 mb-6">
-          <div className="flex items-center gap-3">
-                            <FileText className="w-6 h-6 text-warning" />
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-1">Data Sources</h3>
-              <p className="text-sm text-muted-foreground">Identify where your data will be sourced from</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {PRIMARY_DATA_SOURCES.map((src) => (
-            <label key={src} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
-              <Checkbox
-                checked={value.primarySources.includes(src)}
-                onCheckedChange={(checked) => handleMultiSelect('primarySources', src)}
-              />
-              <span className="text-sm text-foreground">{src}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Data Quality & Governance Section */}
-      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-        <div className="border-b border-border pb-4 mb-6">
-          <div className="flex items-center gap-3">
-            <Shield className="w-6 h-6 text-primary" />
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-1">Data Quality & Governance</h3>
-              <p className="text-sm text-muted-foreground">Assess data quality metrics and freshness requirements</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="space-y-6">
-          <div>
-            <Label className="block font-medium mb-4 text-foreground">Data Quality Score</Label>
-            <div className="flex items-center w-full">
-              <span className="text-muted-foreground text-sm mr-4">Poor</span>
-              <Slider
-                min={1}
-                max={10}
-                step={1}
-                value={[value.dataQualityScore]}
-                onValueChange={([val]) => onChange({ ...value, dataQualityScore: val })}
-                className="w-full"
-              />
-              <span className="text-muted-foreground text-sm ml-4">Excellent</span>
-              <span className="ml-6 px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold text-sm">{value.dataQualityScore}</span>
-            </div>
-          </div>
-          
-          <div>
-            <Label className="block font-medium mb-4 text-foreground">Data Completeness</Label>
-            <div className="flex items-center w-full">
-              <span className="text-muted-foreground text-sm mr-4">0%</span>
-              <Slider
-                min={0}
-                max={100}
-                step={5}
-                value={[value.dataCompleteness]}
-                onValueChange={([val]) => onChange({ ...value, dataCompleteness: val })}
-                className="w-full"
-              />
-              <span className="text-muted-foreground text-sm ml-4">100%</span>
-              <span className="ml-6 px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold text-sm">{value.dataCompleteness}%</span>
-            </div>
-          </div>
-          
-          <div>
-            <Label className="block font-medium mb-4 text-foreground">Data Accuracy Confidence</Label>
-            <div className="flex items-center w-full">
-              <span className="text-muted-foreground text-sm mr-4">0%</span>
-              <Slider
-                min={0}
-                max={100}
-                step={5}
-                value={[value.dataAccuracyConfidence]}
-                onValueChange={([val]) => onChange({ ...value, dataAccuracyConfidence: val })}
-                className="w-full"
-              />
-              <span className="text-muted-foreground text-sm ml-4">100%</span>
-              <span className="ml-6 px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold text-sm">{value.dataAccuracyConfidence}%</span>
-            </div>
-          </div>
-          
-          <div>
-            <Label className="block font-medium mb-4 text-foreground">Data Freshness</Label>
-            <RadioGroup value={value.dataFreshness} onValueChange={(newValue) => onChange({ ...value, dataFreshness: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {FRESHNESS_OPTIONS.map((option) => (
-                <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
-                  <RadioGroupItem value={option} />
-                  <span className="text-sm text-foreground">{option}</span>
-                </Label>
-              ))}
-            </RadioGroup>
-          </div>
-        </div>
-      </div>
-
-      {/* Geographic & Jurisdictional Section */}
-      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-        <div className="border-b border-border pb-4 mb-6">
-          <div className="flex items-center gap-3">
-            <Globe className="w-6 h-6 text-warning" />
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-1">Geographic & Jurisdictional</h3>
-              <p className="text-sm text-muted-foreground">Define data subject locations, storage, processing, and cross-border requirements</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="space-y-6">
-          <div>
-            <Label className="block font-medium mb-4 text-foreground">Data Subject Locations</Label>
-            <RadioGroup value={value.dataSubjectLocations} onValueChange={(newValue) => onChange({ ...value, dataSubjectLocations: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {PRIMARY_DATA_SOURCES.map((option) => (
-                <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
-                  <RadioGroupItem value={option} />
-                  <span className="text-sm text-foreground">{option}</span>
-                </Label>
-              ))}
-            </RadioGroup>
-          </div>
-          
-          <div>
-            <Label className="block font-medium mb-4 text-foreground">Data Storage Locations</Label>
-            <RadioGroup value={value.dataStorageLocations} onValueChange={(newValue) => onChange({ ...value, dataStorageLocations: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {PRIMARY_DATA_SOURCES.map((option) => (
-                <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
-                  <RadioGroupItem value={option} />
-                  <span className="text-sm text-foreground">{option}</span>
-                </Label>
-              ))}
-            </RadioGroup>
-          </div>
-          
-          <div>
-            <Label className="block font-medium mb-4 text-foreground">Data Processing Locations</Label>
-            <RadioGroup value={value.dataProcessingLocations} onValueChange={(newValue) => onChange({ ...value, dataProcessingLocations: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {PRIMARY_DATA_SOURCES.map((option) => (
-                <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
-                  <RadioGroupItem value={option} />
-                  <span className="text-sm text-foreground">{option}</span>
-                </Label>
-              ))}
-            </RadioGroup>
-          </div>
-          
-          <div>
-            <Label className="block font-medium mb-4 text-foreground">Cross-Border Data Transfer</Label>
-            <div className="flex items-center gap-2 p-2 border border-border rounded hover:bg-accent">
-              <Checkbox
-                checked={value.crossBorderTransfer}
-                onCheckedChange={(checked) => onChange({ ...value, crossBorderTransfer: !!checked })}
-              />
-              <span className="text-sm text-foreground">Data will be transferred across international borders</span>
-            </div>
-          </div>
-          
-          <div>
-            <Label className="block font-medium mb-4 text-foreground">Data Localization Requirements</Label>
-            <RadioGroup value={value.dataLocalization} onValueChange={(newValue) => onChange({ ...value, dataLocalization: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {PRIMARY_DATA_SOURCES.map((option) => (
-                <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
-                  <RadioGroupItem value={option} />
-                  <span className="text-sm text-foreground">{option}</span>
-                </Label>
-              ))}
-            </RadioGroup>
-          </div>
-        </div>
-      </div>
-
-      {/* Data Lifecycle Section */}
-      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-        <div className="border-b border-border pb-4 mb-6">
-          <div className="flex items-center gap-3">
-            <Clock className="w-6 h-6 text-primary" />
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-1">Data Lifecycle</h3>
-              <p className="text-sm text-muted-foreground">Define data retention and lifecycle management requirements</p>
-            </div>
-          </div>
-        </div>
-        
-        <div>
-          <Label className="block font-medium mb-4 text-foreground">Data Retention Period</Label>
-          <RadioGroup value={value.dataRetention} onValueChange={(newValue) => onChange({ ...value, dataRetention: newValue })} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {RETENTION_OPTIONS.map((option) => (
-              <Label key={option} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
-                <RadioGroupItem value={option} />
-                <span className="text-sm text-foreground">{option}</span>
-              </Label>
-            ))}
-          </RadioGroup>
-        </div>
-      </div>
-
-      {/* Gen AI Training & Fine-tuning Data Section */}
-      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-        <div className="border-b border-border pb-4 mb-6">
-          <div className="flex items-center gap-3">
-            <Brain className="w-6 h-6 text-purple-500" />
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-1">Gen AI Training & Fine-tuning Data</h3>
-              <p className="text-sm text-muted-foreground">Define training data requirements and quality metrics for AI models</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="space-y-8">
-          <div>
-            <Label className="block font-medium mb-4 text-foreground">Training Data Requirements</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {TRAINING_DATA_TYPES.map((type) => (
-                <label key={type} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
-                  <Checkbox
-                    checked={value.trainingDataTypes?.includes(type) || false}
-                    onCheckedChange={() => handleMultiSelect('trainingDataTypes', type)}
-                  />
-                  <span className="text-sm text-foreground">{type}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-foreground mb-4">Data Quality for Gen AI</h4>
-            <div className="space-y-6">
-              <div>
-                <Label className="block font-medium mb-2 text-foreground">Instruction Clarity Score</Label>
-                <div className="flex items-center w-full">
-                  <span className="text-muted-foreground text-sm mr-4">Poor</span>
-                  <Slider
-                    min={1}
-                    max={10}
-                    step={1}
-                    value={[value.instructionClarityScore || 5]}
-                    onValueChange={([val]) => onChange({ ...value, instructionClarityScore: val })}
-                    className="w-full"
-                  />
-                  <span className="text-muted-foreground text-sm ml-4">Excellent</span>
-                  <span className="ml-6 px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold text-sm">
-                    {value.instructionClarityScore || 5}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <Label className="block font-medium mb-2 text-foreground">Response Quality Score</Label>
-                <div className="flex items-center w-full">
-                  <span className="text-muted-foreground text-sm mr-4">Poor</span>
-                  <Slider
-                    min={1}
-                    max={10}
-                    step={1}
-                    value={[value.responseQualityScore || 5]}
-                    onValueChange={([val]) => onChange({ ...value, responseQualityScore: val })}
-                    className="w-full"
-                  />
-                  <span className="text-muted-foreground text-sm ml-4">Excellent</span>
-                  <span className="ml-6 px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold text-sm">
-                    {value.responseQualityScore || 5}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <Label className="block font-medium mb-2 text-foreground">Diversity Index</Label>
-                <div className="flex items-center w-full">
-                  <span className="text-muted-foreground text-sm mr-4">Low</span>
-                  <Slider
-                    min={1}
-                    max={10}
-                    step={1}
-                    value={[value.diversityIndex || 5]}
-                    onValueChange={([val]) => onChange({ ...value, diversityIndex: val })}
-                    className="w-full"
-                  />
-                  <span className="text-muted-foreground text-sm ml-4">High</span>
-                  <span className="ml-6 px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold text-sm">
-                    {value.diversityIndex || 5}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <Label className="block font-medium mb-2 text-foreground">Toxicity Score</Label>
-                <div className="flex items-center w-full">
-                  <span className="text-muted-foreground text-sm mr-4">0%</span>
-                  <Slider
-                    min={0}
-                    max={100}
-                    step={5}
-                    value={[value.toxicityScore || 0]}
-                    onValueChange={([val]) => onChange({ ...value, toxicityScore: val })}
-                    className="w-full"
-                  />
-                  <span className="text-muted-foreground text-sm ml-4">100%</span>
-                  <span className="ml-6 px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold text-sm">
-                    {value.toxicityScore || 0}%
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <Label className="block font-medium mb-4 text-foreground">Prompt Engineering</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {PROMPT_ENGINEERING_ITEMS.map((item) => (
-                <label key={item} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
-                  <Checkbox
-                    checked={value.promptEngineering?.includes(item) || false}
-                    onCheckedChange={() => handleMultiSelect('promptEngineering', item)}
-                  />
-                  <span className="text-sm text-foreground">{item}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Knowledge Management Section */}
-      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-        <div className="border-b border-border pb-4 mb-6">
-          <div className="flex items-center gap-3">
-            <BookOpen className="w-6 h-6 text-blue-500" />
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-1">Knowledge Management</h3>
-              <p className="text-sm text-muted-foreground">Configure knowledge sources and update strategies for AI systems</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="space-y-8">
-          <div>
-            <Label className="block font-medium mb-4 text-foreground">Knowledge Sources</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {KNOWLEDGE_SOURCES.map((source) => (
-                <label key={source} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
-                  <Checkbox
-                    checked={value.knowledgeSources?.includes(source) || false}
-                    onCheckedChange={() => handleMultiSelect('knowledgeSources', source)}
-                  />
-                  <span className="text-sm text-foreground">{source}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <Label className="block font-medium mb-4 text-foreground">Update Strategy</Label>
-            <RadioGroup 
-              value={value.updateStrategy || ''} 
-              onValueChange={(newValue) => onChange({ ...value, updateStrategy: newValue })} 
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"
-            >
-              {UPDATE_STRATEGIES.map((strategy) => (
-                <Label key={strategy} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
-                  <RadioGroupItem value={strategy} />
-                  <span className="text-sm text-foreground">{strategy}</span>
-                </Label>
-              ))}
-            </RadioGroup>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-foreground mb-4">Ground Truth Management</h4>
-            <div className="space-y-4">
-              <div>
-                <Label className="block font-medium mb-2 text-foreground">Fact Verification Process</Label>
-                <RadioGroup 
-                  value={value.factVerificationProcess || ''} 
-                  onValueChange={(newValue) => onChange({ ...value, factVerificationProcess: newValue })} 
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"
-                >
-                  {FACT_VERIFICATION.map((process) => (
-                    <Label key={process} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
-                      <RadioGroupItem value={process} />
-                      <span className="text-sm text-foreground">{process}</span>
-                    </Label>
-                  ))}
-                </RadioGroup>
-              </div>
-
-              <div>
-                <Label className="block font-medium mb-2 text-foreground">Update Frequency</Label>
-                <RadioGroup 
-                  value={value.updateFrequency || ''} 
-                  onValueChange={(newValue) => onChange({ ...value, updateFrequency: newValue })} 
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2"
-                >
-                  {['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Annually', 'As Needed'].map((freq) => (
-                    <Label key={freq} className="flex items-center gap-2 hover:bg-accent p-2 rounded border border-border cursor-pointer">
-                      <RadioGroupItem value={freq} />
-                      <span className="text-sm text-foreground">{freq}</span>
-                    </Label>
-                  ))}
-                </RadioGroup>
-              </div>
-
-              <div>
-                <Label className="block font-medium mb-2 text-foreground">Version Control</Label>
-                <div className="flex items-center gap-2 p-2 border border-border rounded hover:bg-accent">
-                  <Checkbox
-                    checked={value.versionControl || false}
-                    onCheckedChange={(checked) => onChange({ ...value, versionControl: !!checked })}
-                  />
-                  <span className="text-sm text-foreground">Knowledge base version control enabled</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+          if (q.stage === Stage.DATA_READINESS) {
+            if (q.type === QuestionType.CHECKBOX) {
+              return (
+                <CheckboxGroup
+                  key={q.id}
+                  label={q.text}
+                  options={q.options}
+                  checkedOptions={currentAnswers}
+                  onChange={(newAnswers) => handleCheckboxChange(q.id, newAnswers)}
+                />
+              );
+            } else if (q.type === QuestionType.RADIO) {
+              const checkedOption = currentAnswers.length > 0 ? currentAnswers[0] : null;
+              
+              return (
+                <RadioGroupQuestion
+                  key={q.id}
+                  label={q.text}
+                  options={q.options}
+                  checkedOption={checkedOption}
+                  onChange={(newAnswer) => handleRadioChange(q.id, newAnswer)}
+                />
+              );
+            } else if (q.type === QuestionType.SLIDER) {
+              const currentValue = currentAnswers.length > 0 ? parseInt(currentAnswers[0].value) || 0 : 0;
+              
+              return (
+                <SliderQuestion
+                  key={q.id}
+                  label={q.text}
+                  value={currentValue}
+                  min={0}
+                  max={100}
+                  step={1}
+                  onChange={(newValue) => handleSliderChange(q.id, newValue)}
+                />
+              );
+            } else if (q.type === QuestionType.TEXT) {
+              const currentValue = currentAnswers.length > 0 ? currentAnswers[0].value : '';
+              
+              return (
+                <TextQuestion
+                  key={q.id}
+                  label={q.text}
+                  value={currentValue}
+                  placeholder="Enter your answer..."
+                  onChange={(newValue) => handleTextChange(q.id, newValue)}
+                />
+              );
+            } else if (q.type === QuestionType.RISK) {
+              // Filter options by prefix for RISK questions
+              const probabilityOptions = q.options.filter(opt => opt.text.startsWith("pro:"));
+              const impactOptions = q.options.filter(opt => opt.text.startsWith("imp:"));
+              
+              // Get current answers - RISK questions store both probability and impact in a single answer
+              const riskAnswer = currentAnswers.length > 0 ? currentAnswers[0] : null;
+              
+              // For RISK questions, find the individual probability and impact answers
+              // These come as separate answers from the backend
+              let probabilityAnswer = null;
+              let impactAnswer = null;
+              
+              // Look for probability and impact answers in the current answers
+              const probAnswer = currentAnswers.find(a => a.id.includes('probability'));
+              const impAnswer = currentAnswers.find(a => a.id.includes('impact'));
+              
+              console.log('RISK Question Debug:', {
+                questionId: q.id,
+                currentAnswers,
+                probAnswer,
+                impAnswer
+              });
+              
+              if (probAnswer) {
+                // Remove prefix for display (handle both cases)
+                const cleanValue = probAnswer.value.startsWith('pro:') 
+                  ? probAnswer.value.replace(/^pro:/, '') 
+                  : probAnswer.value;
+                probabilityAnswer = {
+                  id: probAnswer.id,
+                  value: cleanValue, // Clean string like "LOW" for display
+                  questionId: probAnswer.questionId,
+                  optionId: probAnswer.optionId
+                };
+              }
+              
+              if (impAnswer) {
+                // Remove prefix for display (handle both cases)
+                const cleanValue = impAnswer.value.startsWith('imp:') 
+                  ? impAnswer.value.replace(/^imp:/, '') 
+                  : impAnswer.value;
+                impactAnswer = {
+                  id: impAnswer.id,
+                  value: cleanValue, // Clean string like "HIGH" for display
+                  questionId: impAnswer.questionId,
+                  optionId: impAnswer.optionId
+                };
+              }
+            
+              return (
+                <RiskQuestion
+                  key={q.id}
+                  label={q.text}
+                  probabilityOptions={probabilityOptions}
+                  impactOptions={impactOptions}
+                  checkedAnswers={{
+                    probability: probabilityAnswer,
+                    impact: impactAnswer
+                  }}
+                  onChange={(newChecked) => handleRiskGroupChange(q.id, newChecked)}
+                />
+              );
+            }
+          }
+          return null;
+        })
+      )}
     </div>
   );
-}
+} 
