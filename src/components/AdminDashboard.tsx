@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useStableRender } from "@/hooks/useStableRender";
+import { useRouter } from "next/navigation";
 import {
   Accordion,
   AccordionItem,
@@ -20,6 +21,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Plus,
   Users,
   Building2,
@@ -30,6 +37,8 @@ import {
   BarChart3,
   Shield,
   Globe,
+  HelpCircle,
+  ChevronDown,
 } from "lucide-react";
 
 interface Organization {
@@ -58,6 +67,7 @@ interface UseCase {
 }
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +90,7 @@ export default function AdminDashboard() {
   const [useCasesError, setUseCasesError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isCreatingOrg, setIsCreatingOrg] = useState(false);
   
   // Use global stable render hook
   const { isReady } = useStableRender();
@@ -149,42 +160,68 @@ export default function AdminDashboard() {
     }
   };
 
+  // Navigation handlers
+  const handleNavigateToQuestionTemplates = () => {
+    router.push('/admin/configure-questions');
+  };
+
+  const handleNavigateToOrgQuestions = (orgId: string) => {
+    router.push(`/dashboard/configure-questions?orgId=${orgId}`);
+  };
+
   // Create Organization
   const handleCreateOrganization = async () => {
-    if (!newOrgName || !adminEmail) {
-      setOrgSuccess(null);
+    if (!newOrgName.trim() || !adminEmail.trim()) {
       setError("Organization name and admin email are required");
       return;
     }
+
+    setIsCreatingOrg(true);
     setError(null);
     setOrgSuccess(null);
+
     try {
       const response = await fetch("/api/admin/organizations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: newOrgName,
-          domain: newOrgDomain || undefined,
-          adminEmail,
-          adminFirstName: adminFirstName || "Admin",
-          adminLastName: adminLastName || "User",
+          name: newOrgName.trim(),
+          domain: newOrgDomain.trim() || undefined,
+          adminEmail: adminEmail.trim(),
+          adminFirstName: adminFirstName.trim() || undefined,
+          adminLastName: adminLastName.trim() || undefined,
         }),
       });
+
       const data = await response.json();
       if (data.success) {
+        // Reset form
         setNewOrgName("");
         setNewOrgDomain("");
         setAdminEmail("");
         setAdminFirstName("");
         setAdminLastName("");
         setShowCreateOrg(false);
-        setOrgSuccess("Organization created successfully!");
-        fetchOrganizations();
+        
+        // Set success message
+        setOrgSuccess("Organization created successfully! Redirecting to configure questions...");
+        
+        // Refresh organizations list
+        await fetchOrganizations();
+        
+        // Redirect to question configuration page after a short delay
+        console.log('Redirecting to:', `/admin/configure-questions?orgId=${data.organization.id}`);
+        setTimeout(() => {
+          router.push(`/admin/configure-questions?orgId=${data.organization.id}`);
+        }, 2000);
       } else {
         setError(data.error || "Failed to create organization");
       }
     } catch (error) {
+      console.error('Error creating organization:', error);
       setError("Failed to create organization");
+    } finally {
+      setIsCreatingOrg(false);
     }
   };
 
@@ -331,6 +368,67 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* Question Management Section */}
+        <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
+                <HelpCircle className="w-6 h-6 text-primary" />
+                Question Management
+              </h2>
+              <p className="text-muted-foreground mt-2">
+                Configure global question templates and organization-specific questions
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4">
+              {/* Question Templates Button */}
+              <Button
+                onClick={handleNavigateToQuestionTemplates}
+                className="flex items-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                <Settings className="w-5 h-5" />
+                Question Templates
+              </Button>
+              
+              {/* Organization Questions Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-3 border-border text-foreground hover:bg-muted px-6 py-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                  >
+                    <Building2 className="w-5 h-5" />
+                    Organization Questions
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-64" align="end">
+                  {organizations.length === 0 ? (
+                    <DropdownMenuItem disabled>
+                      <span className="text-muted-foreground">No organizations available</span>
+                    </DropdownMenuItem>
+                  ) : (
+                    organizations.map((org) => (
+                      <DropdownMenuItem
+                        key={org.id}
+                        onClick={() => handleNavigateToOrgQuestions(org.id)}
+                        className="cursor-pointer"
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">{org.name}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {org.users.length} user{org.users.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+
         {/* Success/Error Messages */}
         {orgSuccess && (
           <div className="bg-success/10 border border-success/20 rounded-xl p-4 flex items-center gap-2">
@@ -376,34 +474,35 @@ export default function AdminDashboard() {
                     value={newOrgName}
                     onChange={(e) => setNewOrgName(e.target.value)}
                     placeholder="Enter organization name"
-                    className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
+                    className="w-full"
                   />
                 </div>
+
                 <div>
                   <Label
                     htmlFor="orgDomain"
                     className="text-sm font-medium text-foreground mb-2 block"
                   >
-                    Domain (Optional)
+                    Organization Domain (Optional)
                   </Label>
                   <Input
                     id="orgDomain"
                     value={newOrgDomain}
                     onChange={(e) => setNewOrgDomain(e.target.value)}
                     placeholder="example.com"
-                    className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
+                    className="w-full"
                   />
                 </div>
 
                 <div className="border-t border-border pt-6">
-                  <h3 className="font-semibold mb-4 text-foreground flex items-center gap-2">
-                    <UserPlus className="w-4 h-4" />
-                    Organization Admin Details
+                  <h3 className="text-lg font-semibold text-foreground mb-4">
+                    Admin User Details
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  
+                  <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
                       <Label
-                        id="adminFirstName"
+                        htmlFor="adminFirstName"
                         className="text-sm font-medium text-foreground mb-2 block"
                       >
                         First Name
@@ -412,13 +511,13 @@ export default function AdminDashboard() {
                         id="adminFirstName"
                         value={adminFirstName}
                         onChange={(e) => setAdminFirstName(e.target.value)}
-                        placeholder="First Name"
-                        className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
+                        placeholder="John"
+                        className="w-full"
                       />
                     </div>
                     <div>
                       <Label
-                        id="adminLastName"
+                        htmlFor="adminLastName"
                         className="text-sm font-medium text-foreground mb-2 block"
                       >
                         Last Name
@@ -427,45 +526,47 @@ export default function AdminDashboard() {
                         id="adminLastName"
                         value={adminLastName}
                         onChange={(e) => setAdminLastName(e.target.value)}
-                        placeholder="Last Name"
-                        className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
-                      />
-                    </div>
-                    <div>
-                      <Label
-                        htmlFor="adminEmail"
-                        className="text-sm font-medium text-foreground mb-2 block"
-                      >
-                        Email *
-                      </Label>
-                      <Input
-                        id="adminEmail"
-                        type="email"
-                        value={adminEmail}
-                        onChange={(e) => setAdminEmail(e.target.value)}
-                        placeholder="admin@example.com"
-                        className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
+                        placeholder="Doe"
+                        className="w-full"
                       />
                     </div>
                   </div>
-                </div>
 
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    onClick={handleCreateOrganization}
-                    disabled={!newOrgName || !adminEmail}
-                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-xl"
-                  >
-                    Create Organization
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowCreateOrg(false)}
-                    className="flex-1 border-border text-foreground hover:bg-muted px-6 py-3 rounded-xl"
-                  >
-                    Cancel
-                  </Button>
+                  <div>
+                    <Label
+                      htmlFor="adminEmail"
+                      className="text-sm font-medium text-foreground mb-2 block"
+                    >
+                      Admin Email *
+                    </Label>
+                    <Input
+                      id="adminEmail"
+                      type="email"
+                      value={adminEmail}
+                      onChange={(e) => setAdminEmail(e.target.value)}
+                      placeholder="admin@example.com"
+                      className="w-full"
+                    />
+                  </div>
                 </div>
+              </div>
+
+              <div className="flex gap-3 mt-8">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCreateOrg(false)}
+                  className="flex-1"
+                  disabled={isCreatingOrg}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreateOrganization}
+                  disabled={isCreatingOrg || !newOrgName.trim() || !adminEmail.trim()}
+                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  {isCreatingOrg ? "Creating..." : "Create Organization"}
+                </Button>
               </div>
             </div>
           </div>
@@ -567,40 +668,63 @@ export default function AdminDashboard() {
               {organizations.map((org) => (
                 <Card
                   key={org.id}
-                  className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl overflow-hidden"
+                  className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl"
                 >
-                  <CardHeader className="pb-4">
-                    <div className="flex justify-between items-start gap-4">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-2">
-                          <CardTitle className="text-xl text-foreground truncate">
+                        <div className="flex items-center gap-3 mb-3">
+                          <h3 className="text-xl font-semibold text-foreground">
                             {org.name}
-                          </CardTitle>
-                          <Badge
-                            variant="secondary"
-                            className="px-3 py-1 rounded-full flex-shrink-0"
-                          >
-                            {org.users.length}{" "}
-                            {org.users.length === 1 ? "User" : "Users"}
-                          </Badge>
-                          <Badge
-                            variant="outline"
-                            className="px-3 py-1 rounded-full flex-shrink-0"
-                          >
-                            {org.useCases.length}{" "}
-                            {org.useCases.length === 1
-                              ? "Use Case"
-                              : "Use Cases"}
-                          </Badge>
+                          </h3>
+                          {org.domain && (
+                            <Badge variant="outline" className="px-3 py-1 rounded-full">
+                              {org.domain}
+                            </Badge>
+                          )}
                         </div>
-                        {org.domain && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Globe className="w-4 h-4" />
-                            <span>{org.domain}</span>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Users className="w-4 h-4" />
+                            <span className="text-sm">
+                              {org.users.length} user{org.users.length !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <BarChart3 className="w-4 h-4" />
+                            <span className="text-sm">
+                              {org.useCases.length} use case{org.useCases.length !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                        </div>
+
+                        {org.users.length > 0 && (
+                          <div className="mt-4">
+                            <p className="text-sm font-medium text-muted-foreground mb-2">
+                              Users:
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {org.users.map((user) => (
+                                <Badge
+                                  key={user.id}
+                                  variant="outline"
+                                  className="px-2 py-1 text-xs"
+                                >
+                                  {user.firstName && user.lastName
+                                    ? `${user.firstName} ${user.lastName}`
+                                    : user.email}
+                                  {user.role === 'ORG_ADMIN' && (
+                                    <span className="ml-1 text-primary">(Admin)</span>
+                                  )}
+                                </Badge>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+                      
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         <Button
                           variant="outline"
                           size="sm"
@@ -608,154 +732,28 @@ export default function AdminDashboard() {
                             setInviteModalOrgId(org.id);
                             setInviteEmail("");
                             setInviteRole("ORG_USER");
-                            setInviteError(null);
-                            setInviteSuccess(null);
                           }}
-                          className="border-border text-dark hover:bg-muted whitespace-nowrap"
+                          className="border-border text-foreground hover:bg-muted"
                         >
-                          <Mail className="w-4 h-4 mr-2" />
+                          <UserPlus className="w-4 h-4 mr-2" />
                           Invite User
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            setSelectedOrgId(
-                              selectedOrgId === org.id ? null : org.id
-                            );
-                          }}
-                          className="border-border text-dark hover:bg-muted whitespace-nowrap"
-                        >
-                          <BarChart3 className="w-4 h-4" />
-                          {selectedOrgId === org.id ? "Hide" : "Show"} Use Cases
-                        </Button>
-                        
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleDeleteOrganization(org.id, org.name)
-                          }
+                          onClick={() => handleDeleteOrganization(org.id, org.name)}
                           disabled={deleteLoading === org.id}
-                          className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded border-2 border-red-700 min-w-[100px]"
-                          title="Delete Organization"
-                          style={{
-                            display: "inline-block",
-                            visibility: "visible",
-                            opacity: 1,
-                            position: "relative",
-                            zIndex: 10,
-                            minWidth: "100px",
-                            backgroundColor: "#ef4444",
-                            borderColor: "#b91c1c",
-                            color: "white",
-                            fontWeight: "bold"
-                          }}
+                          className="border-destructive text-destructive hover:bg-destructive/10"
                         >
                           {deleteLoading === org.id ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b border-white mx-auto"></div>
+                            <div className="w-4 h-4 border-2 border-destructive border-t-transparent rounded-full animate-spin mr-2" />
                           ) : (
-                            <>
-                              <Trash2 className="w-4 h-4 mr-1 inline" />
-                              DELETE
-                            </>
+                            <Trash2 className="w-4 h-4 mr-2" />
                           )}
-                        </button>
+                          Delete
+                        </Button>
                       </div>
                     </div>
-                  </CardHeader>
-
-                  <CardContent className="pt-0">
-                    {/* Users List */}
-                    <div className="mb-6">
-                      <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        Organization Users
-                      </h4>
-                      <div className="grid gap-3">
-                        {org.users.map((user) => (
-                          <div
-                            key={user.id}
-                            className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                                <span className="text-sm font-medium text-primary">
-                                  {user.firstName?.[0]}
-                                  {user.lastName?.[0]}
-                                </span>
-                              </div>
-                              <div>
-                                <div className="font-medium text-foreground">
-                                  {user.firstName} {user.lastName}
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                  {user.email}
-                                </div>
-                              </div>
-                            </div>
-                            <Badge
-                              variant={
-                                user.role === "ORG_ADMIN"
-                                  ? "default"
-                                  : "secondary"
-                              }
-                              className="px-3 py-1 rounded-full"
-                            >
-                              {user.role === "ORG_ADMIN" ? "Admin" : "User"}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Use Cases List (Conditional) */}
-                    {selectedOrgId === org.id && (
-                      <div>
-                        <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                          <BarChart3 className="w-4 h-4" />
-                          Use Cases
-                        </h4>
-                        {useCasesLoading ? (
-                          <div className="text-center py-4">
-                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
-                            <p className="text-sm text-muted-foreground">
-                              Loading use cases...
-                            </p>
-                          </div>
-                        ) : useCasesError ? (
-                          <div className="text-center py-4">
-                            <p className="text-sm text-destructive">
-                              {useCasesError}
-                            </p>
-                          </div>
-                        ) : filteredUseCases.length === 0 ? (
-                          <div className="text-center py-4">
-                            <p className="text-sm text-muted-foreground">
-                              No use cases found for this organization.
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="grid gap-2">
-                            {filteredUseCases.map((useCase) => (
-                              <div
-                                key={useCase.id}
-                                className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
-                              >
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-foreground truncate">
-                                    {useCase.title}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground">
-                                    Stage: {useCase.stage} • Priority:{" "}
-                                    {useCase.priority}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -766,7 +764,7 @@ export default function AdminDashboard() {
         {/* Invite User Modal */}
         {inviteModalOrgId && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-            <div className="bg-card rounded-2xl shadow-2xl p-8 max-w-lg w-full mx-4 border border-border">
+            <div className="bg-card rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 border border-border">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
                   <Mail className="w-5 h-5 text-primary" />
@@ -776,13 +774,12 @@ export default function AdminDashboard() {
                     Invite User
                   </h2>
                   <p className="text-muted-foreground">
-                    Send invitation to join{" "}
-                    {organizations.find((o) => o.id === inviteModalOrgId)?.name}
+                    Send an invitation to join the organization
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <div>
                   <Label
                     htmlFor="inviteEmail"
@@ -796,7 +793,7 @@ export default function AdminDashboard() {
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
                     placeholder="user@example.com"
-                    className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
+                    className="w-full"
                   />
                 </div>
 
@@ -805,66 +802,54 @@ export default function AdminDashboard() {
                     htmlFor="inviteRole"
                     className="text-sm font-medium text-foreground mb-2 block"
                   >
-                    Role
+                    Role *
                   </Label>
                   <select
                     id="inviteRole"
                     value={inviteRole}
                     onChange={(e) => setInviteRole(e.target.value)}
-                    className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="ORG_USER">Organization User</option>
                     <option value="ORG_ADMIN">Organization Admin</option>
                   </select>
                 </div>
+              </div>
 
-                {/* Success/Error Messages */}
-                {inviteSuccess && (
-                  <div className="bg-success/10 border border-success/20 rounded-xl p-4 flex items-center gap-2">
-                    <div className="w-2 h-2 bg-success rounded-full"></div>
-                    <span className="text-success font-medium">
-                      {inviteSuccess}
-                    </span>
-                  </div>
-                )}
-                {inviteError && (
-                  <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-2">
-                    <div className="w-2 h-2 bg-destructive rounded-full"></div>
-                    <span className="text-destructive font-medium">
-                      {inviteError}
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    onClick={handleInviteUser}
-                    disabled={!inviteEmail || inviteLoading}
-                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-xl"
-                  >
-                    {inviteLoading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b border-primary-foreground"></div>
-                        Sending Invite...
-                      </div>
-                    ) : (
-                      "Send Invitation"
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setInviteModalOrgId(null);
-                      setInviteEmail("");
-                      setInviteRole("ORG_USER");
-                      setInviteError(null);
-                      setInviteSuccess(null);
-                    }}
-                    className="flex-1 border-border text-dark hover:bg-muted px-6 py-3 rounded-xl"
-                  >
-                    Cancel
-                  </Button>
+              {inviteError && (
+                <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                  <p className="text-destructive text-sm">{inviteError}</p>
                 </div>
+              )}
+
+              {inviteSuccess && (
+                <div className="mt-4 p-3 bg-success/10 border border-success/20 rounded-md">
+                  <p className="text-success text-sm">{inviteSuccess}</p>
+                </div>
+              )}
+
+              <div className="flex gap-3 mt-8">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setInviteModalOrgId(null);
+                    setInviteEmail("");
+                    setInviteRole("ORG_USER");
+                    setInviteError(null);
+                    setInviteSuccess(null);
+                  }}
+                  className="flex-1"
+                  disabled={inviteLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleInviteUser}
+                  disabled={inviteLoading || !inviteEmail.trim()}
+                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  {inviteLoading ? "Sending..." : "Send Invitation"}
+                </Button>
               </div>
             </div>
           </div>
