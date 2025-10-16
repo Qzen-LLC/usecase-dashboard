@@ -47,6 +47,16 @@ export const useAnswerHandlers = (
     [onAnswerChange]
   );
 
+  const handleTextMiniChange = useCallback(
+    (questionId: string, newValue: string) => {
+      console.log("Mini Text changed for question:", questionId, newValue);
+      onAnswerChange(questionId, [
+        { id: `${questionId}-textmini`, value: newValue, questionId },
+      ]);
+    },
+    [onAnswerChange]
+  );
+
   const handleRiskGroupChange = useCallback(
     (
       questionId: string,
@@ -72,5 +82,5 @@ export const useAnswerHandlers = (
     [onAnswerChange]
   );
 
-  return { handleCheckboxChange, handleRadioChange, handleSliderChange, handleTextChange, handleRiskGroupChange };
+  return { handleCheckboxChange, handleRadioChange, handleSliderChange, handleTextChange, handleTextMiniChange, handleRiskGroupChange };
 };

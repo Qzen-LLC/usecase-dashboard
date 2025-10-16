@@ -12,6 +12,7 @@ import { CheckboxGroup } from './questionComps/checkboxQuestion';
 import { RadioGroupQuestion } from './questionComps/radioQuestion';
 import { SliderQuestion } from './questionComps/SliderQuestion';
 import { TextQuestion } from './questionComps/TextQuestion';
+import { TextMiniQuestion } from './questionComps/TextMiniQuestion';
 import { useAnswerHandlers } from '@/lib/handle-assess-ui';
 import { RiskQuestion } from './questionComps/riskQuestion';
 
@@ -61,7 +62,7 @@ type Props = {
 };
 
 export default function BusinessFeasibility({ value, onChange, questions, questionsLoading, questionAnswers, onAnswerChange }: Props) {
-  const { handleCheckboxChange, handleRadioChange, handleSliderChange, handleTextChange, handleRiskGroupChange } = useAnswerHandlers(onAnswerChange);
+  const { handleCheckboxChange, handleRadioChange, handleSliderChange, handleTextChange, handleTextMiniChange, handleRiskGroupChange } = useAnswerHandlers(onAnswerChange);
 
   return (
     <div className="space-y-10">
@@ -128,6 +129,18 @@ export default function BusinessFeasibility({ value, onChange, questions, questi
                   value={currentValue}
                   placeholder="Enter your answer..."
                   onChange={(newValue) => handleTextChange(q.id, newValue)}
+                />
+              );
+            } else if (q.type === QuestionType.TEXT_MINI) {
+              const currentValue = currentAnswers.length > 0 ? currentAnswers[0].value : '';
+              
+              return (
+                <TextMiniQuestion
+                  key={q.id}
+                  label={q.text}
+                  value={currentValue}
+                  placeholder="Enter your answer..."
+                  onChange={(newValue) => handleTextMiniChange(q.id, newValue)}
                 />
               );
             } else if (q.type === QuestionType.RISK) {

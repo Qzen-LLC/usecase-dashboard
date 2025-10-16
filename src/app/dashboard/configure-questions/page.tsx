@@ -72,6 +72,7 @@ const getQuestionTypeLabel = (type: QuestionType) => {
     case QuestionType.CHECKBOX: return "Checkbox";
     case QuestionType.RADIO: return "Radio";
     case QuestionType.TEXT: return "Text";
+    case QuestionType.TEXT_MINI: return "TextMini";
     case QuestionType.SLIDER: return "Slider";
     case QuestionType.RISK: return "Risk";
     default: return type;
@@ -1192,6 +1193,7 @@ export default function ConfigureQuestionsPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value={QuestionType.TEXT}>Text</SelectItem>
+                          <SelectItem value={QuestionType.TEXT_MINI}>Text Mini</SelectItem>
                           <SelectItem value={QuestionType.CHECKBOX}>Checkbox</SelectItem>
                           <SelectItem value={QuestionType.RADIO}>Radio</SelectItem>
                           <SelectItem value={QuestionType.SLIDER}>Slider</SelectItem>

@@ -14,6 +14,7 @@ import { SliderQuestion } from './questionComps/SliderQuestion';
 import { TextQuestion } from './questionComps/TextQuestion';
 import { useAnswerHandlers } from '@/lib/handle-assess-ui';
 import { RiskQuestion } from './questionComps/riskQuestion';
+import { TextMiniQuestion } from './questionComps/TextMiniQuestion';
 
 interface QnAProps {
   id: string,
@@ -89,7 +90,7 @@ type Props = {
 };
 
 export default function TechnicalFeasibility({ value, onChange, questions, questionsLoading, questionAnswers, onAnswerChange }: Props) {
-  const { handleCheckboxChange, handleRadioChange, handleSliderChange, handleTextChange, handleRiskGroupChange } = useAnswerHandlers(onAnswerChange);
+  const { handleCheckboxChange, handleRadioChange, handleSliderChange, handleTextChange, handleTextMiniChange, handleRiskGroupChange } = useAnswerHandlers(onAnswerChange);
 
   // Check if Gen AI or LLM is selected to show additional sections
   const isGenAISelected = value.modelTypes?.includes("Generative AI") || 
@@ -161,6 +162,18 @@ export default function TechnicalFeasibility({ value, onChange, questions, quest
                   value={currentValue}
                   placeholder="Enter your answer..."
                   onChange={(newValue) => handleTextChange(q.id, newValue)}
+                />
+              );
+            } else if (q.type === QuestionType.TEXT_MINI) {
+              const currentValue = currentAnswers.length > 0 ? currentAnswers[0].value : '';
+              
+              return (
+                <TextMiniQuestion
+                  key={q.id}
+                  label={q.text}
+                  value={currentValue}
+                  placeholder="Enter your answer..."
+                  onChange={(newValue) => handleTextMiniChange(q.id, newValue)}
                 />
               );
             } else if (q.type === QuestionType.RISK) {
