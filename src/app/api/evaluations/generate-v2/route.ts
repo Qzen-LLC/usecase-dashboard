@@ -77,7 +77,8 @@ export async function POST(request: NextRequest) {
       
       evaluationConfig = await engine.generateEvaluations(context, strategy);
       
-      console.log(`✅ LLM generation complete: ${evaluationConfig.metadata.totalScenarios} scenarios`);
+      const metaForLog = (evaluationConfig as any)?.metadata || {};
+      console.log(`✅ LLM generation complete: ${metaForLog.totalScenarios ?? evaluationConfig.testSuites?.reduce((sum: number, s: any) => sum + (s.scenarios?.length || 0), 0) ?? 0} scenarios`);
     }
 
     // Step 3: Save the generated evaluation configuration
@@ -104,17 +105,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 4: Return the evaluation configuration
+    const meta = (evaluationConfig as any)?.metadata || {};
     return NextResponse.json({
       success: true,
       evaluationConfig,
       summary: {
         totalSuites: evaluationConfig.testSuites.length,
-        totalScenarios: evaluationConfig.metadata.totalScenarios || 
-                       evaluationConfig.testSuites.reduce((sum, suite) => sum + suite.scenarios.length, 0),
-        coverage: evaluationConfig.metadata.coverage || 'Not calculated',
+        totalScenarios: meta.totalScenarios ?? 
+                       evaluationConfig.testSuites.reduce((sum: number, suite: any) => sum + (suite.scenarios?.length || 0), 0),
+        coverage: meta.coverage ?? 'Not calculated',
         confidence: evaluationConfig.scoringFramework?.confidence?.overall || 0.85,
         generationMethod: useOrchestrator ? 'multi-agent' : 'direct-llm',
-        estimatedDuration: evaluationConfig.metadata.estimatedDuration || 
+        estimatedDuration: meta.estimatedDuration ?? 
                           evaluationConfig.testSuites.length * 5000 // Rough estimate
       },
       message: 'Evaluation configuration generated successfully using AI'
@@ -191,20 +193,23 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // Get the latest AI-generated evaluation for the use case
+      const whereClause: any = {
+        description: { contains: 'LLM-powered' }
+      };
+      if (useCaseId) whereClause.useCaseId = useCaseId;
       evaluation = await prismaClient.evaluation.findFirst({
-        where: { 
-          useCaseId,
-          description: { contains: 'LLM-powered' }
-        },
+        where: whereClause,
         orderBy: { createdAt: 'desc' }
       });
     }
 
     if (!evaluation) {
+      // Return 200 with empty payload to avoid frontend 404s in production
       return NextResponse.json({
-        success: false,
-        message: 'No AI-generated evaluation found'
-      }, { status: 404 });
+        success: true,
+        evaluation: null,
+        message: 'No AI-generated evaluation found yet'
+      });
     }
 
     return NextResponse.json({
