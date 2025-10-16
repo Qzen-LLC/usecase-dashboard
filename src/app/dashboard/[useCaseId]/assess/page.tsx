@@ -86,6 +86,7 @@ export default function AssessmentPage() {
   const [questionsLoading, setQuestionsLoading] = useState(true);
   const [questionAnswers, setQuestionAnswers] = useState<Record<string, AnswerProps[]>>({});
   const navigationRef = useRef<HTMLDivElement>(null);
+  const [userHasOrganization, setUserHasOrganization] = useState<boolean | null>(null); // Start as null until we check
 
   // Add readonly styles to the document when in readonly mode
   useEffect(() => {
@@ -600,12 +601,42 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     });
   }, []);
 
+  // Check if user has organizationId
+  useEffect(() => {
+    const checkUserOrganization = async () => {
+      try {
+        const response = await fetch('/api/users/me');
+        if (response.ok) {
+          const userData = await response.json();
+          const hasOrg = !!userData.user?.organizationId;
+          setUserHasOrganization(hasOrg);
+          console.log('[Assess] User organization check:', { hasOrg, organizationId: userData.user?.organizationId });
+        console.log('[Assess] Will fetch from:', hasOrg ? 'Questions API' : 'QuestionTemplates API');
+        }
+      } catch (error) {
+        console.error('[Assess] Error checking user organization:', error);
+        // Default to false (use templates) on error
+        setUserHasOrganization(false);
+      }
+    };
+    
+    checkUserOrganization();
+  }, []);
+
   // Update the useEffect to fetch questions with answers
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
         setQuestionsLoading(true);
-        const response = await fetch(`/api/get-assess-questions?useCaseId=${useCaseId}`, {
+        
+        // Use different API based on whether user has organization
+        const apiEndpoint = userHasOrganization 
+          ? `/api/get-assess-questions?useCaseId=${useCaseId}`
+          : `/api/get-assess-question-templates?useCaseId=${useCaseId}`;
+        
+        console.log('[Assess] Fetching from:', apiEndpoint, { userHasOrganization });
+        
+        const response = await fetch(apiEndpoint, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -613,7 +644,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         });
         const qnAData = await response.json();
         
-        // console.log('Fetched questions data:', qnAData); // Debug log
+        console.log('Fetched questions data:', qnAData); // Debug log
         
         const formattedQuestions = qnAData.map((q: QnAProps) => ({
           id: q.id,
@@ -647,10 +678,10 @@ const validateAssessmentData = useMemo(() => (data: any) => {
       }
     };
 
-    if (useCaseId) {
+    if (useCaseId && userHasOrganization !== null) {
       fetchQuestions();
     }
-  }, [useCaseId]);
+  }, [useCaseId, userHasOrganization]);
 
   // Scroll to top when currentStep changes
   useEffect(() => {
@@ -724,9 +755,15 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         body: JSON.stringify({ useCaseId, assessData: transformedData }),
       });
 
-      // Save question answers
+      // Save question answers using appropriate endpoint
       if (Object.keys(questionAnswers).length > 0) {
-        await fetch("/api/save-question-answers", {
+        const saveEndpoint = userHasOrganization 
+          ? "/api/save-question-answers"
+          : "/api/save-template-answers";
+        
+        console.log('[Assess] Saving answers to:', saveEndpoint, { userHasOrganization });
+        
+        await fetch(saveEndpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
