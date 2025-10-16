@@ -18,20 +18,23 @@ export async function POST(request: NextRequest) {
 
     // Process each question's answers
     for (const [questionId, questionAnswers] of Object.entries(answers)) {
-      if (Array.isArray(questionAnswers) && questionAnswers.length > 0) {
-        // Delete existing answer for this question and use case
+      if (Array.isArray(questionAnswers)) {
+        // Always delete existing answer first, regardless of whether new answer is empty
         await prisma.answer.deleteMany({
           where: {
             questionId: questionId,
             useCaseId: useCaseId,
           },
         });
+        
+        // Only create a new answer if there's data to save
+        if (questionAnswers.length > 0) {
 
         const firstAnswer = questionAnswers[0];
         
-        // Check if this is a text-based question (TEXT or SLIDER) - no optionId
+        // Check if this is a text-based question (TEXT, TEXT_MINI or SLIDER) - no optionId
         if (firstAnswer.optionId === undefined) {
-          // For TEXT and SLIDER questions, store the value directly
+          // For TEXT, TEXT_MINI and SLIDER questions, store the value directly
           console.log(`Saving text-based answer for question ${questionId}:`, firstAnswer.value);
           await prisma.answer.create({
             data: {
@@ -61,6 +64,10 @@ export async function POST(request: NextRequest) {
               },
             });
           }
+        }
+        } else {
+          // Log when answer is deleted due to empty selection
+          console.log(`Deleted answer for question ${questionId} - no selections made`);
         }
       }
     }
