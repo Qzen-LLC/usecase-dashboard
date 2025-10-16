@@ -693,15 +693,7 @@ export class GuardrailsOrchestrator {
         // Create a tracer for this specialist agent
         const agentTracer = createAgentTracer(name, 'specialist', this.sessionId);
 
-        // Start agent execution tracking
-        await observabilityManager.startAgentExecution(
-          name,
-          'specialist',
-          context,
-          this.sessionId
-        );
-
-        // Start tracer execution
+        // Start tracer execution (this internally calls observabilityManager.startAgentExecution)
         await agentTracer.startExecution(context);
 
         // Log agent input
@@ -717,16 +709,8 @@ export class GuardrailsOrchestrator {
         // Log agent output
         guardrailLogger.logAgentOutput(name, response);
 
-        // End tracer execution
+        // End tracer execution (this internally calls observabilityManager.endAgentExecution)
         await agentTracer.endExecution(response);
-
-        // End agent execution tracking
-        await observabilityManager.endAgentExecution(
-          name,
-          response,
-          null,
-          this.sessionId
-        );
 
         return { name, response };
       }

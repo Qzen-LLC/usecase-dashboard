@@ -14,6 +14,7 @@ export interface EvaluationContext {
     title: string;
     problemStatement: string;
     proposedSolution: string;
+    keyBenefits: string;
     currentState: string;
     desiredState: string;
     successCriteria: string[];
@@ -21,8 +22,11 @@ export interface EvaluationContext {
     primaryStakeholders: string[];
     secondaryStakeholders: string[];
     confidenceLevel: number;
+    operationalImpact: number;
+    productivityImpact: number;
+    revenueImpact: number;
     systemCriticality: string;
-    implementationComplexity: string;
+    implementationComplexity: number;
   };
   guardrails: {
     configuration: GuardrailsConfig;
@@ -126,6 +130,7 @@ export class EvaluationContextAggregator {
         title: useCase.title,
         problemStatement: useCase.problemStatement || '',
         proposedSolution: useCase.proposedAISolution || '',
+        keyBenefits: useCase.keyBenefits || '',
         currentState: useCase.currentState || '',
         desiredState: useCase.desiredState || '',
         successCriteria: useCase.successCriteria || [],
@@ -133,8 +138,11 @@ export class EvaluationContextAggregator {
         primaryStakeholders: useCase.primaryStakeholders || [],
         secondaryStakeholders: useCase.secondaryStakeholders || [],
         confidenceLevel: useCase.confidenceLevel || 0,
+        operationalImpact: useCase.operationalImpact || 0,
+        productivityImpact: useCase.productivityImpact || 0,
+        revenueImpact: useCase.revenueImpact || 0,
         systemCriticality: assessments.business?.systemCriticality || 'Standard',
-        implementationComplexity: useCase.implementationComplexity || 'Medium'
+        implementationComplexity: useCase.implementationComplexity || 0
       },
       guardrails: this.processGuardrails(guardrails),
       assessments,

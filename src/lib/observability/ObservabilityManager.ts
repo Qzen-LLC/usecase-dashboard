@@ -88,8 +88,15 @@ export class ObservabilityManager {
     inputs: any,
     sessionId?: string
   ): Promise<void> {
-    // Start agent trace in LangSmith
-    await langsmithTracer.startAgentTrace(agentName, agentType, inputs);
+    // Start agent trace in LangSmith with full context
+    await langsmithTracer.startAgentTrace(agentName, agentType, {
+      agentName: agentName,
+      agentType: agentType,
+      domain: inputs.domain,
+      goal: inputs.goal,
+      input: inputs.input || inputs,
+      timestamp: inputs.timestamp || new Date().toISOString()
+    });
 
     // Initialize agent metrics
     const metrics: AgentExecutionMetrics = {
@@ -114,6 +121,8 @@ export class ObservabilityManager {
 
     console.log(`\n🤖 AGENT STARTED: ${agentName}`);
     console.log(`   Type: ${agentType}`);
+    if (inputs.domain) console.log(`   Domain: ${inputs.domain}`);
+    if (inputs.goal) console.log(`   Goal: ${inputs.goal.substring(0, 80)}...`);
     console.log(`   Input Size: ${metrics.inputSize} bytes`);
   }
 
@@ -134,20 +143,33 @@ export class ObservabilityManager {
     metrics.durationMs = metrics.endTime.getTime() - metrics.startTime.getTime();
     metrics.status = error ? 'failed' : 'completed';
     metrics.outputSize = outputs ? JSON.stringify(outputs).length : 0;
-    
+
     if (error) {
       metrics.errors?.push(String(error));
     }
 
-    // End agent trace in LangSmith
-    await langsmithTracer.endAgentTrace(outputs, error);
+    // End agent trace in LangSmith with structured output
+    const structuredOutputs = {
+      outputs: outputs.outputs || outputs,
+      reasoning: outputs.reasoning,
+      metrics: outputs.metrics || {
+        duration: metrics.durationMs,
+        inputSize: metrics.inputSize,
+        outputSize: metrics.outputSize
+      },
+      success: outputs.success !== undefined ? outputs.success : !error,
+      agentName: agentName,
+      timestamp: new Date().toISOString()
+    };
 
-    // Log completion
+    await langsmithTracer.endAgentTrace(structuredOutputs, error);
+
+    // Log completion (brief, detailed logging is in AgentTracer)
     console.log(`\n✅ AGENT COMPLETED: ${agentName}`);
     console.log(`   Duration: ${metrics.durationMs}ms`);
     console.log(`   Output Size: ${metrics.outputSize} bytes`);
     console.log(`   Status: ${metrics.status}`);
-    
+
     if (error) {
       console.error(`   Error: ${error}`);
     }
