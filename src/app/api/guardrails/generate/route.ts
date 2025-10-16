@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GuardrailsEngine } from '@/lib/agents/guardrails-engine';
+import { GuardrailsOrchestrator } from '@/lib/agents/guardrails-orchestrator';
 import { ComprehensiveAssessment } from '@/lib/agents/types';
 import { prismaClient } from '@/utils/db';
 import { currentUser } from '@clerk/nextjs/server';
@@ -134,30 +134,16 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    // Initialize the guardrails engine - will throw if no API key
-    let engine;
-    try {
-      engine = new GuardrailsEngine();
-    } catch (engineError) {
-      console.error('Failed to initialize guardrails engine:', engineError);
-      return NextResponse.json({
-        success: false,
-        error: 'LLM_INITIALIZATION_FAILED',
-        message: engineError instanceof Error ? engineError.message : 'Failed to initialize LLM service',
-        requiresConfiguration: true
-      }, { status: 503 });
-    }
+    // Initialize the multi-agent orchestrator
+    const orchestrator = new GuardrailsOrchestrator();
 
-    // Generate guardrails using the agentic system with COMPLETE context
+    // Generate guardrails using the 10-agent system with COMPLETE context
     console.log(`🚀 Generating comprehensive guardrails for use case: ${useCaseId}`);
     console.log(`📊 Context includes: ${completeContext.risks.identified.length} risks, ` +
                 `${Object.keys(completeContext.compliance).filter(k => completeContext.compliance[k]).length} compliance frameworks, ` +
                 `${completeContext.useCase.primaryStakeholders.length + completeContext.useCase.secondaryStakeholders.length} stakeholders`);
-    
-    const guardrails = await engine.generateGuardrails(
-      comprehensiveAssessment,
-      comprehensiveAssessment.organizationPolicies
-    );
+
+    const guardrails = await orchestrator.generateGuardrails(comprehensiveAssessment);
 
     // Log successful generation
     console.log(`✅ Guardrails generated successfully for use case: ${useCaseId}`);
