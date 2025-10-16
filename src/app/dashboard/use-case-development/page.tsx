@@ -126,9 +126,9 @@ export default function UseCaseDevelopmentDashboard() {
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <Code2 className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Use Case Development</h1>
+          <h1 className="text-3xl font-bold text-foreground">Use Case Development</h1>
         </div>
-        <p className="text-gray-600">
+        <p className="text-muted-foreground">
           Create and manage prompt templates for your AI use cases
         </p>
       </div>
@@ -239,10 +239,10 @@ export default function UseCaseDevelopmentDashboard() {
                   </Badge>
                   <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
                 </div>
-                <CardTitle className="text-lg line-clamp-2">
+                <CardTitle className="text-lg line-clamp-2 text-foreground">
                   {useCase.title}
                 </CardTitle>
-                <CardDescription className="text-sm">
+                <CardDescription className="text-sm text-muted-foreground">
                   {useCase.businessFunction}
                 </CardDescription>
               </CardHeader>

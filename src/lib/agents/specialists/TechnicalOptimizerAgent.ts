@@ -20,13 +20,22 @@ export class TechnicalOptimizerAgent extends BaseSpecialistAgent {
     const domainPrompt = this.buildTechnicalPrompt(techAssessment);
     
     // Generate guardrails using LLM
-    const guardrails = await this.generateGuardrailsWithLLM(
+    const guardrails = await this.generateGuardrailsWithReasoning(
       techAssessment,
       {
         useCaseTitle: assessment.useCaseTitle || 'AI System',
         problemStatement: assessment.problemStatement || '',
         proposedSolution: assessment.proposedSolution || '',
-        successCriteria: assessment.successCriteria || ''
+        keyBenefits: assessment.keyBenefits || '',
+        successCriteria: assessment.successCriteria || '',
+        keyAssumptions: assessment.keyAssumptions || '',
+        multiDimensionalScoring: {
+          confidenceLevel: assessment.confidenceLevel || 0,
+          operationalImpact: assessment.operationalImpact || 0,
+          productivityImpact: assessment.productivityImpact || 0,
+          revenueImpact: assessment.revenueImpact || 0,
+          implementationComplexity: assessment.implementationComplexity || 0
+        }
       },
       domainPrompt
     );

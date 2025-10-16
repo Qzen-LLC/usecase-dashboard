@@ -11,22 +11,31 @@ export class RiskAnalystAgent extends BaseSpecialistAgent {
   }
 
   async analyzeAndPropose(context: any): Promise<AgentResponse> {
-    console.log('[Agent]: Analyzing (insights only - no template guardrails)...');
-    
+    console.log(`🤖 ${this.agentName}: Starting autonomous analysis...`);
+
     const assessment = context.assessment;
     const riskAssessment = assessment.riskAssessment || {};
-    
+
     // Build domain-specific prompt with actual assessment data
     const domainPrompt = this.buildRiskPrompt(riskAssessment);
-    
-    // Generate guardrails using LLM
-    const guardrails = await this.generateGuardrailsWithLLM(
+
+    // Generate guardrails using AUTONOMOUS REASONING (new method)
+    const guardrails = await this.generateGuardrailsWithReasoning(
       riskAssessment,
       {
         useCaseTitle: assessment.useCaseTitle || 'AI System',
         problemStatement: assessment.problemStatement || '',
         proposedSolution: assessment.proposedSolution || '',
-        successCriteria: assessment.successCriteria || ''
+        keyBenefits: assessment.keyBenefits || '',
+        successCriteria: assessment.successCriteria || '',
+        keyAssumptions: assessment.keyAssumptions || '',
+        multiDimensionalScoring: {
+          confidenceLevel: assessment.confidenceLevel || 0,
+          operationalImpact: assessment.operationalImpact || 0,
+          productivityImpact: assessment.productivityImpact || 0,
+          revenueImpact: assessment.revenueImpact || 0,
+          implementationComplexity: assessment.implementationComplexity || 0
+        }
       },
       domainPrompt
     );

@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { cleanWithDefaults } from '@/lib/utils/assessment-cleaner';
 import {
   PlayCircle,
   PauseCircle,
@@ -171,11 +172,20 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
 
       // Choose API endpoint based on generation mode
       const apiEndpoint = useAIGeneration ? '/api/evaluations/generate-v2' : '/api/evaluations/generate';
-      
+
       console.log('🔍 Use Case ID:', useCaseId);
       console.log('🔍 Guardrails config:', guardrailsConfig);
       console.log('🔍 Guardrails ID:', guardrailsConfig?.id);
-      
+
+      // Clean assessment data before sending - only pass user-filled fields
+      const cleanedAssessmentData = assessmentData
+        ? cleanWithDefaults(assessmentData)
+        : undefined;
+
+      if (assessmentData) {
+        console.log('🧹 Assessment data cleaned for evaluation generation');
+      }
+
       const requestBody = useAIGeneration ? {
         useCaseId,
         guardrailsId: guardrailsConfig?.id || null,
@@ -185,7 +195,7 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
       } : {
         useCaseId,
         guardrailsConfig,
-        assessmentData
+        assessmentData: cleanedAssessmentData  // Send cleaned data
       };
 
       const response = await fetch(apiEndpoint, {

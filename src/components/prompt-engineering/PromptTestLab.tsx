@@ -328,15 +328,15 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-card rounded-lg max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-border">
         {/* Header */}
-        <div className="border-b p-6 flex justify-between items-center">
+        <div className="border-b border-border p-6 flex justify-between items-center bg-card">
           <div>
-            <h2 className="text-2xl font-bold flex items-center gap-2">
+            <h2 className="text-2xl font-bold flex items-center gap-2 text-foreground">
               <Brain className="w-6 h-6" />
               Prompt Test Lab
             </h2>
-            <p className="text-gray-600 mt-1">{prompt.name}</p>
+            <p className="text-muted-foreground mt-1">{prompt.name}</p>
           </div>
           <Button variant="ghost" onClick={onClose}>
             <X className="w-5 h-5" />
@@ -344,18 +344,18 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto bg-card">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="w-full justify-start px-6 pt-4">
-              <TabsTrigger value="setup">
+            <TabsList className="w-full justify-start gap-2 px-6 py-3 bg-muted border-b border-border">
+              <TabsTrigger value="setup" className="rounded-md px-4 py-2">
                 <Settings2 className="w-4 h-4 mr-2" />
                 Setup
               </TabsTrigger>
-              <TabsTrigger value="results">
+              <TabsTrigger value="results" className="rounded-md px-4 py-2">
                 <BarChart3 className="w-4 h-4 mr-2" />
                 Results ({results.length})
               </TabsTrigger>
-              <TabsTrigger value="comparison">
+              <TabsTrigger value="comparison" className="rounded-md px-4 py-2">
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Comparison
               </TabsTrigger>
@@ -365,9 +365,9 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
               <TabsContent value="setup" className="space-y-6">
                 {/* Variables Input */}
                 {prompt.variables && prompt.variables.length > 0 && (
-                  <Card>
+                  <Card className="bg-card border border-border">
                     <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
+                      <CardTitle className="text-lg flex items-center gap-2 text-foreground">
                         <Variable className="w-5 h-5" />
                         Input Variables
                       </CardTitle>
@@ -375,7 +375,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                     <CardContent className="space-y-4">
                       {prompt.variables.map((varName: string) => (
                         <div key={varName}>
-                          <Label htmlFor={varName}>{varName}</Label>
+                          <Label htmlFor={varName} className="text-foreground">{varName}</Label>
                           <Textarea
                             id={varName}
                             placeholder={`Enter value for {${varName}}`}
@@ -391,10 +391,10 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                 )}
 
                 {/* Test Configurations */}
-                <Card>
+                <Card className="bg-card border border-border">
                   <CardHeader>
                     <div className="flex justify-between items-center">
-                      <CardTitle className="text-lg">Test Configurations</CardTitle>
+                      <CardTitle className="text-lg text-foreground">Test Configurations</CardTitle>
                       <Button size="sm" onClick={addConfiguration}>
                         <Plus className="w-4 h-4 mr-2" />
                         Add Configuration
@@ -403,7 +403,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {configurations.map((config) => (
-                      <Card key={config.id} className={!config.enabled ? 'opacity-50' : ''}>
+                      <Card key={config.id} className={`bg-card border border-border ${!config.enabled ? 'opacity-50' : ''}`}>
                         <CardContent className="pt-6">
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-4">
@@ -427,7 +427,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
 
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             <div>
-                              <Label>Provider</Label>
+                              <Label className="text-foreground">Provider</Label>
                               <Select
                                 value={config.provider}
                                 onValueChange={(provider) => {
@@ -451,7 +451,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                             </div>
 
                             <div>
-                              <Label>Model</Label>
+                              <Label className="text-foreground">Model</Label>
                               <Select
                                 value={config.model}
                                 onValueChange={(model) => 
@@ -472,7 +472,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                             </div>
 
                             <div>
-                              <Label>Temperature: {config.temperature}</Label>
+                              <Label className="text-foreground">Temperature: {config.temperature}</Label>
                               <Slider
                                 value={[config.temperature]}
                                 onValueChange={([temp]) => 
@@ -486,7 +486,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                             </div>
 
                             <div>
-                              <Label>Max Tokens: {config.maxTokens}</Label>
+                              <Label className="text-foreground">Max Tokens: {config.maxTokens}</Label>
                               <Slider
                                 value={[config.maxTokens]}
                                 onValueChange={([tokens]) => 
@@ -500,7 +500,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                             </div>
 
                             <div>
-                              <Label>Top P: {config.topP}</Label>
+                              <Label className="text-foreground">Top P: {config.topP}</Label>
                               <Slider
                                 value={[config.topP]}
                                 onValueChange={([topP]) => 
@@ -514,7 +514,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                             </div>
 
                             <div>
-                              <Label>Frequency Penalty: {config.frequencyPenalty}</Label>
+                              <Label className="text-foreground">Frequency Penalty: {config.frequencyPenalty}</Label>
                               <Slider
                                 value={[config.frequencyPenalty]}
                                 onValueChange={([penalty]) => 
@@ -557,22 +557,22 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
 
               <TabsContent value="results" className="space-y-4">
                 {results.length === 0 ? (
-                  <Card className="p-12 text-center">
-                    <p className="text-gray-500">No test results yet. Configure and run tests to see results.</p>
+                  <Card className="p-12 text-center bg-card border border-border">
+                    <p className="text-muted-foreground">No test results yet. Configure and run tests to see results.</p>
                   </Card>
                 ) : (
                   results.map((result) => (
-                    <Card key={result.configId}>
+                    <Card key={result.configId} className="bg-card border border-border">
                       <CardHeader>
                         <div className="flex justify-between items-start">
                           <div>
-                            <CardTitle className="text-lg flex items-center gap-2">
+                            <CardTitle className="text-lg flex items-center gap-2 text-foreground">
                               {result.status === 'success' && <CheckCircle className="w-5 h-5 text-green-600" />}
                               {result.status === 'running' && <Loader2 className="w-5 h-5 animate-spin" />}
                               {result.status === 'error' && <AlertCircle className="w-5 h-5 text-red-600" />}
                               {result.provider} - {result.model}
                             </CardTitle>
-                            <div className="flex gap-4 mt-2 text-sm text-gray-600">
+                            <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
                               <span className="flex items-center gap-1">
                                 <Activity className="w-4 h-4" />
                                 {result.totalTokens} tokens
@@ -600,7 +600,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                       </CardHeader>
                       <CardContent>
                         {result.status === 'success' && (
-                          <div className="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">
+                          <div className="bg-muted rounded-lg p-4 max-h-64 overflow-y-auto">
                             <pre className="text-sm whitespace-pre-wrap">
                               {result.response}
                             </pre>
@@ -619,15 +619,15 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
 
               <TabsContent value="comparison">
                 {results.filter(r => r.status === 'success').length < 2 ? (
-                  <Card className="p-12 text-center">
-                    <p className="text-gray-500">Run at least 2 successful tests to see comparison.</p>
+                  <Card className="p-12 text-center bg-card border border-border">
+                    <p className="text-muted-foreground">Run at least 2 successful tests to see comparison.</p>
                   </Card>
                 ) : (
                   <div className="space-y-6">
                     {/* Performance Comparison */}
-                    <Card>
+                    <Card className="bg-card border border-border">
                       <CardHeader>
-                        <CardTitle>Performance Comparison</CardTitle>
+                        <CardTitle className="text-foreground">Performance Comparison</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
@@ -662,9 +662,9 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                                       </span>
                                     </div>
                                   </div>
-                                  <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                  <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
                                     <div 
-                                      className="h-full bg-blue-500"
+                                      className="h-full bg-primary"
                                       style={{ 
                                         width: `${(results.filter(r => r.status === 'success')[0].latencyMs / result.latencyMs) * 100}%` 
                                       }}
@@ -678,9 +678,9 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                     </Card>
 
                     {/* Cost Analysis */}
-                    <Card>
+                    <Card className="bg-card border border-border">
                       <CardHeader>
-                        <CardTitle>Cost Analysis</CardTitle>
+                        <CardTitle className="text-foreground">Cost Analysis</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -688,9 +688,9 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                             .filter(r => r.status === 'success')
                             .map((result) => (
                               <div key={result.configId} className="text-center">
-                                <div className="text-sm text-gray-600">{result.model}</div>
+                                <div className="text-sm text-muted-foreground">{result.model}</div>
                                 <div className="text-2xl font-bold">${result.cost.toFixed(4)}</div>
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs text-muted-foreground">
                                   ${((result.cost / result.totalTokens) * 1000).toFixed(4)}/1k tokens
                                 </div>
                               </div>
@@ -701,7 +701,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
 
                     {/* Best Result */}
                     {getBestResult() && (
-                      <Card className="border-green-500">
+                      <Card className="border-green-500 bg-card border border-border">
                         <CardHeader>
                           <CardTitle className="flex items-center gap-2">
                             <CheckCircle className="w-5 h-5 text-green-600" />
@@ -713,7 +713,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                             <p><strong>Model:</strong> {getBestResult()?.provider} - {getBestResult()?.model}</p>
                             <p><strong>Cost:</strong> ${getBestResult()?.cost.toFixed(4)}</p>
                             <p><strong>Speed:</strong> {getBestResult()?.latencyMs}ms</p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-muted-foreground">
                               Best cost/performance ratio based on your tests
                             </p>
                           </div>

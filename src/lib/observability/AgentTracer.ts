@@ -26,35 +26,110 @@ export class AgentTracer {
   }
 
   /**
-   * Start agent execution tracking
+   * Start agent execution tracking with full context
    */
-  async startExecution(inputs: any): Promise<void> {
+  async startExecution(context: {
+    agentName?: string;
+    domain?: string;
+    goal?: string;
+    input?: any;
+  } | any): Promise<void> {
+    // Support both old format (just inputs) and new format (rich context)
+    const enrichedContext = context.input !== undefined ? {
+      agentName: context.agentName || this.agentName,
+      domain: context.domain,
+      goal: context.goal,
+      input: context.input,
+      timestamp: new Date().toISOString()
+    } : context;
+
     await observabilityManager.startAgentExecution(
       this.agentName,
       this.agentType,
-      inputs,
+      enrichedContext,
       this.sessionId
     );
   }
 
   /**
-   * End agent execution tracking
+   * End agent execution tracking with structured output and metadata
    */
-  async endExecution(outputs: any, error?: any): Promise<void> {
+  async endExecution(
+    outputs: any,
+    metadata?: {
+      reasoning?: any;
+      metrics?: any;
+      error?: string;
+    } | any
+  ): Promise<void> {
+    // Support both old format (outputs, error) and new format (outputs, metadata)
+    const error = typeof metadata === 'string' ? metadata : metadata?.error;
+    const structuredOutputs = {
+      outputs: outputs,
+      reasoning: metadata?.reasoning,
+      metrics: metadata?.metrics,
+      success: !error
+    };
+
     await observabilityManager.endAgentExecution(
       this.agentName,
-      outputs,
+      structuredOutputs,
       error,
       this.sessionId
     );
 
-    // Log agent summary
+    // Enhanced console logging
+    console.log(`\n${'='.repeat(80)}`);
+    console.log(`🤖 ${this.agentName} EXECUTION COMPLETE`);
+    console.log(`${'='.repeat(80)}`);
+
+    if (outputs) {
+      console.log(`\n📤 OUTPUT:`);
+      if (Array.isArray(outputs)) {
+        console.log(`  • Generated: ${outputs.length} items`);
+      } else if (outputs.guardrails) {
+        console.log(`  • Guardrails: ${outputs.guardrails?.length || 0}`);
+        console.log(`  • Insights: ${outputs.insights?.length || 0}`);
+        console.log(`  • Concerns: ${outputs.concerns?.length || 0}`);
+        console.log(`  • Confidence: ${outputs.confidence || 'N/A'}`);
+      } else {
+        console.log(`  • Output received: ${JSON.stringify(outputs).length} bytes`);
+      }
+    }
+
+    if (metadata?.reasoning) {
+      console.log(`\n🧠 REASONING:`);
+      console.log(`  • Strategy: ${metadata.reasoning.strategy || 'N/A'}`);
+      console.log(`  • Steps: ${metadata.reasoning.steps?.length || 0}`);
+      console.log(`  • Total Tokens: ${metadata.reasoning.totalTokens || 0}`);
+      console.log(`  • Duration: ${metadata.reasoning.totalLatency || 0}ms`);
+
+      // Log each reasoning step briefly
+      if (metadata.reasoning.steps && metadata.reasoning.steps.length > 0) {
+        console.log(`\n  Reasoning Steps:`);
+        metadata.reasoning.steps.forEach((step: any, i: number) => {
+          const thought = step.thought || step.output || 'Processing...';
+          const thoughtPreview = typeof thought === 'string'
+            ? thought.substring(0, 80)
+            : JSON.stringify(thought).substring(0, 80);
+          console.log(`    ${i+1}. ${step.phase}: ${thoughtPreview}${thoughtPreview.length >= 80 ? '...' : ''}`);
+        });
+      }
+    }
+
+    // Log LLM usage summary
     if (this.llmCallCount > 0) {
-      console.log(`\n📊 Agent LLM Usage Summary [${this.agentName}]:`);
+      console.log(`\n📊 LLM Usage Summary:`);
       console.log(`   • LLM Calls: ${this.llmCallCount}`);
       console.log(`   • Total Tokens: ${this.totalTokens}`);
       console.log(`   • Total Cost: $${this.totalCost.toFixed(4)}`);
     }
+
+    if (error) {
+      console.log(`\n❌ ERROR: ${error}`);
+    }
+
+    console.log(`${'='.repeat(80)}\n`);
   }
 
   /**
@@ -188,12 +263,12 @@ export class AgentTracer {
    */
   async trackInsights(insights: string[]): Promise<void> {
     if (insights.length === 0) return;
-    
+
     console.log(`\n💡 Agent Insights [${this.agentName}]:`);
     insights.slice(0, 3).forEach(insight => {
       console.log(`   • ${insight.substring(0, 150)}${insight.length > 150 ? '...' : ''}`);
     });
-    
+
     if (insights.length > 3) {
       console.log(`   ... and ${insights.length - 3} more insights`);
     }
@@ -204,11 +279,65 @@ export class AgentTracer {
    */
   async trackConcerns(concerns: string[]): Promise<void> {
     if (concerns.length === 0) return;
-    
+
     console.log(`\n⚠️ Agent Concerns [${this.agentName}]:`);
     concerns.forEach(concern => {
       console.log(`   • ${concern.substring(0, 150)}${concern.length > 150 ? '...' : ''}`);
     });
+  }
+
+  /**
+   * Track reasoning step
+   * NEW: For autonomous agent reasoning
+   */
+  async trackReasoningStep(phase: string, thought: string, confidence: number): Promise<void> {
+    console.log(`\n🧠 Reasoning Step [${this.agentName}]:`);
+    console.log(`   Phase: ${phase}`);
+    console.log(`   Thought: ${thought.substring(0, 200)}${thought.length > 200 ? '...' : ''}`);
+    console.log(`   Confidence: ${(confidence * 100).toFixed(1)}%`);
+  }
+
+  /**
+   * Track full reasoning chain
+   * NEW: For autonomous agent reasoning
+   */
+  async trackReasoningChain(chain: any): Promise<void> {
+    console.log(`\n🔗 Reasoning Chain [${this.agentName}]:`);
+    console.log(`   Strategy: ${chain.strategy}`);
+    console.log(`   Steps: ${chain.steps.length}`);
+    console.log(`   Total tokens: ${chain.totalTokens}`);
+    console.log(`   Total latency: ${chain.totalLatency}ms`);
+    console.log(`   Success: ${chain.success ? '✅' : '❌'}`);
+
+    if (chain.steps && chain.steps.length > 0) {
+      console.log(`\n   Step breakdown:`);
+      chain.steps.forEach((step: any, index: number) => {
+        console.log(`   ${index + 1}. ${step.phase}: ${step.thought.substring(0, 100)}...`);
+      });
+    }
+  }
+
+  /**
+   * Track reflection
+   * NEW: For autonomous agent reflection phase
+   */
+  async trackReflection(reflection: any): Promise<void> {
+    console.log(`\n🤔 Agent Reflection [${this.agentName}]:`);
+
+    if (reflection.strengths && reflection.strengths.length > 0) {
+      console.log(`   Strengths: ${reflection.strengths.slice(0, 2).join('; ')}`);
+    }
+
+    if (reflection.weaknesses && reflection.weaknesses.length > 0) {
+      console.log(`   ⚠️  Weaknesses: ${reflection.weaknesses.join('; ')}`);
+    }
+
+    if (reflection.gaps && reflection.gaps.length > 0) {
+      console.log(`   📊 Gaps: ${reflection.gaps.join('; ')}`);
+    }
+
+    console.log(`   Needs refinement: ${reflection.needsRefinement ? 'Yes' : 'No'}`);
+    console.log(`   Confidence: ${(reflection.confidence * 100).toFixed(1)}%`);
   }
 
   /**

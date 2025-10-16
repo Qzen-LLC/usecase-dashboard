@@ -43,7 +43,7 @@ export class ComplianceExpertAgent extends BaseSpecialistAgent {
     );
     
     // Generate guardrails using LLM
-    const guardrails = await this.generateGuardrailsWithLLM(
+    const guardrails = await this.generateGuardrailsWithReasoning(
       {
         riskAssessment: assessment.riskAssessment,
         euAIActAnalysis,
@@ -56,7 +56,16 @@ export class ComplianceExpertAgent extends BaseSpecialistAgent {
         useCaseTitle: assessment.useCaseTitle || 'AI System',
         problemStatement: assessment.problemStatement || '',
         proposedSolution: assessment.proposedSolution || '',
-        successCriteria: assessment.successCriteria || ''
+        keyBenefits: assessment.keyBenefits || '',
+        successCriteria: assessment.successCriteria || '',
+        keyAssumptions: assessment.keyAssumptions || '',
+        multiDimensionalScoring: {
+          confidenceLevel: assessment.confidenceLevel || 0,
+          operationalImpact: assessment.operationalImpact || 0,
+          productivityImpact: assessment.productivityImpact || 0,
+          revenueImpact: assessment.revenueImpact || 0,
+          implementationComplexity: assessment.implementationComplexity || 0
+        }
       },
       domainPrompt
     );

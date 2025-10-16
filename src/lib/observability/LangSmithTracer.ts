@@ -371,7 +371,7 @@ export class LangSmithTracer {
   }
 
   /**
-   * End an agent trace with outputs
+   * End an agent trace with outputs and structured metadata
    */
   async endAgentTrace(outputs?: any, error?: any) {
     if (!this.config.enabled || this.runStack.length === 0) return;
@@ -383,18 +383,40 @@ export class LangSmithTracer {
       let preparedOutputs: any = undefined;
       if (this.config.captureResponses && outputs !== undefined) {
         const sanitized = this.sanitize(outputs);
-        const outputText =
-          typeof sanitized === 'string'
-            ? sanitized
-            : (() => {
-                try { return JSON.stringify(sanitized); } catch { return String(sanitized); }
-              })();
 
+        // Structure outputs with reasoning and metrics as first-class fields
         preparedOutputs = {
-          output: outputText,
-          data: sanitized,
-          messages: [ { role: 'assistant', content: outputText } ],
+          // Main outputs
+          outputs: sanitized.outputs || sanitized,
+
+          // Reasoning chain (visible in LangSmith)
+          reasoning: sanitized.reasoning ? {
+            strategy: sanitized.reasoning.strategy,
+            steps: sanitized.reasoning.steps?.map((step: any) => ({
+              phase: step.phase,
+              thought: typeof step.thought === 'string' ? step.thought.substring(0, 200) : step.thought,
+              confidence: step.confidence
+            })),
+            totalSteps: sanitized.reasoning.steps?.length || 0,
+            totalTokens: sanitized.reasoning.totalTokens,
+            totalLatency: sanitized.reasoning.totalLatency
+          } : undefined,
+
+          // Metrics (visible in LangSmith)
+          metrics: sanitized.metrics,
+
+          // Metadata
+          success: sanitized.success,
+          agentName: sanitized.agentName,
+          timestamp: sanitized.timestamp,
+
+          // Convert to text for LangSmith messages format
+          summary: this.createOutputSummary(sanitized)
         };
+
+        // Add messages format for better LangSmith UI rendering
+        const outputText = this.createOutputSummary(sanitized);
+        preparedOutputs.messages = [{ role: 'assistant', content: outputText }];
       }
 
       await run.end({
@@ -412,6 +434,46 @@ export class LangSmithTracer {
     } catch (err) {
       console.error('Failed to end agent trace:', err);
     }
+  }
+
+  /**
+   * Create a human-readable summary of agent outputs
+   */
+  private createOutputSummary(outputs: any): string {
+    const lines: string[] = [];
+
+    // Add main output summary
+    if (outputs.outputs) {
+      if (Array.isArray(outputs.outputs)) {
+        lines.push(`Generated ${outputs.outputs.length} items`);
+      } else if (outputs.outputs.guardrails) {
+        lines.push(`Generated ${outputs.outputs.guardrails.length} guardrails`);
+        if (outputs.outputs.insights?.length > 0) {
+          lines.push(`Insights: ${outputs.outputs.insights.length}`);
+        }
+        if (outputs.outputs.concerns?.length > 0) {
+          lines.push(`Concerns: ${outputs.outputs.concerns.length}`);
+        }
+        if (outputs.outputs.confidence) {
+          lines.push(`Confidence: ${(outputs.outputs.confidence * 100).toFixed(1)}%`);
+        }
+      }
+    }
+
+    // Add reasoning summary
+    if (outputs.reasoning) {
+      lines.push(`\nReasoning: ${outputs.reasoning.strategy || 'N/A'}`);
+      lines.push(`Steps: ${outputs.reasoning.steps?.length || 0}`);
+      lines.push(`Tokens: ${outputs.reasoning.totalTokens || 0}`);
+      lines.push(`Duration: ${outputs.reasoning.totalLatency || 0}ms`);
+    }
+
+    // Add success status
+    if (outputs.success !== undefined) {
+      lines.push(`\nSuccess: ${outputs.success ? '✅' : '❌'}`);
+    }
+
+    return lines.join('\n');
   }
 
   /**

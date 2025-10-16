@@ -127,7 +127,7 @@ const ExecutiveDashboard = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <div className="relative">
-                <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-4 rounded-2xl shadow-lg transform rotate-3 hover:rotate-0 transition-transform duration-300">
+                <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-4 rounded-2xl shadow-lg transition-transform duration-300">
                   <BarChart3 className="w-10 h-10 text-white" />
                 </div>
                 <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">

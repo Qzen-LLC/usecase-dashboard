@@ -31,10 +31,6 @@ export default function SignInPage() {
   return (
     <QubeLandingLayout>
       <div className="-mt-10 md:-mt-16">
-      <div className="text-center mb-2">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Sign-in to QUBE™</h2>
-        <p className="text-gray-600">Welcome back to your AI Command Center</p>
-      </div>
       
       <div className="flex justify-center">
       <SignIn 
@@ -57,6 +53,7 @@ export default function SignInPage() {
             formFieldInput: "bg-white text-dark placeholder:text-gray-600 border-border focus:ring-2 focus:ring-ring focus:border-ring",
             socialButtonsBlockButton: "bg-white text-dark border border-gray-300 hover:bg-gray-50",
             socialButtonsBlockButtonText: "text-dark",
+             badge__last_used: "hidden",
             footer: "text-gray-600",
             formButtonPrimary: "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-lg transition-all",
           },
@@ -65,6 +62,11 @@ export default function SignInPage() {
         signUpUrl="/sign-up"
       />
       </div>
+      <style jsx global>{`
+        [data-localization-key="badge__last_used"] {
+          display: none !important;
+        }
+      `}</style>
       </div>
     </QubeLandingLayout>
   );

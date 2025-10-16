@@ -257,12 +257,24 @@ const Dashboard = () => {
   // Refs for scroll synchronization
   const scrollBarRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const isSyncingScrollRef = useRef(false);
   
   // Scroll synchronization handler
   const handleScrollBarScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (contentRef.current) {
-      contentRef.current.scrollLeft = e.currentTarget.scrollLeft;
-    }
+    if (!contentRef.current) return;
+    if (isSyncingScrollRef.current) return;
+    isSyncingScrollRef.current = true;
+    contentRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    // allow the browser to process scroll before unlocking
+    requestAnimationFrame(() => { isSyncingScrollRef.current = false; });
+  };
+
+  const handleContentScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (!scrollBarRef.current) return;
+    if (isSyncingScrollRef.current) return;
+    isSyncingScrollRef.current = true;
+    scrollBarRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    requestAnimationFrame(() => { isSyncingScrollRef.current = false; });
   };
   
   const businessFunctions = [
@@ -959,7 +971,8 @@ const Dashboard = () => {
             {/* Content container - synchronized with scroll bar */}
             <div 
               ref={contentRef}
-              className="w-full flex-1 min-h-0 overflow-x-auto overflow-y-hidden"
+              className="w-full flex-1 min-h-0 overflow-x-auto overflow-y-hidden scrollbar-hide"
+              onScroll={handleContentScroll}
             >
               <div className="flex flex-col gap-0 px-2 h-full" style={{ width: `${stages.length * 240 + (stages.length - 1) * 24 + 16}px` }}>
                 {/* Stage cards row */}

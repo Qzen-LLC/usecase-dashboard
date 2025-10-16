@@ -13,7 +13,7 @@ export async function GET(
     }
 
     const { params } = await Promise.resolve(context as any);
-    const { useCaseId } = params;
+    const { useCaseId } = await params;
 
     // Check if use case exists and user has access
     const userRecord = await prismaClient.user.findUnique({
