@@ -601,7 +601,7 @@ model Organization {
   updatedAt      DateTime         @updatedAt
   invitations    Invitation[]     @relation("OrganizationInvitations")
   PromptTemplate PromptTemplate[]
-  Question       Question[]       
+  Question       Question[]
   useCases       UseCase[]
   users          User[]
   vendors        Vendor[]
@@ -1017,13 +1017,6 @@ model ObservabilitySession {
   @@index([startTime])
 }
 
-enum GuardrailRuleStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  EDITED
-}
-
 model GoldenDataset {
   id               String        @id
   useCaseId        String
@@ -1046,23 +1039,20 @@ model GoldenDataset {
 }
 
 model QuestionTemplate {
-  id              String           @id @default(uuid())
-  text            String
-  type            QuestionType
-  stage           Stage
-  isInactive      Boolean          @default(false)
-  
-  // Ordering fields for each stage
-  technicalOrderIndex   Int?              @default(0)
-  businessOrderIndex    Int?              @default(0)
-  ethicalOrderIndex     Int?              @default(0)
-  riskOrderIndex        Int?              @default(0)
-  dataOrderIndex        Int?              @default(0)
-  roadmapOrderIndex     Int?              @default(0)
-  budgetOrderIndex      Int?              @default(0)
-  
-  optionTemplates OptionTemplate[]
-  questions       Question[]
+  id                  String           @id @default(uuid())
+  text                String
+  type                QuestionType
+  stage               Stage
+  isInactive          Boolean          @default(false)
+  technicalOrderIndex Int?             @default(0)
+  businessOrderIndex  Int?             @default(0)
+  ethicalOrderIndex   Int?             @default(0)
+  riskOrderIndex      Int?             @default(0)
+  dataOrderIndex      Int?             @default(0)
+  roadmapOrderIndex   Int?             @default(0)
+  budgetOrderIndex    Int?             @default(0)
+  optionTemplates     OptionTemplate[]
+  questions           Question[]
 }
 
 model OptionTemplate {
@@ -1073,27 +1063,24 @@ model OptionTemplate {
 }
 
 model Question {
-  id                    String            @id @default(uuid())
-  text                  String
-  type                  QuestionType
-  templateId            String?
-  organizationId        String            @default("1d431de5-265f-455b-88ca-76b2d2934e8f")
-  stage                 Stage
-  isInactive            Boolean           @default(false)
-  
-  // Ordering fields for each stage
-  technicalOrderIndex   Int?              @default(0)
-  businessOrderIndex    Int?              @default(0)
-  ethicalOrderIndex     Int?              @default(0)
-  riskOrderIndex        Int?              @default(0)
-  dataOrderIndex        Int?              @default(0)
-  roadmapOrderIndex     Int?              @default(0)
-  budgetOrderIndex      Int?              @default(0)
-  
-  answers               Answer[]
-  options               Option[]
-  Organization          Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  template              QuestionTemplate? @relation(fields: [templateId], references: [id])
+  id                  String            @id @default(uuid())
+  text                String
+  type                QuestionType
+  templateId          String?
+  organizationId      String            @default("1d431de5-265f-455b-88ca-76b2d2934e8f")
+  stage               Stage
+  isInactive          Boolean           @default(false)
+  technicalOrderIndex Int?              @default(0)
+  businessOrderIndex  Int?              @default(0)
+  ethicalOrderIndex   Int?              @default(0)
+  riskOrderIndex      Int?              @default(0)
+  dataOrderIndex      Int?              @default(0)
+  roadmapOrderIndex   Int?              @default(0)
+  budgetOrderIndex    Int?              @default(0)
+  answers             Answer[]
+  options             Option[]
+  Organization        Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template            QuestionTemplate? @relation(fields: [templateId], references: [id])
 }
 
 model Option {
@@ -1112,13 +1099,20 @@ model Answer {
   useCase    UseCase  @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
 }
 
+enum GuardrailRuleStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EDITED
+}
+
 enum QuestionType {
   CHECKBOX
   RADIO
   TEXT
-  TEXT_MINI
   SLIDER
   RISK
+  TEXT_MINI
 }
 
 enum RiskStatus {
