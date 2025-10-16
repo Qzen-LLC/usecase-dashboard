@@ -601,7 +601,7 @@ model Organization {
   updatedAt      DateTime         @updatedAt
   invitations    Invitation[]     @relation("OrganizationInvitations")
   PromptTemplate PromptTemplate[]
-  Question       Question[]
+  Question       Question[]       
   useCases       UseCase[]
   users          User[]
   vendors        Vendor[]
@@ -1092,7 +1092,7 @@ model Question {
   
   answers               Answer[]
   options               Option[]
-  Organization          Organization      @relation(fields: [organizationId], references: [id])
+  Organization          Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   template              QuestionTemplate? @relation(fields: [templateId], references: [id])
 }
 
@@ -1109,7 +1109,7 @@ model Answer {
   value      Json
   useCaseId  String
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  useCase    UseCase  @relation(fields: [useCaseId], references: [id])
+  useCase    UseCase  @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
 }
 
 enum QuestionType {

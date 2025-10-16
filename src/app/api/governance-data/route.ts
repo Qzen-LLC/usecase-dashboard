@@ -68,18 +68,33 @@ export async function GET(request: Request) {
 
     const includeObject = await getIncludeObject();
     
+    // Add answers to include object to fetch framework selections
+    const includeWithAnswers = {
+      ...includeObject,
+      answers: {
+        include: {
+          question: {
+            select: {
+              text: true,
+              type: true,
+            }
+          }
+        }
+      }
+    };
+    
     try {
       if (userRecord.role === 'QZEN_ADMIN') {
         useCases = await retryDatabaseOperation(() =>
           prismaClient.useCase.findMany({
-            include: includeObject,
+            include: includeWithAnswers,
           })
         );
       } else if (userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') {
         useCases = await retryDatabaseOperation(() =>
           prismaClient.useCase.findMany({
             where: { organizationId: userRecord.organizationId },
-            include: includeObject,
+            include: includeWithAnswers,
           })
         );
       } else {
@@ -87,7 +102,7 @@ export async function GET(request: Request) {
         useCases = await retryDatabaseOperation(() =>
           prismaClient.useCase.findMany({
             where: { userId: userRecord.id },
-            include: includeObject,
+            include: includeWithAnswers,
           })
         );
       }
@@ -99,6 +114,16 @@ export async function GET(request: Request) {
           prismaClient.useCase.findMany({
             include: {
               assessData: true,
+              answers: {
+                include: {
+                  question: {
+                    select: {
+                      text: true,
+                      type: true,
+                    }
+                  }
+                }
+              }
             },
           })
         );
@@ -108,6 +133,16 @@ export async function GET(request: Request) {
             where: { organizationId: userRecord.organizationId },
             include: {
               assessData: true,
+              answers: {
+                include: {
+                  question: {
+                    select: {
+                      text: true,
+                      type: true,
+                    }
+                  }
+                }
+              }
             },
           })
         );
@@ -117,6 +152,16 @@ export async function GET(request: Request) {
             where: { userId: userRecord.id },
             include: {
               assessData: true,
+              answers: {
+                include: {
+                  question: {
+                    select: {
+                      text: true,
+                      type: true,
+                    }
+                  }
+                }
+              }
             },
           })
         );
@@ -135,8 +180,44 @@ export async function GET(request: Request) {
         const regulatoryFrameworks: string[] = [];
         const industryStandards: string[] = [];
 
-        // Extract regulatory frameworks and standards from risk assessment if available
-        if (useCase.assessData?.stepsData) {
+        // Extract regulatory frameworks and standards from answers (dynamic questions)
+        if (useCase.answers && Array.isArray(useCase.answers)) {
+          useCase.answers.forEach((answer: any) => {
+            if (answer.question) {
+              const questionText = answer.question.text;
+              
+              // Check for AI-Specific Regulations question
+              if (questionText === 'AI-Specific Regulations' && answer.value) {
+                const labels = answer.value.labels || [];
+                console.log(`[Governance] AIUC-${useCase.aiucId} - Found AI-Specific Regulations:`, labels);
+                labels.forEach((label: string) => {
+                  if (!regulatoryFrameworks.includes(label)) {
+                    regulatoryFrameworks.push(label);
+                  }
+                });
+              }
+              
+              // Check for Certifications/Standards question
+              if (questionText === 'Certifications/Standards' && answer.value) {
+                const labels = answer.value.labels || [];
+                console.log(`[Governance] AIUC-${useCase.aiucId} - Found Certifications/Standards:`, labels);
+                labels.forEach((label: string) => {
+                  if (!industryStandards.includes(label)) {
+                    industryStandards.push(label);
+                  }
+                });
+              }
+            }
+          });
+        }
+        
+        console.log(`[Governance] AIUC-${useCase.aiucId} - Final frameworks:`, {
+          regulatoryFrameworks,
+          industryStandards
+        });
+        
+        // Fallback: Also check old stepsData structure for backward compatibility
+        if (regulatoryFrameworks.length === 0 && industryStandards.length === 0 && useCase.assessData?.stepsData) {
           const stepsData = useCase.assessData.stepsData as any;
           const riskAssessment = stepsData.riskAssessment;
 
@@ -161,9 +242,9 @@ export async function GET(request: Request) {
 
         // Only show use cases that have regulatory frameworks or industry standards selected
         const hasFrameworks = regulatoryFrameworks.length > 0 || industryStandards.length > 0;
-        const euAiActAssessments = Array.isArray(useCase.euAiActAssessments) ? useCase.euAiActAssessments : [];
-        const iso42001Assessments = Array.isArray(useCase.iso42001Assessments) ? useCase.iso42001Assessments : [];
-        const uaeAiAssessments = Array.isArray(useCase.uaeAiAssessments) ? useCase.uaeAiAssessments : [];
+        const euAiActAssessments = Array.isArray((useCase as any).euAiActAssessments) ? (useCase as any).euAiActAssessments : [];
+        const iso42001Assessments = Array.isArray((useCase as any).iso42001Assessments) ? (useCase as any).iso42001Assessments : [];
+        const uaeAiAssessments = Array.isArray((useCase as any).uaeAiAssessments) ? (useCase as any).uaeAiAssessments : [];
         const hasAssessments = euAiActAssessments.length > 0 || iso42001Assessments.length > 0 || uaeAiAssessments.length > 0;
         
         // Do not filter out use cases; include even if no frameworks/assessments yet
@@ -188,12 +269,12 @@ export async function GET(request: Request) {
           department: useCase.businessFunction,
           regulatoryFrameworks,
           industryStandards,
-          lastUpdated: useCase.assessData?.updatedAt?.toISOString() || useCase.updatedAt.toISOString(),
+          lastUpdated: (useCase as any).assessData?.updatedAt?.toISOString() || useCase.updatedAt.toISOString(),
           euAiActAssessments,
           iso42001Assessments,
           uaeAiAssessments,
-          assessData: useCase.assessData,
-          risks: useCase.risks || [],
+          assessData: (useCase as any).assessData,
+          risks: (useCase as any).risks || [],
         };
       })
       .filter((item) => item !== null);
