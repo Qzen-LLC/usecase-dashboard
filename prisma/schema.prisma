@@ -973,6 +973,23 @@ model GuardrailAudit {
   @@index([timestamp])
 }
 
+model GuardrailJob {
+  id          String    @id @default(uuid())
+  useCaseId   String
+  status      String    @default("pending")
+  progress    Int       @default(0)
+  currentStep String?
+  result      Json?
+  error       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+
+  @@index([useCaseId])
+  @@index([status])
+  @@index([createdAt])
+}
+
 model ObservabilitySession {
   id             String    @id @default(dbgenerated("gen_random_uuid()"))
   sessionId      String    @unique
