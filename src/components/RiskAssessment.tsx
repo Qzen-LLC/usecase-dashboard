@@ -67,8 +67,8 @@ export default function RiskAssessment({ value, onChange, questions, questionsLo
   return (
     <div className="space-y-10">
       <div className="bg-gradient-to-r from-primary/10 via-primary/20 to-primary/10 border-l-4 border-primary p-4 mb-8 rounded-2xl flex items-center gap-3 shadow-md">
-        <div className="font-semibold text-foreground text-lg mb-1">Technical Feasibility Assessment</div>
-        <div className="text-muted-foreground">Evaluate the technical requirements and constraints for implementing this AI solution.</div>
+        <div className="font-semibold text-foreground text-lg mb-1">Risk Assessment</div>
+        <div className="text-muted-foreground">Evaluate the risk requirements and constraints for implementing this AI solution.</div>
       </div>
       
       {questionsLoading || !questions ? (
