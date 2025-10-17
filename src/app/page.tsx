@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser } from '@clerk/nextjs';
+import { useAuthClient } from '@/hooks/useAuthClient';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { useUserData } from '@/contexts/UserContext';
 import { QubeLandingLayout } from '@/components/QubeLandingLayout';
 
 export default function HomePage() {
-  const { isSignedIn, user, isLoaded } = useUser();
+  const { isSignedIn, isLoaded } = useAuthClient();
   const router = useRouter();
   const { userData, loading } = useUserData();
   const [isCheckingRole, setIsCheckingRole] = useState(false);

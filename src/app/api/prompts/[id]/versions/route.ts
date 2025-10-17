@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { prismaClient } from '@/utils/db';
+import type { Prisma } from '@/generated/prisma';
 import crypto from 'crypto';
 
 // Helper function to generate SHA-256 hash for version tracking
@@ -15,18 +17,15 @@ function generateVersionSha(content: any, settings: any): string {
 }
 
 // GET /api/prompts/[id]/versions - Get all versions of a prompt
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export const GET = withAuth(async (
+  request: Request,
+  { params, auth }: { params: { id: string }, auth: any }
+) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
 
     if (!userRecord) {
@@ -87,21 +86,18 @@ export async function GET(
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });
 
 // POST /api/prompts/[id]/versions - Create a new version
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export const POST = withAuth(async (
+  request: Request,
+  { params, auth }: { params: { id: string }, auth: any }
+) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
 
     if (!userRecord) {
@@ -122,7 +118,7 @@ export async function POST(
     const promptTemplate = await prismaClient.promptTemplate.findUnique({
       where: { id: params.id },
       include: {
-        versions: {
+        PromptVersion: {
           orderBy: { versionNumber: 'desc' },
           take: 1,
         }
@@ -144,7 +140,7 @@ export async function POST(
     }
 
     // Create new version
-    const latestVersion = promptTemplate.versions[0];
+    const latestVersion = (promptTemplate as any).PromptVersion?.[0];
     const newVersionNumber = latestVersion ? latestVersion.versionNumber + 1 : 1;
     const versionSha = generateVersionSha(promptTemplate.content, promptTemplate.settings);
 
@@ -152,15 +148,15 @@ export async function POST(
       data: {
         versionSha,
         versionNumber: newVersionNumber,
-        content: promptTemplate.content,
-        settings: promptTemplate.settings,
+        content: promptTemplate.content as unknown as Prisma.InputJsonValue,
+        settings: promptTemplate.settings as unknown as Prisma.InputJsonValue,
         variables: promptTemplate.variables,
         commitMessage,
         templateId: params.id,
         createdById: userRecord.id,
       },
       include: {
-        createdBy: {
+        User: {
           select: {
             id: true,
             email: true,
@@ -173,7 +169,15 @@ export async function POST(
 
     console.log('[CRUD_LOG] Prompt Version created:', { id: newVersion.id, templateId: params.id, versionNumber: newVersion.versionNumber, commitMessage: newVersion.commitMessage, authoredBy: userRecord.id });
 
-    return NextResponse.json(newVersion);
+    return NextResponse.json({
+      ...newVersion,
+      createdBy: (newVersion as any).User ? {
+        id: (newVersion as any).User.id,
+        email: (newVersion as any).User.email,
+        firstName: (newVersion as any).User.firstName ?? undefined,
+        lastName: (newVersion as any).User.lastName ?? undefined,
+      } : undefined,
+    });
   } catch (error) {
     console.error('Error creating version:', error);
     return NextResponse.json(
@@ -181,4 +185,4 @@ export async function POST(
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

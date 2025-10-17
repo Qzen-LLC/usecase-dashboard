@@ -1,6 +1,6 @@
 'use client';
 
-import { SignIn } from "@clerk/nextjs";
+import { SignIn } from "@/components/auth";
 import { QubeLandingLayout } from "@/components/QubeLandingLayout";
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";

@@ -1,22 +1,20 @@
 import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
 
-export async function GET(
+
+export const GET = withAuth(async (
   request: Request,
-  { params }: { params: { useCaseId: string } }
-) {
+  context: { params: { useCaseId: string }, auth: any }
+) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
-    const { useCaseId } = await params;
+    const { useCaseId } = await context.params;
 
     // Check if use case exists and user has access
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: context.auth.userId! },
       include: { organization: true }
     });
 
@@ -97,4 +95,4 @@ export async function GET(
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

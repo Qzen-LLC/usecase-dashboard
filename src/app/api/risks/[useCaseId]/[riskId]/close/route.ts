@@ -1,33 +1,19 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { prismaClient } from '@/utils/db';
 
 // POST /api/risks/[useCaseId]/[riskId]/close - Close a risk
-export async function POST(
+export const POST = withAuth(async (
   request: Request,
-  { params }: { params: { useCaseId: string; riskId: string } }
-) {
+  { params, auth }: { params: { useCaseId: string; riskId: string }, auth: any }
+) => {
   try {
-    // TEMPORARY: Auth bypass for testing
-    const user = await currentUser();
-    let userRecord;
-    
-    if (!user) {
-      // Use bypass user for testing
-      console.log('[API] Using bypass user for testing');
-      userRecord = await prismaClient.user.findFirst({
-        where: { role: 'QZEN_ADMIN' }
-      });
-      if (!userRecord) {
-        return NextResponse.json({ error: 'No admin user found for bypass' }, { status: 500 });
-      }
-    } else {
-      userRecord = await prismaClient.user.findUnique({
-        where: { clerkId: user.id },
-      });
-      if (!userRecord) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId: auth.userId! },
+    });
+    if (!userRecord) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const { closureReason } = await request.json();
@@ -56,4 +42,4 @@ export async function POST(
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

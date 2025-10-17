@@ -1,22 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
 
-export async function GET(request: NextRequest) {
+
+export const GET = withAuth(async (request: Request, { auth }) => {
   try {
     console.log('[TEST STATUS] Starting test...');
-    
-    // Test 1: Check if user can be retrieved
-    const user = await currentUser();
-    console.log('[TEST STATUS] User:', user ? user.id : 'null');
-    
-    if (!user) {
+
+    if (!auth.userId) {
       return NextResponse.json({ error: 'No user found' }, { status: 401 });
     }
 
     // Test 2: Check if user record exists
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
     console.log('[TEST STATUS] User record:', userRecord ? userRecord.id : 'null');
     
@@ -46,7 +43,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       user: {
-        clerkId: user.id,
+        clerkId: auth.userId!,
         userId: userRecord.id,
         firstName: userRecord.firstName,
         lastName: userRecord.lastName
@@ -65,4 +62,4 @@ export async function GET(request: NextRequest) {
       stack: error instanceof Error ? error.stack : 'No stack trace'
     }, { status: 500 });
   }
-}
+}, { requireUser: true });

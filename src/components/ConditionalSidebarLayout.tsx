@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser } from '@clerk/nextjs';
+import { useAuthClient } from '@/hooks/useAuthClient';
 import { usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
@@ -36,7 +36,7 @@ const SIDEBAR_ROUTES = [
 ];
 
 function ConditionalSidebarLayoutContent({ children }: { children: React.ReactNode }) {
-  const { isSignedIn, isLoaded } = useUser();
+  const { isSignedIn, isLoaded } = useAuthClient();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [dataReady, setDataReady] = useState(false);
@@ -72,6 +72,15 @@ function ConditionalSidebarLayoutContent({ children }: { children: React.ReactNo
   // Don't show sidebar for specific routes
   if (NO_SIDEBAR_ROUTES.includes(pathname)) {
     return <>{children}</>;
+  }
+
+  // Don't render sidebar until mounted and data is ready to prevent hydration mismatch
+  if (!mounted || !dataReady) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
   }
 
   // Show sidebar for authenticated routes

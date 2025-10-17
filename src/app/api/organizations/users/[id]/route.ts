@@ -1,22 +1,20 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { PrismaClient } from '@/generated/prisma';
 
 const prisma = new PrismaClient();
 
 // Remove user from organization (Org Admin only)
-export async function DELETE(
+export const DELETE = withAuth(async (
   req: Request,
-  { params }: { params: { id: string } }
-) {
+  { params, auth }: { params: Promise<{ id: string }>, auth: any }
+) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const currentUserRecord = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
       include: { organization: true }
     });
 
@@ -28,7 +26,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
-    const userId = params.id;
+    const { id: userId } = await params;
 
     // Get the user to be removed
     const userToRemove = await prisma.user.findUnique({
@@ -80,4 +78,4 @@ export async function DELETE(
     console.error('Error removing user from organization:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}, { requireUser: true });

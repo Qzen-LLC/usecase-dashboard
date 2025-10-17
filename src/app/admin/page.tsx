@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useAuthClient } from '@/hooks/useAuthClient';
 import { useRouter } from 'next/navigation';
 import AdminDashboard from '@/components/AdminDashboard';
 import { useUserData } from '@/contexts/UserContext';
 
 export default function AdminPage() {
-  const { user, isSignedIn, isLoaded } = useUser();
+  const { isSignedIn, isLoaded } = useAuthClient();
   const router = useRouter();
   const { userData, loading, error } = useUserData();
   const [debug, setDebug] = useState<any>(null);

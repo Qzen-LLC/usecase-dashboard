@@ -1,15 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
-import { DatasetStatistics, QualityMetrics } from '@/lib/golden/types';
+
+import { DatasetStatistics, QualityMetrics, EntryCategory, DataSource } from '@/lib/golden/types';
 
 // GET /api/golden/datasets - List datasets or get specific dataset
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const { searchParams } = new URL(request.url);
     const datasetId = searchParams.get('id');
@@ -29,32 +26,26 @@ export async function GET(request: NextRequest) {
       });
 
       if (!dataset) {
-        return NextResponse.json(
-          { error: 'Dataset not found' },
-          { status: 404 }
-        );
+        return new Response(JSON.stringify({ error: 'Dataset not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
       }
 
       // Calculate statistics
       const statistics = calculateStatistics(dataset.entries || []);
       const qualityMetrics = calculateQualityMetrics(dataset.entries || []);
 
-      return NextResponse.json({
+      return new Response(JSON.stringify({
         ...dataset,
         metadata: dataset.metadata || {},
         statistics: statistics,
         qualityMetrics: qualityMetrics,
         validationStatus: dataset.validationStatus || {},
         entries: dataset.entries
-      });
+      }), { headers: { 'Content-Type': 'application/json' } });
     }
 
     // List datasets, optionally filtered by use case
     if (!useCaseId) {
-      return NextResponse.json(
-        { error: 'useCaseId is required' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'useCaseId is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     const datasets = await prismaClient.goldenDataset.findMany({
@@ -73,26 +64,21 @@ export async function GET(request: NextRequest) {
     const datasetsWithCounts = datasets.map(dataset => ({
       ...dataset,
       entryCount: dataset.entries.length,
-      entries: undefined // Remove entries array from response
+      // Ensure byCategory and bySource types are satisfied by narrowing at call sites that consume stats
+      entries: undefined as unknown as undefined
     }));
 
-    return NextResponse.json(datasetsWithCounts);
+    return new Response(JSON.stringify(datasetsWithCounts), { headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error in GET /api/golden/datasets:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: true });
 
 // POST /api/golden/datasets - Create new dataset
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const body = await request.json();
     const { 
@@ -116,10 +102,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!useCaseId || !name) {
-      return NextResponse.json(
-        { error: 'Missing required fields: useCaseId and name' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Missing required fields: useCaseId and name' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Verify use case exists
@@ -128,10 +111,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!useCase) {
-      return NextResponse.json(
-        { error: 'Use case not found' },
-        { status: 404 }
-      );
+      return new Response(JSON.stringify({ error: 'Use case not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Create the dataset
@@ -166,36 +146,27 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    return NextResponse.json({
+    return new Response(JSON.stringify({
       success: true,
       dataset,
       message: 'Golden dataset created successfully'
-    });
+    }), { headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error in POST /api/golden/datasets:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: true });
 
 // PUT /api/golden/datasets - Update dataset
-export async function PUT(request: NextRequest) {
+export const PUT = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const body = await request.json();
     const { id, ...updates } = body;
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Dataset ID is required' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Dataset ID is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Verify dataset exists
@@ -204,10 +175,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!existingDataset) {
-      return NextResponse.json(
-        { error: 'Dataset not found' },
-        { status: 404 }
-      );
+      return new Response(JSON.stringify({ error: 'Dataset not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Update the dataset
@@ -216,36 +184,27 @@ export async function PUT(request: NextRequest) {
       data: updates
     });
 
-    return NextResponse.json({
+    return new Response(JSON.stringify({
       success: true,
       dataset,
       message: 'Dataset updated successfully'
-    });
+    }), { headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error in PUT /api/golden/datasets:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: true });
 
 // DELETE /api/golden/datasets - Delete dataset
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Dataset ID is required' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Dataset ID is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Delete the dataset (entries will cascade delete)
@@ -253,27 +212,48 @@ export async function DELETE(request: NextRequest) {
       where: { id }
     });
 
-    return NextResponse.json({
+    return new Response(JSON.stringify({
       success: true,
       message: 'Dataset deleted successfully'
-    });
+    }), { headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error in DELETE /api/golden/datasets:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: true });
 
 // Helper functions
 function calculateStatistics(entries: any[]): Partial<DatasetStatistics> {
+  const byCategory: Record<EntryCategory, number> = {
+    functional: 0,
+    edge_case: 0,
+    adversarial: 0,
+    safety: 0,
+    performance: 0,
+    quality: 0,
+    robustness: 0,
+    fairness: 0,
+    compliance: 0,
+    user_experience: 0,
+  };
+
+  const bySource: Record<DataSource, number> = {
+    manual: 0,
+    production: 0,
+    synthetic: 0,
+    crowdsourced: 0,
+    imported: 0,
+    augmented: 0,
+    user_feedback: 0,
+    a_b_testing: 0,
+  };
+
   const stats: Partial<DatasetStatistics> = {
     totalEntries: entries.length,
-    byCategory: {},
+    byCategory,
     byDifficulty: {},
-    bySource: {},
-    avgQualityScore: 0
+    bySource,
+    avgQualityScore: 0,
   };
 
   if (entries.length === 0) return stats;
@@ -281,7 +261,13 @@ function calculateStatistics(entries: any[]): Partial<DatasetStatistics> {
   let totalQuality = 0;
   entries.forEach(entry => {
     // Count by category
-    const category = entry.category || 'uncategorized';
+    const rawCategory = entry.category as string | undefined;
+    const allowedCategories: EntryCategory[] = [
+      'functional','edge_case','adversarial','safety','performance','quality','robustness','fairness','compliance','user_experience'
+    ];
+    const category: EntryCategory = allowedCategories.includes(rawCategory as EntryCategory)
+      ? (rawCategory as EntryCategory)
+      : 'functional';
     stats.byCategory![category] = (stats.byCategory![category] || 0) + 1;
 
     // Count by difficulty
@@ -290,7 +276,13 @@ function calculateStatistics(entries: any[]): Partial<DatasetStatistics> {
     stats.byDifficulty![difficulty] = (stats.byDifficulty![difficulty] || 0) + 1;
 
     // Count by source
-    const source = metadata.source || 'manual';
+    const rawSource = metadata.source as string | undefined;
+    const allowedSources: DataSource[] = [
+      'manual','production','synthetic','crowdsourced','imported','augmented','user_feedback','a_b_testing'
+    ];
+    const source: DataSource = allowedSources.includes(rawSource as DataSource)
+      ? (rawSource as DataSource)
+      : 'manual';
     stats.bySource![source] = (stats.bySource![source] || 0) + 1;
 
     // Sum quality scores

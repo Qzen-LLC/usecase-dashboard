@@ -1,22 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
 
-export async function POST(request: NextRequest) {
+
+export const POST = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const body = await request.json();
     const { useCaseId, guardrails } = body;
 
     if (!useCaseId || !guardrails) {
-      return NextResponse.json(
-        { error: 'Missing required parameters' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Missing required parameters' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Verify use case exists
@@ -25,10 +19,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!useCase) {
-      return NextResponse.json(
-        { error: 'Use case not found' },
-        { status: 404 }
-      );
+      return new Response(JSON.stringify({ error: 'Use case not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     // First check if a guardrail already exists for this use case
@@ -113,26 +104,23 @@ export async function POST(request: NextRequest) {
         });
         
         // Return the rules with their database IDs
-        return NextResponse.json({
+        return new Response(JSON.stringify({
           success: true,
           guardrailId: guardrailRecord.id,
           rules: createdRules,
           message: 'Guardrails saved successfully'
-        });
+        }), { headers: { 'Content-Type': 'application/json' } });
       }
     }
 
-    return NextResponse.json({
+    return new Response(JSON.stringify({
       success: true,
       guardrailId: guardrailRecord.id,
       rules: [],
       message: 'Guardrails saved successfully'
-    });
+    }), { headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error saving guardrails:', error);
-    return NextResponse.json(
-      { error: 'Failed to save guardrails', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Failed to save guardrails', details: error instanceof Error ? error.message : 'Unknown error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: true });

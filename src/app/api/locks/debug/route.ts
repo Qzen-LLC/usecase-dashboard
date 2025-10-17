@@ -1,13 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
 
-export async function GET(req: Request) {
+
+export const GET = withAuth(async (req: Request, { auth }: { auth: any }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const { searchParams } = new URL(req.url);
     const useCaseId = searchParams.get('useCaseId');
@@ -37,7 +35,7 @@ export async function GET(req: Request) {
 
     // Get the current user's locks specifically
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
 
     const userLocks = userRecord ? await prismaClient.lock.findMany({
@@ -50,7 +48,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       useCaseId,
       currentUser: {
-        clerkId: user.id,
+        clerkId: auth.userId!,
         userId: userRecord?.id,
         firstName: userRecord?.firstName,
         lastName: userRecord?.lastName
@@ -73,14 +71,11 @@ export async function GET(req: Request) {
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: Request, { auth }: { auth: any }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const { useCaseId, action } = await req.json();
     
@@ -89,7 +84,7 @@ export async function POST(req: NextRequest) {
     }
 
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
 
     if (!userRecord) {
@@ -140,4 +135,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

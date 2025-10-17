@@ -1,13 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
 
-export async function GET(request: NextRequest) {
+
+export const GET = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const { searchParams } = new URL(request.url);
     const useCaseId = searchParams.get('useCaseId');
@@ -49,7 +47,7 @@ export async function GET(request: NextRequest) {
     } else {
       // Export all evaluations for a use case
       evaluations = await prismaClient.evaluation.findMany({
-        where: { useCaseId },
+        where: { useCaseId: useCaseId as string },
         include: {
           results: true,
           useCase: {
@@ -87,7 +85,7 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });
 
 function convertToCSV(evaluations: any[]): string {
   const headers = [

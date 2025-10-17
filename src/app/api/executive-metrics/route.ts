@@ -1,24 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { prismaClient } from '@/utils/db';
 
 
 
-export async function GET(_req: NextRequest) {
+export const GET = withAuth(async (_req: Request, { auth }) => {
   const startTime = Date.now();
 
 
   try {
-    const user = await currentUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
 
 
-    if (!userRecord) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!userRecord) return new Response(JSON.stringify({ error: 'User not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
 
 
 
@@ -258,7 +254,7 @@ approvalFields.forEach((field) => {
     const end = Date.now();
 
 
-    return NextResponse.json(response, {
+    return new Response(JSON.stringify(response), {
       headers: {
         'Content-Type': 'application/json',
         'X-Cache': 'MISS',
@@ -269,8 +265,6 @@ approvalFields.forEach((field) => {
     });
   } catch (error) {
     console.error('Error in executive-metrics:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
-
-
+}, { requireUser: true });

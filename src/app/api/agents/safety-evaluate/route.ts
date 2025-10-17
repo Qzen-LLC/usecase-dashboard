@@ -1,16 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { AIService } from '@/lib/ai-service';
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: Request, { auth }) => {
   try {
     const internalToken = request.headers.get('x-internal-token');
     const isInternal = !!internalToken && !!process.env.INTERNAL_API_TOKEN && internalToken === process.env.INTERNAL_API_TOKEN;
     if (!isInternal) {
-      const user = await currentUser();
-      if (!user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+      // auth context is provided by withAuth wrapper
     }
 
     const body = await request.json();
@@ -58,4 +56,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

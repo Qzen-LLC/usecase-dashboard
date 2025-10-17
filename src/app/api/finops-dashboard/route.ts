@@ -1,17 +1,15 @@
 import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
+
 // Removed: import redis from '@/lib/redis';
 
-export async function GET() {
+export const GET = withAuth(async (request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
     
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
     
     if (!userRecord) {
@@ -105,4 +103,4 @@ export async function GET() {
   } catch (err) {
     return NextResponse.json({ error: 'Failed to fetch FinOps dashboard data', details: String(err) }, { status: 500 });
   }
-} 
+}, { requireUser: true });

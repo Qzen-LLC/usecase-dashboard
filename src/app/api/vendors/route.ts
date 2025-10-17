@@ -1,16 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { vendorServiceServer } from '@/lib/vendorServiceServer';
-import { currentUser } from '@clerk/nextjs/server';
+
 import { prismaClient } from '@/utils/db';
 
-export async function GET() {
+export const GET = withAuth(async (request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
     if (!userRecord) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -33,16 +31,16 @@ export async function GET() {
     console.error('Vendors API error:', error);
     return NextResponse.json({ error: 'Failed to fetch vendors' }, { status: 500 });
   }
-}
+}, { requireUser: true });
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (
+  request: Request,
+  { auth }: { auth: any }
+) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
     if (!userRecord) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -65,4 +63,4 @@ export async function POST(request: NextRequest) {
     console.error('Vendors POST API error:', error);
     return NextResponse.json({ error: 'Failed to create vendor' }, { status: 500 });
   }
-}
+}, { requireUser: true });

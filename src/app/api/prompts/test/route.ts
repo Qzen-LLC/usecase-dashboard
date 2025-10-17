@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { prismaClient } from '@/utils/db';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
@@ -18,15 +19,15 @@ const getAnthropicClient = (apiKey?: string) => {
   });
 };
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (
+  request: Request,
+  { auth }: { auth: any }
+) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
 
     if (!userRecord) {
@@ -45,20 +46,18 @@ export async function POST(request: NextRequest) {
 
     // Get API configuration for the organization
     let apiKey: string | undefined;
-    if (userRecord.organizationId) {
-      const apiConfig = await prismaClient.lLMApiConfiguration.findFirst({
-        where: {
-          organizationId: userRecord.organizationId,
-          service: service,
-          isActive: true,
-        },
-      });
-      
-      if (apiConfig) {
-        // In production, decrypt the API key
-        // For now, we'll use it directly (you should implement proper encryption)
-        apiKey = apiConfig.apiKeyEncrypted;
-      }
+    // Prefer per-user API configuration
+    const apiConfig = await prismaClient.lLMApiConfiguration.findFirst({
+      where: {
+        userId: userRecord.id,
+        service: service,
+        isActive: true,
+      },
+    });
+    
+    if (apiConfig) {
+      // Note: implement encryption/decryption in production if needed
+      apiKey = apiConfig.apiKey;
     }
 
     // Use environment variables as fallback
@@ -280,4 +279,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

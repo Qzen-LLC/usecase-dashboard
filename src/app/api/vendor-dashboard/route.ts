@@ -1,19 +1,16 @@
 import { NextResponse } from 'next/server';
 import { vendorServiceServer } from '@/lib/vendorServiceServer';
-import { currentUser } from '@clerk/nextjs/server';
 import { prismaClient } from '@/utils/db';
+import { withAuth } from '@/lib/auth-gateway';
 
-
-export async function GET() {
+export const GET = withAuth(async (request, { auth }) => {
   try {
-    // Get current user
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
+    const clerkId = auth.userId!;
+    
     // Get user data from database
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId },
     });
     if (!userRecord) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -33,4 +30,4 @@ export async function GET() {
     console.error('Vendor dashboard API error:', error);
     return NextResponse.json({ error: 'Failed to fetch dashboard stats' }, { status: 500 });
   }
-}
+}, { requireUser: true });

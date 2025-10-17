@@ -1,22 +1,17 @@
 import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
+
 import { calculateMaturityScore } from '@/lib/framework-data/uae-ai-scoring';
 
-export async function POST(
+export const POST = withAuth(async (
   request: Request,
-  { params }: { params: { assessmentId: string } }
-) {
+  { auth, params }: { auth: any, params: { assessmentId: string } }
+) => {
   try {
     console.log('🔄 UAE AI Control Instance API - POST request received');
-    
-    const user = await currentUser();
-    if (!user) {
-      console.log('❌ Unauthorized - no user found');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
-    const { assessmentId } = await params;
+    const { assessmentId } = params;
     const body = await request.json();
     const { controlId, implementation, evidenceFiles, score, notes } = body;
     
@@ -44,7 +39,7 @@ export async function POST(
 
     // Check user permission
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id }
+      where: { clerkId: auth.userId! }
     });
 
     if (!userRecord) {
@@ -114,21 +109,11 @@ export async function POST(
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });
 
 async function updateAssessmentScores(assessmentId: string) {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
-    });
-    if (!userRecord) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    // No auth context needed here; called from authenticated handler
     // Get all control instances for this assessment
     const controlInstances = await prismaClient.uaeAiControlInstance.findMany({
       where: { assessmentId },
@@ -169,7 +154,7 @@ async function updateAssessmentScores(assessmentId: string) {
         status: progress === 100 ? 'completed' : 'in_progress'
       }
     });
-    console.log('[CRUD_LOG] UAE AI Assessment scores recalculated:', { id: assessmentId, totalScore: maturityData.totalScore, weightedScore: maturityData.weightedScore, maturityLevel: maturityData.maturityLevel, updatedAt: new Date(), authoredBy: userRecord.id });
+    console.log('[CRUD_LOG] UAE AI Assessment scores recalculated:', { id: assessmentId, totalScore: maturityData.totalScore, weightedScore: maturityData.weightedScore, maturityLevel: maturityData.maturityLevel, updatedAt: new Date() });
   } catch (error) {
     console.error('Error updating assessment scores:', error);
   }

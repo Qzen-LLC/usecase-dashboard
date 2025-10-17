@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { prismaClient } from '@/utils/db';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
@@ -53,41 +53,33 @@ function interpolateVariables(content: any, variables: Record<string, string>): 
   return content;
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: Request, { auth }) => {
   try {
-    // Authentication
-    const user = await currentUser();
-    
     // Support both authenticated users and API key authentication
     const apiKeyHeader = request.headers.get('x-api-key');
     
-    if (!user && !apiKeyHeader) {
-      return NextResponse.json(
-        { error: 'Authentication required. Provide either a session or X-API-Key header.' },
-        { status: 401 }
-      );
-    }
-
     // Get user record
     let userRecord;
-    if (user) {
+    if (auth.userId) {
       userRecord = await prismaClient.user.findUnique({
-        where: { clerkId: user.id },
+        where: { clerkId: auth.userId },
       });
     } else if (apiKeyHeader) {
       // In production, you'd validate the API key against your database
       // For now, we'll use a simple check
       if (apiKeyHeader !== process.env.API_SECRET_KEY) {
-        return NextResponse.json({ error: 'Invalid API key' }, { status: 401 });
+        return new Response(JSON.stringify({ error: 'Invalid API key' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
       }
       // For API key auth, you might want to track which app/service is calling
       userRecord = await prismaClient.user.findFirst({
         where: { email: 'api@system.internal' },
       });
+    } else {
+      return new Response(JSON.stringify({ error: 'Authentication required. Provide either a session or X-API-Key header.' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
     }
 
     if (!userRecord) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return new Response(JSON.stringify({ error: 'User not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     const body = await request.json();
@@ -102,10 +94,7 @@ export async function POST(request: NextRequest) {
 
     // Validate input
     if (!promptId && !promptName) {
-      return NextResponse.json(
-        { error: 'Either promptId or promptName is required' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Either promptId or promptName is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Fetch the prompt template
@@ -114,19 +103,19 @@ export async function POST(request: NextRequest) {
       promptTemplate = await prismaClient.promptTemplate.findUnique({
         where: { id: promptId },
         include: {
-          deployments: {
-            where: { 
+          PromptDeployment: {
+            where: {
               environment: environment.toUpperCase(),
-              isActive: true 
+              isActive: true,
             },
             include: {
-              version: true
-            }
+              PromptVersion: true,
+            },
           },
-          versions: {
+          PromptVersion: {
             orderBy: { createdAt: 'desc' },
-            take: 1
-          }
+            take: 1,
+          },
         }
       });
     } else {
@@ -136,48 +125,42 @@ export async function POST(request: NextRequest) {
           organizationId: userRecord.organizationId 
         },
         include: {
-          deployments: {
-            where: { 
+          PromptDeployment: {
+            where: {
               environment: environment.toUpperCase(),
-              isActive: true 
+              isActive: true,
             },
             include: {
-              version: true
-            }
+              PromptVersion: true,
+            },
           },
-          versions: {
+          PromptVersion: {
             orderBy: { createdAt: 'desc' },
-            take: 1
-          }
+            take: 1,
+          },
         }
       });
     }
 
     if (!promptTemplate) {
-      return NextResponse.json(
-        { error: 'Prompt template not found' },
-        { status: 404 }
-      );
+      return new Response(JSON.stringify({ error: 'Prompt template not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Check permissions
     if (userRecord.role === 'USER' && promptTemplate.userId !== userRecord.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
     }
     
     if ((userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') 
         && promptTemplate.organizationId !== userRecord.organizationId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Use deployed version if available, otherwise use latest version
-    const versionToUse = promptTemplate.deployments[0]?.version || promptTemplate.versions[0];
+    const versionToUse = (promptTemplate as any).PromptDeployment?.[0]?.PromptVersion || (promptTemplate as any).PromptVersion?.[0];
     
     if (!versionToUse) {
-      return NextResponse.json(
-        { error: 'No version available for this prompt' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'No version available for this prompt' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Interpolate variables into content
@@ -194,17 +177,16 @@ export async function POST(request: NextRequest) {
 
     // Get API configuration
     let apiKey: string | undefined;
-    if (userRecord.organizationId) {
+    {
       const apiConfig = await prismaClient.lLMApiConfiguration.findFirst({
         where: {
-          organizationId: userRecord.organizationId,
+          userId: userRecord.id,
           service: promptTemplate.service,
           isActive: true,
         },
       });
-      
       if (apiConfig) {
-        apiKey = apiConfig.apiKeyEncrypted;
+        apiKey = (apiConfig as any).apiKey;
       }
     }
 
@@ -218,10 +200,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!apiKey) {
-      return NextResponse.json(
-        { error: `No API key configured for ${promptTemplate.service}` },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: `No API key configured for ${promptTemplate.service}` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Execute the prompt
@@ -306,10 +285,7 @@ export async function POST(request: NextRequest) {
           cost = tokensUsed * 0.0000008;
         }
       } else {
-        return NextResponse.json(
-          { error: `Service ${promptTemplate.service} is not yet implemented` },
-          { status: 400 }
-        );
+        return new Response(JSON.stringify({ error: `Service ${promptTemplate.service} is not yet implemented` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
 
       const latencyMs = Date.now() - startTime;
@@ -319,44 +295,46 @@ export async function POST(request: NextRequest) {
         data: {
           versionId: versionToUse.id,
           variables: variables,
-          request: {
+          requestContent: {
             content: interpolatedContent,
-            settings,
             metadata,
-            environment
+            environment,
           },
-          response: { content: response },
+          responseContent: String(response ?? ''),
           tokensUsed,
           cost,
           latencyMs,
           status: 'SUCCESS',
-          createdById: userRecord.id,
+          userId: userRecord.id,
+          promptTemplateId: (promptTemplate as any).id,
+          model: (settings as any).model || '',
+          service: (promptTemplate as any).service,
+          settings: settings as any,
         },
       });
       console.log('[CRUD_LOG] Prompt Test Run created:', { templateId: promptTemplate.id, versionId: versionToUse.id, model: settings.model, tokensUsed: tokensUsed, cost: cost, authoredBy: userRecord.id });
 
       // Return structured response
-      return NextResponse.json({
+      return new Response(JSON.stringify({
         success: true,
         data: {
           response,
-          promptId: promptTemplate.id,
-          promptName: promptTemplate.name,
+          promptId: (promptTemplate as any).id,
+          promptName: (promptTemplate as any).name,
           versionId: versionToUse.id,
-          versionNumber: versionToUse.versionNumber,
+          versionNumber: (versionToUse as any).versionNumber,
         },
         metadata: {
           tokensUsed,
           cost,
           latencyMs,
-          model: settings.model,
-          service: promptTemplate.service,
+          model: (settings as any).model,
+          service: (promptTemplate as any).service,
           environment,
           timestamp: new Date().toISOString(),
         },
-        // Include request ID for tracking
         requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      });
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
     } catch (error: any) {
       console.error('LLM Execution Error:', error);
@@ -366,58 +344,52 @@ export async function POST(request: NextRequest) {
         data: {
           versionId: versionToUse.id,
           variables: variables,
-          request: {
+          requestContent: {
             content: interpolatedContent,
-            settings,
             metadata,
-            environment
+            environment,
           },
-          response: {},
+          responseContent: '',
           status: 'FAILED',
           error: error.message,
-          createdById: userRecord.id,
+          userId: userRecord.id,
+          promptTemplateId: (promptTemplate as any).id,
+          model: (settings as any).model || '',
+          service: (promptTemplate as any).service,
+          settings: settings as any,
         },
       });
       console.log('[CRUD_LOG] Prompt Test Run created (error):', { templateId: promptTemplate.id, versionId: versionToUse.id, model: settings.model, error: error.message, authoredBy: userRecord.id });
 
-      return NextResponse.json(
-        {
-          success: false,
-          error: error.message || 'Failed to execute prompt',
-          details: error.response?.data || error.toString(),
-          requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        },
-        { status: 500 }
-      );
+      return new Response(JSON.stringify({
+        success: false,
+        error: error.message || 'Failed to execute prompt',
+        details: (error as any).response?.data || error.toString(),
+        requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
   } catch (error) {
     console.error('API Error:', error);
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Internal server error',
-        requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ 
+      success: false,
+      error: 'Internal server error',
+      requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: false }); // Allow API key auth
 
 // GET endpoint for checking prompt availability
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: (auth as any).userId! },
     });
 
     if (!userRecord) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return new Response(JSON.stringify({ error: 'User not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Get available prompts for this user/organization
@@ -437,7 +409,7 @@ export async function GET(request: NextRequest) {
         variables: true,
         createdAt: true,
         updatedAt: true,
-        deployments: {
+        PromptDeployment: {
           where: { isActive: true },
           select: {
             environment: true,
@@ -448,17 +420,14 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' }
     });
 
-    return NextResponse.json({
+    return new Response(JSON.stringify({
       success: true,
       prompts,
       count: prompts.length
-    });
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
   } catch (error) {
     console.error('Error fetching prompts:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch prompts' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Failed to fetch prompts' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: true });

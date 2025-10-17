@@ -11,11 +11,7 @@ const isPublicRoute = createRouteMatcher([
 export default clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl;
 
-  // Get the actual auth object by awaiting it
-  const authObject = await auth();
-  const userId = authObject.userId;
-
-  // Allow public routes
+  // Allow public routes immediately without touching auth
   if (isPublicRoute(req)) {
     return NextResponse.next();
   }
@@ -24,6 +20,10 @@ export default clerkMiddleware(async (auth, req) => {
   if (pathname.startsWith('/api/')) {
     return NextResponse.next();
   }
+
+  // Only fetch auth for protected, non-API routes
+  const authObject = await auth();
+  const userId = authObject.userId;
 
   // Check if user is authenticated
   if (!userId) {
@@ -39,6 +39,6 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    '/((?!_next|.\\..|favicon.ico).*)',
+    '/((?!_next/static|_next/image|_next/webpack-hmr|_next/data|_next|.*\\..*|favicon.ico).*)',
   ],
 };

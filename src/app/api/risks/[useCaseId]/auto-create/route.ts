@@ -1,34 +1,20 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { prismaClient } from '@/utils/db';
 import { calculateRiskScores, type StepsData } from '@/lib/risk-calculations';
 
 // POST /api/risks/[useCaseId]/auto-create - Auto-create risks from assessment data
-export async function POST(
+export const POST = withAuth(async (
   request: Request,
-  { params }: { params: { useCaseId: string } }
-) {
+  { params, auth }: { params: { useCaseId: string }, auth: any }
+) => {
   try {
-    // TEMPORARY: Auth bypass for testing
-    const user = await currentUser();
-    let userRecord;
-    
-    if (!user) {
-      // Use bypass user for testing
-      console.log('[API] Using bypass user for testing');
-      userRecord = await prismaClient.user.findFirst({
-        where: { role: 'QZEN_ADMIN' }
-      });
-      if (!userRecord) {
-        return NextResponse.json({ error: 'No admin user found for bypass' }, { status: 500 });
-      }
-    } else {
-      userRecord = await prismaClient.user.findUnique({
-        where: { clerkId: user.id },
-      });
-      if (!userRecord) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId: auth.userId! },
+    });
+    if (!userRecord) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const { stepsData } = await request.json();
@@ -99,7 +85,7 @@ export async function POST(
                   riskLevel === 'High' ? 'Moderate business impact' : 'Low business impact',
           likelihood: data.desktop >= 7 ? 'High' : 
                      data.desktop >= 5 ? 'Medium' : 'Low',
-          status: 'OPEN',
+          // status omitted to use default OPEN from schema
           createdBy: userRecord.id,
           createdByName: `${userRecord.firstName || ''} ${userRecord.lastName || ''}`.trim() || 'Unknown User',
           createdByEmail: userRecord.email,
@@ -121,4 +107,4 @@ export async function POST(
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

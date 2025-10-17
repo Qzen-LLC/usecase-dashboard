@@ -1,17 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { EvaluationContextAggregator } from '@/lib/evals/evaluation-context-aggregator';
 import { EvaluationGenerationEngine, GenerationStrategy } from '@/lib/evals/evaluation-generation-engine';
 import { EvaluationGenerationOrchestrator } from '@/lib/evals/evaluation-generation-orchestrator';
 import { prismaClient } from '@/utils/db';
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: Request, { auth }) => {
   try {
     // Check authentication
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const body = await request.json();
     const { 
@@ -165,17 +163,14 @@ export async function POST(request: NextRequest) {
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-}
+}, { requireUser: true });
 
 // GET endpoint to check generation status or retrieve existing evaluation
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
-    const searchParams = request.nextUrl.searchParams;
+    const searchParams = new URL(request.url).searchParams;
     const useCaseId = searchParams.get('useCaseId');
     const evaluationId = searchParams.get('evaluationId');
 
@@ -231,4 +226,4 @@ export async function GET(request: NextRequest) {
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-}
+}, { requireUser: true });

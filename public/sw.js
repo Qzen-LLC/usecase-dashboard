@@ -1,6 +1,6 @@
-const CACHE_NAME = 'ai-dashboard-v1.0.0'
-const STATIC_CACHE_NAME = 'ai-dashboard-static-v1.0.0'
-const DYNAMIC_CACHE_NAME = 'ai-dashboard-dynamic-v1.0.0'
+const CACHE_NAME = 'ai-dashboard-v1.0.1'
+const STATIC_CACHE_NAME = 'ai-dashboard-static-v1.0.1'
+const DYNAMIC_CACHE_NAME = 'ai-dashboard-dynamic-v1.0.1'
 
 // Static assets to cache
 const STATIC_ASSETS = [
@@ -88,6 +88,16 @@ self.addEventListener('fetch', (event) => {
   
   // Skip chrome-extension and other non-http requests
   if (!url.protocol.startsWith('http')) {
+    return
+  }
+
+  // IMPORTANT: Bypass Next.js internal assets and RSC/data fetches to avoid stale chunks
+  // Let the network handle these without service worker interference
+  if (
+    url.pathname.startsWith('/_next/') ||
+    url.pathname.startsWith('/__nextjs_original-stack-frame_invariant') ||
+    url.pathname.startsWith('/__nextjs_original-stack-frame')
+  ) {
     return
   }
   
@@ -181,7 +191,11 @@ async function staleWhileRevalidate(request) {
 // Helper functions to determine request type
 function isStaticAsset(request) {
   const url = new URL(request.url)
-  return url.pathname.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)
+  // Exclude Next.js internal assets explicitly (defense-in-depth)
+  if (url.pathname.startsWith('/_next/')) {
+    return false
+  }
+  return url.pathname.match(/\.(css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)
 }
 
 function isApiRequest(request) {

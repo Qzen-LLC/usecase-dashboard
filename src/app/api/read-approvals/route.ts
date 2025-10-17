@@ -1,25 +1,23 @@
 import { prismaClient } from '@/utils/db';
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
 
-export async function GET(req: Request) {
+
+export const GET = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
+    // auth context is provided by withAuth wrapper
+
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
-    
+
     if (!userRecord) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { searchParams } = new URL(req.url);
+    const { searchParams } = new URL(request.url);
     const useCaseId = searchParams.get('useCaseId');
-    
+
     if (!useCaseId) {
       return NextResponse.json({ error: 'Missing useCaseId' }, { status: 400 });
     }
@@ -29,11 +27,11 @@ export async function GET(req: Request) {
       const useCase = await prismaClient.useCase.findUnique({
         where: { id: useCaseId },
       });
-      
+
       if (!useCase) {
         return NextResponse.json({ error: 'Use case not found' }, { status: 404 });
       }
-      
+
       if (userRecord.role === 'USER') {
         // USER can only read their own use cases
         if (useCase.userId !== userRecord.id) {
@@ -53,4 +51,4 @@ export async function GET(req: Request) {
     console.error('Error reading approvals:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-} 
+}, { requireUser: true });

@@ -1,30 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
 
-export async function POST(request: NextRequest) {
+
+export const POST = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const body = await request.json();
     const { ruleId, approved, reason } = body;
 
     if (!ruleId || approved === undefined) {
-      return NextResponse.json(
-        { error: 'Missing required parameters' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Missing required parameters' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // If rejecting, reason is required
     if (!approved && !reason) {
-      return NextResponse.json(
-        { error: 'Rejection reason is required' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Rejection reason is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Verify the rule exists
@@ -36,18 +27,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (!existingRule) {
-      return NextResponse.json(
-        { error: 'Guardrail rule not found' },
-        { status: 404 }
-      );
+      return new Response(JSON.stringify({ error: 'Guardrail rule not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
-    // Check if the user who edited cannot approve their own changes
-    if (existingRule.editedBy === user.emailAddresses?.[0]?.emailAddress) {
-      return NextResponse.json(
-        { error: 'You cannot approve your own changes' },
-        { status: 403 }
-      );
+    // Load current user email and prevent self-approval
+    const currentUser = await prismaClient.user.findUnique({ where: { clerkId: auth.userId! } });
+    const currentEmail = currentUser?.email || auth.userId!;
+    if (existingRule.editedBy === currentEmail) {
+      return new Response(JSON.stringify({ error: 'You cannot approve your own changes' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Update the rule with approval/rejection
@@ -56,10 +43,10 @@ export async function POST(request: NextRequest) {
       data: {
         status: approved ? 'APPROVED' : 'REJECTED',
         ...(approved ? {
-          approvedBy: user.emailAddresses?.[0]?.emailAddress || user.id,
+          approvedBy: currentEmail,
           approvedAt: new Date()
         } : {
-          rejectedBy: user.emailAddresses?.[0]?.emailAddress || user.id,
+          rejectedBy: currentEmail,
           rejectedAt: new Date(),
           rejectionReason: reason
         }),
@@ -73,9 +60,9 @@ export async function POST(request: NextRequest) {
         guardrailId: existingRule.guardrailId,
         ruleId: ruleId,
         action: approved ? 'approve' : 'reject',
-        userId: user.id,
-        userName: user.emailAddresses?.[0]?.emailAddress || user.id,
-        changes: approved ? null : { reason }
+        userId: auth.userId!,
+        userName: currentEmail,
+        changes: approved ? undefined : { reason }
       }
     });
 
@@ -100,46 +87,37 @@ export async function POST(request: NextRequest) {
       data: {
         status: guardrailStatus,
         ...(guardrailStatus === 'approved' ? {
-          approvedBy: user.emailAddresses?.[0]?.emailAddress || user.id,
+          approvedBy: currentEmail,
           approvedAt: new Date()
         } : guardrailStatus === 'rejected' ? {
-          rejectedBy: user.emailAddresses?.[0]?.emailAddress || user.id,
+          rejectedBy: currentEmail,
           rejectedAt: new Date()
         } : {})
       }
     });
 
-    return NextResponse.json({
+    return new Response(JSON.stringify({
       success: true,
       rule: updatedRule,
       guardrailStatus,
       message: `Guardrail rule ${approved ? 'approved' : 'rejected'} successfully`
-    });
+    }), { headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error approving/rejecting guardrail rule:', error);
-    return NextResponse.json(
-      { error: 'Failed to process approval', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Failed to process approval', details: error instanceof Error ? error.message : 'Unknown error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: true });
 
 // Bulk approve/reject endpoint
-export async function PUT(request: NextRequest) {
+export const PUT = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const body = await request.json();
     const { updates } = body; // Array of { ruleId, status, reason? }
 
     if (!updates || !Array.isArray(updates)) {
-      return NextResponse.json(
-        { error: 'Invalid request format' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Invalid request format' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     const results = [];
@@ -164,7 +142,9 @@ export async function PUT(request: NextRequest) {
         }
 
         // Check self-approval
-        if (rule.editedBy === user.emailAddresses?.[0]?.emailAddress) {
+        const currentUser = await prismaClient.user.findUnique({ where: { clerkId: auth.userId! } });
+        const currentEmail = currentUser?.email || auth.userId!;
+        if (rule.editedBy === currentEmail) {
           errors.push({ ruleId, error: 'Cannot approve own changes' });
           continue;
         }
@@ -174,10 +154,10 @@ export async function PUT(request: NextRequest) {
           data: {
             status: status,
             ...(status === 'APPROVED' ? {
-              approvedBy: user.emailAddresses?.[0]?.emailAddress || user.id,
+              approvedBy: currentEmail,
               approvedAt: new Date()
             } : status === 'REJECTED' ? {
-              rejectedBy: user.emailAddresses?.[0]?.emailAddress || user.id,
+              rejectedBy: currentEmail,
               rejectedAt: new Date(),
               rejectionReason: reason
             } : {})
@@ -190,9 +170,9 @@ export async function PUT(request: NextRequest) {
             guardrailId: rule.guardrailId,
             ruleId: ruleId,
             action: status === 'APPROVED' ? 'approve' : 'reject',
-            userId: user.id,
-            userName: user.emailAddresses?.[0]?.emailAddress || user.id,
-            changes: status === 'REJECTED' ? { reason } : null
+            userId: auth.userId!,
+            userName: currentEmail,
+            changes: status === 'REJECTED' ? { reason } : undefined
           }
         });
 
@@ -205,17 +185,14 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    return new Response(JSON.stringify({
       success: true,
       results,
       errors,
       message: `Processed ${results.length} rules successfully, ${errors.length} errors`
-    });
+    }), { headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error in bulk approval:', error);
-    return NextResponse.json(
-      { error: 'Failed to process bulk approval', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Failed to process bulk approval', details: error instanceof Error ? error.message : 'Unknown error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: true });

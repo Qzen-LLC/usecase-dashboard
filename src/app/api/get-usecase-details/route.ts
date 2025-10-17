@@ -1,20 +1,17 @@
 import { prismaClient } from '@/utils/db';
-import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
 
-export async function GET(req: Request) {
+
+export const GET = withAuth(async (req: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
     
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
     
     if (!userRecord) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return new Response(JSON.stringify({ error: 'User not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     const { searchParams } = new URL(req.url);
@@ -22,7 +19,7 @@ export async function GET(req: Request) {
     const acquireSharedLock = searchParams.get('acquireSharedLock') === 'true';
     
     if (!useCaseId) {
-      return NextResponse.json({ error: 'Missing useCaseId' }, { status: 400 });
+      return new Response(JSON.stringify({ error: 'Missing useCaseId' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Check permissions based on role
@@ -32,18 +29,18 @@ export async function GET(req: Request) {
       });
       
       if (!useCase) {
-        return NextResponse.json({ error: 'Use case not found' }, { status: 404 });
+        return new Response(JSON.stringify({ error: 'Use case not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
       }
       
       if (userRecord.role === 'USER') {
         // USER can only access their own use cases
         if (useCase.userId !== userRecord.id) {
-          return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+          return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
         }
       } else if (userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') {
         // ORG_ADMIN and ORG_USER can only access use cases in their organization
         if (useCase.organizationId !== userRecord.organizationId) {
-          return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+          return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
         }
       }
     }
@@ -88,7 +85,7 @@ export async function GET(req: Request) {
     });
 
     if (!useCase) {
-      return NextResponse.json({ error: 'Use case not found' }, { status: 404 });
+      return new Response(JSON.stringify({ error: 'Use case not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Check for locks if acquireSharedLock is requested
@@ -104,7 +101,16 @@ export async function GET(req: Request) {
       });
 
       // Get the scope from query parameters (default to ASSESS for backward compatibility)
-      const scope = searchParams.get('scope') || 'ASSESS';
+      const scopeParam = searchParams.get('scope');
+      const allowedScopes = [
+        'ASSESS',
+        'EDIT',
+        'GOVERNANCE_EU_AI_ACT',
+        'GOVERNANCE_ISO_42001',
+        'GOVERNANCE_UAE_AI',
+        'GOVERNANCE_ISO_27001',
+      ];
+      const scope = (allowedScopes.includes(scopeParam || '') ? scopeParam : 'ASSESS') as any;
 
       // Check for existing locks for the specific scope
       const existingLocks = await prismaClient.lock.findMany({
@@ -128,7 +134,7 @@ export async function GET(req: Request) {
       
       if (exclusiveLocks.length > 0) {
         // Exclusive lock exists - check if current user owns it
-        const exclusiveLock = exclusiveLocks[0];
+        const exclusiveLock = exclusiveLocks[0] as any;
         const heldByCurrentUser = exclusiveLock.userId === userRecord.id;
         lockInfo = {
           hasExclusiveLock: true,
@@ -155,15 +161,14 @@ export async function GET(req: Request) {
       lockInfo
     };
 
-    const response = NextResponse.json(responseData);
-    // Add caching headers for use case details (cache for 30 seconds)
-    response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
-    return response;
+    return new Response(JSON.stringify(responseData), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120'
+      }
+    });
   } catch (error) {
     console.error('Error fetching use case details:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch use case details' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Failed to fetch use case details' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-} 
+}, { requireUser: true });
