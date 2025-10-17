@@ -37,6 +37,7 @@ interface UseCase {
   owner: string;
   aiucId: number;
   stage: string; // Added stage to the interface
+  organizationId?: string; // Add organizationId to determine which API to use
 }
 
 // Add interfaces for the question data
@@ -600,12 +601,28 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     });
   }, []);
 
+
+
   // Update the useEffect to fetch questions with answers
+  // Fetch based on whether the USE CASE has an organizationId, not the user
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
         setQuestionsLoading(true);
-        const response = await fetch(`/api/get-assess-questions?useCaseId=${useCaseId}`, {
+        
+        // Use different API based on whether the USE CASE belongs to an organization
+        // This allows QZEN_ADMIN to access both org and non-org use cases appropriately
+        const useCaseHasOrg = !!useCase?.organizationId;
+        const apiEndpoint = useCaseHasOrg 
+          ? `/api/get-assess-questions?useCaseId=${useCaseId}`
+          : `/api/get-assess-question-templates?useCaseId=${useCaseId}`;
+        
+        console.log('[Assess] Fetching from:', apiEndpoint, { 
+          useCaseHasOrg, 
+          organizationId: useCase?.organizationId 
+        });
+        
+        const response = await fetch(apiEndpoint, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -613,7 +630,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         });
         const qnAData = await response.json();
         
-        // console.log('Fetched questions data:', qnAData); // Debug log
+        console.log('Fetched questions data:', qnAData); // Debug log
         
         const formattedQuestions = qnAData.map((q: QnAProps) => ({
           id: q.id,
@@ -647,10 +664,11 @@ const validateAssessmentData = useMemo(() => (data: any) => {
       }
     };
 
-    if (useCaseId) {
+    // Only fetch questions once we have loaded the use case
+    if (useCaseId && useCase) {
       fetchQuestions();
     }
-  }, [useCaseId]);
+  }, [useCaseId, useCase]);
 
   // Scroll to top when currentStep changes
   useEffect(() => {
@@ -724,9 +742,20 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         body: JSON.stringify({ useCaseId, assessData: transformedData }),
       });
 
-      // Save question answers
+      // Save question answers using appropriate API endpoint
+      // Use the same logic as fetching - based on whether the USE CASE has an organizationId
       if (Object.keys(questionAnswers).length > 0) {
-        await fetch("/api/save-question-answers", {
+        const useCaseHasOrg = !!useCase?.organizationId;
+        const saveEndpoint = useCaseHasOrg 
+        ? "/api/save-question-answers"
+        : "/api/save-template-answers";
+      
+      console.log('[Assess] Saving answers to:', saveEndpoint, { 
+        useCaseHasOrg, 
+        organizationId: useCase?.organizationId 
+      });
+      
+      await fetch(saveEndpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 

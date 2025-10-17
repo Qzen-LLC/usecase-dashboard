@@ -1053,6 +1053,7 @@ model QuestionTemplate {
   budgetOrderIndex    Int?             @default(0)
   optionTemplates     OptionTemplate[]
   questions           Question[]
+  answers             Answer[]
 }
 
 model OptionTemplate {
@@ -1091,12 +1092,14 @@ model Option {
 }
 
 model Answer {
-  id         String   @id @default(uuid())
-  questionId String
-  value      Json
-  useCaseId  String
-  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  useCase    UseCase  @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  id             String           @id @default(uuid())
+  value          Json
+  useCaseId      String
+  questionId     String?          
+  templateId     String?          
+  question       Question?        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionTemplate QuestionTemplate? @relation(fields: [templateId], references: [id])
+  useCase        UseCase          @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
 }
 
 enum GuardrailRuleStatus {
