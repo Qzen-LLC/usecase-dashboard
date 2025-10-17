@@ -78,12 +78,6 @@ export async function GET(request: Request) {
               text: true,
               type: true,
             }
-          },
-          questionTemplate: {
-            select: {
-              text: true,
-              type: true,
-            }
           }
         }
       }
@@ -127,12 +121,6 @@ export async function GET(request: Request) {
                       text: true,
                       type: true,
                     }
-                  },
-                  questionTemplate: {
-                    select: {
-                      text: true,
-                      type: true,
-                    }
                   }
                 }
               }
@@ -152,12 +140,6 @@ export async function GET(request: Request) {
                       text: true,
                       type: true,
                     }
-                  },
-                  questionTemplate: {
-                    select: {
-                      text: true,
-                      type: true,
-                    }
                   }
                 }
               }
@@ -173,12 +155,6 @@ export async function GET(request: Request) {
               answers: {
                 include: {
                   question: {
-                    select: {
-                      text: true,
-                      type: true,
-                    }
-                  },
-                  questionTemplate: {
                     select: {
                       text: true,
                       type: true,
@@ -207,13 +183,8 @@ export async function GET(request: Request) {
         // Extract regulatory frameworks and standards from answers (dynamic questions)
         if (useCase.answers && Array.isArray(useCase.answers)) {
           useCase.answers.forEach((answer: any) => {
-            // Get question text from either question or questionTemplate
-            const questionSource = answer.question || answer.questionTemplate;
-            const sourceType = answer.question ? 'Question' : answer.questionTemplate ? 'QuestionTemplate' : 'Unknown';
-            
-            if (questionSource) {
-              console.log(`[Governance] AIUC-${useCase.aiucId} - Processing answer from ${sourceType}:`, questionSource.text);
-              const questionText = questionSource.text;
+            if (answer.question) {
+              const questionText = answer.question.text;
               
               // Check for AI-Specific Regulations question
               if (questionText === 'AI-Specific Regulations' && answer.value) {
