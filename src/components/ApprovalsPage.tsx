@@ -7,26 +7,81 @@ import { ChartRadarDots } from "@/components/ui/radar-chart";
 import { ApprovalsRiskSummary } from "@/components/ui/approvals-risk-summary"
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
 
-interface QnAProps {
-  id: any;
-  text: any;
-  stage: any;
-  type: any;
-  options: OptionProps[];
-  answers: AnswerProps[];
-}
-
-interface OptionProps {
-  id: string;
-  text: string;
-  questionId: string;
-}
-
-interface AnswerProps {
-  id: string;
-  value: any;
-  questionId: string;
-}
+type StepsData = {
+  dataReadiness?: {
+    dataTypes?: string[];
+    dataVolume?: string;
+    crossBorderTransfer?: boolean;
+    multiJurisdictionHandling?: boolean;
+    dataRetention?: string;
+    // Gen AI specific fields
+    trainingDataTypes?: string[];
+    dataQualityScore?: number;
+    promptEngineering?: string[];
+    knowledgeSources?: string[];
+  };
+  technicalFeasibility?: {
+    modelUpdateFrequency?: string;
+    apiSpecs?: string;
+    deploymentModels?: string;
+    integrationPoints?: string[];
+    technicalComplexity?: number;
+    modelTypes?: string[];
+    // Gen AI specific fields
+    modelProvider?: string;
+    contextWindowSize?: number;
+    tokenUsage?: {
+      estimatedDaily?: number;
+      estimatedMonthly?: number;
+    };
+    agentArchitecture?: string;
+    agentCapabilities?: string[];
+  };
+  businessFeasibility?: {
+    userCategories?: string[];
+    systemCriticality?: string;
+    failureImpact?: string;
+    // Gen AI specific fields
+    genAIUseCase?: string;
+    interactionPattern?: string;
+    successMetrics?: string[];
+    minAcceptableAccuracy?: number;
+    maxHallucinationRate?: number;
+  };
+  riskAssessment?: {
+    dataProtection?: {
+      jurisdictions?: string[];
+    };
+    sectorSpecific?: string | { [key: string]: boolean };
+    // Gen AI specific fields
+    modelRisks?: { [key: string]: number };
+    agentRisks?: { [key: string]: number };
+    dependencyRisks?: string[];
+  };
+  ethicalImpact?: {
+    modelCharacteristics?: {
+      explainabilityLevel?: string;
+      biasTesting?: string;
+    };
+    decisionMaking?: {
+      automationLevel?: string;
+    };
+    aiGovernance?: {
+      humanOversightLevel?: string;
+    };
+    // Gen AI specific fields
+    contentGeneration?: {
+      risks: string[];
+      hallucinationTolerance: string;
+      attributionRequirements: string[];
+    };
+    agentBehavior?: {
+      boundaries: string[];
+      overrideCapability: boolean;
+    };
+  };
+  metadata?: Record<string, unknown>;
+};
 
 const statusOptions = ["Approved", "Rejected", "Pending"];
 const businessFunctions = [
@@ -54,16 +109,7 @@ const finalQualifications = [
   "Productivity Driver",
   "Revenue Acceleration",
 ];
-
-const getAnswer = (qnAData: QnAProps[], stage: string, text: string) => {
-  const q = qnAData.find(q => q.stage === stage && q.text === text);
-  if (!q) return null;
-  if (!q.answers || q.answers.length === 0) return null;
-  const val = q.answers.map(a => a.value).filter(Boolean);
-  return q.type === 'TEXT' || q.type === 'TEXT_MINI' ? val : val[0];
-};
-
-const calculateDataPrivacyRisk = (qnAData: any) => {
+const calculateDataPrivacyRisk = (stepsData: StepsData) => {
   let score = 1; // Base score
   const factors = [];
   const infoMessages: string[] = [];
@@ -77,58 +123,54 @@ const calculateDataPrivacyRisk = (qnAData: any) => {
     multiJurisdiction: 0.8
   };
   const sensitiveTypes = ['Health/Medical Records', 'Financial Records', 'Biometric Data', "Children's Data (under 16)"];
-  
-  const dataTypes = getAnswer(qnAData, 'DATA_READINESS', "Data Types");
-  console.log("Data Types:", dataTypes);
-  console.log("Cross-Border Data Transfer:", getAnswer(qnAData, 'DATA_READINESS', "Cross-Border Data Transfer"));
-  const _hasSensitiveData = dataTypes.some((type: string) => sensitiveTypes.includes(type || ''));
+  const _hasSensitiveData = Array.isArray(stepsData?.dataReadiness?.dataTypes) && stepsData.dataReadiness.dataTypes.some(type => sensitiveTypes.includes(type || ''));
   if (_hasSensitiveData) {
     score += weights.sensitiveData;
     factors.push(`Processing sensitive PII (+${weights.sensitiveData})`);
   }
   // Dynamic info: If Children's Data or Biometric Data is present, always flag as sensitive
-  if (dataTypes.includes("Children's Data (under 16)")) {
+  if (stepsData?.dataReadiness?.dataTypes?.includes("Children's Data (under 16)")) {
     infoMessages.push("Children's Data (under 16) detected. Data privacy risk has been flagged as sensitive.");
   }
-  if (dataTypes.includes("Biometric Data")) {
+  if (stepsData?.dataReadiness?.dataTypes?.includes("Biometric Data")) {
     infoMessages.push("Biometric Data detected. Data privacy risk has been flagged as sensitive.");
   }
   // Cross-border transfer without jurisdictions
-  if (getAnswer(qnAData, 'DATA_READINESS', "Cross-Border Data Transfer") && (!getAnswer(qnAData, 'RISK_ASSESSMENT', "Data Protection") || getAnswer(qnAData, 'RISK_ASSESSMENT', "Data Protection").length === 0)) {
+  if (stepsData?.dataReadiness?.crossBorderTransfer && (!stepsData?.riskAssessment?.dataProtection?.jurisdictions || stepsData?.riskAssessment?.dataProtection?.jurisdictions.length === 0)) {
     infoMessages.push("Cross-border data transfer is required, but no jurisdictions are specified. Please review data protection requirements.");
   }
 
   //TODO
-  if (['large', 'vlarge', 'massive'].includes(getAnswer(qnAData, 'DATA_READINESS', "Data Volume") ?? '')) {
+  if (['large', 'vlarge', 'massive'].includes(stepsData?.dataReadiness?.dataVolume ?? '')) {
     score += weights.largeVolume;
     factors.push(`Large data volume >1TB (+${weights.largeVolume})`);
   }
 
-  if (getAnswer(qnAData, 'DATA_READINESS', "Cross-Border Data Transfer") == true) {
+  if (stepsData?.dataReadiness?.crossBorderTransfer == true) {
     score += weights.crossBorder;
     factors.push(`Cross-border transfers (+${weights.crossBorder})`);
   }
 
   // Real-time processing
-  if ((getAnswer(qnAData,'TECHNICAL_FEASIBILITY', "Model Update Frequency") || '') === 'Real-time/Continuous') {
+  if ((stepsData?.technicalFeasibility?.modelUpdateFrequency || '') === 'Real-time/Continuous') {
     score += weights.realTime;
     factors.push(`Real-time processing (+${weights.realTime})`);
   }
 
   // Children's data special consideration
-  if (dataTypes.includes("Children's Data (under 16)")) {
+  if (stepsData?.dataReadiness?.dataTypes?.includes("Children's Data (under 16)")) {
     score += weights.minorsData;
     factors.push(`Processing minors data (+${weights.minorsData})`);
   }
 
   // Multi-jurisdiction handling
-  if (getAnswer(qnAData, 'DATA_READINESS', "Multi-Jurisdiction Handling") === 'Yes') {
+  if (stepsData?.dataReadiness?.multiJurisdictionHandling === true) {
     score += weights.multiJurisdiction;
     factors.push(`Multi-jurisdiction handling (+${weights.multiJurisdiction})`);
   }
 
   // Long retention periods
-  if (['3-7 years', '7+ years'].includes(getAnswer(qnAData, 'DATA_READINESS', "Data Retention Period"))) {
+  if (['3-7years', '7+years'].includes(stepsData?.dataReadiness?.dataRetention ?? '')) {
     score += weights.retention;
     factors.push(`Extended data retention (+${weights.retention})`);
   }
@@ -141,7 +183,7 @@ const calculateDataPrivacyRisk = (qnAData: any) => {
   };
 }
 
-const calculateSecurityRisk = (qnAData: QnAProps[]) => {
+const calculateSecurityRisk = (stepsData: StepsData) => {
   let score = 1; // Base score
   const factors = [];
   const infoMessages: string[] = [];
@@ -156,7 +198,7 @@ const calculateSecurityRisk = (qnAData: QnAProps[]) => {
     edgeDeployment: 1.2
   };
 
-  switch (getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', "API Specifications") || '') {
+  switch (stepsData?.technicalFeasibility?.apiSpecs || '') {
     case 'Public API':
       score += weights.publicAPI;
       factors.push(`Public API exposure (+${weights.publicAPI})`);
@@ -171,10 +213,8 @@ const calculateSecurityRisk = (qnAData: QnAProps[]) => {
       break;
   }
 
-  console.log("Deployment Model:", getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', "Deployment Model"));
-  console.log("API Specifications:", getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', "API Specifications"));
   // Deployment model risks
-  switch (getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', "Deployment Model") || '') {
+  switch (stepsData?.technicalFeasibility?.deploymentModels || '') {
     case 'Public Cloud':
       score += weights.cloudDeployment;
       factors.push(`Cloud deployment (+${weights.cloudDeployment})`);
@@ -190,32 +230,27 @@ const calculateSecurityRisk = (qnAData: QnAProps[]) => {
   }
 
   // Integration complexity
-  const integrationPoints = getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', 'Integration Points') || [];
-  const technicalComplexity = getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', 'Technical Complexity') || 0;
-  const integrationScore = (Array.isArray(integrationPoints) ? integrationPoints.length : 0) * (typeof technicalComplexity === 'number' ? technicalComplexity : 0);
+  const integrationScore = (stepsData?.technicalFeasibility?.integrationPoints?.length || 0) * (stepsData?.technicalFeasibility?.technicalComplexity || 0);
   if (integrationScore > 0) {
     score += integrationScore;
     factors.push(`Multiple integrations (+${integrationScore.toFixed(1)})`);
   }
 
   // Authentication complexity (derived from user categories and API exposure)
-  const userCategories = getAnswer(qnAData, 'BUSINESS_FEASIBILITY', 'User Categories') || [];
-  if (Array.isArray(userCategories) && userCategories.includes('General Public')) {
+  if ((stepsData?.businessFeasibility?.userCategories || []).includes('General Public')) {
     score += weights.authComplexity;
     factors.push(`Authentication complexity (+${weights.authComplexity})`);
   }
   
   // Dynamic info: Public/Partner API without security controls
-  const apiSpecs = getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', 'API Specifications');
-  if (["Public API", "Partner API"].includes(apiSpecs || '')) {
-    if (!integrationPoints || integrationPoints.length === 0) {
+  if (["Public API", "Partner API"].includes(stepsData?.technicalFeasibility?.apiSpecs || '')) {
+    if (!stepsData?.technicalFeasibility?.integrationPoints || stepsData.technicalFeasibility.integrationPoints.length === 0) {
       infoMessages.push("Public or Partner API selected, but no integration points specified. Please ensure security controls are in place.");
     }
   }
   // Cloud/Hybrid deployment without security controls
-  const deploymentModel = getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', 'Deployment Model');
-  if (["Public Cloud", "Hybrid Cloud"].includes(deploymentModel || '')) {
-    if (!integrationPoints || integrationPoints.length === 0) {
+  if (["Public Cloud", "Hybrid Cloud"].includes(stepsData?.technicalFeasibility?.deploymentModels || '')) {
+    if (!stepsData?.technicalFeasibility?.integrationPoints || stepsData.technicalFeasibility.integrationPoints.length === 0) {
       infoMessages.push("Cloud or Hybrid deployment selected, but no integration points specified. Please ensure security controls are in place.");
     }
   }
@@ -227,7 +262,7 @@ const calculateSecurityRisk = (qnAData: QnAProps[]) => {
   };
 }
 
-const calculateRegulatoryRisk = (qnAData: QnAProps[]) => {
+const calculateRegulatoryRisk = (stepsData: StepsData) => {
   let score = 1; // Base score
   const factors = [];
   const weights = {
@@ -250,20 +285,23 @@ const calculateRegulatoryRisk = (qnAData: QnAProps[]) => {
   let regulatoryWarnings: string[] = [];
 
   // Helper: get operating jurisdictions
-  let operatingJurisdictions: any = getAnswer(qnAData, 'RISK_ASSESSMENT', 'Operating Jurisdictions') || 
-                                     getAnswer(qnAData, 'DATA_READINESS', 'Operating Jurisdictions');
-
+  let operatingJurisdictions: any = undefined;
+  if (stepsData?.riskAssessment && 'operatingJurisdictions' in stepsData.riskAssessment) {
+    operatingJurisdictions = (stepsData.riskAssessment as any).operatingJurisdictions;
+  } else if (stepsData?.dataReadiness && 'operatingJurisdictions' in stepsData.dataReadiness) {
+    operatingJurisdictions = (stepsData.dataReadiness as any).operatingJurisdictions;
+  }
   // Helper: get sectorSpecific as string or object
-  let sectorSpecific = getAnswer(qnAData, 'RISK_ASSESSMENT', 'Sector-Specific Regulations');
+  let sectorSpecific = stepsData?.riskAssessment?.sectorSpecific;
   let sectorSpecificStr = typeof sectorSpecific === 'string' ? sectorSpecific : '';
   if (!sectorSpecificStr && typeof sectorSpecific === 'object') {
     sectorSpecificStr = Object.keys(sectorSpecific).find(k => sectorSpecific[k]) || '';
   }
   // Helper: get data types
-  const dataTypes = getAnswer(qnAData, 'DATA_READINESS', 'Data Types') || [];
+  const dataTypes = stepsData?.dataReadiness?.dataTypes || [];
 
   // Helper: get dataProtection.jurisdictions
-  const dataProtectionJurisdictions = getAnswer(qnAData, 'RISK_ASSESSMENT', 'Data Protection') || [];
+  const dataProtectionJurisdictions = stepsData?.riskAssessment?.dataProtection?.jurisdictions || [];
 
   // --- Dynamic Inference for all major frameworks ---
   // GDPR
@@ -369,8 +407,7 @@ const calculateRegulatoryRisk = (qnAData: QnAProps[]) => {
   }
 
   // AI-specific regulations (keep GDPR/EU logic for AI Act)
-  const explainabilityLevel = getAnswer(qnAData, 'ETHICAL_IMPACT', 'Explainability Level');
-  if ((hasGDPR || euJurisdictionSelected) && explainabilityLevel === 'black-box') {
+  if ((hasGDPR || euJurisdictionSelected) && stepsData?.ethicalImpact?.modelCharacteristics?.explainabilityLevel === 'black-box') {
     score += weights.aiRegulations;
     factors.push(`AI Act compliance (+${weights.aiRegulations})`);
   }
@@ -388,7 +425,7 @@ const calculateRegulatoryRisk = (qnAData: QnAProps[]) => {
   };
 }
 
-const calculateEthicalRisk = (qnAData: QnAProps[]) => {
+const calculateEthicalRisk = (stepsData: StepsData) => {
   let score = 1; // Base score
   const factors = [];
   const infoMessages: string[] = [];
@@ -402,48 +439,44 @@ const calculateEthicalRisk = (qnAData: QnAProps[]) => {
   };
 
   // Automated decision-making
-  const automationLevel = getAnswer(qnAData, 'ETHICAL_IMPACT', 'Automation Level') || '';
-  if (['Fully Automated', 'Autonomous'].includes(automationLevel)) {
+  if (['Fully Automated', 'Autonomous'].includes(stepsData?.ethicalImpact?.decisionMaking?.automationLevel ?? '')) {
     score += weights.automatedDecisions;
     factors.push(`Automated decision-making (+${weights.automatedDecisions})`);
   }
 
   // Bias risk assessment
-  const biasTesting = getAnswer(qnAData, 'ETHICAL_IMPACT', 'Bias Testing') || '';
-  if (biasTesting === 'No Testing Planned' || biasTesting === 'basic-statistical') {
+  if ((stepsData?.ethicalImpact?.modelCharacteristics?.biasTesting || '') === 'No Testing Planned' || 
+      (stepsData?.ethicalImpact?.modelCharacteristics?.biasTesting || '') === 'basic-statistical') {
     score += weights.biasRisk;
     factors.push(`Potential bias in outcomes (+${weights.biasRisk})`);
   }
 
   // Transparency issues
-  const ethicalExplainabilityLevel = getAnswer(qnAData, 'ETHICAL_IMPACT', 'Explainability Level') || '';
-  if (ethicalExplainabilityLevel === 'black-box') {
+  if ((stepsData?.ethicalImpact?.modelCharacteristics?.explainabilityLevel || '') === 'black-box') {
     score += weights.transparencyGap;
     factors.push(`Limited explainability (+${weights.transparencyGap})`);
   }
 
   // Vulnerable groups
-  const ethicalUserCategories = getAnswer(qnAData, 'BUSINESS_FEASIBILITY', 'User Categories') || [];
-  if (Array.isArray(ethicalUserCategories) && ethicalUserCategories.includes('Minors/Children')) {
+  if ((stepsData?.businessFeasibility?.userCategories || []).includes('Minors/Children')) {
     score += weights.vulnerableGroups;
     factors.push(`Affects vulnerable groups (+${weights.vulnerableGroups})`);
   }
 
   // Lack of human oversight
-  const humanOversightLevel = getAnswer(qnAData, 'ETHICAL_IMPACT', 'Human Oversight Level') || '';
-  if (humanOversightLevel === 'fully-autonomous') {
+  if ((stepsData?.ethicalImpact?.aiGovernance?.humanOversightLevel || '') === 'fully-autonomous') {
     score += weights.noHumanOversight;
     factors.push(`No human oversight (+${weights.noHumanOversight})`);
   }
 
   // Dynamic info: Minors/Children as users but no bias testing
-  if (Array.isArray(ethicalUserCategories) && ethicalUserCategories.includes('Minors/Children')) {
-    if (!biasTesting || biasTesting === 'No Testing Planned') {
+  if ((stepsData?.businessFeasibility?.userCategories || []).includes('Minors/Children')) {
+    if (!stepsData?.ethicalImpact?.modelCharacteristics?.biasTesting || stepsData.ethicalImpact.modelCharacteristics.biasTesting === 'No Testing Planned') {
       infoMessages.push("Minors/Children are users, but no bias testing is planned. Please review ethical risk.");
     }
   }
   // Fully Automated without human oversight
-  if (automationLevel === 'Fully Automated' && (!humanOversightLevel || humanOversightLevel === 'fully-autonomous')) {
+  if ((stepsData?.ethicalImpact?.decisionMaking?.automationLevel || '') === 'Fully Automated' && (!stepsData?.ethicalImpact?.aiGovernance?.humanOversightLevel || stepsData.ethicalImpact.aiGovernance.humanOversightLevel === 'fully-autonomous')) {
     infoMessages.push("Fully Automated decision-making selected with no human oversight. Please review ethical risk.");
   }
   return {
@@ -454,7 +487,7 @@ const calculateEthicalRisk = (qnAData: QnAProps[]) => {
   };
 }
 
-const calculateOperationalRisk = (qnAData: QnAProps[]) => {
+const calculateOperationalRisk = (stepsData: StepsData) => {
   let score = 1; // Base score
   const factors = [];
   const infoMessages: string[] = [];
@@ -470,16 +503,13 @@ const calculateOperationalRisk = (qnAData: QnAProps[]) => {
   };
 
   // System criticality
-  const systemCriticality = getAnswer(qnAData, 'BUSINESS_FEASIBILITY', 'System Criticality') || '';
-  if (systemCriticality === 'Mission Critical') {
+  if ((stepsData?.businessFeasibility?.systemCriticality || '') === 'Mission Critical') {
     score += weights.missionCritical;
     factors.push(`Business critical system (+${weights.missionCritical})`);
   }
 
   // Complexity assessment (based on integrations and model types)
-  const opIntegrationPoints = getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', 'Integration Points') || [];
-  const opModelTypes = getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', 'Model Types') || [];
-  const complexityIndicators = (Array.isArray(opIntegrationPoints) ? opIntegrationPoints.length : 0) + (Array.isArray(opModelTypes) ? opModelTypes.length : 0);
+  const complexityIndicators = (stepsData?.technicalFeasibility?.integrationPoints?.length || 0) + (stepsData?.technicalFeasibility?.modelTypes?.length || 0);
   
   if (complexityIndicators > 5) {
     score += weights.complexityHigh;
@@ -490,33 +520,31 @@ const calculateOperationalRisk = (qnAData: QnAProps[]) => {
   }
 
   // Downtime impact
-  const failureImpact = getAnswer(qnAData, 'BUSINESS_FEASIBILITY', 'Failure Impact') || '';
-  if (failureImpact === 'Catastrophic/Life Safety') {
+  if ((stepsData?.businessFeasibility?.failureImpact || '') === 'Catastrophic/Life Safety') {
     score += weights.severeDowntime;
     factors.push(`Downtime impact severe (+${weights.severeDowntime})`);
   }
 
   // Catastrophic failure risk
-  if (failureImpact === 'Catastrophic/Life Safety') {
+  if ((stepsData?.businessFeasibility?.failureImpact || '') === 'Catastrophic/Life Safety') {
     score += weights.catastrophicFailure;
     factors.push(`Catastrophic failure risk (+${weights.catastrophicFailure})`);
   }
 
   // Redundancy assessment (inferred from deployment model)
-  const opDeploymentModel = getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', 'Deployment Model') || '';
-  if (opDeploymentModel === 'On-Premise') {
+  if (stepsData?.technicalFeasibility?.deploymentModels?.includes('On-Premise')) {
     score += weights.limitedRedundancy;
     factors.push(`Limited redundancy (+${weights.limitedRedundancy})`);
   }
 
   // Dynamic info: Mission Critical without redundancy
-  if (systemCriticality === 'Mission Critical') {
-    if (!opDeploymentModel || opDeploymentModel !== 'On-Premise') {
+  if ((stepsData?.businessFeasibility?.systemCriticality || '') === 'Mission Critical') {
+    if (!stepsData?.technicalFeasibility?.deploymentModels || !stepsData.technicalFeasibility.deploymentModels.includes('On-Premise')) {
       infoMessages.push("Mission Critical system selected, but no redundancy or failover specified. Please review operational risk mitigation.");
     }
   }
   // Catastrophic/Life Safety without mitigation
-  if (failureImpact === 'Catastrophic/Life Safety') {
+  if ((stepsData?.businessFeasibility?.failureImpact || '') === 'Catastrophic/Life Safety') {
     // Could check for a mitigation field if present
     infoMessages.push("Catastrophic/Life Safety failure impact selected. Please ensure mitigation strategies are documented.");
   }
@@ -528,7 +556,7 @@ const calculateOperationalRisk = (qnAData: QnAProps[]) => {
   };
 }
 
-const calculateGenAIRisk = (qnAData: QnAProps[]) => {
+const calculateGenAIRisk = (stepsData: StepsData) => {
   let score = 1; // Base score
   const factors = [];
   const infoMessages: string[] = [];
@@ -543,11 +571,10 @@ const calculateGenAIRisk = (qnAData: QnAProps[]) => {
   };
 
   // Check if Gen AI is being used
-  const genAIModelTypes = getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', 'Model Types') || [];
-  const isGenAI = Array.isArray(genAIModelTypes) && (
-    genAIModelTypes.includes("Generative AI") ||
-    genAIModelTypes.includes("Large Language Model (LLM)") ||
-    genAIModelTypes.includes("Multi-modal Models")
+  const isGenAI = stepsData?.technicalFeasibility?.modelTypes && (
+    stepsData.technicalFeasibility.modelTypes.includes("Generative AI") ||
+    stepsData.technicalFeasibility.modelTypes.includes("Large Language Model (LLM)") ||
+    stepsData.technicalFeasibility.modelTypes.includes("Multi-modal Models")
   );
 
   if (!isGenAI) {
@@ -560,56 +587,51 @@ const calculateGenAIRisk = (qnAData: QnAProps[]) => {
   }
 
   // Hallucination risk
-  const maxHallucinationRate = getAnswer(qnAData, 'BUSINESS_FEASIBILITY', 'Max Hallucination Rate');
-  if (!maxHallucinationRate || (typeof maxHallucinationRate === 'number' && maxHallucinationRate > 5)) {
+  if (!stepsData?.businessFeasibility?.maxHallucinationRate || stepsData.businessFeasibility.maxHallucinationRate > 5) {
     score += weights.hallucination;
     factors.push(`Hallucination risk (+${weights.hallucination})`);
-    if (!maxHallucinationRate) {
+    if (!stepsData?.businessFeasibility?.maxHallucinationRate) {
       infoMessages.push("No hallucination rate threshold specified. Please define acceptable hallucination limits.");
     }
   }
 
   // Agent autonomy risk
-  const agentArchitecture = getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', 'Agent Architecture');
-  if (agentArchitecture && 
-      ["Multi-agent System", "Hierarchical Agents", "Swarm Intelligence"].includes(agentArchitecture)) {
+  if (stepsData?.technicalFeasibility?.agentArchitecture && 
+      ["Multi-agent System", "Hierarchical Agents", "Swarm Intelligence"].includes(stepsData.technicalFeasibility.agentArchitecture)) {
     score += weights.agentAutonomy;
     factors.push(`Complex agent autonomy (+${weights.agentAutonomy})`);
   }
 
   // Prompt injection vulnerability
-  const genAIUserCategories = getAnswer(qnAData, 'BUSINESS_FEASIBILITY', 'User Categories') || [];
-  if (Array.isArray(genAIUserCategories) && genAIUserCategories.includes("General Public")) {
+  if (stepsData?.businessFeasibility?.userCategories?.includes("General Public")) {
     score += weights.promptInjection;
     factors.push(`Prompt injection risk (+${weights.promptInjection})`);
     infoMessages.push("Public-facing Gen AI system. Ensure prompt injection safeguards are in place.");
   }
 
   // Data leakage through model
-  const genAIDataTypes = getAnswer(qnAData, 'DATA_READINESS', 'Data Types') || [];
-  if (Array.isArray(genAIDataTypes) && (genAIDataTypes.includes("Confidential Business Data") ||
-      genAIDataTypes.includes("Trade Secrets"))) {
+  if (stepsData?.dataReadiness?.dataTypes?.includes("Confidential Business Data") ||
+      stepsData?.dataReadiness?.dataTypes?.includes("Trade Secrets")) {
     score += weights.dataLeakage;
     factors.push(`Data leakage risk (+${weights.dataLeakage})`);
   }
 
   // Model drift for continuous learning
-  const genAIModelUpdateFrequency = getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', 'Model Update Frequency');
-  if (genAIModelUpdateFrequency === "Real-time/Continuous") {
+  if (stepsData?.technicalFeasibility?.modelUpdateFrequency === "Real-time/Continuous") {
     score += weights.modelDrift;
     factors.push(`Model drift risk (+${weights.modelDrift})`);
   }
 
   // Token cost overrun
-  const tokenUsage = getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', 'Estimated Monthly Token Usage');
-  if (tokenUsage && typeof tokenUsage === 'number' && tokenUsage > 10000000) {
+  if (stepsData?.technicalFeasibility?.tokenUsage?.estimatedMonthly && 
+      stepsData.technicalFeasibility.tokenUsage.estimatedMonthly > 10000000) {
     score += weights.tokenCosts;
     factors.push(`High token costs (+${weights.tokenCosts})`);
   }
 
   // Content moderation needs
-  const contentGenerationRisks = getAnswer(qnAData, 'ETHICAL_IMPACT', 'Content Generation Risks') || [];
-  if (Array.isArray(contentGenerationRisks) && contentGenerationRisks.length > 2) {
+  if (stepsData?.ethicalImpact?.contentGeneration?.risks && 
+      stepsData.ethicalImpact.contentGeneration.risks.length > 2) {
     score += weights.contentModeration;
     factors.push(`Content moderation complexity (+${weights.contentModeration})`);
   }
@@ -622,7 +644,7 @@ const calculateGenAIRisk = (qnAData: QnAProps[]) => {
   };
 };
 
-const calculateReputationRisk = (qnAData: QnAProps[]) => {
+const calculateReputationRisk = (stepsData: StepsData) => {
   let score = 1; // Base score
   const factors = [];
   const weights = {
@@ -636,23 +658,20 @@ const calculateReputationRisk = (qnAData: QnAProps[]) => {
   };
   
   // Public-facing system
-  const repUserCategories = getAnswer(qnAData, 'BUSINESS_FEASIBILITY', 'User Categories') || [];
-  if (Array.isArray(repUserCategories) && repUserCategories.includes('General Public')) {
+  if ((stepsData?.businessFeasibility?.userCategories || []).includes('General Public')) {
     score += weights.publicFacing;
     factors.push(`Public-facing system (+${weights.publicFacing})`);
   }
 
   // Social media amplification risk
-  const repSystemCriticality = getAnswer(qnAData, 'BUSINESS_FEASIBILITY', 'System Criticality');
-  if (Array.isArray(repUserCategories) && repUserCategories.includes('Customers') &&
-      repSystemCriticality !== 'Non-Critical') {
+  if (stepsData?.businessFeasibility?.userCategories?.includes('Customers') &&
+      stepsData?.businessFeasibility?.systemCriticality !== 'Non-Critical') {
     score += weights.socialMedia;
     factors.push(`Social media amplification (+${weights.socialMedia})`);
   }
 
   // Trust-critical decisions
-  const repSectorSpecific = getAnswer(qnAData, 'RISK_ASSESSMENT', 'Sector-Specific Regulations');
-  if (typeof repSectorSpecific === 'string' && repSectorSpecific === 'SOX (Financial Reporting)') {
+  if (typeof stepsData?.riskAssessment?.sectorSpecific === 'string' && stepsData.riskAssessment.sectorSpecific === 'SOX (Financial Reporting)') {
     score += weights.trustCritical;
     factors.push(`Trust-critical decisions (+${weights.trustCritical})`);
     
@@ -661,8 +680,7 @@ const calculateReputationRisk = (qnAData: QnAProps[]) => {
   }
 
   // Brand impact potential
-  const repFailureImpact = getAnswer(qnAData, 'BUSINESS_FEASIBILITY', 'Failure Impact') || '';
-  if (repFailureImpact !== 'Minimal/No Impact') {
+  if ((stepsData?.businessFeasibility?.failureImpact || '') !== 'Minimal/No Impact') {
     score += weights.brandImpact;
     factors.push(`Brand impact potential (+${weights.brandImpact})`);
   }
@@ -674,13 +692,12 @@ const calculateReputationRisk = (qnAData: QnAProps[]) => {
   };
 }
 
-const RiskCalculation = (qnAData: QnAProps[]) => {
+const RiskCalculation = (stepsData: StepsData) => {
   // Check if Gen AI use case
-  const modelTypes = getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', 'Model Types') || [];
-  const isGenAI = Array.isArray(modelTypes) && (
-    modelTypes.includes("Generative AI") ||
-    modelTypes.includes("Large Language Model (LLM)") ||
-    modelTypes.includes("Multi-modal Models")
+  const isGenAI = stepsData?.technicalFeasibility?.modelTypes && (
+    stepsData.technicalFeasibility.modelTypes.includes("Generative AI") ||
+    stepsData.technicalFeasibility.modelTypes.includes("Large Language Model (LLM)") ||
+    stepsData.technicalFeasibility.modelTypes.includes("Multi-modal Models")
   );
 
   // Regulatory and data-focused weights (adjusted for Gen AI if applicable)
@@ -701,13 +718,13 @@ const RiskCalculation = (qnAData: QnAProps[]) => {
     reputational: 0.05
   };
 
-  const dataPrivacyRisk = calculateDataPrivacyRisk(qnAData);
-  const securityRisk = calculateSecurityRisk(qnAData);
-  const regulatoryRisk = calculateRegulatoryRisk(qnAData);
-  const ethicalRisk = calculateEthicalRisk(qnAData);
-  const operationalRisk = calculateOperationalRisk(qnAData);
-  const reputationRisk = calculateReputationRisk(qnAData);
-  const genAIRisk = isGenAI ? calculateGenAIRisk(qnAData) : null;
+  const dataPrivacyRisk = calculateDataPrivacyRisk(stepsData);
+  const securityRisk = calculateSecurityRisk(stepsData);
+  const regulatoryRisk = calculateRegulatoryRisk(stepsData);
+  const ethicalRisk = calculateEthicalRisk(stepsData);
+  const operationalRisk = calculateOperationalRisk(stepsData);
+  const reputationRisk = calculateReputationRisk(stepsData);
+  const genAIRisk = isGenAI ? calculateGenAIRisk(stepsData) : null;
 
   const chartData = [
     {month: "Data Privacy", desktop: dataPrivacyRisk.score},
@@ -730,7 +747,7 @@ const RiskCalculation = (qnAData: QnAProps[]) => {
     ethicalRisk.score * weights.ethical + 
     operationalRisk.score * weights.operational + 
     reputationRisk.score * weights.reputational + 
-    genAIRisk.score * (weights.genAI || 0) :
+    genAIRisk.score * weights.genAI :
     dataPrivacyRisk.score * weights.dataPrivacy + 
     securityRisk.score * weights.security + 
     regulatoryRisk.score * weights.regulatory + 
@@ -776,23 +793,14 @@ const RiskCalculation = (qnAData: QnAProps[]) => {
   };
 }
 
-function getMissingAssessmentFields(qnAData: QnAProps[]) {
-  if (!qnAData || qnAData.length === 0) return ['All assessment sections'];
+function getMissingAssessmentFields(stepsData: StepsData) {
+  if (!stepsData) return ['All assessment sections'];
   const missing = [];
-  const dataTypes = getAnswer(qnAData, 'DATA_READINESS', 'Data Types');
-  if (!dataTypes || !Array.isArray(dataTypes) || dataTypes.length === 0) missing.push('Data Readiness > Data Types');
-  
-  const modelTypes = getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', 'Model Types');
-  if (!modelTypes || !Array.isArray(modelTypes) || modelTypes.length === 0) missing.push('Technical Feasibility > Model Types');
-  
-  const userCategories = getAnswer(qnAData, 'BUSINESS_FEASIBILITY', 'User Categories');
-  if (!userCategories || !Array.isArray(userCategories) || userCategories.length === 0) missing.push('Business Feasibility > User Categories');
-  
-  const dataProtection = getAnswer(qnAData, 'RISK_ASSESSMENT', 'Data Protection');
-  if (!dataProtection || !Array.isArray(dataProtection) || dataProtection.length === 0) missing.push('Risk Assessment > Jurisdictions');
-  
-  const explainabilityLevel = getAnswer(qnAData, 'ETHICAL_IMPACT', 'Explainability Level');
-  if (!explainabilityLevel) missing.push('Ethical Impact > Explainability Level');
+  if (!stepsData.dataReadiness || !Array.isArray(stepsData.dataReadiness.dataTypes) || stepsData.dataReadiness.dataTypes.length === 0) missing.push('Data Readiness > Data Types');
+  if (!stepsData.technicalFeasibility || !stepsData.technicalFeasibility.modelTypes || stepsData.technicalFeasibility.modelTypes.length === 0) missing.push('Technical Feasibility > Model Types');
+  if (!stepsData.businessFeasibility || !stepsData.businessFeasibility.userCategories || stepsData.businessFeasibility.userCategories.length === 0) missing.push('Business Feasibility > User Categories');
+  if (!stepsData.riskAssessment || !stepsData.riskAssessment.dataProtection || !Array.isArray(stepsData.riskAssessment.dataProtection.jurisdictions) || stepsData.riskAssessment.dataProtection.jurisdictions.length === 0) missing.push('Risk Assessment > Jurisdictions');
+  if (!stepsData.ethicalImpact || !stepsData.ethicalImpact.modelCharacteristics || !stepsData.ethicalImpact.modelCharacteristics.explainabilityLevel) missing.push('Ethical Impact > Explainability Level');
   // Add more checks as needed for your required fields
   return missing;
 }
@@ -836,28 +844,17 @@ const ApprovalsPage = forwardRef((props, ref) => {
   const [summary, setSummary] = useState<Record<string, unknown> | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [summaryError, setSummaryError] = useState("");
+  const [stepsData, setStepsData] = useState<StepsData | null>(null);
   const [chartData, setChartData] = useState<{ month: string; desktop: number }[]>([]);
   const [finops, setFinops] = useState<any>(null);
-  const [qnAData, setQnAData] = useState<any>(null);
+
   // Fetch financial data
   useEffect(() => {
-    if (!useCaseId) 
-      return;
+    if (!useCaseId) return;
     fetch(`/api/get-finops?id=${useCaseId}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) setFinops(data[0]);
-      });
-  }, [useCaseId]);
-
-  useEffect(() => {
-    if (!useCaseId) 
-      return;
-    fetch(`/api/get-assess-questions?useCaseId=${useCaseId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) setQnAData(data);
-        console.log("QnA Data:", data);
       });
   }, [useCaseId]);
 
@@ -868,6 +865,7 @@ const ApprovalsPage = forwardRef((props, ref) => {
       .then((res) => res.json())
       .then((data) => {
         // console.log("[ApprovalsPage] API response from /api/get-usecase-details:", data);
+        setStepsData(data.assessData.stepsData);
         setSummary(data);
         setSummaryLoading(false);
       })
@@ -878,13 +876,13 @@ const ApprovalsPage = forwardRef((props, ref) => {
   }, [useCaseId]);
 
   useEffect(() => {
-    if (!qnAData) return; // prevents early/invalid call
+    if (!stepsData) return; // prevents early/invalid call
 
-    // console.log("[ApprovalsPage] qnAData set in state:", qnAData);
-    const result = RiskCalculation(qnAData);
+    // console.log("[ApprovalsPage] stepsData set in state:", stepsData);
+    const result = RiskCalculation(stepsData);
     setChartData(Array.isArray(result.chartData) ? result.chartData : []);
     // console.log("[ApprovalsPage] RiskCalculation result:", result);
-  }, [qnAData]);
+  }, [stepsData]);
   
 
   useEffect(() => {
@@ -920,7 +918,7 @@ const ApprovalsPage = forwardRef((props, ref) => {
 
   const handleComplete = async () => {
     // Check for missing assessment fields
-    const missingFields = getMissingAssessmentFields(qnAData ?? []);
+    const missingFields = getMissingAssessmentFields(stepsData ?? {});
     if (missingFields.length > 0) {
       // The original code had an alert here, but the edit hint implies removing it.
       // Since the edit hint is to remove the alert, and the alert is directly related to the missingFields,
@@ -939,7 +937,9 @@ const ApprovalsPage = forwardRef((props, ref) => {
         body: JSON.stringify({
           useCaseId,
           assessData: {
+            ...stepsData,
             metadata: {
+              ...stepsData?.metadata,
               status: "completed",
               completedAt: new Date().toISOString(),
               approvals: form
@@ -1021,8 +1021,8 @@ const ApprovalsPage = forwardRef((props, ref) => {
               </Card>
             </div>
             {/* Risk Summary Card */}
-            {qnAData && chartData && chartData.length > 0 && (() => {
-              const riskResult = RiskCalculation(qnAData);
+            {stepsData && chartData && chartData.length > 0 && (() => {
+              const riskResult = RiskCalculation(stepsData);
               const riskScores = riskResult.chartData.map((d: { month: string; desktop: number }) => d.desktop);
               const criticalCount = riskScores.filter((v: number) => v >= 8).length;
               const highCount = riskScores.filter((v: number) => v >= 6 && v < 8).length;
@@ -1096,8 +1096,8 @@ const ApprovalsPage = forwardRef((props, ref) => {
             })()}
             {/* After info messages, add a Risk Action Summary */}
             {(() => {
-              if (!qnAData) return null;
-              const riskResult = RiskCalculation(qnAData);
+              if (!stepsData) return null;
+              const riskResult = RiskCalculation(stepsData);
               // Gather risk scores, info, and factors
               const riskScores = [
                 { label: 'Data Privacy', score: riskResult.chartData[0]?.desktop || 0, info: riskResult.dataPrivacyInfo, factors: riskResult.dataPrivacyFactors },
@@ -1205,14 +1205,11 @@ const ApprovalsPage = forwardRef((props, ref) => {
         </div>
 
         {/* AI-Specific Approvals Section */}
-        {(() => {
-          const aiModelTypes = getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', 'Model Types') || [];
-          return Array.isArray(aiModelTypes) && (
-            aiModelTypes.includes("Generative AI") || 
-            aiModelTypes.includes("Large Language Model (LLM)") ||
-            aiModelTypes.includes("Multi-modal Models")
-          );
-        })() && (
+        {stepsData?.technicalFeasibility?.modelTypes && (
+          stepsData.technicalFeasibility.modelTypes.includes("Generative AI") || 
+          stepsData.technicalFeasibility.modelTypes.includes("Large Language Model (LLM)") ||
+          stepsData.technicalFeasibility.modelTypes.includes("Multi-modal Models")
+        ) && (
           <>
             <h3 className="text-xl font-bold mb-4 text-purple-600 dark:text-purple-400">AI-Specific Approvals</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
