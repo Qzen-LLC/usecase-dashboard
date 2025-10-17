@@ -47,7 +47,6 @@ model UseCase {
   euAiActAssessments       EuAiActAssessment?
   evaluations              Evaluation[]
   finopsData               FinOps?
-  goldenDatasets           GoldenDataset[]
   guardrails               Guardrail[]
   iso27001Assessments      Iso27001Assessment?
   iso42001Assessments      Iso42001Assessment?
@@ -1028,10 +1027,9 @@ model GoldenDataset {
   qualityMetrics   Json?
   validationStatus Json?
   createdAt        DateTime      @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime      @updatedAt
   publishedAt      DateTime?
-  UseCase          UseCase       @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
-  GoldenEntry      GoldenEntry[]
+  entries          GoldenEntry[]
 
   @@index([createdAt])
   @@index([publishedAt])

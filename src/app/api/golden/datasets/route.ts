@@ -18,14 +18,7 @@ export async function GET(request: NextRequest) {
     if (datasetId) {
       // Get specific dataset with entries
       const dataset = await prismaClient.goldenDataset.findUnique({
-        where: { id: datasetId },
-        include: {
-          entries: {
-            include: {
-              reviews: true
-            }
-          }
-        }
+        where: { id: datasetId }
       });
 
       if (!dataset) {
@@ -35,9 +28,22 @@ export async function GET(request: NextRequest) {
         );
       }
 
+      // Get entries separately
+      const entries = await prismaClient.goldenEntry.findMany({
+        where: { datasetId: dataset.id }
+      });
+
+      // Get reviews for each entry
+      const entriesWithReviews = await Promise.all(entries.map(async (entry) => {
+        const reviews = await prismaClient.goldenReview.findMany({
+          where: { entryId: entry.id }
+        });
+        return { ...entry, reviews };
+      }));
+
       // Calculate statistics
-      const statistics = calculateStatistics(dataset.entries || []);
-      const qualityMetrics = calculateQualityMetrics(dataset.entries || []);
+      const statistics = calculateStatistics(entriesWithReviews);
+      const qualityMetrics = calculateQualityMetrics(entriesWithReviews);
 
       return NextResponse.json({
         ...dataset,
@@ -45,7 +51,7 @@ export async function GET(request: NextRequest) {
         statistics: statistics,
         qualityMetrics: qualityMetrics,
         validationStatus: dataset.validationStatus || {},
-        entries: dataset.entries
+        entries: entriesWithReviews
       });
     }
 
@@ -59,28 +65,26 @@ export async function GET(request: NextRequest) {
 
     const datasets = await prismaClient.goldenDataset.findMany({
       where: { useCaseId },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        entries: {
-          select: {
-            id: true
-          }
-        }
-      }
+      orderBy: { createdAt: 'desc' }
     });
 
-    // Add entry count to each dataset
-    const datasetsWithCounts = datasets.map(dataset => ({
-      ...dataset,
-      entryCount: dataset.entries.length,
-      entries: undefined // Remove entries array from response
+    // Get entry counts for each dataset
+    const datasetsWithCounts = await Promise.all(datasets.map(async (dataset) => {
+      const entryCount = await prismaClient.goldenEntry.count({
+        where: { datasetId: dataset.id }
+      });
+      return {
+        ...dataset,
+        entryCount
+      };
     }));
 
     return NextResponse.json(datasetsWithCounts);
   } catch (error) {
     console.error('Error in GET /api/golden/datasets:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: errorMessage },
       { status: 500 }
     );
   }
@@ -122,27 +126,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify use case exists
-    const useCase = await prismaClient.useCase.findUnique({
-      where: { id: useCaseId }
-    });
-
-    if (!useCase) {
-      return NextResponse.json(
-        { error: 'Use case not found' },
-        { status: 404 }
-      );
-    }
-
     // Create the dataset
     const dataset = await prismaClient.goldenDataset.create({
       data: {
+        id: crypto.randomUUID(),
         useCaseId,
         name,
         description: description || '',
         version: '1.0.0',
         metadata: metadata || {},
         validationStatus: validationStatus,
+        updatedAt: new Date(),
         statistics: {
           totalEntries: 0,
           byCategory: {},
@@ -173,8 +167,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error in POST /api/golden/datasets:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: errorMessage },
       { status: 500 }
     );
   }

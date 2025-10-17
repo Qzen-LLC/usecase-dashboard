@@ -149,7 +149,6 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
 
     try {
       // Simulate agent progress
-      const agents = Object.keys(agentProgress);
       let currentAgentIndex = 0;
       
       const progressInterval = setInterval(() => {

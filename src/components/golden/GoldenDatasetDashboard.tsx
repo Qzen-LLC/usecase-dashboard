@@ -55,9 +55,14 @@ const GoldenDatasetDashboard: React.FC<GoldenDatasetDashboardProps> = ({ useCase
         if (data.length > 0 && !selectedDataset) {
           setSelectedDataset(data[0]);
         }
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to fetch datasets' }));
+        console.error('Failed to fetch datasets:', errorData);
+        alert(`Failed to load datasets: ${errorData.error}${errorData.details ? ' - ' + errorData.details : ''}`);
       }
     } catch (error) {
       console.error('Error fetching datasets:', error);
+      alert('Error loading datasets. Please check the console for details.');
     } finally {
       setLoading(false);
     }
@@ -98,9 +103,17 @@ const GoldenDatasetDashboard: React.FC<GoldenDatasetDashboardProps> = ({ useCase
 
       if (response.ok) {
         await fetchDatasets();
+        alert(`Dataset "${name}" created successfully!`);
+      } else {
+        // Handle error response
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Failed to create dataset:', errorData);
+        const errorMsg = `Failed to create dataset: ${errorData.error || 'Unknown error'}${errorData.details ? '\n\nDetails: ' + errorData.details : ''}`;
+        alert(errorMsg);
       }
     } catch (error) {
       console.error('Error creating dataset:', error);
+      alert('Error creating dataset. Please check the console for details.');
     }
   };
 
