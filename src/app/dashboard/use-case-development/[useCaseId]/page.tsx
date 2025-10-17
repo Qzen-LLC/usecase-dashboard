@@ -159,13 +159,13 @@ export default function UseCasePromptManagement() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="container mx-auto p-4 max-w-6xl">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4">
         <Button
           variant="ghost"
           onClick={() => router.push('/dashboard/use-case-development')}
-          className="mb-4"
+          className="mb-3 text-sm"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Use Cases
@@ -173,15 +173,20 @@ export default function UseCasePromptManagement() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground mb-2">
+            <h1 className="text-xl font-semibold text-foreground mb-1">
               {useCase?.title}
             </h1>
-            <div className="flex items-center gap-4">
-              <Badge>{useCase?.stage}</Badge>
-              <span className="text-sm text-muted-foreground">{useCase?.businessFunction}</span>
+            <div className="flex items-center gap-3">
+              <Badge className="bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 text-xs">
+                {useCase?.stage}
+              </Badge>
+              <span className="text-xs text-muted-foreground">{useCase?.businessFunction}</span>
             </div>
           </div>
-          <Button onClick={handleCreatePrompt}>
+          <Button 
+            onClick={handleCreatePrompt}
+            className="bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700"
+          >
             <Plus className="w-4 h-4 mr-2" />
             New Prompt Template
           </Button>
@@ -189,25 +194,25 @@ export default function UseCasePromptManagement() {
       </div>
 
       {/* Use Case Info Card */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg">Use Case Details</CardTitle>
+      <Card className="mb-4">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Use Case Details</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <h4 className="font-semibold text-sm text-gray-600 mb-1">Problem Statement</h4>
+              <h4 className="font-medium text-sm text-muted-foreground mb-2">Problem Statement</h4>
               <div 
-                className="text-sm" 
+                className="text-sm text-foreground" 
                 dangerouslySetInnerHTML={{ 
                   __html: useCase?.problemStatement || '' 
                 }} 
               />
             </div>
             <div>
-              <h4 className="font-semibold text-sm text-gray-600 mb-1">Proposed AI Solution</h4>
+              <h4 className="font-medium text-sm text-muted-foreground mb-2">Proposed AI Solution</h4>
               <div 
-                className="text-sm" 
+                className="text-sm text-foreground" 
                 dangerouslySetInnerHTML={{ 
                   __html: useCase?.proposedAISolution || '' 
                 }} 
@@ -219,22 +224,22 @@ export default function UseCasePromptManagement() {
 
       {/* Main Content Area */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="prompts">
+        <TabsList className="mb-4">
+          <TabsTrigger value="prompts" className="text-sm">
             <FileText className="w-4 h-4 mr-2" />
             Prompt Templates ({prompts.length})
           </TabsTrigger>
           {showEditor && (
-            <TabsTrigger value="editor">
+            <TabsTrigger value="editor" className="text-sm">
               <Code2 className="w-4 h-4 mr-2" />
               Editor
             </TabsTrigger>
           )}
-          <TabsTrigger value="versions">
+          <TabsTrigger value="versions" className="text-sm">
             <GitBranch className="w-4 h-4 mr-2" />
             Version History
           </TabsTrigger>
-          <TabsTrigger value="deployments">
+          <TabsTrigger value="deployments" className="text-sm">
             <Rocket className="w-4 h-4 mr-2" />
             Deployments
           </TabsTrigger>
@@ -242,16 +247,19 @@ export default function UseCasePromptManagement() {
 
         <TabsContent value="prompts">
           {prompts.length === 0 ? (
-            <Card className="p-12 text-center">
-              <div className="flex flex-col items-center gap-4">
-                <Code2 className="w-16 h-16 text-gray-300" />
-                <h3 className="text-lg font-semibold text-gray-600">
+            <Card className="p-8 text-center">
+              <div className="flex flex-col items-center gap-3">
+                <Code2 className="w-12 h-12 text-muted-foreground" />
+                <h3 className="text-base font-medium text-foreground">
                   No prompt templates yet
                 </h3>
-                <p className="text-gray-500 max-w-md">
+                <p className="text-sm text-muted-foreground max-w-md">
                   Create your first prompt template to start developing AI solutions for this use case.
                 </p>
-                <Button onClick={handleCreatePrompt}>
+                <Button 
+                  onClick={handleCreatePrompt}
+                  className="bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700"
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Create First Prompt
                 </Button>
@@ -285,10 +293,10 @@ export default function UseCasePromptManagement() {
           {selectedPrompt ? (
             <VersionHistory promptId={selectedPrompt.id} />
           ) : (
-            <Card className="p-12 text-center">
-              <div className="flex flex-col items-center gap-4">
-                <History className="w-16 h-16 text-gray-300" />
-                <h3 className="text-lg font-semibold text-gray-600">
+            <Card className="p-8 text-center">
+              <div className="flex flex-col items-center gap-3">
+                <History className="w-12 h-12 text-muted-foreground" />
+                <h3 className="text-base font-medium text-foreground">
                   Select a prompt to view version history
                 </h3>
               </div>
@@ -297,13 +305,13 @@ export default function UseCasePromptManagement() {
         </TabsContent>
 
         <TabsContent value="deployments">
-          <Card className="p-12 text-center">
-            <div className="flex flex-col items-center gap-4">
-              <Rocket className="w-16 h-16 text-gray-300" />
-              <h3 className="text-lg font-semibold text-gray-600">
+          <Card className="p-8 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <Rocket className="w-12 h-12 text-muted-foreground" />
+              <h3 className="text-base font-medium text-foreground">
                 Deployments coming soon
               </h3>
-              <p className="text-gray-500 max-w-md">
+              <p className="text-sm text-muted-foreground max-w-md">
                 Deploy your prompt templates to different environments for testing and production use.
               </p>
             </div>

@@ -32,13 +32,13 @@ interface UseCase {
 const ELIGIBLE_STAGES = ['business-case', 'proof-of-value', 'backlog', 'in-progress', 'solution-validation', 'pilot', 'deployment'];
 
 const stageBadgeColors: Record<string, string> = {
-  'business-case': 'bg-yellow-100 text-yellow-800',
-  'proof-of-value': 'bg-indigo-100 text-indigo-800',
-  'backlog': 'bg-gray-100 text-gray-800',
-  'in-progress': 'bg-blue-100 text-blue-800',
-  'solution-validation': 'bg-purple-100 text-purple-800',
-  'pilot': 'bg-orange-100 text-orange-800',
-  'deployment': 'bg-green-100 text-green-800'
+  'business-case': 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
+  'proof-of-value': 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
+  'backlog': 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
+  'in-progress': 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
+  'solution-validation': 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
+  'pilot': 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
+  'deployment': 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
 };
 
 export default function UseCaseDevelopmentDashboard() {
@@ -190,6 +190,7 @@ export default function UseCaseDevelopmentDashboard() {
             variant={selectedStage === 'all' ? 'default' : 'outline'}
             onClick={() => setSelectedStage('all')}
             size="sm"
+            className={selectedStage === 'all' ? 'bg-neutral-700 text-white hover:bg-neutral-800 dark:bg-neutral-600 dark:hover:bg-neutral-700' : 'bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700'}
           >
             All Stages
           </Button>
@@ -199,6 +200,7 @@ export default function UseCaseDevelopmentDashboard() {
               variant={selectedStage === stage ? 'default' : 'outline'}
               onClick={() => setSelectedStage(stage)}
               size="sm"
+              className={selectedStage === stage ? 'bg-neutral-700 text-white hover:bg-neutral-800 dark:bg-neutral-600 dark:hover:bg-neutral-700' : 'bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700'}
             >
               {stage.split('-').map(word => 
                 word.charAt(0).toUpperCase() + word.slice(1)
@@ -232,12 +234,12 @@ export default function UseCaseDevelopmentDashboard() {
             >
               <CardHeader>
                 <div className="flex justify-between items-start mb-2">
-                  <Badge className={stageBadgeColors[useCase.stage] || 'bg-gray-100'}>
+                  <Badge className={stageBadgeColors[useCase.stage] || 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'}>
                     {useCase.stage?.split('-').map(word => 
                       word.charAt(0).toUpperCase() + word.slice(1)
                     ).join(' ')}
                   </Badge>
-                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                 </div>
                 <CardTitle className="text-lg line-clamp-2 text-foreground">
                   {useCase.title}
@@ -270,7 +272,7 @@ export default function UseCaseDevelopmentDashboard() {
 
                   {/* Action Button */}
                   <Button 
-                    className="w-full mt-4 group-hover:bg-blue-600 group-hover:text-white"
+                    className="w-full mt-4 bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700"
                     variant="outline"
                     size="sm"
                   >
@@ -288,7 +290,7 @@ export default function UseCaseDevelopmentDashboard() {
       <div className="fixed bottom-6 right-6">
         <Button
           size="lg"
-          className="rounded-full shadow-lg"
+          className="rounded-full shadow-lg bg-neutral-100 text-foreground border border-neutral-300 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-800"
           onClick={() => router.push('/new-usecase')}
         >
           <Plus className="w-5 h-5 mr-2" />

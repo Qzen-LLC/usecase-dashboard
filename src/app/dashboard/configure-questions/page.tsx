@@ -1134,27 +1134,27 @@ export default function ConfigureQuestionsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Header */}
-        <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+        <div className="bg-card rounded-xl shadow-sm border border-border p-5">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent leading-tight">
+              <h1 className="text-2xl font-semibold text-foreground leading-tight">
                 Configure Questions
               </h1>
-              <p className="text-muted-foreground mt-3 text-lg">
+              <p className="text-muted-foreground mt-1 text-sm">
                 Manage assessment questions for your organization
               </p>
               {userData.role === 'QZEN_ADMIN' && organizationId && (
-                <p className="text-sm text-muted-foreground mt-2">
+                <p className="text-xs text-muted-foreground mt-1">
                   Managing questions for organization: {organizationId}
                 </p>
               )}
             </div>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="flex items-center gap-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-primary-foreground px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex-shrink-0">
-                  <Plus className="w-6 h-6" />
+                <Button className="flex items-center gap-2 px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex-shrink-0 bg-white text-foreground border-2 border-neutral-300 hover:bg-neutral-50 hover:border-neutral-400 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700 dark:hover:border-neutral-500 font-medium">
+                  <Plus className="w-4 h-4" />
                   Add Question
                 </Button>
               </DialogTrigger>
@@ -1379,15 +1379,15 @@ export default function ConfigureQuestionsPage() {
         )}
 
         {/* Questions Table */}
-        <Card className="bg-card border border-border shadow-sm rounded-2xl">
-          <CardHeader>
+        <Card className="bg-card border border-border shadow-sm rounded-lg">
+          <CardHeader className="pb-4">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <HelpCircle className="w-5 h-5" />
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <HelpCircle className="w-4 h-4" />
                   Assessment Questions
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm">
                   Manage all questions used in your organization's assessments
                 </CardDescription>
               </div>
@@ -1467,7 +1467,7 @@ export default function ConfigureQuestionsPage() {
                 </p>
                 <Button
                   onClick={() => setIsAddDialogOpen(true)}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-xl"
+                  className="bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700 px-5 py-2.5 rounded-lg"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Question

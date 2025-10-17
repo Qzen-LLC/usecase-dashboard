@@ -630,38 +630,38 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
   const renderVendorList = () => (
     // Vendor Assessment List Component - Dark Mode Enabled
     <div className="bg-card rounded-2xl shadow-sm border border-border">
-      <div className="p-8 border-b border-border">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-foreground">Vendor Assessment List</h2>
-          <div className="flex gap-3">
+      <div className="p-6 border-b border-border">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-foreground">Vendor Assessment List</h2>
+          <div className="flex gap-2">
             <button
               onClick={addVendor}
-              className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-primary-foreground px-6 py-2.5 rounded-xl hover:shadow-lg transition-all duration-200 font-medium"
+              className="flex items-center gap-2 bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700 px-4 py-2 rounded-lg transition-colors text-sm"
             >
-              <Plus size={16} />
+              <Plus size={14} />
               Add Vendor
             </button>
             <button
               onClick={() => setViewMode('dashboard')}
-              className="flex items-center gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground px-6 py-2.5 rounded-xl hover:shadow-lg transition-all duration-200 font-medium"
+              className="flex items-center gap-2 bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700 px-4 py-2 rounded-lg transition-colors text-sm"
             >
-              <BarChart3 size={16} />
+              <BarChart3 size={14} />
               Dashboard
             </button>
           </div>
         </div>
         
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={14} />
               <input
                 type="text"
                 placeholder="Search vendors..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-card text-foreground placeholder:text-muted-foreground"
+                className="w-full pl-9 pr-3 py-2.5 border border-border rounded-lg focus:ring-2 focus:ring-neutral-400 focus:border-neutral-400 bg-card text-foreground placeholder:text-muted-foreground text-sm"
               />
             </div>
           </div>
@@ -669,7 +669,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="w-full px-3 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-card text-foreground"
+              className="w-full px-3 py-2.5 border border-border rounded-lg focus:ring-2 focus:ring-neutral-400 focus:border-neutral-400 bg-card text-foreground text-sm"
             >
               <option value="all">All Categories</option>
               {categories.map(cat => (
@@ -682,33 +682,33 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
 
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-muted">
+          <thead className="bg-muted/40">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Vendor</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Category</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Score</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Assessment Date</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
+              <th className="px-6 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Vendor</th>
+              <th className="px-6 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Category</th>
+              <th className="px-6 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Score</th>
+              <th className="px-6 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Assessment Date</th>
+              <th className="px-6 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-card divide-y divide-border">
             {filteredVendors.map((vendor) => (
-              <tr key={vendor.id} className="hover:bg-muted/50 transition-colors duration-150">
+              <tr key={vendor.id} className="hover:bg-muted/30 transition-colors duration-150">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div>
                     <div className="text-sm font-medium text-foreground">{vendor.name}</div>
-                    <div className="text-sm text-muted-foreground">{vendor.contactEmail}</div>
+                    <div className="text-xs text-muted-foreground">{vendor.contactEmail}</div>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">{vendor.category}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(vendor.status)}`}>
+                  <span className={`inline-flex px-2.5 py-1 text-[11px] font-medium rounded-md ${getStatusColor(vendor.status)}`}>
                     {vendor.status}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getScoreColor(vendor.overallScore)}`}>
+                  <span className={`inline-flex px-2.5 py-1 text-sm font-semibold rounded-md ${getScoreColor(vendor.overallScore)}`}>
                     {vendor.overallScore.toFixed(1)}
                   </span>
                 </td>
@@ -722,7 +722,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
                         setIsEditing(false);
                         setActiveTab(0);
                       }}
-                      className="text-primary hover:text-primary/80 transition-colors duration-150"
+                      className="text-foreground hover:text-primary transition-colors duration-150"
                       title="View Vendor"
                     >
                       <Eye size={16} />
@@ -734,14 +734,14 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
                         setIsEditing(true);
                         setActiveTab(0);
                       }}
-                      className="text-success hover:text-success/80 transition-colors duration-150"
+                      className="text-foreground hover:text-success transition-colors duration-150"
                       title="Edit Vendor"
                     >
                       <Edit2 size={16} />
                     </button>
                     <button
                       onClick={() => handleDeleteVendor(vendor.id)}
-                      className="text-destructive hover:text-destructive/80 transition-colors duration-150"
+                      className="text-foreground hover:text-destructive transition-colors duration-150"
                       title="Delete Vendor"
                     >
                       <Trash2 size={16} />
@@ -921,13 +921,13 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
   return (
     <div className="space-y-6 fade-in">
       {/* Page Header */}
-      <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+      <div className="bg-card rounded-2xl shadow-sm border border-border p-6">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent leading-tight">
+            <h1 className="text-2xl font-semibold text-foreground leading-tight">
               Vendor Assessment
             </h1>
-            <p className="text-muted-foreground mt-3 text-lg">Evaluate and manage AI vendor partnerships</p>
+            <p className="text-muted-foreground mt-2 text-sm">Evaluate and manage AI vendor partnerships</p>
           </div>
         </div>
       </div>

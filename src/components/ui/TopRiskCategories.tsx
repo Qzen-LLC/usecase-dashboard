@@ -23,10 +23,8 @@ const getRiskIcon = (index: number) => {
 };
 
 const getRiskColor = (index: number) => {
-  if (index === 0) return 'text-destructive bg-destructive/10 border-destructive/20';
-  if (index === 1) return 'text-warning bg-warning/10 border-warning/20';
-  if (index === 2) return 'text-primary bg-primary/10 border-primary/20';
-  return 'text-secondary-foreground bg-secondary/10 border-secondary/20';
+  // Use neutral colors for all risk categories
+  return 'text-neutral-700 bg-neutral-100 border-neutral-200 dark:text-neutral-300 dark:bg-neutral-800 dark:border-neutral-600';
 };
 
 const getRiskSeverity = (index: number): 'low' | 'medium' | 'high' | 'critical' => {
@@ -39,15 +37,15 @@ const getRiskSeverity = (index: number): 'low' | 'medium' | 'high' | 'critical' 
 const getSeverityColor = (severity: 'low' | 'medium' | 'high' | 'critical') => {
   switch (severity) {
     case 'critical':
-      return 'text-destructive bg-destructive/10 border-destructive/20';
+      return 'text-neutral-700 bg-neutral-100 border-neutral-200 dark:text-neutral-300 dark:bg-neutral-800 dark:border-neutral-600';
     case 'high':
-      return 'text-warning bg-warning/10 border-warning/20';
+      return 'text-neutral-700 bg-neutral-100 border-neutral-200 dark:text-neutral-300 dark:bg-neutral-800 dark:border-neutral-600';
     case 'medium':
-      return 'text-primary bg-primary/10 border-primary/20';
+      return 'text-neutral-700 bg-neutral-100 border-neutral-200 dark:text-neutral-300 dark:bg-neutral-800 dark:border-neutral-600';
     case 'low':
-      return 'text-success bg-success/10 border-success/20';
+      return 'text-neutral-700 bg-neutral-100 border-neutral-200 dark:text-neutral-300 dark:bg-neutral-800 dark:border-neutral-600';
     default:
-      return 'text-muted-foreground bg-muted/10 border-muted/20';
+      return 'text-neutral-700 bg-neutral-100 border-neutral-200 dark:text-neutral-300 dark:bg-neutral-800 dark:border-neutral-600';
   }
 };
 
@@ -56,8 +54,8 @@ export default function TopRiskCategories({ categories, className = '' }: TopRis
     <Card className={`bg-card border border-border ${className}`}>
       <CardHeader className="pb-4">
         <div className="flex items-center gap-3">
-          <div className="w-1 h-6 bg-primary rounded-full" />
-          <CardTitle className="text-xl font-semibold text-foreground">Top Risk Categories</CardTitle>
+          <div className="w-1 h-6 bg-neutral-300 dark:bg-neutral-600 rounded-full" />
+          <CardTitle className="text-lg font-medium text-foreground">Top Risk Categories</CardTitle>
         </div>
         <p className="text-sm text-muted-foreground">
           Most critical risk areas requiring immediate attention
@@ -74,23 +72,23 @@ export default function TopRiskCategories({ categories, className = '' }: TopRis
             return (
               <div 
                 key={category} 
-                className="group flex items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 rounded-xl border border-border/50 transition-all duration-200 hover:shadow-sm"
+                className="group flex items-center justify-between p-3 bg-muted/20 hover:bg-muted/30 rounded-lg border border-border/30 transition-all duration-200 hover:shadow-sm"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   {/* Risk Rank Icon */}
-                  <div className={`w-10 h-10 ${riskColor} rounded-xl flex items-center justify-center border transition-all duration-200 group-hover:scale-110`}>
-                    <Icon className="w-5 h-5" />
+                  <div className={`w-8 h-8 ${riskColor} rounded-lg flex items-center justify-center border transition-all duration-200`}>
+                    <Icon className="w-4 h-4" />
                   </div>
                   
                   {/* Risk Information */}
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                      <span className="text-sm font-medium text-foreground">
                         {category}
                       </span>
                       <Badge 
                         variant="outline" 
-                        className={`text-xs px-2 py-1 rounded-full border ${severityColor}`}
+                        className={`text-xs px-2 py-1 rounded-md border ${severityColor}`}
                       >
                         {severity.toUpperCase()}
                       </Badge>
@@ -101,8 +99,6 @@ export default function TopRiskCategories({ categories, className = '' }: TopRis
                     </div>
                   </div>
                 </div>
-                
-                
               </div>
             );
           })}

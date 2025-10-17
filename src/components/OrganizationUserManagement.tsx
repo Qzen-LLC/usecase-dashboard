@@ -142,21 +142,21 @@ export default function OrganizationUserManagement() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Modern Header */}
-        <div className="bg-card border rounded-2xl shadow-sm p-8">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+        <div className="bg-card rounded-xl shadow-sm border border-border p-5">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent leading-tight">
+              <h1 className="text-2xl font-semibold text-foreground leading-tight">
                 User Management
               </h1>
-              <p className="text-muted-foreground mt-3 text-lg">Manage users within your organization</p>
+              <p className="text-muted-foreground mt-1 text-sm">Manage users within your organization</p>
             </div>
             <Button 
-              className="flex items-center gap-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-primary-foreground px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex-shrink-0" 
+              className="flex items-center gap-2 px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex-shrink-0 bg-white text-foreground border-2 border-neutral-300 hover:bg-neutral-50 hover:border-neutral-400 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700 dark:hover:border-neutral-500 font-medium" 
               onClick={() => setShowAddUser(true)}
             >
-              <UserPlus className="w-6 h-6" />
+              <UserPlus className="w-4 h-4" />
               Add User
             </Button>
           </div>
@@ -268,44 +268,44 @@ export default function OrganizationUserManagement() {
         )}
 
         {/* Analytics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                  <Users className="w-6 h-6 text-primary" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-lg">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-neutral-100 dark:bg-neutral-800 rounded-md flex items-center justify-center">
+                  <Users className="w-5 h-5 text-foreground" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Users</p>
-                  <p className="text-3xl font-bold text-foreground">{users.length}</p>
+                  <p className="text-2xl font-bold text-foreground">{users.length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center">
-                  <UserCheck className="w-6 h-6 text-success" />
+          <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-lg">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-neutral-100 dark:bg-neutral-800 rounded-md flex items-center justify-center">
+                  <UserCheck className="w-5 h-5 text-foreground" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Active Users</p>
-                  <p className="text-3xl font-bold text-foreground">{users.filter(u => u.isActive).length}</p>
+                  <p className="text-2xl font-bold text-foreground">{users.filter(u => u.isActive).length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-primary" />
+          <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-lg">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-neutral-100 dark:bg-neutral-800 rounded-md flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-foreground" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Admins</p>
-                  <p className="text-3xl font-bold text-foreground">{users.filter(u => u.role === 'ORG_ADMIN').length}</p>
+                  <p className="text-2xl font-bold text-foreground">{users.filter(u => u.role === 'ORG_ADMIN').length}</p>
                 </div>
               </div>
             </CardContent>
@@ -313,91 +313,76 @@ export default function OrganizationUserManagement() {
         </div>
 
         {/* Users List */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
-              <Users className="w-6 h-6 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <Users className="w-5 h-5 text-foreground" />
               Organization Users
             </h2>
-            <Badge variant="secondary" className="px-3 py-1 rounded-full">
+            <Badge variant="secondary" className="px-2.5 py-1 rounded-md text-xs">
               {users.length} {users.length === 1 ? 'User' : 'Users'}
             </Badge>
           </div>
           
           {users.length === 0 ? (
-            <Card className="bg-card border border-border shadow-sm rounded-2xl">
-              <CardContent className="text-center py-12">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-8 h-8 text-muted-foreground" />
+            <Card className="bg-card border border-border shadow-sm rounded-lg">
+              <CardContent className="text-center py-10">
+                <div className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Users className="w-7 h-7 text-muted-foreground" />
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">No Users Yet</h3>
-                <p className="text-muted-foreground mb-6 max-w-md mx-auto">Add users to your organization to get started with collaboration</p>
+                <h3 className="text-base font-medium text-foreground mb-2">No Users Yet</h3>
+                <p className="text-sm text-muted-foreground mb-5 max-w-md mx-auto">Add users to your organization to get started with collaboration</p>
                 <Button 
                   onClick={() => setShowAddUser(true)}
-                  className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-primary-foreground px-6 py-3 rounded-xl"
+                  className="bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700 px-5 py-2.5 rounded-lg"
                 >
                   Add User
                 </Button>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-6">
+            <div className="grid gap-4">
               {users.map((user) => (
-                <Card key={user.id} className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl overflow-hidden">
-                  <CardContent className="p-6">
+                <Card key={user.id} className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-lg overflow-hidden">
+                  <CardContent className="p-4">
                     <div className="flex justify-between items-start">
-                      <div className="flex items-start gap-4 min-w-0">
-                        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-lg font-medium text-muted-foreground">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-medium text-muted-foreground">
                             {user.firstName?.[0]}{user.lastName?.[0]}
                           </span>
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-3 mb-2 flex-wrap">
-                            <h3 className="text-lg font-semibold text-foreground truncate">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 className="text-sm font-medium text-foreground truncate">
                               {user.firstName} {user.lastName}
                             </h3>
-                            <Badge 
-                              variant={user.role === 'ORG_ADMIN' ? 'default' : 'secondary'}
-                              className="px-3 py-1 rounded-full flex-shrink-0"
-                            >
+                            <Badge variant="outline" className="text-[11px] px-2 py-0.5 rounded-md">
                               {user.role === 'ORG_ADMIN' ? 'Admin' : 'User'}
                             </Badge>
-                            <Badge 
-                              variant={user.isActive ? 'default' : 'secondary'}
-                              className="px-3 py-1 rounded-full flex-shrink-0"
-                            >
-                              {user.isActive ? 'Active' : 'Inactive'}
-                            </Badge>
+                            {user.isActive && (
+                              <Badge variant="outline" className="text-[11px] px-2 py-0.5 rounded-md">Active</Badge>
+                            )}
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <Mail className="w-4 h-4 flex-shrink-0" />
+                          <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1 min-w-0">
+                              <Mail className="w-3 h-3" />
                               <span className="truncate">{user.email}</span>
                             </div>
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <Calendar className="w-4 h-4 flex-shrink-0" />
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
                               <span>Joined {new Date(user.createdAt).toLocaleDateString()}</span>
                             </div>
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {user.role !== 'ORG_ADMIN' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRemoveUser(user.id)}
-                            disabled={removeUserLoading === user.id}
-                            className="border-destructive/20 text-destructive hover:bg-destructive/10 rounded-xl px-3 py-2"
-                          >
-                            {removeUserLoading === user.id ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b border-destructive"></div>
-                            ) : (
-                              <Trash2 className="w-4 h-4" />
-                            )}
-                          </Button>
-                        )}
+                        <Button variant="outline" className="px-3 py-1.5 text-xs" onClick={() => handleEditUser(user)}>
+                          Edit
+                        </Button>
+                        <Button variant="outline" className="px-3 py-1.5 text-xs" onClick={() => handleRemoveUser(user.id)}>
+                          Remove
+                        </Button>
                       </div>
                     </div>
                   </CardContent>

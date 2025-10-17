@@ -177,17 +177,7 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
         </div>
         <div className="font-semibold text-sm text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-tight">{useCase.title}</div>
         <div className="text-xs text-foreground line-clamp-2 leading-relaxed">{stripHtmlTags(useCase.description)}</div>
-        <div className="flex items-center gap-3 mt-2">
-          <div className="flex items-center gap-1 text-xs text-primary">
-            <span>{useCase.scores.operational}</span>
-          </div>
-          <div className="flex items-center gap-1 text-xs text-primary">
-            <span>{useCase.scores.productivity}</span>
-          </div>
-          <div className="flex items-center gap-1 text-xs text-success">
-            <span>{useCase.scores.revenue}</span>
-          </div>
-        </div>
+        {/* Removed per request: operational/productivity/revenue numbers */}
         <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
           <span className="flex items-center gap-1">
             {useCase.creator.type === 'user' ? (
@@ -882,7 +872,7 @@ const Dashboard = () => {
                 <option key={func} value={func}>{func}</option>
               ))}
             </select>
-            <Button onClick={() => router.push('/new-usecase')} className="btn-primary flex items-center gap-2">
+            <Button onClick={() => router.push('/new-usecase')} className="flex items-center gap-2 rounded-full shadow-sm bg-neutral-100 text-foreground border border-neutral-300 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-800">
               <Plus className="w-4 h-4" />
               New Use Case
             </Button>
@@ -1046,17 +1036,7 @@ const Dashboard = () => {
                       </div>
                       <div className="font-semibold text-sm text-foreground line-clamp-2 leading-tight">{useCase.title}</div>
                       <div className="text-xs text-foreground line-clamp-2 leading-relaxed">{stripHtmlTags(useCase.description)}</div>
-                      <div className="flex items-center gap-3 mt-2">
-                        <div className="flex items-center gap-1 text-xs text-primary">
-                          <span>{useCase.scores.operational}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-primary">
-                          <span>{useCase.scores.productivity}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-success">
-                          <span>{useCase.scores.revenue}</span>
-                        </div>
-                      </div>
+                      {/* Removed per request: score numbers in drag overlay */}
                       <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
                         <span className="flex items-center gap-1">
                           {useCase.creator.type === 'user' ? (

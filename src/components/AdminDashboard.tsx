@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useStableRender } from "@/hooks/useStableRender";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Accordion,
   AccordionItem,
@@ -84,6 +84,7 @@ export default function AdminDashboard() {
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
   const [orgSuccess, setOrgSuccess] = useState<string | null>(null);
+  const [globalSuccess, setGlobalSuccess] = useState<string | null>(null);
   const [allUseCases, setAllUseCases] = useState<UseCase[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null); // null = All Organizations
   const [useCasesLoading, setUseCasesLoading] = useState(true);
@@ -100,6 +101,18 @@ export default function AdminDashboard() {
       fetchOrganizations();
     }
   }, [isReady]);
+
+  // Read success flags from URL (e.g., after redirect)
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (!searchParams) return;
+    const invited = searchParams.get('invited');
+    const email = searchParams.get('email');
+    if (invited === '1') {
+      setGlobalSuccess(email ? `Invitation sent to ${email}` : 'Invitation sent successfully!');
+      // Optional: could replace state to clean URL later
+    }
+  }, [searchParams]);
 
   // Fetch all use cases on mount
   useEffect(() => {
@@ -246,10 +259,13 @@ export default function AdminDashboard() {
       });
       const data = await response.json();
       if (data.success) {
-        setInviteSuccess("Invitation sent successfully!");
+        // Close modal and redirect to admin with success flag
+        const emailParam = encodeURIComponent(inviteEmail);
+        setInviteModalOrgId(null);
         setInviteEmail("");
         setInviteRole("ORG_USER");
         fetchOrganizations();
+        router.push(`/admin?invited=1&email=${emailParam}`);
       } else {
         setInviteError(data.error || "Failed to send invitation");
       }
@@ -346,47 +362,47 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Modern Header */}
-        <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+        <div className="bg-card rounded-xl shadow-sm border border-border p-5">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent leading-tight">
+              <h1 className="text-2xl font-semibold text-foreground leading-tight">
                 QUBE Admin Dashboard
               </h1>
-              <p className="text-muted-foreground mt-3 text-lg">
+              <p className="text-muted-foreground mt-1 text-sm">
                 Manage organizations and platform-wide settings
               </p>
             </div>
             <Button
-              className="flex items-center gap-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-primary-foreground px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex-shrink-0"
+              className="flex items-center gap-2 px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex-shrink-0 bg-white text-foreground border-2 border-neutral-300 hover:bg-neutral-50 hover:border-neutral-400 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700 dark:hover:border-neutral-500 font-medium"
               onClick={() => setShowCreateOrg(true)}
             >
-              <Plus className="w-6 h-6" />
+              <Plus className="w-4 h-4" />
               Create Organization
             </Button>
           </div>
         </div>
 
         {/* Question Management Section */}
-        <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <div className="bg-card rounded-xl shadow-sm border border-border p-5">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
-                <HelpCircle className="w-6 h-6 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <HelpCircle className="w-4 h-4 text-primary" />
                 Question Management
               </h2>
-              <p className="text-muted-foreground mt-2">
+              <p className="text-muted-foreground mt-1 text-sm">
                 Configure global question templates and organization-specific questions
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-2">
               {/* Question Templates Button */}
               <Button
                 onClick={handleNavigateToQuestionTemplates}
-                className="flex items-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-700 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-800"
               >
-                <Settings className="w-5 h-5" />
+                <Settings className="w-4 h-4" />
                 Question Templates
               </Button>
               
@@ -395,11 +411,11 @@ export default function AdminDashboard() {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className="flex items-center gap-3 border-border text-foreground hover:bg-muted px-6 py-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-700 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-800"
                   >
-                    <Building2 className="w-5 h-5" />
+                    <Building2 className="w-4 h-4" />
                     Organization Questions
-                    <ChevronDown className="w-4 h-4" />
+                    <ChevronDown className="w-3 h-3" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-64" align="end">
@@ -440,6 +456,40 @@ export default function AdminDashboard() {
           <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-2">
             <div className="w-2 h-2 bg-destructive rounded-full"></div>
             <span className="text-destructive font-medium">{deleteError}</span>
+          </div>
+        )}
+
+        {/* Invitation Success Popup */}
+        {globalSuccess && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div className="bg-card rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 border border-border">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-success/10 rounded-xl flex items-center justify-center">
+                  <Mail className="w-5 h-5 text-success" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">
+                    Invitation Sent
+                  </h2>
+                  <p className="text-muted-foreground">
+                    The user has been invited successfully
+                  </p>
+                </div>
+              </div>
+              
+              <div className="bg-success/10 border border-success/20 rounded-lg p-4 mb-6">
+                <p className="text-success font-medium">{globalSuccess}</p>
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => setGlobalSuccess(null)}
+                  className="bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-700 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-800"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -572,128 +622,113 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Analytics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                  <Building2 className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Total Organizations
-                  </p>
-                  <p className="text-3xl font-bold text-foreground">
-                    {totalOrgs}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+         {/* Analytics Cards */}
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+           <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-lg">
+             <CardContent className="p-3">
+               <div className="text-center">
+                 <p className="text-sm font-medium text-muted-foreground mb-1">
+                   Organizations
+                 </p>
+                 <p className="text-2xl font-bold text-foreground">
+                   {totalOrgs}
+                 </p>
+               </div>
+             </CardContent>
+           </Card>
 
-          <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center">
-                  <Users className="w-6 h-6 text-success" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Total Users
-                  </p>
-                  <p className="text-3xl font-bold text-foreground">
-                    {totalUsers}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+           <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-lg">
+             <CardContent className="p-3">
+               <div className="text-center">
+                 <p className="text-sm font-medium text-muted-foreground mb-1">
+                   Users
+                 </p>
+                 <p className="text-2xl font-bold text-foreground">
+                   {totalUsers}
+                 </p>
+               </div>
+             </CardContent>
+           </Card>
 
-          <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-warning/10 rounded-xl flex items-center justify-center">
-                  <BarChart3 className="w-6 h-6 text-warning" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Total Use Cases
-                  </p>
-                  <p className="text-3xl font-bold text-foreground">
-                    {allUseCases.length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+           <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-lg">
+             <CardContent className="p-3">
+               <div className="text-center">
+                 <p className="text-sm font-medium text-muted-foreground mb-1">
+                   Use Cases
+                 </p>
+                 <p className="text-2xl font-bold text-foreground">
+                   {allUseCases.length}
+                 </p>
+               </div>
+             </CardContent>
+           </Card>
+         </div>
 
         {/* Organizations List */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
-              <Building2 className="w-6 h-6 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-primary" />
               Organizations
             </h2>
-            <Badge variant="secondary" className="px-3 py-1 rounded-full">
+            <Badge variant="secondary" className="px-2 py-0.5 rounded-full text-xs">
               {organizations.length}{" "}
               {organizations.length === 1 ? "Organization" : "Organizations"}
             </Badge>
           </div>
 
           {organizations.length === 0 ? (
-            <Card className="bg-card border border-border shadow-sm rounded-2xl">
-              <CardContent className="text-center py-12">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Building2 className="w-8 h-8 text-muted-foreground" />
+            <Card className="bg-card border border-border shadow-sm rounded-xl">
+              <CardContent className="text-center py-8">
+                <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Building2 className="w-6 h-6 text-muted-foreground" />
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">
+                <h3 className="text-base font-semibold text-foreground mb-1">
                   No Organizations Yet
                 </h3>
-                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                <p className="text-muted-foreground mb-4 max-w-md mx-auto text-sm">
                   Create your first organization to get started with the
                   platform
                 </p>
                 <Button
                   onClick={() => setShowCreateOrg(true)}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-xl"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg"
                 >
                   Create Organization
                 </Button>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {organizations.map((org) => (
                 <Card
                   key={org.id}
-                  className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-2xl"
+                  className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-xl"
                 >
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between gap-4">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-3">
-                          <h3 className="text-xl font-semibold text-foreground">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-base font-semibold text-foreground">
                             {org.name}
                           </h3>
                           {org.domain && (
-                            <Badge variant="outline" className="px-3 py-1 rounded-full">
+                            <Badge variant="outline" className="px-2 py-0.5 rounded-full text-xs">
                               {org.domain}
                             </Badge>
                           )}
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Users className="w-4 h-4" />
-                            <span className="text-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Users className="w-3.5 h-3.5" />
+                            <span className="text-xs">
                               {org.users.length} user{org.users.length !== 1 ? 's' : ''}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <BarChart3 className="w-4 h-4" />
-                            <span className="text-sm">
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <BarChart3 className="w-3.5 h-3.5" />
+                            <span className="text-xs">
                               {org.useCases.length} use case{org.useCases.length !== 1 ? 's' : ''}
                             </span>
                           </div>
@@ -701,15 +736,15 @@ export default function AdminDashboard() {
 
                         {org.users.length > 0 && (
                           <div className="mt-4">
-                            <p className="text-sm font-medium text-muted-foreground mb-2">
+                            <p className="text-xs font-medium text-muted-foreground mb-2">
                               Users:
                             </p>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-1.5">
                               {org.users.map((user) => (
                                 <Badge
                                   key={user.id}
                                   variant="outline"
-                                  className="px-2 py-1 text-xs"
+                                  className="px-1.5 py-0.5 text-[11px]"
                                 >
                                   {user.firstName && user.lastName
                                     ? `${user.firstName} ${user.lastName}`
@@ -735,7 +770,7 @@ export default function AdminDashboard() {
                           }}
                           className="border-border text-foreground hover:bg-muted"
                         >
-                          <UserPlus className="w-4 h-4 mr-2" />
+                          <UserPlus className="w-3.5 h-3.5 mr-2" />
                           Invite User
                         </Button>
                         <Button
@@ -748,7 +783,7 @@ export default function AdminDashboard() {
                           {deleteLoading === org.id ? (
                             <div className="w-4 h-4 border-2 border-destructive border-t-transparent rounded-full animate-spin mr-2" />
                           ) : (
-                            <Trash2 className="w-4 h-4 mr-2" />
+                            <Trash2 className="w-3.5 h-3.5 mr-2" />
                           )}
                           Delete
                         </Button>
@@ -846,7 +881,7 @@ export default function AdminDashboard() {
                 <Button
                   onClick={handleInviteUser}
                   disabled={inviteLoading || !inviteEmail.trim()}
-                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  className="flex-1 bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-700 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-800"
                 >
                   {inviteLoading ? "Sending..." : "Send Invitation"}
                 </Button>
