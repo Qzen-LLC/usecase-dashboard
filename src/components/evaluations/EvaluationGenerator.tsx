@@ -80,14 +80,14 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
   useEffect(() => {
     const loadExistingEvaluation = async () => {
       try {
-        const response = await fetch(`/api/evaluations/generate-v2?useCaseId=${useCaseId}`, {
+        const response = await fetch(`/api/evaluations/get?useCaseId=${useCaseId}`, {
           method: 'GET'
         });
-        
+
         if (response.ok) {
           const data = await response.json();
-          if (data.success && data.evaluation) {
-            const evalConfig = data.evaluation.configuration;
+          if (data.success && data.evaluationConfig) {
+            const evalConfig = data.evaluationConfig;
             setEvaluationConfig(evalConfig);
             setTestSuites(evalConfig.testSuites.map((suite: any) => ({
               ...suite,
@@ -102,7 +102,7 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
         console.log('No existing evaluation found, ready to generate new one');
       }
     };
-    
+
     if (useCaseId) {
       loadExistingEvaluation();
     }

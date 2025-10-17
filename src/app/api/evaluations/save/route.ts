@@ -19,18 +19,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify use case exists
-    const useCase = await prismaClient.useCase.findUnique({
-      where: { id: useCaseId }
-    });
-
-    if (!useCase) {
-      return NextResponse.json(
-        { error: 'Use case not found' },
-        { status: 404 }
-      );
-    }
-
     // Save or update evaluation
     let evaluation;
     if (evaluationConfig.id) {
