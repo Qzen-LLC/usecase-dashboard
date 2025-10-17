@@ -69,6 +69,7 @@ const ViewUseCasePage = () => {
   const [autoEvalAttempted, setAutoEvalAttempted] = useState(false);
   const [approvalsData, setApprovalsData] = useState<any | null>(null);
   const [finopsData, setFinopsData] = useState<any | null>(null);
+  const [questionsData, setQuestionsData] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchUseCaseDetails = async () => {
@@ -92,7 +93,7 @@ const ViewUseCasePage = () => {
     }
   }, [useCaseId]);
 
-  // Load external sections: guardrails, evaluations, golden datasets
+  // Load external sections: guardrails, evaluations, golden datasets, questions
   useEffect(() => {
     if (!useCaseId) return;
     // Guardrails
@@ -142,6 +143,20 @@ const ViewUseCasePage = () => {
       })
       .catch((error) => {
         console.error('🔍 [DEBUG] Error fetching finops data:', error);
+      });
+    // Questions with answers
+    fetch(`/api/get-assess-questions?useCaseId=${useCaseId}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (Array.isArray(data)) {
+          // Filter to only questions with answers
+          const questionsWithAnswers = data.filter((q: any) => q.answers && q.answers.length > 0);
+          console.log('🔍 [DEBUG] Questions with answers:', questionsWithAnswers);
+          setQuestionsData(questionsWithAnswers);
+        }
+      })
+      .catch((error) => {
+        console.error('🔍 [DEBUG] Error fetching questions:', error);
       });
   }, [useCaseId]);
 
@@ -293,7 +308,46 @@ const ViewUseCasePage = () => {
     });
   };
 
-  // Helper function to get assessment data from multiple possible locations
+  // Helper function to get questions by stage
+  const getQuestionsByStage = (stage: string): any[] => {
+    return questionsData.filter((q: any) => q.stage === stage);
+  };
+
+  // Helper function to format answer value for display
+  const formatAnswerValue = (question: any): string => {
+    if (!question.answers || question.answers.length === 0) return 'Not answered';
+    
+    const answers = question.answers;
+    
+    // For TEXT and SLIDER type questions
+    if (question.type === 'TEXT' || question.type === 'SLIDER') {
+      return answers[0]?.value || 'Not answered';
+    }
+    
+    // For CHECKBOX type questions (multiple selections)
+    if (question.type === 'CHECKBOX') {
+      return answers.map((a: any) => a.value).join(', ');
+    }
+    
+    // For RADIO type questions (single selection)
+    if (question.type === 'RADIO') {
+      return answers[0]?.value || 'Not answered';
+    }
+    
+    // For RISK type questions (probability and impact)
+    if (question.type === 'RISK') {
+      const probability = answers.find((a: any) => a.value.startsWith('pro:'))?.value.replace('pro:', '') || '';
+      const impact = answers.find((a: any) => a.value.startsWith('imp:'))?.value.replace('imp:', '') || '';
+      if (probability && impact) {
+        return `Probability: ${probability}, Impact: ${impact}`;
+      }
+      return answers.map((a: any) => a.value).join(', ');
+    }
+    
+    return answers.map((a: any) => a.value).join(', ');
+  };
+
+  // Helper function to get assessment data from multiple possible locations (fallback for old data)
   const getAssessmentData = (sectionName: string): Record<string, unknown> | undefined => {
     if (!useCase?.assessData) return undefined;
     
@@ -637,36 +691,9 @@ const ViewUseCasePage = () => {
                    {expandedSections.technicalFeasibility && (
                      <div className="px-5 py-4 bg-muted/30 border-t border-border">
                        {(() => {
-                         // Debug logging to understand data structure
-                         console.log('🔍 [DEBUG] Technical Feasibility Data Structure:', {
-                           useCase: !!useCase,
-                           assessData: !!useCase?.assessData,
-                           stepsData: !!useCase?.assessData?.stepsData,
-                           technicalFeasibility: !!useCase?.assessData?.stepsData?.technicalFeasibility,
-                           rawTechnicalData: useCase?.assessData?.stepsData?.technicalFeasibility,
-                           assessDataStructure: useCase?.assessData,
-                           fullUseCase: useCase
-                         });
+                         const technicalQuestions = getQuestionsByStage('TECHNICAL_FEASIBILITY');
                          
-                         // Use the helper function to get technical feasibility data
-                         const technicalFeasibilityData = getAssessmentData('technicalFeasibility');
-                         console.log('🔍 [DEBUG] Retrieved technical feasibility data:', technicalFeasibilityData);
-                         
-                         // Additional debug: show the raw data structure
-                         if (useCase?.assessData) {
-                           console.log('🔍 [DEBUG] Raw assessData structure:', JSON.stringify(useCase.assessData, null, 2));
-                         }
-                         
-                         const technicalData = filterTechnicalFeasibilityData(technicalFeasibilityData);
-                         const entries = Object.entries(technicalData);
-                         
-                         console.log('🔍 [DEBUG] Filtered Technical Data:', {
-                           technicalData,
-                           entries,
-                           entriesLength: entries.length
-                         });
-                         
-                         if (entries.length === 0) {
+                         if (technicalQuestions.length === 0) {
                            return (
                              <p className="text-sm text-muted-foreground italic">
                                No technical feasibility data available.
@@ -676,23 +703,11 @@ const ViewUseCasePage = () => {
                          
                          return (
                            <div className="space-y-3">
-                             {entries.map(([key, value]) => (
-                               <div key={key} className="flex flex-col gap-1">
-                                 <span className="text-sm font-medium text-foreground">{key}:</span>
+                             {technicalQuestions.map((question: any) => (
+                               <div key={question.id} className="flex flex-col gap-1">
+                                 <span className="text-sm font-medium text-foreground">{question.text}</span>
                                  <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
-                                   {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
-                                     // Render nested objects as structured content
-                                     <div className="space-y-1">
-                                       {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
-                                         <div key={nestedKey} className="flex justify-between">
-                                           <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
-                                           <span>{formatFieldValue(nestedValue)}</span>
-                                         </div>
-                                       ))}
-                                     </div>
-                                   ) : (
-                                     formatFieldValue(value)
-                                   )}
+                                   {formatAnswerValue(question)}
                                  </div>
                                </div>
                              ))}
@@ -719,13 +734,9 @@ const ViewUseCasePage = () => {
                    {expandedSections.businessFeasibility && (
                      <div className="px-5 py-4 bg-muted/30 border-t border-border">
                        {(() => {
-                         const businessFeasibilityData = getAssessmentData('businessFeasibility');
-                         console.log('🔍 [DEBUG] Business Feasibility Data:', businessFeasibilityData);
-                         const businessData = filterTechnicalFeasibilityData(businessFeasibilityData);
-                         const entries = Object.entries(businessData);
-                         console.log('🔍 [DEBUG] Filtered Business Data:', { businessData, entries });
+                         const businessQuestions = getQuestionsByStage('BUSINESS_FEASIBILITY');
                          
-                         if (entries.length === 0) {
+                         if (businessQuestions.length === 0) {
                            return (
                              <p className="text-sm text-muted-foreground italic">
                                No business feasibility data available.
@@ -735,23 +746,11 @@ const ViewUseCasePage = () => {
                          
                          return (
                            <div className="space-y-3">
-                             {entries.map(([key, value]) => (
-                               <div key={key} className="flex flex-col gap-1">
-                                 <span className="text-sm font-medium text-foreground">{key}:</span>
+                             {businessQuestions.map((question: any) => (
+                               <div key={question.id} className="flex flex-col gap-1">
+                                 <span className="text-sm font-medium text-foreground">{question.text}</span>
                                  <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
-                                   {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
-                                     // Render nested objects as structured content
-                                     <div className="space-y-1">
-                                       {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
-                                         <div key={nestedKey} className="flex justify-between">
-                                           <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
-                                           <span>{formatFieldValue(nestedValue)}</span>
-                                         </div>
-                                       ))}
-                                     </div>
-                                   ) : (
-                                     formatFieldValue(value)
-                                   )}
+                                   {formatAnswerValue(question)}
                                  </div>
                                </div>
                              ))}
@@ -778,11 +777,9 @@ const ViewUseCasePage = () => {
                    {expandedSections.ethicalImpact && (
                      <div className="px-5 py-4 bg-muted/30 border-t border-border">
                        {(() => {
-                         const ethicalImpactData = getAssessmentData('ethicalImpact');
-                         const ethicalData = filterTechnicalFeasibilityData(ethicalImpactData);
-                         const entries = Object.entries(ethicalData);
+                         const ethicalQuestions = getQuestionsByStage('ETHICAL_IMPACT');
                          
-                         if (entries.length === 0) {
+                         if (ethicalQuestions.length === 0) {
                            return (
                              <p className="text-sm text-muted-foreground italic">
                                No ethical impact data available.
@@ -792,23 +789,11 @@ const ViewUseCasePage = () => {
                          
                          return (
                            <div className="space-y-3">
-                             {entries.map(([key, value]) => (
-                               <div key={key} className="flex flex-col gap-1">
-                                 <span className="text-sm font-medium text-foreground">{key}:</span>
+                             {ethicalQuestions.map((question: any) => (
+                               <div key={question.id} className="flex flex-col gap-1">
+                                 <span className="text-sm font-medium text-foreground">{question.text}</span>
                                  <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
-                                   {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
-                                     // Render nested objects as structured content
-                                     <div className="space-y-1">
-                                       {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
-                                         <div key={nestedKey} className="flex justify-between">
-                                           <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
-                                           <span>{formatFieldValue(nestedValue)}</span>
-                                         </div>
-                                       ))}
-                                     </div>
-                                   ) : (
-                                     formatFieldValue(value)
-                                   )}
+                                   {formatAnswerValue(question)}
                                  </div>
                                </div>
                              ))}
@@ -835,71 +820,9 @@ const ViewUseCasePage = () => {
                    {expandedSections.riskAssessment && (
                      <div className="px-5 py-4 bg-muted/30 border-t border-border">
                        {(() => {
-                         const riskAssessmentData = getAssessmentData('riskAssessment');
-                         console.log('🔍 [DEBUG] Risk Assessment Data:', riskAssessmentData);
+                         const riskQuestions = getQuestionsByStage('RISK_ASSESSMENT');
                          
-                         // Special filtering for risk assessment data
-                         const filterRiskAssessmentData = (data: Record<string, unknown> | undefined) => {
-                           if (!data) return {};
-                           
-                           const filtered: Record<string, unknown> = {};
-                           
-                           Object.entries(data).forEach(([key, value]) => {
-                             // Handle array of risk objects
-                             if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
-                               const filteredRisks = value.filter((riskItem: any) => {
-                                 // Only include risks that have meaningful impact and probability (not "None")
-                                 const impact = riskItem.impact || riskItem.Impact;
-                                 const probability = riskItem.probability || riskItem.Probability;
-                                 return impact && impact !== 'None' && impact !== 'none' && 
-                                        probability && probability !== 'None' && probability !== 'none';
-                               });
-                               
-                               if (filteredRisks.length > 0) {
-                                 const readableKey = key
-                                   .replace(/([A-Z])/g, ' $1')
-                                   .replace(/^./, str => str.toUpperCase())
-                                   .trim();
-                                 filtered[readableKey] = filteredRisks;
-                               }
-                               return;
-                             }
-                             
-                             // Handle other data types with standard filtering
-                             if (value === false || value === null || value === undefined || 
-                                 value === '' || value === 0 || 
-                                 (Array.isArray(value) && value.length === 0)) {
-                               return;
-                             }
-                             
-                             if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-                               const nestedFiltered = filterRiskAssessmentData(value as Record<string, unknown>);
-                               if (Object.keys(nestedFiltered).length > 0) {
-                                 const readableKey = key
-                                   .replace(/([A-Z])/g, ' $1')
-                                   .replace(/^./, str => str.toUpperCase())
-                                   .trim();
-                                 filtered[readableKey] = nestedFiltered;
-                               }
-                               return;
-                             }
-                             
-                             const readableKey = key
-                               .replace(/([A-Z])/g, ' $1')
-                               .replace(/^./, str => str.toUpperCase())
-                               .trim();
-                             
-                             filtered[readableKey] = value;
-                           });
-                           
-                           return filtered;
-                         };
-                         
-                         const riskData = filterRiskAssessmentData(riskAssessmentData);
-                         const entries = Object.entries(riskData);
-                         console.log('🔍 [DEBUG] Filtered Risk Data:', { riskData, entries });
-                         
-                         if (entries.length === 0) {
+                         if (riskQuestions.length === 0) {
                            return (
                              <p className="text-sm text-muted-foreground italic">
                                No risk assessment data available.
@@ -909,45 +832,11 @@ const ViewUseCasePage = () => {
                          
                          return (
                            <div className="space-y-3">
-                             {entries.map(([key, value]) => (
-                               <div key={key} className="flex flex-col gap-1">
-                                 <span className="text-sm font-medium text-foreground">{key}:</span>
+                             {riskQuestions.map((question: any) => (
+                               <div key={question.id} className="flex flex-col gap-1">
+                                 <span className="text-sm font-medium text-foreground">{question.text}</span>
                                  <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
-                                   {Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null ? (
-                                     // Render array of risk objects as structured list
-                                     <div className="space-y-2">
-                                       {value.map((item, index) => (
-                                         <div key={index} className="border-l-2 border-primary/30 pl-3 py-1">
-                                           {typeof item === 'object' && item !== null ? (
-                                             <div className="space-y-1">
-                                               {Object.entries(item as Record<string, unknown>).map(([itemKey, itemValue]) => (
-                                                 <div key={itemKey} className="flex items-start gap-2">
-                                                   <span className="font-medium text-primary min-w-0 flex-shrink-0">
-                                                     {itemKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:
-                                                   </span>
-                                                   <span className="text-foreground">{String(itemValue)}</span>
-                                                 </div>
-                                               ))}
-                                             </div>
-                                           ) : (
-                                             <span>{String(item)}</span>
-                                           )}
-                                         </div>
-                                       ))}
-                                     </div>
-                                   ) : typeof value === 'object' && value !== null && !Array.isArray(value) ? (
-                                     // Render nested objects as structured content
-                                     <div className="space-y-1">
-                                       {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
-                                         <div key={nestedKey} className="flex justify-between">
-                                           <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
-                                           <span>{formatFieldValue(nestedValue)}</span>
-                                         </div>
-                                       ))}
-                                     </div>
-                                   ) : (
-                                     formatFieldValue(value)
-                                   )}
+                                   {formatAnswerValue(question)}
                                  </div>
                                </div>
                              ))}
@@ -975,11 +864,9 @@ const ViewUseCasePage = () => {
                    {expandedSections.dataReadiness && (
                      <div className="px-5 py-4 bg-muted/30 border-t border-border">
                        {(() => {
-                         const dataReadinessAssessmentData = getAssessmentData('dataReadiness');
-                         const dataReadinessData = filterTechnicalFeasibilityData(dataReadinessAssessmentData);
-                         const entries = Object.entries(dataReadinessData);
+                         const dataReadinessQuestions = getQuestionsByStage('DATA_READINESS');
                          
-                         if (entries.length === 0) {
+                         if (dataReadinessQuestions.length === 0) {
                            return (
                              <p className="text-sm text-muted-foreground italic">
                                No data readiness information available.
@@ -989,23 +876,11 @@ const ViewUseCasePage = () => {
                          
                          return (
                            <div className="space-y-3">
-                             {entries.map(([key, value]) => (
-                               <div key={key} className="flex flex-col gap-1">
-                                 <span className="text-sm font-medium text-foreground">{key}:</span>
+                             {dataReadinessQuestions.map((question: any) => (
+                               <div key={question.id} className="flex flex-col gap-1">
+                                 <span className="text-sm font-medium text-foreground">{question.text}</span>
                                  <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
-                                   {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
-                                     // Render nested objects as structured content
-                                     <div className="space-y-1">
-                                       {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
-                                         <div key={nestedKey} className="flex justify-between">
-                                           <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
-                                           <span>{formatFieldValue(nestedValue)}</span>
-                                         </div>
-                                       ))}
-                                     </div>
-                                   ) : (
-                                     formatFieldValue(value)
-                                   )}
+                                   {formatAnswerValue(question)}
                                  </div>
                                </div>
                              ))}
@@ -1033,11 +908,9 @@ const ViewUseCasePage = () => {
                    {expandedSections.roadmapPosition && (
                      <div className="px-5 py-4 bg-muted/30 border-t border-border">
                        {(() => {
-                         const roadmapPositionData = getAssessmentData('roadmapPosition');
-                         const roadmapData = filterTechnicalFeasibilityData(roadmapPositionData);
-                         const entries = Object.entries(roadmapData);
+                         const roadmapQuestions = getQuestionsByStage('ROADMAP_POSITION');
                          
-                         if (entries.length === 0) {
+                         if (roadmapQuestions.length === 0) {
                            return (
                              <p className="text-sm text-muted-foreground italic">
                                No roadmap position data available.
@@ -1047,23 +920,11 @@ const ViewUseCasePage = () => {
                          
                          return (
                            <div className="space-y-3">
-                             {entries.map(([key, value]) => (
-                               <div key={key} className="flex flex-col gap-1">
-                                 <span className="text-sm font-medium text-foreground">{key}:</span>
+                             {roadmapQuestions.map((question: any) => (
+                               <div key={question.id} className="flex flex-col gap-1">
+                                 <span className="text-sm font-medium text-foreground">{question.text}</span>
                                  <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
-                                   {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
-                                     // Render nested objects as structured content
-                                     <div className="space-y-1">
-                                       {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
-                                         <div key={nestedKey} className="flex justify-between">
-                                           <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
-                                           <span>{formatFieldValue(nestedValue)}</span>
-                                         </div>
-                                       ))}
-                                     </div>
-                                   ) : (
-                                     formatFieldValue(value)
-                                   )}
+                                   {formatAnswerValue(question)}
                                  </div>
                                </div>
                              ))}
@@ -1091,11 +952,9 @@ const ViewUseCasePage = () => {
                    {expandedSections.budgetPlanning && (
                      <div className="px-5 py-4 bg-muted/30 border-t border-border">
                        {(() => {
-                         const budgetPlanningData = getAssessmentData('budgetPlanning');
-                         const budgetData = filterTechnicalFeasibilityData(budgetPlanningData);
-                         const entries = Object.entries(budgetData);
+                         const budgetQuestions = getQuestionsByStage('BUDGET_PLANNING');
                          
-                         if (entries.length === 0) {
+                         if (budgetQuestions.length === 0) {
                            return (
                              <p className="text-sm text-muted-foreground italic">
                                No budget planning data available.
@@ -1105,23 +964,11 @@ const ViewUseCasePage = () => {
                          
                          return (
                            <div className="space-y-3">
-                             {entries.map(([key, value]) => (
-                               <div key={key} className="flex flex-col gap-1">
-                                 <span className="text-sm font-medium text-foreground">{key}:</span>
+                             {budgetQuestions.map((question: any) => (
+                               <div key={question.id} className="flex flex-col gap-1">
+                                 <span className="text-sm font-medium text-foreground">{question.text}</span>
                                  <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
-                                   {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
-                                     // Render nested objects as structured content
-                                     <div className="space-y-1">
-                                       {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
-                                         <div key={nestedKey} className="flex justify-between">
-                                           <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
-                                           <span>{formatFieldValue(nestedValue)}</span>
-                                         </div>
-                                       ))}
-                                     </div>
-                                   ) : (
-                                     formatFieldValue(value)
-                                   )}
+                                   {formatAnswerValue(question)}
                                  </div>
                                </div>
                              ))}
