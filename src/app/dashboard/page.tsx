@@ -121,63 +121,87 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
       }`}
       onClick={onClick}
     >
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <div className="font-bold text-xs text-muted-foreground">{formatAiucId(useCase.aiucId, useCase.id)}</div>
-          <div className="flex items-center gap-2">
-            {useCase.priority && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <span 
-                    className={`text-xs px-2 py-1 rounded-full font-semibold cursor-pointer flex items-center gap-1 ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-muted'}`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {_priorities[useCase.priority as keyof typeof _priorities]?.label || useCase.priority}
-                  </span>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((priority) => (
-                    <DropdownMenuItem 
-                      key={priority} 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePriorityChange(useCase.id, priority);
-                      }}
-                    >
-                      {_priorities[priority as keyof typeof _priorities]?.label || priority}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!isDeleting) {
-                  handleDelete(useCase.id);
-                }
-              }}
-              disabled={isDeleting}
-              className={`p-1.5 rounded-full transition-colors ${
-                isDeleting 
-                  ? 'text-muted-foreground cursor-not-allowed' 
-                  : 'text-destructive hover:text-destructive/80 hover:bg-destructive/10'
-              }`}
-              title={isDeleting ? "Deleting..." : "Delete use case"}
-            >
-              {isDeleting ? (
-                <div className="w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Trash2 className="w-3 h-3" />
-              )}
-            </button>
+      <div className="p-3">
+        {/* Drag Handle */}
+        <div 
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing mb-1.5 flex items-start justify-between group"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-start gap-2 flex-1">
+            <GripVertical className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground mt-1 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-[11px] font-mono text-muted-foreground mb-0.5">
+                {formatAiucId(useCase.aiucId, useCase.id)}
+              </div>
+              <h3 className="font-medium text-[13px] text-foreground line-clamp-2 leading-tight mb-1.5">
+                {useCase.title}
+              </h3>
+            </div>
           </div>
         </div>
-        <div className="font-semibold text-sm text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-tight">{useCase.title}</div>
-        <div className="text-xs text-foreground line-clamp-2 leading-relaxed">{stripHtmlTags(useCase.description)}</div>
-        {/* Removed per request: operational/productivity/revenue numbers */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
-          <span className="flex items-center gap-1">
+        
+        {/* Actions */}
+        <div className="flex items-center justify-end gap-1.5 mb-1.5">
+          {useCase.priority && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <span 
+                  className={`text-[11px] px-2 py-0.5 rounded-md font-medium cursor-pointer ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-muted'}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {_priorities[useCase.priority as keyof typeof _priorities]?.label || useCase.priority}
+                </span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((priority) => (
+                  <DropdownMenuItem 
+                    key={priority} 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePriorityChange(useCase.id, priority);
+                    }}
+                  >
+                    {_priorities[priority as keyof typeof _priorities]?.label || priority}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isDeleting) {
+                handleDelete(useCase.id);
+              }
+            }}
+            disabled={isDeleting}
+            className={`p-1 rounded-md transition-colors ${
+              isDeleting 
+                ? 'text-muted-foreground cursor-not-allowed' 
+                : 'text-destructive hover:text-destructive/80 hover:bg-destructive/10'
+            }`}
+            title={isDeleting ? "Deleting..." : "Delete use case"}
+          >
+            {isDeleting ? (
+              <div className="w-3.5 h-3.5 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Trash2 className="w-4 h-4" />
+            )}
+          </button>
+        </div>
+        
+        {/* Description */}
+        <p className="text-[12px] text-muted-foreground line-clamp-2 leading-relaxed mb-2.5">
+          {stripHtmlTags(useCase.description)}
+        </p>
+        
+        
+        {/* Creator */}
+        <div className="flex items-center justify-start text-[11px] text-muted-foreground pt-1.5 border-t border-muted/30">
+          <div className="flex items-center gap-1">
             {useCase.creator.type === 'user' ? (
               <User className="w-3 h-3 flex-shrink-0" />
             ) : (
@@ -244,25 +268,38 @@ const Dashboard = () => {
   // Refs for scroll synchronization
   const scrollBarRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const isSyncingScrollRef = useRef(false);
+  const [contentScrollWidth, setContentScrollWidth] = useState<number | null>(null);
+  const boardWidth = (stages.length * 280) + ((stages.length - 1) * 12) + 1; // fallback if measurement not ready
+  const widthCompensationPx = 24; // small extra so scrollbars go a bit more
+  const effectiveWidth = (contentScrollWidth ?? boardWidth) + widthCompensationPx;
   
   // Scroll synchronization handlers
   const handleScrollBarScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (!contentRef.current) return;
-    if (isSyncingScrollRef.current) return;
-    isSyncingScrollRef.current = true;
-    contentRef.current.scrollLeft = e.currentTarget.scrollLeft;
-    // allow the browser to process scroll before unlocking
-    requestAnimationFrame(() => { isSyncingScrollRef.current = false; });
+    if (contentRef.current) {
+      contentRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
+  const handleContentScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (scrollBarRef.current) {
+      scrollBarRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    }
   };
 
-  const handleContentScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (!scrollBarRef.current) return;
-    if (isSyncingScrollRef.current) return;
-    isSyncingScrollRef.current = true;
-    scrollBarRef.current.scrollLeft = e.currentTarget.scrollLeft;
-    requestAnimationFrame(() => { isSyncingScrollRef.current = false; });
-  };
+  // Measure actual content width so the top scrollbar track matches exactly
+  useEffect(() => {
+    const updateWidths = () => {
+      if (contentRef.current) {
+        setContentScrollWidth(contentRef.current.scrollWidth);
+      }
+    };
+    updateWidths();
+    const id = window.setTimeout(updateWidths, 50);
+    window.addEventListener('resize', updateWidths);
+    return () => {
+      window.clearTimeout(id);
+      window.removeEventListener('resize', updateWidths);
+    };
+  }, []);
   
   const businessFunctions = [
     'Sales',
@@ -839,60 +876,56 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Search and Filter Section */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6 flex-shrink-0">
-          <div className="relative flex-1">
-            <Input
-              placeholder="Search use cases..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-standard"
-            />
-          </div>
-          <div className="flex gap-3 flex-wrap items-center justify-end">
-            <select
-              value={filterBy}
-              onChange={(e) => setFilterBy(e.target.value)}
-              className="select-standard"
-            >
-              <option value="all">All Priorities</option>
-              <option value="critical">Critical</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-            {(userData?.role === 'QZEN_ADMIN') && (
-            <select
-              value={selectedOrgId}
-              onChange={e => setSelectedOrgId(e.target.value)}
-              className="select-standard"
-              style={{ minWidth: 180 }}
-            >
-              <option value="">All Organizations</option>
-              {organizations.map(org => (
-                <option key={org.id} value={org.id}>{org.name}</option>
-              ))}
-            </select>
-            )}
-            <select
-              value={selectedBusinessFunction}
-              onChange={e => setSelectedBusinessFunction(e.target.value)}
-              className="select-standard"
-              style={{ minWidth: 180 }}
-            >
-              <option value="">All Business Functions</option>
-              {businessFunctions.map(func => (
-                <option key={func} value={func}>{func}</option>
-              ))}
-            </select>
-            <Button onClick={() => router.push('/new-usecase')} className="flex items-center gap-2 rounded-full shadow-sm bg-neutral-100 text-foreground border border-neutral-300 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-800">
-              <Plus className="w-4 h-4" />
-              New Use Case
-            </Button>
-            <Button onClick={refetch} variant="outline" className="flex items-center gap-2 bg-muted text-foreground border hover:bg-accent">
-              <RefreshCw className="w-4 h-4" />
-              Refresh
-            </Button>
+        {/* Compact Search and Filter Bar */}
+        <div className="flex-shrink-0 mb-3">
+          <div className="flex items-center gap-2 p-2 bg-muted/40 rounded-md border">
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search use cases..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8 py-1.5 h-8 bg-background text-sm"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <select
+                value={filterBy}
+                onChange={(e) => setFilterBy(e.target.value)}
+                className="px-2 py-1.5 h-8 text-xs border rounded-md bg-background"
+              >
+                <option value="all">All Priorities</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+              
+              {(userData?.role === 'QZEN_ADMIN') && (
+                <select
+                  value={selectedOrgId}
+                  onChange={e => setSelectedOrgId(e.target.value)}
+                  className="px-2 py-1.5 h-8 text-xs border rounded-md bg-background min-w-[130px]"
+                >
+                  <option value="">All Organizations</option>
+                  {organizations.map(org => (
+                    <option key={org.id} value={org.id}>{org.name}</option>
+                  ))}
+                </select>
+              )}
+              
+              <select
+                value={selectedBusinessFunction}
+                onChange={e => setSelectedBusinessFunction(e.target.value)}
+                className="px-2 py-1.5 h-8 text-xs border rounded-md bg-background min-w-[130px]"
+              >
+                <option value="">All Functions</option>
+                {businessFunctions.map(func => (
+                  <option key={func} value={func}>{func}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -939,47 +972,47 @@ const Dashboard = () => {
           </Alert>
         )}
 
-                 {/* Kanban board with drag and drop */}
-         <div className="relative flex-1 min-h-0 overflow-hidden">
-           {deletingUseCaseId && (
-             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-               <div className="flex flex-col items-center gap-3 p-6 bg-card rounded-lg shadow-lg border">
-                 <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                 <p className="text-sm font-medium text-foreground">Deleting use case...</p>
-               </div>
-             </div>
-           )}
-           <DndContext
-             sensors={sensors}
-             collisionDetection={customCollisionDetection}
-             onDragStart={handleDragStart}
-             onDragEnd={handleDragEnd}
-
-           >
-          <div className="relative w-full h-full flex flex-col">
-            {/* Scroll bar container - fixed at top */}
-            <div 
-              ref={scrollBarRef}
-              className="w-full overflow-x-auto flex-shrink-0"
-              onScroll={handleScrollBarScroll}
-            >
-              <div className="flex flex-row gap-6 px-2 pb-2" style={{ width: `${stages.length * 240 + (stages.length - 1) * 24 + 16}px` }}>
-                {/* Invisible spacer to match stage cards exactly */}
-                {stages.map((stage, idx) => (
-                  <div key={`spacer-${stage.id}`} className="w-60 h-0 flex-shrink-0"></div>
-                ))}
+        {/* Compact Kanban Board */}
+        <div className="relative min-h-[520px] bg-secondary/40 rounded-md border">
+          {deletingUseCaseId && (
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-3 p-6 bg-card rounded-lg shadow-lg border">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm font-medium text-foreground">Deleting use case...</p>
               </div>
             </div>
-            
-            {/* Content container - synchronized with scroll bar */}
+          )}
+          
+          {/* Top horizontal scrollbar synchronized with content */}
+          <div 
+            ref={scrollBarRef}
+            className="overflow-x-auto border-b bg-background/70 mb-4"
+            onScroll={handleScrollBarScroll}
+            style={{ width: '100%', scrollbarGutter: 'stable both-edges' }}
+          >
             <div 
-              ref={contentRef}
-              className="w-full flex-1 min-h-0 overflow-x-auto overflow-y-hidden scrollbar-hide"
-              onScroll={handleContentScroll}
-            >
-              <div className="flex flex-col gap-0 px-2 h-full" style={{ width: `${stages.length * 240 + (stages.length - 1) * 24 + 16}px` }}>
-                {/* Stage cards row */}
-                <div className="flex flex-row gap-6 pb-2 flex-shrink-0">
+              className="h-2 bg-transparent" 
+              style={{ 
+                width: `${effectiveWidth}px`,
+                minWidth: '120%'
+              }} 
+            />
+          </div>
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={customCollisionDetection}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="relative w-full">
+              <div 
+                ref={contentRef}
+                className="w-full h-full overflow-x-auto overflow-y-hidden"
+                onScroll={handleContentScroll}
+                style={{ scrollbarGutter: 'stable both-edges' }}
+              >
+                <div className="flex gap-3 h-full" style={{ width: `${effectiveWidth}px` }}>
                   {stages.map((stage, idx) => {
                     const stageUseCases = getUseCasesByStage(stage.id);
                     const columnWidth = 280;
@@ -1051,7 +1084,17 @@ const Dashboard = () => {
                       </div>
                       <div className="font-semibold text-sm text-foreground line-clamp-2 leading-tight">{useCase.title}</div>
                       <div className="text-xs text-foreground line-clamp-2 leading-relaxed">{stripHtmlTags(useCase.description)}</div>
-                      {/* Removed per request: score numbers in drag overlay */}
+                      <div className="flex items-center gap-3 mt-2">
+                        <div className="flex items-center gap-1 text-xs text-primary">
+                          <span>{useCase.scores.operational}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-primary">
+                          <span>{useCase.scores.productivity}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-success">
+                          <span>{useCase.scores.revenue}</span>
+                        </div>
+                      </div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
                         <span className="flex items-center gap-1">
                           {useCase.creator.type === 'user' ? (

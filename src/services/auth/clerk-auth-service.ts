@@ -45,14 +45,27 @@ async function buildContext(req: Request): Promise<AuthContext> {
 
   let authenticatedUser: AuthenticatedUser | null = null;
   if (user) {
+    // Get user from database to get the correct role
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId: user.id },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        organizationId: true,
+      },
+    });
+
     authenticatedUser = {
       id: user.id,
       email: user.emailAddresses?.[0]?.emailAddress ?? null,
       firstName: user.firstName ?? null,
       lastName: user.lastName ?? null,
       organizationId: orgId ?? null,
-      roles: normalizeRoles(user),
-      permissions: derivePermissionsFromRoles(normalizeRoles(user)),
+      roles: userRecord?.role ? [String(userRecord.role)] : normalizeRoles(user),
+      permissions: derivePermissionsFromRoles(userRecord?.role ? [String(userRecord.role)] : normalizeRoles(user)),
       claims: undefined,
       raw: process.env.NODE_ENV === "production" ? undefined : user,
     };
