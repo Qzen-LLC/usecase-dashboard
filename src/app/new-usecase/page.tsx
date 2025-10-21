@@ -402,6 +402,32 @@ const AIUseCaseToolContent = () => {
             type="date"
             value={formData.plannedStartDate}
             onChange={(e) => handleChange("plannedStartDate", e.target.value)}
+            min={`${new Date().getFullYear()}-01-01`}
+            max="9999-12-31"
+            onInput={(e) => {
+              const input = e.target as HTMLInputElement;
+              const value = input.value;
+              const currentYear = new Date().getFullYear();
+              
+              // Validate year is exactly 4 digits
+              if (value && value.length > 10) {
+                input.value = value.slice(0, 10);
+              }
+              
+              const yearMatch = value.match(/^(\d{1,4})-/);
+              if (yearMatch && yearMatch[1].length > 4) {
+                const validYear = yearMatch[1].slice(0, 4);
+                input.value = value.replace(/^\d+/, validYear);
+              }
+              
+              // Prevent unrealistic years (before current year or after 9999)
+              if (yearMatch && yearMatch[1].length === 4) {
+                const year = parseInt(yearMatch[1], 10);
+                if (year < currentYear || year > 9999) {
+                  input.value = '';
+                }
+              }
+            }}
             className={`${invalidFields.includes('plannedStartDate') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
           />
           <Label htmlFor="estimatedTimelineMonths" className="text-gray-900 dark:text-white">Estimated Timeline</Label>
