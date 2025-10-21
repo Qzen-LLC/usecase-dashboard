@@ -1058,14 +1058,14 @@ const Dashboard = () => {
 
         {/* Sheet Modal for Use Case Actions */}
         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-          <SheetContent side="right">
+          <SheetContent side="right" className="flex flex-col h-full">
             {modalUseCase && (
               <>
-                <SheetHeader>
+                <SheetHeader className="flex-shrink-0">
                   <SheetTitle>{modalUseCase.title}</SheetTitle>
                   <SheetDescription>{stripHtmlTags(modalUseCase.description)}</SheetDescription>
                 </SheetHeader>
-                <div className="flex flex-col gap-3 p-4">
+                <div className="flex-1 overflow-y-auto flex flex-col gap-3 p-4">
                   <div className="text-xs text-muted-foreground mb-3">ID: {formatAiucId(modalUseCase.aiucId, modalUseCase.id)}</div>
                   <div className="flex items-center gap-4 mb-3">
                     <div className="flex items-center gap-1 text-xs text-primary">{modalUseCase.scores.operational}</div>
@@ -1083,7 +1083,7 @@ const Dashboard = () => {
                   </div>
                   <div className="text-xs text-muted-foreground mb-3">Updated {modalUseCase.lastUpdated}</div>
                 </div>
-                <SheetFooter className="flex flex-wrap gap-2 justify-start sm:justify-end">
+                <SheetFooter className="flex-shrink-0 border-t pt-4 mt-auto flex flex-wrap gap-2 justify-start sm:justify-end">
                   <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                     <Button size="sm" variant="outline" className='text-dark' onClick={() => { handleView(modalUseCase.id); setIsSheetOpen(false); }}>
                       <Eye className="w-4 h-4 mr-2" /> View
@@ -1107,15 +1107,16 @@ const Dashboard = () => {
                         Next Stage
                       </Button>
                     )}
-                    {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER' || userData?.role === 'QZEN_ADMIN') && modalUseCase.stage !== 'discovery' && (
+                    {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER' || userData?.role === 'QZEN_ADMIN') && 
+                     (_STAGE_ORDER.indexOf(modalUseCase.stage) >= _STAGE_ORDER.indexOf('proof-of-value')) && (
                       <Button size="sm" className='text-dark' variant="outline" onClick={() => { handleAssess(modalUseCase.id); setIsSheetOpen(false); }}>
                         Assess
                       </Button>
                     )}
+                    <SheetClose asChild>
+                      <Button size="sm" variant="secondary">Close</Button>
+                    </SheetClose>
                   </div>
-                  <SheetClose asChild>
-                    <Button size="sm" variant="secondary">Close</Button>
-                  </SheetClose>
                 </SheetFooter>
               </>
             )}
