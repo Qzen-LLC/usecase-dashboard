@@ -200,14 +200,32 @@ export default function AssessmentPage() {
   // Memoized function to scroll to current step in navigation
   const scrollToCurrentStep = useMemo(() => {
     return () => {
+      // Scroll page to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // Scroll navigation header to show current step
       if (navigationRef.current) {
         const currentStepElement = navigationRef.current.querySelector(`[data-step="${currentStep}"]`);
         if (currentStepElement) {
+          // Use scrollIntoView for the step button
           currentStepElement.scrollIntoView({
             behavior: 'smooth',
-            block: 'center',
+            block: 'nearest',
             inline: 'center'
           });
+          
+          // Additional fallback: manually scroll the navigation container
+          const navContainer = navigationRef.current;
+          const stepButton = currentStepElement.querySelector('button');
+          if (stepButton && navContainer) {
+            const containerRect = navContainer.getBoundingClientRect();
+            const buttonRect = stepButton.getBoundingClientRect();
+            const scrollLeft = buttonRect.left - containerRect.left + navContainer.scrollLeft - (containerRect.width / 2) + (buttonRect.width / 2);
+            navContainer.scrollTo({
+              left: scrollLeft,
+              behavior: 'smooth'
+            });
+          }
         }
       }
     };
@@ -226,6 +244,14 @@ export default function AssessmentPage() {
       }
     }
   }, [stepParam, scrollToCurrentStep]);
+
+  // Auto-scroll navigation header when current step changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollToCurrentStep();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [currentStep, scrollToCurrentStep]);
 
   // Memoize assessment steps to prevent unnecessary re-renders
   const assessmentSteps = useMemo(() => [
@@ -875,7 +901,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
 
 
       {/* Assessment Steps Navigation */}
-      <div ref={navigationRef} className="px-8 py-4 border-b border-border bg-muted overflow-x-auto">
+      <div ref={navigationRef} className="px-8 py-4 border-b border-border bg-muted overflow-x-auto scroll-smooth">
         <div className="flex items-center space-x-4">
           {assessmentSteps.map((step, idx) => (
             <div key={step.id} className="flex items-center" data-step={step.id}>

@@ -147,10 +147,27 @@ const AIUseCaseToolContent = () => {
   const [showError, setShowError] = useState(false);
   const [_saving, setSaving] = useState(false);
   const router = useRouter();
+  const topRef = React.useRef<HTMLDivElement>(null);
 
   const params = useParams();
   const searchParams = useSearchParams();
   const completeForBusinessCase = searchParams.get('completeForBusinessCase') === '1';
+
+  // Scroll to top whenever step changes
+  useEffect(() => {
+    // Scroll using multiple methods to ensure compatibility
+    if (topRef.current) {
+      topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Fallback for older browsers
+    try {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    } catch (e) {
+      // Ignore errors
+    }
+  }, [currentStep]);
 
   useEffect(() => {
     const fetchAndFill = async () => {
@@ -625,7 +642,7 @@ const AIUseCaseToolContent = () => {
 
   return (
     <div className="min-h-screen flex justify-center items-start bg-gray-50 dark:bg-gray-900 p-0 sm:p-4">
-      <div className="w-full max-w-4xl bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden border-0 sm:border sm:mt-6 sm:mb-6 sm:mx-0 mx-0">
+      <div ref={topRef} className="w-full max-w-4xl bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden border-0 sm:border sm:mt-6 sm:mb-6 sm:mx-0 mx-0">
         <div className="bg-gray-100 dark:bg-gray-700 px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
             {steps.map((step, index) => (
