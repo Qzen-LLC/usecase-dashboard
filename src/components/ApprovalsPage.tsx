@@ -920,7 +920,7 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
   useEffect(() => {
     if (!useCaseId) 
       return;
-    fetch(`/api/get-finops?id=${useCaseId}`)
+    fetch(`/api/get-finops?id=${useCaseId}&_t=${Date.now()}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) setFinops(data[0]);

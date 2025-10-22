@@ -94,7 +94,7 @@ const FinancialDashboard = () => {
   useEffect(() => {
     if (!useCaseId) return;
     setLoading(true);
-    fetch(`/api/get-finops?id=${useCaseId}`)
+    fetch(`/api/get-finops?id=${useCaseId}&_t=${Date.now()}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
@@ -863,10 +863,10 @@ const FinancialDashboard = () => {
       });
       if (!res.ok) throw new Error('Save failed');
 
-      // Refresh data from database after saving to ensure consistency
-      try {
-        const refreshRes = await fetch(`/api/get-finops?id=${useCaseId}`);
-        const data = await refreshRes.json();
+       // Refresh data from database after saving to ensure consistency
+       try {
+         const refreshRes = await fetch(`/api/get-finops?id=${useCaseId}&_t=${Date.now()}`);
+         const data = await refreshRes.json();
         if (Array.isArray(data) && data.length > 0) {
           const d = data[0];
           if (d) {

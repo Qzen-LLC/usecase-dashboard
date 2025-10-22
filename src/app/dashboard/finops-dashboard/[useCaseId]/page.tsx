@@ -90,7 +90,7 @@ export default function FinancialDashboard() {
       .catch(console.error);
 
     // Fetch finops data
-    fetch(`/api/get-finops?id=${useCaseId}`)
+    fetch(`/api/get-finops?id=${useCaseId}&_t=${Date.now()}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {

@@ -130,7 +130,7 @@ const ViewUseCasePage = () => {
       })
       .catch(() => {});
     // Financial data
-    fetch(`/api/get-finops?id=${useCaseId}`)
+    fetch(`/api/get-finops?id=${useCaseId}&_t=${Date.now()}`)
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         console.log('🔍 [DEBUG] Finops API Response:', data);
