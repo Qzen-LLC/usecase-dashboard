@@ -93,12 +93,12 @@ export default function FinancialDashboard() {
         if (Array.isArray(data) && data.length > 0) {
           const d = data[0];
           if (d) {
-            setInitialDevCost(d.devCostBase ?? 150000);
-            setBaseApiCost(d.apiCostBase ?? 8000);
-            setBaseInfraCost(d.infraCostBase ?? 2000);
-            setBaseOpCost(d.opCostBase ?? 5000);
-            setBaseMonthlyValue(d.valueBase ?? 25000);
-            setValueGrowthRate(d.valueGrowthRate ?? 0.15);
+            setInitialDevCost(d.devCostBase ?? 0);
+            setBaseApiCost(d.apiCostBase ?? 0);
+            setBaseInfraCost(d.infraCostBase ?? 0);
+            setBaseOpCost(d.opCostBase ?? 0);
+            setBaseMonthlyValue(d.valueBase ?? 0);
+            setValueGrowthRate(d.valueGrowthRate ?? 0);
           }
         }
         setLoading(false);
@@ -510,6 +510,17 @@ export default function FinancialDashboard() {
     },
   } as const;
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+          <p className="mt-4 text-lg font-medium text-gray-600 dark:text-gray-300">Loading financial data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col items-center py-8">
       <div className="w-full max-w-7xl bg-card rounded-2xl shadow-2xl border border-border mt-6 mb-6 p-0 relative">
@@ -578,7 +589,6 @@ export default function FinancialDashboard() {
         {/* Main Content */}
         <div className="p-8">
           {error && <div className="text-danger-500 mb-2">{error}</div>}
-          {loading && <div className="text-primary mb-4">Loading saved data...</div>}
           <Card className="mb-8 p-6 bg-card border border-border shadow-md rounded-xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
