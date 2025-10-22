@@ -38,6 +38,8 @@ interface UseCase {
   aiucId: number;
   stage: string; // Added stage to the interface
   organizationId?: string; // Add organizationId to determine which API to use
+  problemStatement?: string; // Problem statement for approvals page
+  proposedAISolution?: string; // Proposed AI solution for approvals page
 }
 
 // Add interfaces for the question data
@@ -1083,7 +1085,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
             </div>
           ) : currentStep === 9 ? (
             <div className={isReadOnly ? 'readonly-mode' : ''}>
-              <ApprovalsPage ref={approvalsPageRef} />
+              <ApprovalsPage ref={approvalsPageRef} useCase={useCase} />
             </div>
           ) : currentStep === 10 ? (
             <div className={isReadOnly ? 'readonly-mode' : ''}>
