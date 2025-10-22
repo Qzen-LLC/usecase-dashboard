@@ -53,14 +53,62 @@ import {
 } from '@dnd-kit/core';
 
 const stages = [
-  { id: 'discovery', title: 'Discovery', color: 'bg-card', textColor: 'text-foreground' },
-  { id: 'business-case', title: 'Business Case', color: 'bg-card', textColor: 'text-foreground' },
-  { id: 'proof-of-value', title: 'Proof of Value', color: 'bg-card', textColor: 'text-foreground' },
-  { id: 'backlog', title: 'Backlog', color: 'bg-card', textColor: 'text-foreground' },
-  { id: 'in-progress', title: 'In Progress', color: 'bg-card', textColor: 'text-foreground' },
-  { id: 'solution-validation', title: 'Solution Validation', color: 'bg-card', textColor: 'text-foreground' },
-  { id: 'pilot', title: 'Pilot', color: 'bg-card', textColor: 'text-foreground' },
-  { id: 'deployment', title: 'Deployment', color: 'bg-card', textColor: 'text-foreground' }
+  { 
+    id: 'discovery', 
+    title: 'Discovery', 
+    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
+    textColor: 'text-white dark:text-gray-300', 
+    accentColor: 'bg-gray-500' 
+  },
+  { 
+    id: 'business-case', 
+    title: 'Business Case', 
+    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
+    textColor: 'text-white dark:text-gray-300', 
+    accentColor: 'bg-gray-500' 
+  },
+  { 
+    id: 'proof-of-value', 
+    title: 'Proof of Value', 
+    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
+    textColor: 'text-white dark:text-gray-300', 
+    accentColor: 'bg-gray-500' 
+  },
+  { 
+    id: 'backlog', 
+    title: 'Backlog', 
+    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
+    textColor: 'text-white dark:text-gray-300', 
+    accentColor: 'bg-gray-500' 
+  },
+  { 
+    id: 'in-progress', 
+    title: 'In Progress', 
+    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
+    textColor: 'text-white dark:text-gray-300', 
+    accentColor: 'bg-gray-500' 
+  },
+  { 
+    id: 'solution-validation', 
+    title: 'Solution Validation', 
+    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
+    textColor: 'text-white dark:text-gray-300', 
+    accentColor: 'bg-gray-500' 
+  },
+  { 
+    id: 'pilot', 
+    title: 'Pilot', 
+    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
+    textColor: 'text-white dark:text-gray-300', 
+    accentColor: 'bg-gray-500' 
+  },
+  { 
+    id: 'deployment', 
+    title: 'Deployment', 
+    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
+    textColor: 'text-white dark:text-gray-300', 
+    accentColor: 'bg-gray-500' 
+  }
 ] as const;
 
 const _STAGE_ORDER = [
@@ -75,10 +123,10 @@ const _STAGE_ORDER = [
 ];
 
 const _priorities = {
-  CRITICAL: { color: 'bg-destructive/10 text-destructive border-destructive/20', label: 'Critical' },
-  HIGH: { color: 'bg-warning/10 text-warning border-warning/20', label: 'High' },
-  MEDIUM: { color: 'bg-warning/10 text-warning border-warning/20', label: 'Medium' },
-  LOW: { color: 'bg-success/10 text-success border-success/20', label: 'Low' }
+  CRITICAL: { color: 'bg-red-500 text-white border-red-500', label: 'Critical' },
+  HIGH: { color: 'bg-orange-500 text-white border-orange-500', label: 'High' },
+  MEDIUM: { color: 'bg-yellow-500 text-black border-yellow-500', label: 'Medium' },
+  LOW: { color: 'bg-green-500 text-white border-green-500', label: 'Low' }
 } as const;
 
 const getNextStage = (currentStage: string) => {
@@ -112,30 +160,37 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // Get stage styling
+  const currentStage = stages.find(stage => stage.id === useCase.stage);
+  const stageColor = currentStage?.color || 'bg-card';
+  const stageAccentColor = currentStage?.accentColor || 'bg-primary';
+
   return (
     <Card 
       ref={setNodeRef}
       style={style}
-      className={`bg-background border transition-all hover:shadow-sm hover:border-muted-foreground/20 ${
-        isDragging ? 'shadow-lg scale-105 z-50 border-primary' : ''
+      className={`${stageColor} border-2 transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer relative overflow-hidden ${
+        isDragging ? 'shadow-xl scale-105 z-50 border-primary' : ''
       }`}
       onClick={onClick}
     >
-      <div className="p-3">
+      {/* Stage indicator bar */}
+      <div className={`absolute top-0 left-0 right-0 h-1 ${stageAccentColor}`} />
+      <div className="p-3 pt-4">
         {/* Drag Handle */}
         <div 
           {...attributes}
           {...listeners}
-          className="cursor-grab active:cursor-grabbing mb-1.5 flex items-start justify-between group"
+          className="cursor-grab active:cursor-grabbing mb-3 flex items-start justify-between group"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-start gap-2 flex-1">
             <GripVertical className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground mt-1 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <div className="text-[11px] font-mono text-muted-foreground mb-0.5">
+              <div className="text-xs font-mono text-muted-foreground mb-1 bg-gray-100 dark:bg-black/20 px-2 py-1 rounded-md inline-block">
                 {formatAiucId(useCase.aiucId, useCase.id)}
               </div>
-              <h3 className="font-medium text-[13px] text-foreground line-clamp-2 leading-tight mb-1.5">
+              <h3 className="font-semibold text-sm text-foreground line-clamp-2 leading-tight mb-2">
                 {useCase.title}
               </h3>
             </div>
@@ -143,12 +198,12 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
         </div>
         
         {/* Actions */}
-        <div className="flex items-center justify-end gap-1.5 mb-1.5">
+        <div className="flex items-center justify-between gap-2 mb-3">
           {useCase.priority && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <span 
-                  className={`text-[11px] px-2 py-0.5 rounded-md font-medium cursor-pointer ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-muted'}`}
+                  className={`text-xs px-3 py-1.5 rounded-full font-semibold cursor-pointer shadow-sm ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-muted'}`}
                   onClick={(e) => e.stopPropagation()}
                 >
                   {_priorities[useCase.priority as keyof typeof _priorities]?.label || useCase.priority}
@@ -178,7 +233,7 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
               }
             }}
             disabled={isDeleting}
-            className={`p-1 rounded-md transition-colors ${
+            className={`p-1.5 rounded-md transition-colors ${
               isDeleting 
                 ? 'text-muted-foreground cursor-not-allowed' 
                 : 'text-destructive hover:text-destructive/80 hover:bg-destructive/10'
@@ -194,22 +249,21 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
         </div>
         
         {/* Description */}
-        <p className="text-[12px] text-muted-foreground line-clamp-2 leading-relaxed mb-2.5">
+        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-3 bg-gray-50 dark:bg-black/10 p-2 rounded-md">
           {stripHtmlTags(useCase.description)}
         </p>
         
-        
-        {/* Creator */}
-        <div className="flex items-center justify-start text-[11px] text-muted-foreground pt-1.5 border-t border-muted/30">
-          <div className="flex items-center gap-1">
+        {/* Creator and Date */}
+        <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-gray-200 dark:border-white/10">
+          <div className="flex items-center gap-1.5">
             {useCase.creator.type === 'user' ? (
               <User className="w-3 h-3 flex-shrink-0" />
             ) : (
               <Building2 className="w-3 h-3 flex-shrink-0" />
             )}
-            <span className="truncate">{useCase.creator.name}</span>
+            <span className="truncate font-medium">{useCase.creator.name}</span>
           </div>
-          <div className="ml-auto text-xs text-muted-foreground/70">
+          <div className="text-xs text-muted-foreground/70 font-mono">
             {useCase.lastUpdated}
           </div>
         </div>
@@ -269,8 +323,8 @@ const Dashboard = () => {
   const scrollBarRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [contentScrollWidth, setContentScrollWidth] = useState<number | null>(null);
-  const boardWidth = (stages.length * 280) + ((stages.length - 1) * 12) + 1; // fallback if measurement not ready
-  const widthCompensationPx = 24; // small extra so scrollbars go a bit more
+  const boardWidth = (stages.length * 260) + ((stages.length - 1) * 12) + 1; // fallback if measurement not ready
+  const widthCompensationPx = 30; // slightly more to fully cover deployment column
   const effectiveWidth = (contentScrollWidth ?? boardWidth) + widthCompensationPx;
   
   // Scroll synchronization handlers
@@ -350,10 +404,10 @@ const Dashboard = () => {
   // Check if user is authenticated
   if (!isLoaded) {
     return (
-      <div className="loading-container">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
-          <div className="loading-spinner" />
-          <p className="loading-text">Initializing...</p>
+          <div className="loading-spinner mx-auto mb-4" />
+          <p className="text-muted-foreground">Initializing...</p>
         </div>
       </div>
     );
@@ -361,7 +415,7 @@ const Dashboard = () => {
 
   if (!isSignedIn) {
     return (
-      <div className="loading-container">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
           <p className="text-muted-foreground">Please sign in to access the dashboard.</p>
         </div>
@@ -807,14 +861,14 @@ const Dashboard = () => {
 
   if (userError) {
     return (
-      <div className="error-container">
-        <div className="error-card">
-          <AlertTriangle className="error-icon" />
-          <h2 className="error-title">Unable to Load User Data</h2>
-          <p className="error-message">{userError}</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
+          <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-foreground mb-2">Unable to Load User Data</h2>
+          <p className="text-muted-foreground mb-6">{userError}</p>
           <button 
             onClick={() => refetchUser()}
-            className="btn-primary"
+            className="btn btn-primary px-6 py-2"
           >
             Try Again
           </button>
@@ -825,14 +879,14 @@ const Dashboard = () => {
 
   if (error) {
     return (
-      <div className="error-container">
-        <div className="error-card">
-          <AlertTriangle className="error-icon" />
-          <h2 className="error-title">Unable to Load Dashboard</h2>
-          <p className="error-message">{error.message}</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
+          <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-foreground mb-2">Unable to Load Dashboard</h2>
+          <p className="text-muted-foreground mb-6">{error.message}</p>
           <button 
             onClick={() => refetch()}
-            className="btn-primary"
+            className="btn btn-primary px-6 py-2"
           >
             Try Again
           </button>
@@ -843,10 +897,10 @@ const Dashboard = () => {
 
   if (isLoading || userLoading) {
     return (
-      <div className="loading-container">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
-          <div className="loading-spinner" />
-          <p className="loading-text">
+          <div className="loading-spinner mx-auto mb-4" />
+          <p className="text-muted-foreground">
             {isLoading ? 'Loading use cases...' : 'Loading user data...'}
           </p>
         </div>
@@ -858,14 +912,16 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <ClerkInvitationHandler />
       <div className="h-full p-3 flex flex-col min-h-0 max-w-6xl mx-auto">
-        {/* Compact Header */}
-        <div className="flex-shrink-0 mb-3">
+        {/* Clean Header */}
+        <div className="flex-shrink-0 mb-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4" />
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-semibold text-foreground tracking-tight"></h1>
+            </div>
             
-            {/* Quick Actions (compact) */}
+            {/* Quick Actions */}
             <div className="flex items-center gap-2">
-              <Button onClick={() => router.push('/new-usecase')} size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Button onClick={() => router.push('/new-usecase')} size="sm">
                 <Plus className="w-4 h-4 mr-2" />
                 New Use Case
               </Button>
@@ -876,16 +932,16 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Compact Search and Filter Bar */}
-        <div className="flex-shrink-0 mb-3">
-          <div className="flex items-center gap-2 p-2 bg-muted/40 rounded-md border">
+        {/* Clean Search and Filter Bar */}
+        <div className="flex-shrink-0 mb-4">
+          <div className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg">
             <div className="relative flex-1">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search use cases..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 py-1.5 h-8 bg-background text-sm"
+                className="pl-10 h-10 bg-background"
               />
             </div>
             
@@ -893,7 +949,7 @@ const Dashboard = () => {
               <select
                 value={filterBy}
                 onChange={(e) => setFilterBy(e.target.value)}
-                className="px-2 py-1.5 h-8 text-xs border rounded-md bg-background"
+                className="h-10 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
                 <option value="all">All Priorities</option>
                 <option value="critical">Critical</option>
@@ -906,7 +962,7 @@ const Dashboard = () => {
                 <select
                   value={selectedOrgId}
                   onChange={e => setSelectedOrgId(e.target.value)}
-                  className="px-2 py-1.5 h-8 text-xs border rounded-md bg-background min-w-[130px]"
+                  className="h-10 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors min-w-[130px]"
                 >
                   <option value="">All Organizations</option>
                   {organizations.map(org => (
@@ -918,7 +974,7 @@ const Dashboard = () => {
               <select
                 value={selectedBusinessFunction}
                 onChange={e => setSelectedBusinessFunction(e.target.value)}
-                className="px-2 py-1.5 h-8 text-xs border rounded-md bg-background min-w-[130px]"
+                className="h-10 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors min-w-[130px]"
               >
                 <option value="">All Functions</option>
                 {businessFunctions.map(func => (
@@ -972,12 +1028,12 @@ const Dashboard = () => {
           </Alert>
         )}
 
-        {/* Compact Kanban Board */}
-        <div className="relative min-h-[520px] bg-secondary/40 rounded-md border">
+        {/* Clean Kanban Board */}
+        <div className="relative min-h-[520px] bg-card rounded-lg border border-border">
           {deletingUseCaseId && (
             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
               <div className="flex flex-col items-center gap-3 p-6 bg-card rounded-lg shadow-lg border">
-                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                <div className="loading-spinner" />
                 <p className="text-sm font-medium text-foreground">Deleting use case...</p>
               </div>
             </div>
@@ -993,8 +1049,7 @@ const Dashboard = () => {
             <div 
               className="h-2 bg-transparent" 
               style={{ 
-                width: `${effectiveWidth}px`,
-                minWidth: '120%'
+                width: `${effectiveWidth}px`
               }} 
             />
           </div>
@@ -1012,34 +1067,36 @@ const Dashboard = () => {
                 onScroll={handleContentScroll}
                 style={{ scrollbarGutter: 'stable both-edges' }}
               >
-                <div className="flex gap-3 h-full" style={{ width: `${effectiveWidth}px` }}>
+                <div className="flex gap-4 h-full" style={{ width: `${effectiveWidth}px` }}>
                   {stages.map((stage, idx) => {
                     const stageUseCases = getUseCasesByStage(stage.id);
-                    const columnWidth = 280;
+                    const columnWidth = 260;
                     
                     return (
                       <div key={`column-${stage.id}`} className="flex-shrink-0" style={{ width: columnWidth }}>
                         <DroppableStageColumn stage={stage} stageUseCases={stageUseCases}>
                           {/* Stage Header */}
-                          <div className="mb-2">
-                            <div className="border bg-background rounded-md p-2.5 group hover:bg-muted/50 transition-colors">
+                          <div className="mb-3">
+                            <div className={`${stage.color} border-2 ${stage.accentColor} rounded-lg p-3 shadow-sm`}>
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <div className="font-semibold text-[13px] text-foreground">{stage.title}</div>
-                                  <div className="text-[11px] text-muted-foreground mt-0.5">
+                                  <div className={`font-semibold text-sm ${stage.textColor}`}>{stage.title}</div>
+                                  <div className="text-xs text-muted-foreground mt-1">
                                     {stageUseCases.length} {stageUseCases.length === 1 ? 'item' : 'items'}
                                   </div>
                                 </div>
-                                <div className="text-base font-bold text-primary">{stageUseCases.length}</div>
+                                <div className={`text-lg font-bold text-gray-900 dark:text-gray-300 bg-white/80 dark:bg-black/20 px-2 py-1 rounded-full`}>
+                                  {stageUseCases.length}
+                                </div>
                               </div>
                             </div>
                           </div>
                           
                           {/* Use Cases */}
-                          <div className="space-y-2 min-h-[180px]">
+                          <div className="space-y-2 min-h-[200px]">
                             <SortableContext id={stage.id} items={stageUseCases.map(uc => uc.id)} strategy={verticalListSortingStrategy}>
                               {stageUseCases.length === 0 ? (
-                                <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-6 text-center">
+                                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
                                   <div className="text-sm text-muted-foreground">No items in this stage</div>
                                 </div>
                               ) : stageUseCases.map((useCase) => (
@@ -1071,19 +1128,24 @@ const Dashboard = () => {
               (() => {
                 const useCase = filteredUseCases.find(uc => uc.id === activeId);
                 if (!useCase) return null;
+                const currentStage = stages.find(stage => stage.id === useCase.stage);
+                const stageColor = currentStage?.color || 'bg-card';
+                const stageAccentColor = currentStage?.accentColor || 'bg-primary';
+                
                 return (
-                  <Card className="card-interactive p-3 w-60 shadow-xl">
-                    <div className="flex flex-col gap-2">
+                  <Card className={`${stageColor} border-2 ${stageAccentColor} p-3 w-60 shadow-2xl scale-105`}>
+                    <div className={`absolute top-0 left-0 right-0 h-1 ${stageAccentColor}`} />
+                    <div className="flex flex-col gap-2 pt-1">
                       <div className="flex items-center justify-between">
-                        <div className="font-bold text-xs text-muted-foreground">{formatAiucId(useCase.aiucId, useCase.id)}</div>
+                        <div className="font-bold text-xs text-muted-foreground bg-gray-100 dark:bg-black/20 px-2 py-1 rounded-md">{formatAiucId(useCase.aiucId, useCase.id)}</div>
                         {useCase.priority && (
-                          <span className={`text-xs px-2 py-1 rounded-full font-semibold ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-muted'}`}>
+                          <span className={`text-xs px-3 py-1.5 rounded-full font-semibold shadow-sm ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-muted'}`}>
                             {_priorities[useCase.priority as keyof typeof _priorities]?.label || useCase.priority}
                           </span>
                         )}
                       </div>
                       <div className="font-semibold text-sm text-foreground line-clamp-2 leading-tight">{useCase.title}</div>
-                      <div className="text-xs text-foreground line-clamp-2 leading-relaxed">{stripHtmlTags(useCase.description)}</div>
+                      <div className="text-xs text-foreground line-clamp-2 leading-relaxed bg-gray-50 dark:bg-black/10 p-2 rounded-md">{stripHtmlTags(useCase.description)}</div>
                       <div className="flex items-center gap-3 mt-2">
                         <div className="flex items-center gap-1 text-xs text-primary">
                           <span>{useCase.scores.operational}</span>
@@ -1095,15 +1157,18 @@ const Dashboard = () => {
                           <span>{useCase.scores.revenue}</span>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
-                        <span className="flex items-center gap-1">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mt-2 pt-2 border-t border-gray-200 dark:border-white/10">
+                        <span className="flex items-center gap-1.5">
                           {useCase.creator.type === 'user' ? (
                             <User className="w-3 h-3 flex-shrink-0" />
                           ) : (
                             <Building2 className="w-3 h-3 flex-shrink-0" />
                           )}
-                          <span className="truncate">{useCase.creator.name}</span>
+                          <span className="truncate font-medium">{useCase.creator.name}</span>
                         </span>
+                        <div className="text-xs text-muted-foreground/70 font-mono">
+                          {useCase.lastUpdated}
+                        </div>
                       </div>
                     </div>
                   </Card>
@@ -1116,14 +1181,14 @@ const Dashboard = () => {
 
         {/* Sheet Modal for Use Case Actions */}
         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-          <SheetContent side="right">
+          <SheetContent side="right" className="flex flex-col h-full">
             {modalUseCase && (
               <>
-                <SheetHeader>
+                <SheetHeader className="flex-shrink-0">
                   <SheetTitle>{modalUseCase.title}</SheetTitle>
                   <SheetDescription>{stripHtmlTags(modalUseCase.description)}</SheetDescription>
                 </SheetHeader>
-                <div className="flex flex-col gap-3 p-4">
+                <div className="flex-1 overflow-y-auto flex flex-col gap-3 p-4">
                   <div className="text-xs text-muted-foreground mb-3">ID: {formatAiucId(modalUseCase.aiucId, modalUseCase.id)}</div>
                   <div className="flex items-center gap-4 mb-3">
                     <div className="flex items-center gap-1 text-xs text-primary">{modalUseCase.scores.operational}</div>
@@ -1141,7 +1206,7 @@ const Dashboard = () => {
                   </div>
                   <div className="text-xs text-muted-foreground mb-3">Updated {modalUseCase.lastUpdated}</div>
                 </div>
-                <SheetFooter className="flex flex-wrap gap-2 justify-start sm:justify-end">
+                <SheetFooter className="flex-shrink-0 border-t pt-4 mt-auto flex flex-wrap gap-2 justify-start sm:justify-end">
                   <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                     <Button size="sm" variant="outline" onClick={() => { handleView(modalUseCase.id); setIsSheetOpen(false); }}>
                       <Eye className="w-4 h-4 mr-2" /> View
@@ -1170,10 +1235,10 @@ const Dashboard = () => {
                         Assess
                       </Button>
                     )}
+                    <SheetClose asChild>
+                      <Button size="sm" variant="secondary">Close</Button>
+                    </SheetClose>
                   </div>
-                  <SheetClose asChild>
-                    <Button size="sm" variant="secondary">Close</Button>
-                  </SheetClose>
                 </SheetFooter>
               </>
             )}

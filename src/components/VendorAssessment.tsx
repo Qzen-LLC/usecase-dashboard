@@ -159,6 +159,13 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
     if (error) {
       setError(error instanceof Error ? error.message : String(error));
     }
+    
+    // Debug: Log vendor data to see if approval data is included
+    console.log('[VendorAssessment] Loaded vendors:', data);
+    if (data && data.length > 0) {
+      console.log('[VendorAssessment] First vendor approval data:', data[0].approvals);
+    }
+    
     setVendors(data || []);
     setLoading(false);
   };
@@ -203,9 +210,26 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
 
     try {
       let result: { data: Vendor | null; error: string | null };
-      if (currentVendor.id && typeof currentVendor.id === 'string' && currentVendor.id.includes('-')) {
+      
+      // Check if this is an existing vendor by looking for UUID format or if it exists in our vendors list
+      const isExistingVendor = currentVendor.id && (
+        currentVendor.id.includes('-') || // UUID format
+        vendors.some(v => v.id === currentVendor.id) // Exists in our loaded vendors
+      );
+      
+      console.log('[VendorAssessment] Saving vendor:', {
+        id: currentVendor.id,
+        name: currentVendor.name,
+        isExistingVendor,
+        hasHyphen: currentVendor.id?.includes('-'),
+        existsInVendors: vendors.some(v => v.id === currentVendor.id)
+      });
+      
+      if (isExistingVendor) {
+        console.log('[VendorAssessment] Updating existing vendor');
         result = await vendorService.updateVendor(currentVendor.id, currentVendor);
       } else {
+        console.log('[VendorAssessment] Creating new vendor');
         result = await vendorService.createVendor(currentVendor);
         if (result.data) {
           setCurrentVendor(prev => prev ? ({ ...prev, id: result.data!.id }) : null);
@@ -259,16 +283,16 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
   const saveApprovalAreas = async () => {
     if (!currentVendor?.id) return;
 
-    const approvals = currentVendor.approvals || {};
+    // Update the vendor with the current approval data
+    const { error } = await vendorService.updateVendor(currentVendor.id.toString(), {
+      approvals: currentVendor.approvals
+    });
 
-    for (const [area, approval] of Object.entries(approvals)) {
-      await vendorService.updateApprovalArea(
-        currentVendor.id.toString(),
-        area,
-        approval.status,
-        approval.approvedBy || undefined,
-        approval.comments || undefined
-      );
+    if (error) {
+      console.error('Error saving approval areas:', error);
+      setError('Failed to save approval areas');
+    } else {
+      console.log('Approval areas saved successfully');
     }
   };
 
@@ -536,6 +560,9 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
         <div className="mt-8 space-y-6">
           <h3 className="text-xl font-semibold text-foreground border-b border-border pb-2">Approval Workflow</h3>
           
+          {/* Debug: Log current vendor approval data */}
+          {console.log('[VendorAssessment] Rendering approval workflow for vendor:', currentVendor?.id, 'Approvals:', currentVendor?.approvals)}
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {Object.entries(currentVendor.approvals).map(([area, approval]) => (
               <div key={area} className="bg-muted rounded-lg p-4">
@@ -717,6 +744,8 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
                   <div className="flex gap-3">
                     <button
                       onClick={() => {
+                        console.log('[VendorAssessment] Setting current vendor for view:', vendor);
+                        console.log('[VendorAssessment] Vendor approval data:', vendor.approvals);
                         setCurrentVendor(vendor);
                         setViewMode('form');
                         setIsEditing(false);
@@ -729,6 +758,8 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
                     </button>
                     <button
                       onClick={() => {
+                        console.log('[VendorAssessment] Setting current vendor for edit:', vendor);
+                        console.log('[VendorAssessment] Vendor approval data:', vendor.approvals);
                         setCurrentVendor(vendor);
                         setViewMode('form');
                         setIsEditing(true);

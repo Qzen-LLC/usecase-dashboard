@@ -65,6 +65,12 @@ export const GET = withAuth(async (request, { auth }) => {
               text: true,
               type: true,
             }
+          },
+          questionTemplate: {
+            select: {
+              text: true,
+              type: true,
+            }
           }
         }
       }
@@ -108,6 +114,12 @@ export const GET = withAuth(async (request, { auth }) => {
                       text: true,
                       type: true,
                     }
+                  },
+                  questionTemplate: {
+                    select: {
+                      text: true,
+                      type: true,
+                    }
                   }
                 }
               }
@@ -127,6 +139,12 @@ export const GET = withAuth(async (request, { auth }) => {
                       text: true,
                       type: true,
                     }
+                  },
+                  questionTemplate: {
+                    select: {
+                      text: true,
+                      type: true,
+                    }
                   }
                 }
               }
@@ -142,6 +160,12 @@ export const GET = withAuth(async (request, { auth }) => {
               answers: {
                 include: {
                   question: {
+                    select: {
+                      text: true,
+                      type: true,
+                    }
+                  },
+                  questionTemplate: {
                     select: {
                       text: true,
                       type: true,
@@ -171,8 +195,13 @@ export const GET = withAuth(async (request, { auth }) => {
         // Extract regulatory frameworks and standards from answers (dynamic questions)
         if (useCase.answers && Array.isArray(useCase.answers)) {
           useCase.answers.forEach((answer: any) => {
-            if (answer.question) {
-              const questionText = answer.question.text;
+            // Get question text from either question or questionTemplate
+            const questionSource = answer.question || answer.questionTemplate;
+            const sourceType = answer.question ? 'Question' : answer.questionTemplate ? 'QuestionTemplate' : 'Unknown';
+            
+            if (questionSource) {
+              console.log(`[Governance] AIUC-${useCase.aiucId} - Processing answer from ${sourceType}:`, questionSource.text);
+              const questionText = questionSource.text;
               
               // Check for AI-Specific Regulations question
               if (questionText === 'AI-Specific Regulations' && answer.value) {

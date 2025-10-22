@@ -37,6 +37,9 @@ interface UseCase {
   owner: string;
   aiucId: number;
   stage: string; // Added stage to the interface
+  organizationId?: string; // Add organizationId to determine which API to use
+  problemStatement?: string; // Problem statement for approvals page
+  proposedAISolution?: string; // Proposed AI solution for approvals page
 }
 
 // Add interfaces for the question data
@@ -200,14 +203,32 @@ export default function AssessmentPage() {
   // Memoized function to scroll to current step in navigation
   const scrollToCurrentStep = useMemo(() => {
     return () => {
+      // Scroll page to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // Scroll navigation header to show current step
       if (navigationRef.current) {
         const currentStepElement = navigationRef.current.querySelector(`[data-step="${currentStep}"]`);
         if (currentStepElement) {
+          // Use scrollIntoView for the step button
           currentStepElement.scrollIntoView({
             behavior: 'smooth',
-            block: 'center',
+            block: 'nearest',
             inline: 'center'
           });
+          
+          // Additional fallback: manually scroll the navigation container
+          const navContainer = navigationRef.current;
+          const stepButton = currentStepElement.querySelector('button');
+          if (stepButton && navContainer) {
+            const containerRect = navContainer.getBoundingClientRect();
+            const buttonRect = stepButton.getBoundingClientRect();
+            const scrollLeft = buttonRect.left - containerRect.left + navContainer.scrollLeft - (containerRect.width / 2) + (buttonRect.width / 2);
+            navContainer.scrollTo({
+              left: scrollLeft,
+              behavior: 'smooth'
+            });
+          }
         }
       }
     };
@@ -226,6 +247,14 @@ export default function AssessmentPage() {
       }
     }
   }, [stepParam, scrollToCurrentStep]);
+
+  // Auto-scroll navigation header when current step changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollToCurrentStep();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [currentStep, scrollToCurrentStep]);
 
   // Memoize assessment steps to prevent unnecessary re-renders
   const assessmentSteps = useMemo(() => [
@@ -600,12 +629,28 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     });
   }, []);
 
+
+
   // Update the useEffect to fetch questions with answers
+  // Fetch based on whether the USE CASE has an organizationId, not the user
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
         setQuestionsLoading(true);
-        const response = await fetch(`/api/get-assess-questions?useCaseId=${useCaseId}`, {
+        
+        // Use different API based on whether the USE CASE belongs to an organization
+        // This allows QZEN_ADMIN to access both org and non-org use cases appropriately
+        const useCaseHasOrg = !!useCase?.organizationId;
+        const apiEndpoint = useCaseHasOrg 
+          ? `/api/get-assess-questions?useCaseId=${useCaseId}`
+          : `/api/get-assess-question-templates?useCaseId=${useCaseId}`;
+        
+        console.log('[Assess] Fetching from:', apiEndpoint, { 
+          useCaseHasOrg, 
+          organizationId: useCase?.organizationId 
+        });
+        
+        const response = await fetch(apiEndpoint, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -613,7 +658,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         });
         const qnAData = await response.json();
         
-        // console.log('Fetched questions data:', qnAData); // Debug log
+        console.log('Fetched questions data:', qnAData); // Debug log
         
         const formattedQuestions = qnAData.map((q: QnAProps) => ({
           id: q.id,
@@ -647,10 +692,11 @@ const validateAssessmentData = useMemo(() => (data: any) => {
       }
     };
 
-    if (useCaseId) {
+    // Only fetch questions once we have loaded the use case
+    if (useCaseId && useCase) {
       fetchQuestions();
     }
-  }, [useCaseId]);
+  }, [useCaseId, useCase]);
 
   // Scroll to top when currentStep changes
   useEffect(() => {
@@ -724,9 +770,20 @@ const validateAssessmentData = useMemo(() => (data: any) => {
         body: JSON.stringify({ useCaseId, assessData: transformedData }),
       });
 
-      // Save question answers
+      // Save question answers using appropriate API endpoint
+      // Use the same logic as fetching - based on whether the USE CASE has an organizationId
       if (Object.keys(questionAnswers).length > 0) {
-        await fetch("/api/save-question-answers", {
+        const useCaseHasOrg = !!useCase?.organizationId;
+        const saveEndpoint = useCaseHasOrg 
+        ? "/api/save-question-answers"
+        : "/api/save-template-answers";
+      
+      console.log('[Assess] Saving answers to:', saveEndpoint, { 
+        useCaseHasOrg, 
+        organizationId: useCase?.organizationId 
+      });
+      
+      await fetch(saveEndpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
@@ -875,7 +932,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
 
 
       {/* Assessment Steps Navigation */}
-      <div ref={navigationRef} className="px-8 py-4 border-b border-border bg-muted overflow-x-auto">
+      <div ref={navigationRef} className="px-8 py-4 border-b border-border bg-muted overflow-x-auto scroll-smooth">
         <div className="flex items-center space-x-4">
           {assessmentSteps.map((step, idx) => (
             <div key={step.id} className="flex items-center" data-step={step.id}>
@@ -1054,7 +1111,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
             </div>
           ) : currentStep === 9 ? (
             <div className={isReadOnly ? 'readonly-mode' : ''}>
-              <ApprovalsPage ref={approvalsPageRef} />
+              <ApprovalsPage ref={approvalsPageRef} useCase={useCase} />
             </div>
           ) : currentStep === 10 ? (
             <div className={isReadOnly ? 'readonly-mode' : ''}>

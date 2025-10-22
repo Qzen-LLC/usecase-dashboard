@@ -228,11 +228,11 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
         
         // Show specific error message based on error type
         if (errorData.error === 'GUARDRAILS_REQUIRED') {
-          alert('⚠️ Guardrails Required\n\nPlease generate guardrails first on the AI Guardrails tab before creating evaluations.');
+          alert('Guardrails Required\n\nPlease generate guardrails first on the AI Guardrails tab before creating evaluations.');
         } else if (errorData.error === 'LLM_CONFIGURATION_ERROR') {
-          alert('⚠️ LLM Configuration Required\n\nOpenAI API key is not configured. Please check your environment configuration.');
+          alert('LLM Configuration Required\n\nOpenAI API key is not configured. Please check your environment configuration.');
         } else {
-          alert(`⚠️ Generation Failed\n\n${errorData.message || errorData.details || 'Failed to generate evaluations. Please try again.'}`);
+          alert(`Generation Failed\n\n${errorData.message || errorData.details || 'Failed to generate evaluations. Please try again.'}`);
         }
         throw new Error(errorData.message || errorData.details || 'Failed to generate evaluations');
       }
@@ -289,12 +289,12 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
   /*
   const runEvaluations = async () => {
     if (!evaluationConfig) {
-      alert('⚠️ Evaluation Config Required\n\nPlease generate evaluations first before running them.\n\nThis will create test suites based on your guardrails.');
+      alert('Evaluation Config Required\n\nPlease generate evaluations first before running them.\n\nThis will create test suites based on your guardrails.');
       return;
     }
 
     // Alert user about evaluation run
-    const confirmed = confirm('🚀 Run Evaluations?\n\nThis will execute all test suites against your AI system.\n\nThis process may take several minutes and will consume API credits.\n\nDo you want to continue?');
+    const confirmed = confirm('Run Evaluations?\n\nThis will execute all test suites against your AI system.\n\nThis process may take several minutes and will consume API credits.\n\nDo you want to continue?');
     if (!confirmed) {
       return;
     }

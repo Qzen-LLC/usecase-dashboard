@@ -18,6 +18,7 @@ import {
   Clock,
   User,
   AtSign,
+  Heart,
   Hash,
   Paperclip,
   Smile,
@@ -534,7 +535,7 @@ export const RealTimeComments: React.FC<RealTimeCommentsProps> = ({
                   onClick={() => handleToggleReaction(comment.id, 'heart')}
                   className={comment.reactions.heart.includes(currentUserId) ? 'text-red-600' : ''}
                 >
-                  ❤️
+                  <Heart className="w-4 h-4" />
                 </EnhancedButton>
                 {comment.reactions.heart.length > 0 && (
                   <span className="text-xs text-muted-foreground">

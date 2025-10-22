@@ -149,6 +149,7 @@ const AIUseCaseTool = () => {
   const [hasRedirectedForLock, setHasRedirectedForLock] = useState(false);
   const [_saving, setSaving] = useState(false);
   const router = useRouter();
+  const topRef = React.useRef<HTMLDivElement>(null);
 
   const params = useParams();
   const searchParams = useSearchParams();
@@ -167,6 +168,22 @@ const AIUseCaseTool = () => {
   // Determine editability consistent with assess page
   const canEdit = useMemo(() => lockInfo?.canEdit === true, [lockInfo?.canEdit]);
   const isReadOnly = useMemo(() => !canEdit, [canEdit]);
+
+  // Scroll to top whenever step changes
+  useEffect(() => {
+    // Scroll using multiple methods to ensure compatibility
+    if (topRef.current) {
+      topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Fallback for older browsers
+    try {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    } catch (e) {
+      // Ignore errors
+    }
+  }, [currentStep]);
 
   useEffect(() => {
     const fetchAndFill = async () => {
@@ -416,6 +433,32 @@ const AIUseCaseTool = () => {
               type="date"
               value={formData.plannedStartDate}
               onChange={(e) => handleChange("plannedStartDate", e.target.value)}
+              min={`${new Date().getFullYear()}-01-01`}
+              max="9999-12-31"
+              onInput={(e) => {
+                const input = e.target as HTMLInputElement;
+                const value = input.value;
+                const currentYear = new Date().getFullYear();
+                
+                // Validate year is exactly 4 digits
+                if (value && value.length > 10) {
+                  input.value = value.slice(0, 10);
+                }
+                
+                const yearMatch = value.match(/^(\d{1,4})-/);
+                if (yearMatch && yearMatch[1].length > 4) {
+                  const validYear = yearMatch[1].slice(0, 4);
+                  input.value = value.replace(/^\d+/, validYear);
+                }
+                
+                // Prevent unrealistic years (before current year or after 9999)
+                if (yearMatch && yearMatch[1].length === 4) {
+                  const year = parseInt(yearMatch[1], 10);
+                  if (year < currentYear || year > 9999) {
+                    input.value = '';
+                  }
+                }
+              }}
               className={`${invalidFields.includes('plannedStartDate') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
             />
           <Label htmlFor="estimatedTimelineMonths" className="text-gray-900 dark:text-white">Estimated Timeline</Label>
@@ -731,7 +774,7 @@ const AIUseCaseTool = () => {
 
   return (
     <div className="min-h-screen flex justify-center items-start bg-gray-50 dark:bg-gray-900 p-0 sm:p-4">
-      <div className="w-full max-w-4xl bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden border-0 sm:border sm:mt-6 sm:mb-6 sm:mx-0 mx-0">
+      <div ref={topRef} className="w-full max-w-4xl bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden border-0 sm:border sm:mt-6 sm:mb-6 sm:mx-0 mx-0">
         <div className="bg-gray-100 dark:bg-gray-700 px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
             {steps.map((step, index) => (

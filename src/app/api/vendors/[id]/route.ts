@@ -10,7 +10,7 @@ interface Params {
 
 export const PUT = withAuth(async (
   request: Request,
-  { params, auth }: { params: Params, auth: any }
+  { params, auth }: { params: Promise<Params>, auth: any }
 ) => {
   try {
     // auth context is provided by withAuth wrapper
@@ -24,7 +24,7 @@ export const PUT = withAuth(async (
     }
 
     const vendorData = await request.json();
-    const resolvedParams = params;
+    const resolvedParams = await params;
 
     // Get the vendor to check ownership
     const vendor = await prismaClient.vendor.findUnique({
@@ -65,7 +65,7 @@ export const PUT = withAuth(async (
 
 export const DELETE = withAuth(async (
   request: Request,
-  { params, auth }: { params: Params, auth: any }
+  { params, auth }: { params: Promise<Params>, auth: any }
 ) => {
   try {
     // auth context is provided by withAuth wrapper
@@ -78,7 +78,7 @@ export const DELETE = withAuth(async (
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const resolvedParams = params;
+    const resolvedParams = await params;
 
     // Get the vendor to check ownership
     const vendor = await prismaClient.vendor.findUnique({

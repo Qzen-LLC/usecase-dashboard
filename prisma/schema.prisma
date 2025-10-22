@@ -1054,6 +1054,7 @@ model QuestionTemplate {
   Answer              Answer[]
   optionTemplates     OptionTemplate[]
   questions           Question[]
+  answers             Answer[]
 }
 
 model OptionTemplate {

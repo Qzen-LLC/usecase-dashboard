@@ -925,27 +925,70 @@ const FinancialDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
                      <label className="font-semibold text-[#23235b] dark:text-blue-200">Initial Dev Cost</label>
-          <Input type="number" value={initialDevCost} min={0} onChange={e => { setInitialDevCost(Number(e.target.value)); setSuccess(false); }} className="w-full" />
+          <Input 
+            type="number" 
+            value={initialDevCost} 
+            min={0} 
+            onChange={e => { setInitialDevCost(Number(e.target.value)); setSuccess(false); }} 
+            onFocus={e => { if (e.target.value === '0') e.target.select(); }}
+            className="w-full" 
+          />
         </div>
         <div>
                      <label className="font-semibold text-[#23235b] dark:text-blue-200">Monthly API Cost</label>
-          <Input type="number" value={baseApiCost} min={0} onChange={e => { setBaseApiCost(Number(e.target.value)); setSuccess(false); }} className="w-full" />
+          <Input 
+            type="number" 
+            value={baseApiCost} 
+            min={0} 
+            onChange={e => { setBaseApiCost(Number(e.target.value)); setSuccess(false); }} 
+            onFocus={e => { if (e.target.value === '0') e.target.select(); }}
+            className="w-full" 
+          />
         </div>
         <div>
                      <label className="font-semibold text-[#23235b] dark:text-blue-200">Monthly Infrastructure</label>
-          <Input type="number" value={baseInfraCost} min={0} onChange={e => { setBaseInfraCost(Number(e.target.value)); setSuccess(false); }} className="w-full" />
+          <Input 
+            type="number" 
+            value={baseInfraCost} 
+            min={0} 
+            onChange={e => { setBaseInfraCost(Number(e.target.value)); setSuccess(false); }} 
+            onFocus={e => { if (e.target.value === '0') e.target.select(); }}
+            className="w-full" 
+          />
         </div>
         <div>
                      <label className="font-semibold text-[#23235b] dark:text-blue-200">Monthly Operations</label>
-          <Input type="number" value={baseOpCost} min={0} onChange={e => { setBaseOpCost(Number(e.target.value)); setSuccess(false); }} className="w-full" />
+          <Input 
+            type="number" 
+            value={baseOpCost} 
+            min={0} 
+            onChange={e => { setBaseOpCost(Number(e.target.value)); setSuccess(false); }} 
+            onFocus={e => { if (e.target.value === '0') e.target.select(); }}
+            className="w-full" 
+          />
         </div>
         <div>
                      <label className="font-semibold text-[#23235b] dark:text-blue-200">Monthly Value Generated</label>
-          <Input type="number" value={baseMonthlyValue} min={0} onChange={e => { setBaseMonthlyValue(Number(e.target.value)); setSuccess(false); }} className="w-full" />
+          <Input 
+            type="number" 
+            value={baseMonthlyValue} 
+            min={0} 
+            onChange={e => { setBaseMonthlyValue(Number(e.target.value)); setSuccess(false); }} 
+            onFocus={e => { if (e.target.value === '0') e.target.select(); }}
+            className="w-full" 
+          />
         </div>
         <div>
                      <label className="font-semibold text-[#23235b] dark:text-blue-200">Value Growth Rate (%)</label>
-          <Input type="number" value={valueGrowthRate * 100} min={0} max={100} onChange={e => { setValueGrowthRate(Number(e.target.value) / 100); setSuccess(false); }} className="w-full" />
+          <Input 
+            type="number" 
+            value={valueGrowthRate * 100} 
+            min={0} 
+            max={100} 
+            onChange={e => { setValueGrowthRate(Number(e.target.value) / 100); setSuccess(false); }} 
+            onFocus={e => { if (e.target.value === '0') e.target.select(); }}
+            className="w-full" 
+          />
         </div>
       </div>
       <Button className="mt-6 w-full bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] hover:from-[#ff4fa3] hover:to-[#8f4fff] text-white px-6 py-3 rounded-xl shadow-lg font-semibold text-lg transition" onClick={handleSave} disabled={saving}>Save Forecast</Button>
