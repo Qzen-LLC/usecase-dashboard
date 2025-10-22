@@ -1098,7 +1098,7 @@ model Answer {
   useCaseId        String
   templateId       String?
   question         Question?         @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  QuestionTemplate QuestionTemplate? @relation(fields: [templateId], references: [id])
+  questionTemplate QuestionTemplate? @relation(fields: [templateId], references: [id])
   useCase          UseCase           @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
 }
 
