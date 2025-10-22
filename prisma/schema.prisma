@@ -1051,10 +1051,9 @@ model QuestionTemplate {
   dataOrderIndex      Int?             @default(0)
   roadmapOrderIndex   Int?             @default(0)
   budgetOrderIndex    Int?             @default(0)
-  Answer              Answer[]
+  answers             Answer[]
   optionTemplates     OptionTemplate[]
   questions           Question[]
-  answers             Answer[]
 }
 
 model OptionTemplate {
