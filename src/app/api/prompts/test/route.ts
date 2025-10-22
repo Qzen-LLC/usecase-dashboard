@@ -179,6 +179,8 @@ export const POST = withAuth(async (
 
       // Save test run to database
       if (promptId) {
+        console.log('[CRUD_LOG] Attempting to save test run for prompt:', promptId);
+        
         const promptTemplate = await prismaClient.promptTemplate.findUnique({
           where: { id: promptId },
           include: {
@@ -189,29 +191,46 @@ export const POST = withAuth(async (
           }
         });
 
-        if (promptTemplate && promptTemplate.PromptVersion[0]) {
-          await prismaClient.promptTestRun.create({
-            data: {
-              versionId: promptTemplate.PromptVersion[0].id,
-              variables: variables || {},
-              requestContent: {
-                content,
-                settings,
-              },
-              responseContent: response || '',
-              tokensUsed,
-              cost,
-              latencyMs,
-              status: 'SUCCESS',
-              userId: userRecord.id,
-              service: service,
-              model: settings.model || 'unknown',
-              promptTemplateId: promptId,
-              settings: settings || {},
-            },
-          });
-          console.log('[CRUD_LOG] Prompt Test Run created:', { templateId: promptId, versionId: promptTemplate.PromptVersion[0].id, model: settings.model || 'unknown', tokensUsed, cost, authoredBy: userRecord.id });
+        console.log('[CRUD_LOG] Found prompt template:', !!promptTemplate);
+        if (promptTemplate) {
+          console.log('[CRUD_LOG] Prompt versions:', promptTemplate.PromptVersion?.length || 0);
         }
+
+        if (promptTemplate) {
+          // Use the latest version if available, otherwise use the prompt template ID as version ID
+          const versionId = promptTemplate.PromptVersion[0]?.id || promptId;
+          console.log('[CRUD_LOG] Using version ID:', versionId);
+          
+          try {
+            await prismaClient.promptTestRun.create({
+              data: {
+                versionId: versionId,
+                variables: variables || {},
+                requestContent: {
+                  content,
+                  settings,
+                },
+                responseContent: response || '',
+                tokensUsed,
+                cost,
+                latencyMs,
+                status: 'SUCCESS',
+                userId: userRecord.id,
+                service: service,
+                model: settings.model || 'unknown',
+                promptTemplateId: promptId,
+                settings: settings || {},
+              },
+            });
+            console.log('[CRUD_LOG] Prompt Test Run created successfully:', { templateId: promptId, versionId: versionId, model: settings.model || 'unknown', tokensUsed, cost, authoredBy: userRecord.id });
+          } catch (dbError) {
+            console.error('[CRUD_LOG] Database error saving test run:', dbError);
+          }
+        } else {
+          console.log('[CRUD_LOG] Prompt template not found:', promptId);
+        }
+      } else {
+        console.log('[CRUD_LOG] No promptId provided, skipping save');
       }
 
       return NextResponse.json({
@@ -237,10 +256,11 @@ export const POST = withAuth(async (
           }
         });
 
-        if (promptTemplate && promptTemplate.PromptVersion[0]) {
+        if (promptTemplate) {
+          const versionId = promptTemplate.PromptVersion[0]?.id || promptId;
           await prismaClient.promptTestRun.create({
             data: {
-              versionId: promptTemplate.PromptVersion[0].id,
+              versionId: versionId,
               variables: variables || {},
               requestContent: {
                 content,
@@ -259,7 +279,7 @@ export const POST = withAuth(async (
               settings: settings || {},
             },
           });
-          console.log('[CRUD_LOG] Prompt Test Run created (error):', { templateId: promptId, versionId: promptTemplate.PromptVersion[0].id, model: settings?.model || 'unknown', error: error.message, authoredBy: userRecord.id });
+          console.log('[CRUD_LOG] Prompt Test Run created (error):', { templateId: promptId, versionId: versionId, model: settings?.model || 'unknown', error: error.message, authoredBy: userRecord.id });
         }
       }
 

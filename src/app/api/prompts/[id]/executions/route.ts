@@ -1,25 +1,33 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth-gateway';
 import { PrismaClient } from '@/generated/prisma';
+import { prismaClient } from '@/utils/db';
 
 const prisma = new PrismaClient();
 
 export const GET = withAuth(async (
   request: Request,
-  { params, auth }: { params: { id: string }, auth: any }
+  { params, auth }: { params: Promise<{ id: string }>, auth: any }
 ) => {
   try {
-    const { userId } = auth;
-    if (!userId) {
+    const { userId: clerkUserId } = auth;
+    if (!clerkUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const promptId = params.id;
+    // Map Clerk user ID to internal user ID
+    const userRecord = await prismaClient.user.findUnique({ where: { clerkId: clerkUserId } });
+    if (!userRecord) {
+      return NextResponse.json({ executions: [] });
+    }
+
+    const resolvedParams = await params;
+    const promptId = resolvedParams.id;
 
     const executions = await prisma.promptTestRun.findMany({
       where: {
         promptTemplateId: promptId,
-        userId
+        userId: userRecord.id,
       },
       orderBy: {
         createdAt: 'desc'
