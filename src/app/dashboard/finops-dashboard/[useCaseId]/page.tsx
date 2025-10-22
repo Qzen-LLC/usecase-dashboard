@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useParams, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -57,6 +58,7 @@ function formatK(num: number) {
 export default function FinancialDashboard() {
   const params = useParams();
   const router = useRouter();
+  const pathname = usePathname();
   const useCaseId = params.useCaseId as string;
   
   const [initialDevCost, setInitialDevCost] = useState<number>(0);
@@ -73,7 +75,7 @@ export default function FinancialDashboard() {
   const [useCaseDetails, setUseCaseDetails] = useState<{ title: string; aiucId: number } | null>(null);
   const [isDark, setIsDark] = useState(false);
 
-  useEffect(() => {
+  const fetchData = () => {
     if (!useCaseId) return;
     setLoading(true);
     
@@ -107,7 +109,11 @@ export default function FinancialDashboard() {
       .catch(() => {
         setLoading(false);
       });
-  }, [useCaseId]);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [useCaseId, pathname]);
 
   // Track theme to make charts dark-mode aware
   useEffect(() => {
