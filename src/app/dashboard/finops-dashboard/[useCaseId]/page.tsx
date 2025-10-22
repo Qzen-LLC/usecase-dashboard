@@ -67,6 +67,7 @@ export default function FinancialDashboard() {
   const [valueGrowthRate, setValueGrowthRate] = useState<number>(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [showFormulae, setShowFormulae] = useState(false);
   const [useCaseDetails, setUseCaseDetails] = useState<{ title: string; aiucId: number } | null>(null);
@@ -196,6 +197,7 @@ export default function FinancialDashboard() {
   const handleSave = async () => {
     setSaving(true);
     setError('');
+    setSuccess(false);
     try {
       const last = rows[FORECAST_MONTHS - 1];
       const payload = {
@@ -218,25 +220,9 @@ export default function FinancialDashboard() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Save failed');
-
-      // Refresh data from database after saving to ensure consistency
-      try {
-        const refreshRes = await fetch(`/api/get-finops?id=${useCaseId}`);
-        const data = await refreshRes.json();
-        if (Array.isArray(data) && data.length > 0) {
-          const d = data[0];
-          if (d) {
-            setInitialDevCost(d.devCostBase ?? initialDevCost);
-            setBaseApiCost(d.apiCostBase ?? baseApiCost);
-            setBaseInfraCost(d.infraCostBase ?? baseInfraCost);
-            setBaseOpCost(d.opCostBase ?? baseOpCost);
-            setBaseMonthlyValue(d.valueBase ?? baseMonthlyValue);
-            setValueGrowthRate(d.valueGrowthRate ?? valueGrowthRate);
-          }
-        }
-      } catch (refreshError) {
-        console.error('Failed to refresh data after save:', refreshError);
-      }
+      
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
     } catch {
       setError('Failed to save');
     }
@@ -589,6 +575,11 @@ export default function FinancialDashboard() {
         {/* Main Content */}
         <div className="p-8">
           {error && <div className="text-danger-500 mb-2">{error}</div>}
+          {success && (
+            <div className="w-full text-center py-3 mb-4 rounded-xl bg-green-100 text-green-800 font-semibold border border-green-300 shadow-sm animate-fade-in dark:bg-green-900/20 dark:text-green-400 dark:border-green-700">
+              FinOps saved successfully!
+            </div>
+          )}
           <Card className="mb-8 p-6 bg-card border border-border shadow-md rounded-xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
