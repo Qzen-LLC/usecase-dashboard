@@ -641,10 +641,10 @@ export default function FinancialDashboard() {
                 <label className="font-semibold text-foreground">Value Growth Rate (%)</label>
                 <Input 
                   type="number" 
-                  value={valueGrowthRate * 100} 
+                  value={valueGrowthRate} 
                   min={0} 
                   max={100} 
-                  onChange={e => setValueGrowthRate(Number(e.target.value) / 100)} 
+                  onChange={e => setValueGrowthRate(Number(e.target.value))} 
                   onFocus={e => { if (e.target.value === '0') e.target.select(); }}
                   className="w-full" 
                 />
