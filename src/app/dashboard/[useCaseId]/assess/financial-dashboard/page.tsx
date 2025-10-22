@@ -69,7 +69,7 @@ const FinancialDashboard = () => {
   const [valueGrowthRate, setValueGrowthRate] = useState<number>(0);
   const [saving, setSaving] = useState(false);
   const [_error, setError] = useState('');
-  const [_loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [showFormulae, setShowFormulae] = useState(false);
   const [success, setSuccess] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -889,6 +889,17 @@ const FinancialDashboard = () => {
     setSaving(false);
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+          <p className="mt-4 text-lg font-medium text-gray-600 dark:text-gray-300">Loading financial data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
@@ -982,10 +993,10 @@ const FinancialDashboard = () => {
                      <label className="font-semibold text-[#23235b] dark:text-blue-200">Value Growth Rate (%)</label>
           <Input 
             type="number" 
-            value={valueGrowthRate * 100} 
+            value={valueGrowthRate} 
             min={0} 
             max={100} 
-            onChange={e => { setValueGrowthRate(Number(e.target.value) / 100); setSuccess(false); }} 
+            onChange={e => { setValueGrowthRate(Number(e.target.value)); setSuccess(false); }} 
             onFocus={e => { if (e.target.value === '0') e.target.select(); }}
             className="w-full" 
           />
