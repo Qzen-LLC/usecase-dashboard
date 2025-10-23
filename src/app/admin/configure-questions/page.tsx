@@ -1302,7 +1302,6 @@ export default function ConfigureQuestionTemplatesPage() {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  <HelpCircle className="w-5 h-5" />
                   Assessment Question Templates
                 </CardTitle>
                 <CardDescription>

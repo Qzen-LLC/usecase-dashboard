@@ -1384,7 +1384,6 @@ export default function ConfigureQuestionsPage() {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <HelpCircle className="w-4 h-4" />
                   Assessment Questions
                 </CardTitle>
                 <CardDescription className="text-sm">
