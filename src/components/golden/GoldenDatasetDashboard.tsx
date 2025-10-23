@@ -360,10 +360,10 @@ const GoldenDatasetDashboard: React.FC<GoldenDatasetDashboardProps> = ({ useCase
                           )}
                         </div>
                         <p className="text-sm font-medium mb-1">
-                          {entry.input?.prompt ? (
+                          {(entry.input?.prompt || entry.inputSpec?.prompt) ? (
                             <>
-                              {entry.input.prompt.substring(0, 200)}
-                              {entry.input.prompt.length > 200 && '...'}
+                              {(entry.input?.prompt || entry.inputSpec?.prompt).substring(0, 200)}
+                              {(entry.input?.prompt || entry.inputSpec?.prompt).length > 200 && '...'}
                             </>
                           ) : (
                             <span className="text-muted-foreground">No input provided</span>
@@ -377,16 +377,31 @@ const GoldenDatasetDashboard: React.FC<GoldenDatasetDashboardProps> = ({ useCase
                         )}
                       </div>
                       <div className="flex gap-1">
-                        <Button size="sm" variant="ghost">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            alert(`Entry Details:\n\nCategory: ${entry.category}\nInput: ${JSON.stringify(entry.input || entry.inputSpec, null, 2)}\nExpected Output: ${JSON.stringify(entry.expectedOutputs, null, 2)}\nMetadata: ${JSON.stringify(entry.metadata, null, 2)}`);
+                          }}
+                          title="View entry details"
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="ghost">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            alert('Edit functionality coming soon!\n\nFor now, please delete and recreate the entry.');
+                          }}
+                          title="Edit entry"
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="ghost"
                           onClick={() => deleteEntry(entry.id)}
+                          title="Delete entry"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

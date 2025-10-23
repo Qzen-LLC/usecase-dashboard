@@ -30,7 +30,13 @@ const nextConfig: NextConfig = {
 
   pageExtensions: ["ts", "tsx", "js", "jsx"],
 
-  serverExternalPackages: ["@prisma/client"],
+  serverExternalPackages: [
+    "@prisma/client",
+    "@opentelemetry/api",
+    "@opentelemetry/sdk-node",
+    "@opentelemetry/auto-instrumentations-node",
+    "@opentelemetry/exporter-trace-otlp-grpc"
+  ],
 
   experimental: {
     webpackBuildWorker: false,
