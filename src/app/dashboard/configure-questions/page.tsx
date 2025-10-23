@@ -1480,17 +1480,6 @@ export default function ConfigureQuestionsPage() {
                     Showing {filteredQuestions.length} of {questions.length} questions
                     {selectedStage !== "all" && ` for ${getStageLabel(selectedStage as Stage)}`}
                   </span>
-                  {selectedStage !== "all" && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearFilter}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="w-3 h-3 mr-1" />
-                      Clear filter
-                    </Button>
-                  )}
                 </div>
 
                 <DndContext
