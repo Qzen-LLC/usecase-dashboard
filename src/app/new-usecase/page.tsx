@@ -370,7 +370,7 @@ const AIUseCaseToolContent = () => {
           </div>
           <Label htmlFor="initialROI" className="text-gray-900 dark:text-white">Initial ROI</Label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">$</span>
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">%</span>
             <Input
               id="initialROI"
               value={formData.initialROI}
