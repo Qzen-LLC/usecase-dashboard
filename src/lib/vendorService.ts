@@ -44,6 +44,18 @@ export const vendorService = {
   // Create a new vendor
   async createVendor(vendorData: Partial<Vendor>) {
     try {
+      console.log('[VendorService] Creating vendor:', {
+        vendorData: {
+          name: vendorData.name,
+          website: vendorData.website,
+          category: vendorData.category,
+          contactPerson: vendorData.contactPerson,
+          contactEmail: vendorData.contactEmail
+        }
+      });
+      
+      console.log('[VendorService] Full vendor data being sent:', vendorData);
+      
       const response = await fetch('/api/vendors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -66,6 +78,19 @@ export const vendorService = {
   // Update an existing vendor
   async updateVendor(vendorId: string, vendorData: Partial<Vendor>) {
     try {
+      console.log('[VendorService] Updating vendor:', {
+        vendorId,
+        vendorData: {
+          name: vendorData.name,
+          website: vendorData.website,
+          category: vendorData.category,
+          contactPerson: vendorData.contactPerson,
+          contactEmail: vendorData.contactEmail
+        }
+      });
+      
+      console.log('[VendorService] Full vendor data being sent:', vendorData);
+      
       const response = await fetch(`/api/vendors/${vendorId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

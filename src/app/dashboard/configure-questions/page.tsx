@@ -1158,7 +1158,7 @@ export default function ConfigureQuestionsPage() {
                   Add Question
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Settings className="w-5 h-5" />
@@ -1525,7 +1525,7 @@ export default function ConfigureQuestionsPage() {
 
         {/* Edit Question Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Edit className="w-5 h-5" />

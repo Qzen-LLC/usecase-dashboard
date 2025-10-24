@@ -46,6 +46,15 @@ export const POST = withAuth(async (
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     const vendorData = await request.json();
+    console.log('[API_LOG] Received vendor data:', {
+      name: vendorData.name,
+      website: vendorData.website,
+      category: vendorData.category,
+      contactPerson: vendorData.contactPerson,
+      contactEmail: vendorData.contactEmail
+    });
+    
+    console.log('[API_LOG] Full vendor data received:', vendorData);
     let createArgs: any = { ...vendorData };
     if (userRecord.organizationId) {
       createArgs.organizationId = userRecord.organizationId;
@@ -54,6 +63,14 @@ export const POST = withAuth(async (
       createArgs.userId = userRecord.id;
       createArgs.organizationId = null;
     }
+    
+    console.log('[API_LOG] Create args being passed to vendorService:', {
+      name: createArgs.name,
+      website: createArgs.website,
+      category: createArgs.category,
+      userId: createArgs.userId,
+      organizationId: createArgs.organizationId
+    });
     const result = await vendorServiceServer.createVendor(createArgs);
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 400 });

@@ -22,19 +22,33 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   // Only fetch auth for protected, non-API routes
-  const authObject = await auth();
-  const userId = authObject.userId;
+  // Use a timeout to prevent hanging
+  const authPromise = auth();
+  const timeoutPromise = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('Auth timeout')), 5000)
+  );
+  
+  try {
+    const authObject = await Promise.race([authPromise, timeoutPromise]);
+    const userId = authObject.userId;
 
-  // Check if user is authenticated
-  if (!userId) {
-    // Redirect unauthenticated users to sign-in page
+    // Check if user is authenticated
+    if (!userId) {
+      // Redirect unauthenticated users to sign-in page
+      const signInUrl = new URL('/sign-in', req.url);
+      signInUrl.searchParams.set('redirect_url', pathname);
+      return NextResponse.redirect(signInUrl);
+    }
+
+    // User is authenticated, allow access
+    return NextResponse.next();
+  } catch (error) {
+    // If auth times out or fails, redirect to sign-in
+    console.warn('Auth middleware timeout or error:', error);
     const signInUrl = new URL('/sign-in', req.url);
     signInUrl.searchParams.set('redirect_url', pathname);
     return NextResponse.redirect(signInUrl);
   }
-
-  // User is authenticated, allow access
-  return NextResponse.next();
 });
 
 export const config = {

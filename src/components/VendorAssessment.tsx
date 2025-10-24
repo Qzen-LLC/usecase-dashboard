@@ -164,6 +164,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
     console.log('[VendorAssessment] Loaded vendors:', data);
     if (data && data.length > 0) {
       console.log('[VendorAssessment] First vendor approval data:', data[0].approvals);
+      console.log('[VendorAssessment] All vendor IDs:', data.map(v => v.id));
     }
     
     setVendors(data || []);
@@ -171,7 +172,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
   };
 
   const createEmptyVendor = (): Vendor => ({
-    id: Date.now().toString(),
+    id: crypto.randomUUID(),
     name: '',
     category: categories[0],
     website: '',
@@ -211,19 +212,21 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
     try {
       let result: { data: Vendor | null; error: string | null };
       
-      // Check if this is an existing vendor by looking for UUID format or if it exists in our vendors list
-      const isExistingVendor = currentVendor.id && (
-        currentVendor.id.includes('-') || // UUID format
-        vendors.some(v => v.id === currentVendor.id) // Exists in our loaded vendors
-      );
+      // Check if this is an existing vendor by checking if it exists in our loaded vendors list
+      const isExistingVendor = currentVendor.id && vendors.some(v => v.id === currentVendor.id);
       
       console.log('[VendorAssessment] Saving vendor:', {
         id: currentVendor.id,
         name: currentVendor.name,
+        website: currentVendor.website,
+        category: currentVendor.category,
+        contactPerson: currentVendor.contactPerson,
+        contactEmail: currentVendor.contactEmail,
         isExistingVendor,
-        hasHyphen: currentVendor.id?.includes('-'),
         existsInVendors: vendors.some(v => v.id === currentVendor.id)
       });
+      
+      console.log('[VendorAssessment] Full vendor object being saved:', currentVendor);
       
       if (isExistingVendor) {
         console.log('[VendorAssessment] Updating existing vendor');
@@ -231,17 +234,27 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
       } else {
         console.log('[VendorAssessment] Creating new vendor');
         result = await vendorService.createVendor(currentVendor);
-        if (result.data) {
-          setCurrentVendor(prev => prev ? ({ ...prev, id: result.data!.id }) : null);
-        }
       }
 
       if (result.error) {
         throw new Error(result.error);
       }
 
-      await saveAssessmentScores();
-      await saveApprovalAreas();
+      // Get the final vendor ID (either from existing vendor or newly created)
+      const finalVendorId = isExistingVendor ? currentVendor.id : result.data?.id;
+      
+      // Ensure we have a valid vendor ID before proceeding
+      if (!finalVendorId) {
+        throw new Error('Vendor ID is missing after save operation');
+      }
+
+      // Update currentVendor with the final ID if it was a new vendor
+      if (!isExistingVendor && result.data) {
+        setCurrentVendor(prev => prev ? ({ ...prev, id: result.data!.id }) : null);
+      }
+
+      await saveAssessmentScores(finalVendorId);
+      await saveApprovalAreas(finalVendorId);
       await loadVendors();
       setIsEditing(false);
     } catch (error: unknown) {
@@ -257,40 +270,63 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
     }
   };
 
-  const saveAssessmentScores = async () => {
-    if (!currentVendor?.id) return;
+  const saveAssessmentScores = async (vendorId?: string) => {
+    const targetVendorId = vendorId || currentVendor?.id;
+    
+    if (!targetVendorId) {
+      console.error('Error saving assessment scores: No vendor ID available');
+      throw new Error('No vendor ID available for saving assessment scores');
+    }
 
-    const scores = currentVendor.scores || {};
-    const comments = currentVendor.comments || {};
+    const scores = currentVendor?.scores || {};
+    const comments = currentVendor?.comments || {};
+
+    console.log('[VendorAssessment] Saving assessment scores for vendor:', targetVendorId);
+    console.log('[VendorAssessment] Scores data:', scores);
+    console.log('[VendorAssessment] Comments data:', comments);
 
     for (const [key, score] of Object.entries(scores)) {
       if (typeof score === 'number' && score > 0) {
         const [category, subcategory] = key.split('-');
         const comment = comments[key] || '';
-        await vendorService.updateAssessmentScore(
-          currentVendor.id.toString(),
+        
+        const { error } = await vendorService.updateAssessmentScore(
+          targetVendorId.toString(),
           category,
           subcategory,
           score,
           comment
         );
+        
+        if (error) {
+          console.error(`Error saving score for ${key}:`, error);
+          throw new Error(`Failed to save assessment score for ${key}: ${error}`);
+        }
       }
     }
 
-    await vendorService.calculateOverallScore(currentVendor.id.toString());
+    await vendorService.calculateOverallScore(targetVendorId.toString());
   };
 
-  const saveApprovalAreas = async () => {
-    if (!currentVendor?.id) return;
+  const saveApprovalAreas = async (vendorId?: string) => {
+    const targetVendorId = vendorId || currentVendor?.id;
+    
+    if (!targetVendorId) {
+      console.error('Error saving approval areas: No vendor ID available');
+      throw new Error('No vendor ID available for saving approval areas');
+    }
+
+    console.log('[VendorAssessment] Saving approval areas for vendor:', targetVendorId);
+    console.log('[VendorAssessment] Approval data:', currentVendor?.approvals);
 
     // Update the vendor with the current approval data
-    const { error } = await vendorService.updateVendor(currentVendor.id.toString(), {
-      approvals: currentVendor.approvals
+    const { error } = await vendorService.updateVendor(targetVendorId.toString(), {
+      approvals: currentVendor?.approvals
     });
 
     if (error) {
       console.error('Error saving approval areas:', error);
-      setError('Failed to save approval areas');
+      throw new Error(`Failed to save approval areas: ${error}`);
     } else {
       console.log('Approval areas saved successfully');
     }
@@ -463,7 +499,10 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
             <input
               type="url"
               value={currentVendor.website}
-              onChange={(e) => setCurrentVendor(prev => prev ? { ...prev, website: e.target.value } : null)}
+              onChange={(e) => {
+                console.log('[VendorAssessment] Website input changed:', e.target.value);
+                setCurrentVendor(prev => prev ? { ...prev, website: e.target.value } : null);
+              }}
               disabled={!isEditing}
               className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-card text-foreground"
             />

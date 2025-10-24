@@ -3,6 +3,25 @@ import { AuthError } from "./types";
 import { verifyBearerToken } from "@/utils/clerk-bearer-auth";
 import { prismaClient } from "@/utils/db";
 
+// In-memory cache for user data to reduce database queries
+const userCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 30; // 30 seconds cache for auth service
+
+async function getCachedUser(clerkId: string) {
+  const cached = userCache.get(clerkId);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL * 1000) {
+    return cached.data;
+  }
+  return null;
+}
+
+async function setCachedUser(clerkId: string, data: any) {
+  userCache.set(clerkId, {
+    data,
+    timestamp: Date.now(),
+  });
+}
+
 function derivePermissionsFromRoles(roles: string[] | undefined | null): string[] {
   const role = Array.isArray(roles) && roles.length > 0 ? String(roles[0]).toUpperCase() : undefined;
   const map: Record<string, string[]> = {
@@ -45,18 +64,28 @@ async function buildContext(req: Request): Promise<AuthContext> {
 
   let authenticatedUser: AuthenticatedUser | null = null;
   if (user) {
-    // Get user from database to get the correct role
-    const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        organizationId: true,
-      },
-    });
+    // Check cache first to reduce database queries
+    let userRecord = await getCachedUser(user.id);
+    
+    if (!userRecord) {
+      // Get user from database to get the correct role
+      userRecord = await prismaClient.user.findUnique({
+        where: { clerkId: user.id },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          organizationId: true,
+        },
+      });
+      
+      // Cache the result
+      if (userRecord) {
+        await setCachedUser(user.id, userRecord);
+      }
+    }
 
     authenticatedUser = {
       id: user.id,
@@ -89,17 +118,28 @@ async function buildContext(req: Request): Promise<AuthContext> {
       const authHeader = req.headers.get("authorization") || req.headers.get("Authorization") || undefined;
       const payload = await verifyBearerToken(authHeader).catch(() => null);
       if (payload && typeof payload.sub === "string" && payload.sub) {
-        const userRecord = await prismaClient.user.findUnique({
-          where: { clerkId: payload.sub },
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            role: true,
-            organizationId: true,
-          },
-        });
+        // Check cache first for Bearer token auth
+        let userRecord = await getCachedUser(payload.sub);
+        
+        if (!userRecord) {
+          userRecord = await prismaClient.user.findUnique({
+            where: { clerkId: payload.sub },
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+              organizationId: true,
+            },
+          });
+          
+          // Cache the result
+          if (userRecord) {
+            await setCachedUser(payload.sub, userRecord);
+          }
+        }
+        
         if (userRecord) {
           authenticatedUser = {
             id: userRecord.id,

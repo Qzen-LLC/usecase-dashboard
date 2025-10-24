@@ -13,6 +13,13 @@ export const prismaClient =
         url: process.env.DATABASE_URL,
       },
     },
+    // Add connection pooling and performance optimizations
+    __internal: {
+      engine: {
+        connectTimeout: 10000, // 10 seconds
+        queryTimeout: 30000,   // 30 seconds
+      },
+    },
   });
 
 if (process.env.NODE_ENV !== 'production') global.prisma = prismaClient;

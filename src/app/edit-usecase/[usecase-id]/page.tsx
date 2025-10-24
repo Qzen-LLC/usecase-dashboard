@@ -289,43 +289,50 @@ const AIUseCaseTool = () => {
         <p className="text-blue-700 dark:text-blue-300">Define and structure your AI use case with clear problem statements and success criteria.</p>
       </div>
       <div className="grid grid-cols-1">
-        <Card className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-          <Label htmlFor="title" className="text-gray-900 dark:text-white">Use Case Title <span className="text-red-500">*</span></Label>
-          <Input
-            id="title"
-            value={formData.title}
-            onChange={(e) => handleChange("title", e.target.value)}
-            className={`${invalidFields.includes('title') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
-          />
-          <Label htmlFor="problemStatement" className="text-gray-900 dark:text-white">Problem Statement <span className="text-red-500">*</span></Label>
-          <RichTextEditor
-            content={formData.problemStatement}
-            onChange={(content) => handleChange("problemStatement", content)}
-            placeholder="Describe the problem this use case will solve..."
-            className="mb-4"
-          />
-          <Label htmlFor="proposedAISolution" className="text-gray-900 dark:text-white">Proposed Solution</Label>
-          <RichTextEditor
-            content={formData.proposedAISolution}
-            onChange={(content) => handleChange("proposedAISolution", content)}
-            placeholder="Describe your proposed AI solution..."
-            className="mb-4"
-          />
-          <Label htmlFor="keyBenefits" className="text-gray-900 dark:text-white">Key Benefits</Label>
-          <RichTextEditor
-            content={formData.keyBenefits}
-            onChange={(content) => handleChange("keyBenefits", content)}
-            placeholder="List the key benefits this solution will provide..."
-            className="mb-4"
-          />
-          <Label htmlFor="successCriteria" className="text-gray-900 dark:text-white">Success Criteria</Label>
-          <RichTextEditor
-            content={formData.successCriteria}
-            onChange={(content) => handleChange("successCriteria", content)}
-            placeholder="Define what success looks like for this use case..."
-            className="mb-4"
-          />
-          <Label htmlFor="businessFunction" className="text-gray-900 dark:text-white">Business Function</Label>
+        <Card className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="title" className="text-gray-900 dark:text-white">Use Case Title <span className="text-red-500">*</span></Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) => handleChange("title", e.target.value)}
+              className={`${invalidFields.includes('title') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="problemStatement" className="text-gray-900 dark:text-white">Problem Statement <span className="text-red-500">*</span></Label>
+            <RichTextEditor
+              content={formData.problemStatement}
+              onChange={(content) => handleChange("problemStatement", content)}
+              placeholder="Describe the problem this use case will solve..."
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="proposedAISolution" className="text-gray-900 dark:text-white">Proposed Solution</Label>
+            <RichTextEditor
+              content={formData.proposedAISolution}
+              onChange={(content) => handleChange("proposedAISolution", content)}
+              placeholder="Describe your proposed AI solution..."
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="keyBenefits" className="text-gray-900 dark:text-white">Key Benefits</Label>
+            <RichTextEditor
+              content={formData.keyBenefits}
+              onChange={(content) => handleChange("keyBenefits", content)}
+              placeholder="List the key benefits this solution will provide..."
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="successCriteria" className="text-gray-900 dark:text-white">Success Criteria</Label>
+            <RichTextEditor
+              content={formData.successCriteria}
+              onChange={(content) => handleChange("successCriteria", content)}
+              placeholder="Define what success looks like for this use case..."
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="businessFunction" className="text-gray-900 dark:text-white">Business Function</Label>
           <select
             id="businessFunction"
             value={formData.businessFunction}
@@ -380,55 +387,63 @@ const AIUseCaseTool = () => {
         <p className="text-green-700 dark:text-green-300">Build a lightweight business case focusing on problem-solution fit and key assumptions.</p>
       </div>
       <div className="space-y-6">
-        <Card className='p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'>
-          <Label htmlFor="keyAssumptions" className="text-gray-900 dark:text-white">Key Assumptions</Label>
-          <RichTextEditor
-            content={formData.keyAssumptions}
-            onChange={(content) => handleChange("keyAssumptions", content)}
-            placeholder="List your key assumptions for this use case..."
-            className="mb-4"
-          />
-          <Label htmlFor="initialCost" className="text-gray-900 dark:text-white">Initial Cost</Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">$</span>
-            <Input
-              id="initialCost"
-              value={formData.initialCost}
-              onChange={(e) => handleChange("initialCost", e.target.value)}
-              className={`pl-7 ${invalidFields.includes('initialCost') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
-              placeholder="0"
+        <Card className='p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 space-y-6'>
+          <div className="space-y-2">
+            <Label htmlFor="keyAssumptions" className="text-gray-900 dark:text-white">Key Assumptions</Label>
+            <RichTextEditor
+              content={formData.keyAssumptions}
+              onChange={(content) => handleChange("keyAssumptions", content)}
+              placeholder="List your key assumptions for this use case..."
             />
           </div>
-          <Label htmlFor="initialROI" className="text-gray-900 dark:text-white">Initial ROI</Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">$</span>
-            <Input
-              id="initialROI"
-              value={formData.initialROI}
-              onChange={(e) => handleChange("initialROI", e.target.value)}
-              className={`pl-7 ${invalidFields.includes('initialROI') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
-              placeholder="0"
+          <div className="space-y-2">
+            <Label htmlFor="initialCost" className="text-gray-900 dark:text-white">Initial Cost</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">$</span>
+              <Input
+                id="initialCost"
+                value={formData.initialCost}
+                onChange={(e) => handleChange("initialCost", e.target.value)}
+                className={`pl-7 ${invalidFields.includes('initialCost') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
+                placeholder="0"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="initialROI" className="text-gray-900 dark:text-white">Initial ROI</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">$</span>
+              <Input
+                id="initialROI"
+                value={formData.initialROI}
+                onChange={(e) => handleChange("initialROI", e.target.value)}
+                className={`pl-7 ${invalidFields.includes('initialROI') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
+                placeholder="0"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center mb-1">
+              <Label htmlFor="confidenceLevel" className="text-gray-900 dark:text-white">Confidence Level</Label>
+              <span className="text-blue-600 dark:text-blue-400 font-bold">{formData.confidenceLevel}</span>
+            </div>
+            <Slider
+              min={1}
+              max={10}
+              value={[formData.confidenceLevel]}
+              onValueChange={([val]) => handleChange("confidenceLevel", val)}
             />
-          </div>
-          <div className="flex justify-between items-center mb-1">
-            <Label htmlFor="confidenceLevel" className="text-gray-900 dark:text-white">Confidence Level</Label>
-            <span className="text-blue-600 dark:text-blue-400 font-bold">{formData.confidenceLevel}</span>
-          </div>
-          <Slider
-            min={1}
-            max={10}
-            value={[formData.confidenceLevel]}
-            onValueChange={([val]) => handleChange("confidenceLevel", val)}
-          />
-                      <div className='space-y-1'>
+            <div className='space-y-1'>
               <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                 <span>Low (1)</span>
                 <span>High (10)</span>
               </div>
               <Label htmlFor="confidenceLevel" className='text-sm font-normal text-gray-800 dark:text-gray-200'>How confident are you in your estimates?</Label>
             </div>
-          <Label htmlFor="plannedStartDate" className="text-gray-900 dark:text-white">Planned Start Date</Label>
-                      <Input
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="plannedStartDate" className="text-gray-900 dark:text-white">Planned Start Date</Label>
+            <Input
               id="plannedStartDate"
               type="date"
               value={formData.plannedStartDate}
@@ -461,7 +476,9 @@ const AIUseCaseTool = () => {
               }}
               className={`${invalidFields.includes('plannedStartDate') ? 'border-red-500' : ''} dark:bg-gray-700 dark:text-white dark:border-gray-600`}
             />
-          <Label htmlFor="estimatedTimelineMonths" className="text-gray-900 dark:text-white">Estimated Timeline</Label>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="estimatedTimelineMonths" className="text-gray-900 dark:text-white">Estimated Timeline</Label>
                       <select
               id="estimatedTimelineMonths"
               value={formData.estimatedTimelineMonths}
@@ -481,13 +498,15 @@ const AIUseCaseTool = () => {
             <option value="24">24 months</option>
             <option value="36">36 months</option>
           </select>
-          <Label htmlFor="requiredResources" className="text-gray-900 dark:text-white">Required Resources</Label>
-          <RichTextEditor
-            content={formData.requiredResources}
-            onChange={(content) => handleChange("requiredResources", content)}
-            placeholder="List the required resources for this use case..."
-            className="mb-4"
-          />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="requiredResources" className="text-gray-900 dark:text-white">Required Resources</Label>
+            <RichTextEditor
+              content={formData.requiredResources}
+              onChange={(content) => handleChange("requiredResources", content)}
+              placeholder="List the required resources for this use case..."
+            />
+          </div>
         </Card>
       </div>
     </div>
