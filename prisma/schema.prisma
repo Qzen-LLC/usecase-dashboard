@@ -96,31 +96,44 @@ model Assess {
 }
 
 model Approval {
-  id                 String   @id @default(uuid())
-  useCaseId          String   @unique
-  governanceName     String?
-  governanceStatus   String?
-  governanceComment  String?
-  riskName           String?
-  riskStatus         String?
-  riskComment        String?
-  legalName          String?
-  legalStatus        String?
-  legalComment       String?
-  businessFunction   String?
-  businessName       String?
-  businessStatus     String?
-  businessComment    String?
-  finalQualification String?
-  updatedAt          DateTime @updatedAt
-  createdAt          DateTime @default(now())
-  useCase            UseCase  @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  id                     String   @id @default(uuid())
+  useCaseId              String   @unique
+  governanceName         String?
+  governanceStatus       String?
+  governanceComment      String?
+  riskName               String?
+  riskStatus             String?
+  riskComment            String?
+  legalName              String?
+  legalStatus            String?
+  legalComment           String?
+  businessFunction       String?
+  businessName           String?
+  businessStatus         String?
+  businessComment        String?
+  finalQualification     String?
+  // AI-specific approval fields
+  aiGovernanceName       String?
+  aiGovernanceStatus     String?
+  aiGovernanceComment    String?
+  modelValidationName    String?
+  modelValidationStatus  String?
+  modelValidationComment String?
+  aiEthicsName           String?
+  aiEthicsStatus         String?
+  aiEthicsComment        String?
+  updatedAt              DateTime @updatedAt
+  createdAt              DateTime @default(now())
+  useCase                UseCase  @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
 
   @@index([governanceStatus])
   @@index([riskStatus])
   @@index([legalStatus])
   @@index([businessStatus])
   @@index([finalQualification])
+  @@index([aiGovernanceStatus])
+  @@index([modelValidationStatus])
+  @@index([aiEthicsStatus])
 }
 
 model Vendor {
