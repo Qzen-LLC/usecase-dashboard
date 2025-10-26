@@ -45,13 +45,8 @@ export const GET = withAuth(async (request: Request, { auth }) => {
         statistics: statistics,
         qualityMetrics: qualityMetrics,
         validationStatus: dataset.validationStatus || {},
-<<<<<<< HEAD
         entries: entriesWithReviews
-      });
-=======
-        entries: dataset.entries
       }), { headers: { 'Content-Type': 'application/json' } });
->>>>>>> 4f778860db4b1ba18deb33e0add7df2842e5c632
     }
 
     // List datasets, optionally filtered by use case
@@ -64,7 +59,6 @@ export const GET = withAuth(async (request: Request, { auth }) => {
       orderBy: { createdAt: 'desc' }
     });
 
-<<<<<<< HEAD
     // Get entry counts for each dataset
     const datasetsWithCounts = await Promise.all(datasets.map(async (dataset) => {
       const entryCount = await prismaClient.goldenEntry.count({
@@ -74,28 +68,12 @@ export const GET = withAuth(async (request: Request, { auth }) => {
         ...dataset,
         entryCount
       };
-=======
-    // Add entry count to each dataset
-    const datasetsWithCounts = datasets.map(dataset => ({
-      ...dataset,
-      entryCount: dataset.entries.length,
-      // Ensure byCategory and bySource types are satisfied by narrowing at call sites that consume stats
-      entries: undefined as unknown as undefined
->>>>>>> 4f778860db4b1ba18deb33e0add7df2842e5c632
     }));
 
     return new Response(JSON.stringify(datasetsWithCounts), { headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error in GET /api/golden/datasets:', error);
-<<<<<<< HEAD
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json(
-      { error: 'Internal server error', details: errorMessage },
-      { status: 500 }
-    );
-=======
     return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
->>>>>>> 4f778860db4b1ba18deb33e0add7df2842e5c632
   }
 }, { requireUser: true });
 
@@ -129,8 +107,6 @@ export const POST = withAuth(async (request: Request, { auth }) => {
       return new Response(JSON.stringify({ error: 'Missing required fields: useCaseId and name' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-<<<<<<< HEAD
-=======
     // Verify use case exists
     const useCase = await prismaClient.useCase.findUnique({
       where: { id: useCaseId }
@@ -140,7 +116,6 @@ export const POST = withAuth(async (request: Request, { auth }) => {
       return new Response(JSON.stringify({ error: 'Use case not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
->>>>>>> 4f778860db4b1ba18deb33e0add7df2842e5c632
     // Create the dataset
     const dataset = await prismaClient.goldenDataset.create({
       data: {
@@ -182,15 +157,7 @@ export const POST = withAuth(async (request: Request, { auth }) => {
     }), { headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error in POST /api/golden/datasets:', error);
-<<<<<<< HEAD
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json(
-      { error: 'Internal server error', details: errorMessage },
-      { status: 500 }
-    );
-=======
     return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
->>>>>>> 4f778860db4b1ba18deb33e0add7df2842e5c632
   }
 }, { requireUser: true });
 

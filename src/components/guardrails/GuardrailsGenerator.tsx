@@ -201,18 +201,18 @@ export default function GuardrailsGenerator({ useCaseId, assessmentData, useCase
       
       if (saveResponse.ok) {
         const saveResult = await saveResponse.json();
-        console.log('Save result:', saveResult);
+        console.log('✅ Save successful:', saveResult);
         // Update the guardrails with the saved ID and rule IDs
         if (saveResult.guardrailId) {
           guardrailData.id = saveResult.guardrailId;
-          
+
           // Update rules with their database IDs
           if (saveResult.rules && saveResult.rules.length > 0) {
             const rulesMap = new Map();
             saveResult.rules.forEach((dbRule: any) => {
               rulesMap.set(dbRule.rule, dbRule);
             });
-            
+
             // Update configuration rules with database IDs
             if (guardrailData?.guardrails?.rules) {
               Object.keys(guardrailData.guardrails.rules).forEach(category => {
@@ -232,16 +232,25 @@ export default function GuardrailsGenerator({ useCaseId, assessmentData, useCase
               });
             }
           }
-          
+
           setGuardrails(guardrailData);
-          
+
           // Update parent with the guardrails that now have IDs
           if (onGuardrailsGenerated) {
             onGuardrailsGenerated(guardrailData);
           }
         }
       } else {
-        console.error('Failed to save guardrails:', await saveResponse.text());
+        const errorText = await saveResponse.text();
+        console.error('❌ Failed to save guardrails:', errorText);
+        console.error('❌ Response status:', saveResponse.status);
+        console.error('❌ Response statusText:', saveResponse.statusText);
+
+        // Show error to user
+        setError(`Warning: Guardrails generated but failed to save to database. Error: ${errorText.substring(0, 200)}`);
+
+        // Still show the guardrails in the UI even if save failed
+        // User can manually save later
       }
 
     } catch (err) {

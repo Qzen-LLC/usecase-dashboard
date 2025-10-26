@@ -101,10 +101,16 @@ export class EvaluationContextAggregator {
     console.log(`🔍 Fetching guardrails for use case: ${useCaseId}, guardrailsId: ${guardrailsId}`);
     const guardrails = await this.fetchGuardrails(useCaseId, guardrailsId);
     if (!guardrails) {
-      console.error(`No guardrails found for use case: ${useCaseId}`);
-      throw new Error(`No guardrails found for use case: ${useCaseId}. Please generate guardrails first before creating evaluations.`);
+      console.error(`❌ No guardrails found for use case: ${useCaseId}`);
+      throw new Error(
+        `No guardrails configuration found for use case: ${useCaseId}. ` +
+        `Please go to the "AI Guardrails" tab and generate guardrails first before creating evaluations. ` +
+        `If you already generated guardrails, try regenerating them to ensure they are properly saved.`
+      );
     }
-    console.log(`✅ Found guardrails with ${Object.keys(guardrails).length} rules`);
+
+    const guardrailsInfo = this.getGuardrailsInfo(guardrails);
+    console.log(`✅ Found guardrails:`, guardrailsInfo);
 
     // Fetch assessments
     const assessments = await this.fetchAssessments(useCaseId);
@@ -165,12 +171,9 @@ export class EvaluationContextAggregator {
     return await prismaClient.useCase.findUnique({
       where: { id: useCaseId },
       include: {
-        assessData: true,  // Changed from assessments
-        guardrails: true,
-        evaluations: {
-          orderBy: { createdAt: 'desc' },
-          take: 5
-        }
+        assessData: true  // Changed from assessments
+        // Note: evaluations and guardrails relationships don't exist in schema
+        // They are fetched separately in other methods
       }
     });
   }
@@ -180,27 +183,29 @@ export class EvaluationContextAggregator {
    */
   private async fetchGuardrails(useCaseId: string, guardrailsId?: string): Promise<GuardrailsConfig | null> {
     let guardrailRecord;
-    
+
     if (guardrailsId) {
       console.log(`Fetching guardrails by ID: ${guardrailsId}`);
       guardrailRecord = await prismaClient.guardrail.findUnique({
-        where: { id: guardrailsId }
+        where: { id: guardrailsId },
+        include: { rules: true }
       });
     }
-    
+
     // If no ID provided or not found by ID, get the latest guardrails for the use case
     if (!guardrailRecord) {
       console.log(`Fetching latest guardrails for use case: ${useCaseId}`);
       guardrailRecord = await prismaClient.guardrail.findFirst({
         where: { useCaseId },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        include: { rules: true }
       });
-      
+
       if (guardrailRecord) {
         console.log(`Found guardrail record with ID: ${guardrailRecord.id}`);
       } else {
         console.log(`No guardrail records found for use case: ${useCaseId}`);
-        
+
         // Try to list all guardrails to debug
         const allGuardrails = await prismaClient.guardrail.findMany({
           select: { id: true, useCaseId: true }
@@ -209,12 +214,144 @@ export class EvaluationContextAggregator {
       }
     }
 
-    if (!guardrailRecord || !guardrailRecord.configuration) {
-      console.log(`Guardrail record status - exists: ${!!guardrailRecord}, has configuration: ${!!guardrailRecord?.configuration}`);
+    if (!guardrailRecord) {
+      console.log(`❌ No guardrail record found`);
       return null;
     }
 
-    return guardrailRecord.configuration as GuardrailsConfig;
+    // Check what data we have
+    console.log(`📊 Guardrail record analysis:`, {
+      id: guardrailRecord.id,
+      hasConfiguration: !!guardrailRecord.configuration,
+      configType: typeof guardrailRecord.configuration,
+      hasRules: !!guardrailRecord.rules,
+      rulesCount: guardrailRecord.rules?.length || 0
+    });
+
+    // If we have a valid configuration, return it
+    if (guardrailRecord.configuration && typeof guardrailRecord.configuration === 'object') {
+      console.log(`✅ Using configuration from database`);
+      return guardrailRecord.configuration as GuardrailsConfig;
+    }
+
+    // Fallback: If configuration is missing but we have rules, reconstruct it
+    if (guardrailRecord.rules && guardrailRecord.rules.length > 0) {
+      console.log(`⚙️ Configuration missing, reconstructing from ${guardrailRecord.rules.length} rules`);
+
+      const reconstructedConfig = this.reconstructConfigFromRules(guardrailRecord.rules);
+
+      // Optionally update the database with the reconstructed config
+      try {
+        await prismaClient.guardrail.update({
+          where: { id: guardrailRecord.id },
+          data: { configuration: reconstructedConfig }
+        });
+        console.log(`💾 Saved reconstructed configuration to database`);
+      } catch (updateError) {
+        console.warn(`⚠️ Could not save reconstructed config:`, updateError);
+      }
+
+      return reconstructedConfig;
+    }
+
+    // Neither configuration nor rules exist
+    console.log(`❌ Guardrail record has neither configuration nor rules`);
+    return null;
+  }
+
+  /**
+   * Reconstruct GuardrailsConfig from database rules
+   */
+  private reconstructConfigFromRules(rules: any[]): GuardrailsConfig {
+    const rulesByCategory: Record<string, any[]> = {
+      critical: [],
+      high: [],
+      medium: [],
+      low: [],
+      operational: [],
+      ethical: [],
+      economic: [],
+      evolutionary: []
+    };
+
+    // Group rules by severity and type
+    rules.forEach(rule => {
+      const guardrail = {
+        id: rule.id,
+        type: rule.type,
+        severity: rule.severity,
+        rule: rule.rule,
+        description: rule.description,
+        rationale: rule.rationale,
+        implementation: rule.implementation || {
+          platform: ['all'],
+          configuration: {},
+          monitoring: []
+        },
+        conditions: rule.conditions,
+        exceptions: rule.exceptions,
+        status: rule.status
+      };
+
+      // Add to severity category
+      if (rule.severity && rulesByCategory[rule.severity]) {
+        rulesByCategory[rule.severity].push(guardrail);
+      }
+
+      // Also add to type-based categories
+      if (['performance', 'cost_control', 'operational', 'integration'].includes(rule.type)) {
+        rulesByCategory.operational.push(guardrail);
+      }
+      if (['ethical', 'bias_mitigation', 'bias_testing'].includes(rule.type)) {
+        rulesByCategory.ethical.push(guardrail);
+      }
+      if (rule.type === 'cost_control') {
+        rulesByCategory.economic.push(guardrail);
+      }
+    });
+
+    return {
+      guardrails: {
+        version: '2.0.0',
+        platform: 'multi-platform',
+        rules: rulesByCategory,
+        deployment: {
+          stages: ['development', 'staging', 'production'],
+          rollback: {
+            triggers: ['error_rate > 5%'],
+            strategy: 'gradual'
+          }
+        },
+        monitoring: [],
+        documentation: {
+          rationale: 'Reconstructed from database rules',
+          tradeoffs: [],
+          assumptions: []
+        }
+      },
+      reasoning: {
+        timestamp: new Date().toISOString(),
+        agentContributions: [],
+        conflictsResolved: [],
+        assumptions: ['Configuration reconstructed from saved rules']
+      },
+      confidence: {
+        overall: 0.8,
+        breakdown: {
+          dataCompleteness: 0.8,
+          regulatoryAlignment: 0.8,
+          technicalFeasibility: 0.8,
+          businessViability: 0.8
+        },
+        uncertainties: ['Configuration was reconstructed from rules']
+      },
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        version: '2.0.0',
+        agents: ['database-reconstruction'],
+        contextComplexity: 5
+      }
+    } as GuardrailsConfig;
   }
 
   /**
@@ -503,12 +640,66 @@ export class EvaluationContextAggregator {
     if (assessments.risk?.riskManagementProcess) score += 1;
     
     // Check experience
-    if (useCase.evaluations?.length > 5) score += 2;
+    // Note: evaluations relationship doesn't exist in schema,
+    // would need separate query if needed
+    // if (useCase.evaluations?.length > 5) score += 2;
     
     if (score >= 8) return 'Advanced';
     if (score >= 5) return 'Intermediate';
     if (score >= 2) return 'Developing';
     return 'Initial';
+  }
+
+  /**
+   * Get summary info about guardrails for logging
+   */
+  private getGuardrailsInfo(guardrails: GuardrailsConfig): any {
+    const rulesObject = this.extractRulesObject(guardrails);
+    let totalRules = 0;
+    const categories: string[] = [];
+
+    if (rulesObject) {
+      Object.entries(rulesObject).forEach(([category, rules]) => {
+        if (Array.isArray(rules) && rules.length > 0) {
+          categories.push(`${category}(${rules.length})`);
+          totalRules += rules.length;
+        }
+      });
+    }
+
+    return {
+      totalRules,
+      categories: categories.join(', '),
+      structure: guardrails?.guardrails?.rules ? 'nested' : guardrails?.rules ? 'direct' : 'unknown'
+    };
+  }
+
+  /**
+   * Extract rules object from guardrails config (handles multiple formats)
+   */
+  private extractRulesObject(guardrails: GuardrailsConfig): any {
+    // The guardrails configuration can be in different formats depending on the source
+    // Check for nested structure first (from API), then direct structure (from DB)
+
+    if (guardrails?.guardrails?.rules) {
+      // Structure from API: { guardrails: { rules: {...} } }
+      return guardrails.guardrails.rules;
+    }
+
+    if (guardrails?.rules) {
+      // Direct structure from DB: { rules: {...} }
+      return guardrails.rules;
+    }
+
+    if ((guardrails as any)?.guardrails && typeof (guardrails as any).guardrails === 'object') {
+      // Sometimes the configuration is { guardrails: {...} } without nested rules
+      const g = (guardrails as any).guardrails;
+      if (g.rules) {
+        return g.rules;
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -520,40 +711,21 @@ export class EvaluationContextAggregator {
     const enforcementStrategies: Set<string> = new Set();
 
     // Debug log the guardrails structure
-    console.log('Processing guardrails structure:', JSON.stringify(Object.keys(guardrails || {})));
-    
-    // The guardrails configuration can be in different formats depending on the source
-    // Check for nested structure first (from API), then direct structure (from DB)
-    let rulesObject = null;
-    
-    if (guardrails?.guardrails?.rules) {
-      // Structure from API: { guardrails: { rules: {...} } }
-      rulesObject = guardrails.guardrails.rules;
-      console.log('Found rules in guardrails.guardrails.rules structure');
-    } else if (guardrails?.rules) {
-      // Direct structure from DB: { rules: {...} }
-      rulesObject = guardrails.rules;
-      console.log('Found rules in guardrails.rules structure');
-    } else if ((guardrails as any)?.guardrails && typeof (guardrails as any).guardrails === 'object') {
-      // Sometimes the configuration is { guardrails: {...} } without nested rules
-      const g = (guardrails as any).guardrails;
-      if (g.rules) {
-        rulesObject = g.rules;
-        console.log('Found rules in alternate guardrails structure');
-      }
-    }
-    
+    console.log('📋 Processing guardrails structure:', JSON.stringify(Object.keys(guardrails || {})));
+
+    const rulesObject = this.extractRulesObject(guardrails);
+
     // Extract all rules
     if (rulesObject) {
-      console.log('Rules categories found:', Object.keys(rulesObject));
+      console.log('📂 Rules categories found:', Object.keys(rulesObject));
       Object.entries(rulesObject).forEach(([category, rules]) => {
         if (Array.isArray(rules)) {
-          console.log(`Processing ${rules.length} rules in category: ${category}`);
+          console.log(`  └─ ${category}: ${rules.length} rules`);
           allRules.push(...rules);
           rules.forEach((rule: any) => {
             const type = rule.type || category;
             rulesByType[type] = (rulesByType[type] || 0) + 1;
-            
+
             // Extract enforcement strategies
             if (rule.implementation?.enforcement) {
               enforcementStrategies.add(rule.implementation.enforcement);
@@ -562,13 +734,19 @@ export class EvaluationContextAggregator {
         }
       });
     } else {
-      console.log('No rules found in guardrails configuration');
-      console.log('Full guardrails object:', JSON.stringify(guardrails, null, 2).substring(0, 500));
+      console.warn('⚠️ No rules found in guardrails configuration');
+      console.log('Configuration keys:', Object.keys(guardrails || {}));
+
+      // If guardrails were reconstructed, they should have rules
+      // This might indicate a deeper issue
+      if (guardrails?.metadata?.agents?.includes('database-reconstruction')) {
+        console.warn('⚠️ Guardrails were reconstructed but have no rules - this is unexpected');
+      }
     }
 
     const criticalRules = allRules.filter(r => r.severity === 'critical').length;
-    
-    console.log(`Processed ${allRules.length} total rules, ${criticalRules} critical`);
+
+    console.log(`✅ Processed ${allRules.length} total rules (${criticalRules} critical)`);
 
     return {
       configuration: guardrails,
