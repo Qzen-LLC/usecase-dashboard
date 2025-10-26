@@ -1,17 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { put } from '@vercel/blob';
-import { getSignedUrl } from '@vercel/blob';
 import { prismaClient } from '@/utils/db';
 import { v4 as uuidv4 } from 'uuid';
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (
+  request: Request,
+  { auth }: { auth: any }
+) => {
   try {
     // Check authentication
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     // Get user data from database
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
       include: { organization: true }
     });
 
@@ -115,4 +115,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

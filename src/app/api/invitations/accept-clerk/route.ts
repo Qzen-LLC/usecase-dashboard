@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { PrismaClient } from '@/generated/prisma';
 import { createClerkClient } from '@clerk/backend';
 import { validateUserRole } from '@/utils/role-validation';
@@ -7,21 +8,16 @@ import { validateUserRole } from '@/utils/role-validation';
 const prisma = new PrismaClient();
 const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: Request, { auth }: { auth: any }) => {
   try {
-    const user = await currentUser();
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     // Get user's public metadata from Clerk
+    const user = await clerk.users.getUser(auth.userId!);
     const publicMetadata = user.publicMetadata;
     const role = publicMetadata?.role as string;
     const organizationId = publicMetadata?.organizationId as string;
 
     console.log('[Clerk Invitation] Processing invitation for user:', {
-      clerkId: user.id,
+      clerkId: auth.userId!,
       email: user.emailAddresses[0]?.emailAddress,
       role,
       organizationId
@@ -37,7 +33,7 @@ export async function POST(req: Request) {
 
     // Check if user already exists
     let userRecord = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
 
     // Validate and correct role if needed
@@ -47,7 +43,7 @@ export async function POST(req: Request) {
       // Create user record
       userRecord = await prisma.user.create({
         data: {
-          clerkId: user.id,
+          clerkId: auth.userId!,
           email: user.emailAddresses[0]?.emailAddress || '',
           firstName: user.firstName || null,
           lastName: user.lastName || null,
@@ -83,8 +79,8 @@ export async function POST(req: Request) {
 
     // Clear the Clerk public metadata to prevent re-processing
     try {
-      console.log('[Clerk Invitation] Clearing public metadata for user:', user.id);
-      await clerk.users.updateUser(user.id, {
+      console.log('[Clerk Invitation] Clearing public metadata for user:', auth.userId!);
+      await clerk.users.updateUser(auth.userId!, {
         publicMetadata: {
           // Remove the invitation metadata
           role: undefined,
@@ -119,4 +115,4 @@ export async function POST(req: Request) {
       message: 'Failed to process invitation'
     }, { status: 500 });
   }
-}
+}, { requireUser: true });

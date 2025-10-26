@@ -364,18 +364,18 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Modern Header */}
-        <div className="bg-card rounded-xl shadow-sm border border-border p-5">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+        <div className="bg-card rounded-xl border border-border p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-semibold text-foreground leading-tight">
+              <h1 className="text-3xl font-semibold text-foreground leading-tight tracking-tight">
                 QUBE Admin Dashboard
               </h1>
-              <p className="text-muted-foreground mt-1 text-sm">
+              <p className="text-muted-foreground mt-2 text-sm">
                 Manage organizations and platform-wide settings
               </p>
             </div>
             <Button
-              className="flex items-center gap-2 px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex-shrink-0 bg-white text-foreground border-2 border-neutral-300 hover:bg-neutral-50 hover:border-neutral-400 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700 dark:hover:border-neutral-500 font-medium"
+              className="flex items-center gap-2 px-6 py-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-150"
               onClick={() => setShowCreateOrg(true)}
             >
               <Plus className="w-4 h-4" />
@@ -385,14 +385,14 @@ export default function AdminDashboard() {
         </div>
 
         {/* Question Management Section */}
-        <div className="bg-card rounded-xl shadow-sm border border-border p-5">
+        <div className="bg-card rounded-xl border border-border p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-primary" />
+              <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-primary" />
                 Question Management
               </h2>
-              <p className="text-muted-foreground mt-1 text-sm">
+              <p className="text-muted-foreground mt-2 text-sm">
                 Configure global question templates and organization-specific questions
               </p>
             </div>
@@ -400,7 +400,8 @@ export default function AdminDashboard() {
               {/* Question Templates Button */}
               <Button
                 onClick={handleNavigateToQuestionTemplates}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-700 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-800"
+                variant="outline"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg"
               >
                 <Settings className="w-4 h-4" />
                 Question Templates
@@ -411,7 +412,7 @@ export default function AdminDashboard() {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-700 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-800"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg"
                   >
                     <Building2 className="w-4 h-4" />
                     Organization Questions
@@ -622,41 +623,41 @@ export default function AdminDashboard() {
           </div>
         )}
 
-         {/* Analytics Cards */}
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-           <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-lg">
-             <CardContent className="p-3">
+         {/* Analytics Cards - Clean & Minimal */}
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+           <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-150">
+             <CardContent className="p-6">
                <div className="text-center">
-                 <p className="text-sm font-medium text-muted-foreground mb-1">
+                 <p className="text-sm font-medium text-muted-foreground mb-2">
                    Organizations
                  </p>
-                 <p className="text-2xl font-bold text-foreground">
+                 <p className="text-3xl font-bold text-foreground">
                    {totalOrgs}
                  </p>
                </div>
              </CardContent>
            </Card>
 
-           <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-lg">
-             <CardContent className="p-3">
+           <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-150">
+             <CardContent className="p-6">
                <div className="text-center">
-                 <p className="text-sm font-medium text-muted-foreground mb-1">
+                 <p className="text-sm font-medium text-muted-foreground mb-2">
                    Users
                  </p>
-                 <p className="text-2xl font-bold text-foreground">
+                 <p className="text-3xl font-bold text-foreground">
                    {totalUsers}
                  </p>
                </div>
              </CardContent>
            </Card>
 
-           <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-lg">
-             <CardContent className="p-3">
+           <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-150">
+             <CardContent className="p-6">
                <div className="text-center">
-                 <p className="text-sm font-medium text-muted-foreground mb-1">
+                 <p className="text-sm font-medium text-muted-foreground mb-2">
                    Use Cases
                  </p>
-                 <p className="text-2xl font-bold text-foreground">
+                 <p className="text-3xl font-bold text-foreground">
                    {allUseCases.length}
                  </p>
                </div>
@@ -708,8 +709,8 @@ export default function AdminDashboard() {
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="text-base font-semibold text-foreground">
+                        <div className="mb-2">
+                          <h3 className="text-base font-semibold text-foreground mb-1">
                             {org.name}
                           </h3>
                           {org.domain && (

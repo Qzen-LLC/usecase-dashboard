@@ -1,33 +1,19 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { prismaClient } from '@/utils/db';
 
 // PUT /api/risks/[useCaseId]/[riskId] - Update a risk
-export async function PUT(
+export const PUT = withAuth(async (
   request: Request,
-  { params }: { params: { useCaseId: string; riskId: string } }
-) {
+  { params, auth }: { params: { useCaseId: string; riskId: string }, auth: any }
+) => {
   try {
-    // TEMPORARY: Auth bypass for testing
-    const user = await currentUser();
-    let userRecord;
-    
-    if (!user) {
-      // Use bypass user for testing
-      console.log('[API] Using bypass user for testing');
-      userRecord = await prismaClient.user.findFirst({
-        where: { role: 'QZEN_ADMIN' }
-      });
-      if (!userRecord) {
-        return NextResponse.json({ error: 'No admin user found for bypass' }, { status: 500 });
-      }
-    } else {
-      userRecord = await prismaClient.user.findUnique({
-        where: { clerkId: user.id },
-      });
-      if (!userRecord) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId: auth.userId! },
+    });
+    if (!userRecord) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const data = await request.json();
@@ -62,20 +48,17 @@ export async function PUT(
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });
 
 // DELETE /api/risks/[useCaseId]/[riskId] - Delete a risk
-export async function DELETE(
+export const DELETE = withAuth(async (
   request: Request,
-  { params }: { params: { useCaseId: string; riskId: string } }
-) {
+  { params, auth }: { params: { useCaseId: string; riskId: string }, auth: any }
+) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
     if (!userRecord) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -94,4 +77,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

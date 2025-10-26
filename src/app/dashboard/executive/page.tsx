@@ -54,22 +54,117 @@ const ExecutiveDashboard = () => {
     setTimeout(() => setIsRefreshing(false), 1000);
   };
 
+  const handleExport = () => {
+    if (!metrics) return;
+
+    // Create CSV content
+    const csvContent = generateCSVContent(metrics);
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `executive-dashboard-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const generateCSVContent = (metrics: any) => {
+    const rows = [];
+    
+    // Header
+    rows.push(['Executive Dashboard Report', new Date().toLocaleDateString()]);
+    rows.push([]);
+    
+    // Portfolio Metrics
+    rows.push(['PORTFOLIO METRICS']);
+    rows.push(['Metric', 'Value']);
+    rows.push(['Total Use Cases', metrics.portfolio?.totalUseCases || 0]);
+    rows.push(['Portfolio Score', `${(metrics.portfolio?.overallScore || 0).toFixed(1)}/10`]);
+    rows.push(['Average Complexity', `${(metrics.portfolio?.complexityAnalysis?.average || 0).toFixed(1)}/10`]);
+    rows.push(['Average Confidence', `${Math.round(metrics.portfolio?.confidenceAnalysis?.average || 0)}%`]);
+    rows.push([]);
+    
+    // Stage Distribution
+    if (metrics.portfolio?.stageDistribution) {
+      rows.push(['STAGE DISTRIBUTION']);
+      rows.push(['Stage', 'Count']);
+      Object.entries(metrics.portfolio.stageDistribution).forEach(([stage, count]) => {
+        rows.push([stage.replace('-', ' '), count]);
+      });
+      rows.push([]);
+    }
+    
+    // Priority Distribution
+    if (metrics.portfolio?.priorityDistribution) {
+      rows.push(['PRIORITY DISTRIBUTION']);
+      rows.push(['Priority', 'Count']);
+      Object.entries(metrics.portfolio.priorityDistribution).forEach(([priority, count]) => {
+        rows.push([priority, count]);
+      });
+      rows.push([]);
+    }
+    
+    // Financial Metrics
+    if (metrics.financial) {
+      rows.push(['FINANCIAL METRICS']);
+      rows.push(['Metric', 'Value']);
+      rows.push(['Total Investment', formatCurrency(metrics.financial.totalInvestment ?? 0)]);
+      rows.push(['Total ROI', formatCurrency(metrics.financial.totalROI ?? 0)]);
+      rows.push(['Average ROI', `${(metrics.financial.averageROI ?? 0).toFixed(1)}%`]);
+      rows.push(['Avg Cost per Use Case', formatCurrency((metrics.financial.totalInvestment ?? 0) / (metrics.portfolio?.totalUseCases || 1))]);
+      rows.push([]);
+    }
+    
+    // Risk Assessment
+    if (metrics.risk) {
+      rows.push(['RISK ASSESSMENT']);
+      rows.push(['Risk Level', 'Count']);
+      if (metrics.risk.riskDistribution) {
+        Object.entries(metrics.risk.riskDistribution).forEach(([risk, count]) => {
+          rows.push([risk, count]);
+        });
+      }
+      rows.push(['Total Assessed', metrics.risk.totalAssessed ?? 0]);
+      rows.push([]);
+    }
+    
+    // Strategic Insights
+    if (metrics.strategic) {
+      rows.push(['STRATEGIC INSIGHTS']);
+      
+      if (metrics.strategic.businessFunctionPerformance) {
+        rows.push(['BUSINESS FUNCTION PERFORMANCE']);
+        rows.push(['Function', 'Count', 'Average ROI']);
+        metrics.strategic.businessFunctionPerformance.forEach((func: any) => {
+          rows.push([func.function, func.count, `${func.averageROI.toFixed(1)}%`]);
+        });
+        rows.push([]);
+      }
+      
+      if (metrics.strategic.portfolioBalance) {
+        rows.push(['PORTFOLIO BALANCE']);
+        rows.push(['Category', 'Count']);
+        rows.push(['Quick Wins', metrics.strategic.portfolioBalance.quickWins ?? 0]);
+        rows.push(['High Impact Low Complexity', metrics.strategic.portfolioBalance.highImpactLowComplexity ?? 0]);
+      }
+    }
+    
+    // Convert to CSV string
+    return rows.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-6">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
-            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-blue-400 rounded-full animate-spin mx-auto" style={{animationDelay: '0.5s', animationDuration: '1.5s'}}></div>
-          </div>
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
           <div className="space-y-2">
-            <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300">Loading Executive Dashboard</h3>
-            <p className="text-slate-500 dark:text-slate-400">Gathering portfolio insights and metrics...</p>
-          </div>
-          <div className="flex justify-center space-x-1">
-            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+            <h3 className="text-xl font-semibold text-foreground">Loading Executive Dashboard</h3>
+            <p className="text-muted-foreground">Gathering portfolio insights and metrics...</p>
           </div>
         </div>
       </div>
@@ -78,24 +173,19 @@ const ExecutiveDashboard = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-100 dark:from-red-900 dark:via-red-800 dark:to-red-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="max-w-md w-full">
-          <Card className="p-8 text-center space-y-6 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-red-200 dark:border-red-700">
-            <div className="relative">
-              <div className="w-20 h-20 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto">
-                <AlertTriangle className="w-10 h-10 text-red-600 dark:text-red-400" />
-              </div>
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">!</span>
-              </div>
+          <Card className="p-8 text-center space-y-6">
+            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-8 h-8 text-destructive" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Unable to Load Dashboard</h2>
-              <p className="text-slate-600 dark:text-slate-400">{error?.message}</p>
+              <h2 className="text-2xl font-bold text-foreground">Unable to Load Dashboard</h2>
+              <p className="text-muted-foreground">{error?.message}</p>
             </div>
             <button 
               onClick={handleRefresh}
-              className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+              className="w-full bg-primary text-primary-foreground font-medium py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors duration-150"
             >
               <RefreshCw className={`w-5 h-5 inline mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
               Try Again
@@ -108,50 +198,51 @@ const ExecutiveDashboard = () => {
 
   if (!metrics) {
     return (
-      <div className="error-container">
-        <div className="error-card">
-          <div className="error-icon">
-            <span className="text-2xl text-red-500">!</span>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="p-8 text-center space-y-4">
+          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-8 h-8 text-muted-foreground" />
           </div>
-          <p className="error-message">No metrics data available</p>
-        </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-foreground">No Data Available</h2>
+            <p className="text-muted-foreground">No metrics data available for this organization.</p>
+          </div>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Enhanced Page Header */}
+        {/* Clean Page Header */}
         <div className="mb-12">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="relative">
-                <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-4 rounded-2xl shadow-lg transition-transform duration-300">
-                  <BarChart3 className="w-10 h-10 text-white" />
-                </div>
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                  <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
-                </div>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                <BarChart3 className="w-6 h-6 text-primary" />
               </div>
-              <div className="space-y-2">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 dark:from-slate-200 dark:to-slate-400 bg-clip-text text-transparent">
+              <div className="space-y-1">
+                <h1 className="text-3xl font-bold text-foreground tracking-tight">
                   Executive Dashboard
                 </h1>
-                <p className="text-slate-600 dark:text-slate-400 text-lg">
-                  Portfolio, Financial, Risk, and Strategic Insights at a glance
+                <p className="text-muted-foreground">
+                  Portfolio, Financial, Risk, and Strategic Insights
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={handleRefresh}
-                className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-all duration-300 hover:shadow-md"
+                className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg hover:bg-muted transition-colors duration-150"
               >
                 <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                 Refresh
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:shadow-lg transform hover:scale-105">
+              <button 
+                onClick={handleExport}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-150"
+              >
                 <Download className="w-4 h-4" />
                 Export
               </button>
@@ -159,53 +250,35 @@ const ExecutiveDashboard = () => {
           </div>
         </div>
 
-        {/* Enhanced KPI Cards */}
+        {/* Clean KPI Cards */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {/* Total Use Cases Card */}
-          <Card className="group relative overflow-hidden bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 transition-all duration-500 transform hover:scale-105 hover:shadow-2xl border-0">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
-                <span className="px-3 py-1 bg-white/20 text-white text-xs font-semibold rounded-full backdrop-blur-sm">
-                  Portfolio
-                </span>
-              </div>
+          <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+            <div className="p-6">
               <div className="space-y-2">
-                <p className="text-blue-100 text-sm font-medium">Total Use Cases</p>
-                <p className="text-white text-4xl font-bold">
+                <p className="text-sm font-medium text-muted-foreground">Total Use Cases</p>
+                <p className="text-3xl font-bold text-foreground">
                   {Math.round(animatedValues.totalUseCases || 0)}
                 </p>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-blue-100 text-xs">Active</span>
+                  <div className="w-2 h-2 bg-success rounded-full"></div>
+                  <span className="text-xs text-muted-foreground">Active</span>
                 </div>
               </div>
             </div>
           </Card>
 
           {/* Portfolio Score Card */}
-          <Card className="group relative overflow-hidden bg-gradient-to-br from-emerald-500 via-green-600 to-teal-600 hover:from-emerald-600 hover:via-green-700 hover:to-teal-700 transition-all duration-500 transform hover:scale-105 hover:shadow-2xl border-0">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                  <Target className="w-6 h-6 text-white" />
-                </div>
-                <span className="px-3 py-1 bg-white/20 text-white text-xs font-semibold rounded-full backdrop-blur-sm">
-                  Score
-                </span>
-              </div>
+          <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+            <div className="p-6">
               <div className="space-y-2">
-                <p className="text-green-100 text-sm font-medium">Portfolio Score</p>
-                <p className="text-white text-4xl font-bold">
+                <p className="text-sm font-medium text-muted-foreground">Portfolio Score</p>
+                <p className="text-3xl font-bold text-foreground">
                   {(animatedValues.portfolioScore || 0).toFixed(1)}/10
                 </p>
-                <div className="w-full bg-white/20 rounded-full h-2">
+                <div className="w-full bg-muted rounded-full h-2">
                   <div 
-                    className="bg-white h-2 rounded-full transition-all duration-1000 ease-out"
+                    className="bg-primary h-2 rounded-full transition-all duration-1000 ease-out"
                     style={{ width: `${(animatedValues.portfolioScore || 0) * 10}%` }}
                   ></div>
                 </div>
@@ -214,50 +287,32 @@ const ExecutiveDashboard = () => {
           </Card>
 
           {/* Complexity Card */}
-          <Card className="group relative overflow-hidden bg-gradient-to-br from-amber-500 via-orange-600 to-red-500 hover:from-amber-600 hover:via-orange-700 hover:to-red-600 transition-all duration-500 transform hover:scale-105 hover:shadow-2xl border-0">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                  <Zap className="w-6 h-6 text-white" />
-                </div>
-                <span className="px-3 py-1 bg-white/20 text-white text-xs font-semibold rounded-full backdrop-blur-sm">
-                  Complexity
-                </span>
-              </div>
+          <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+            <div className="p-6">
               <div className="space-y-2">
-                <p className="text-orange-100 text-sm font-medium">Avg Complexity</p>
-                <p className="text-white text-4xl font-bold">
+                <p className="text-sm font-medium text-muted-foreground">Avg Complexity</p>
+                <p className="text-3xl font-bold text-foreground">
                   {(animatedValues.complexity || 0).toFixed(1)}/10
                 </p>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-                  <span className="text-orange-100 text-xs">Moderate</span>
+                  <div className="w-2 h-2 bg-warning rounded-full"></div>
+                  <span className="text-xs text-muted-foreground">Moderate</span>
                 </div>
               </div>
             </div>
           </Card>
 
           {/* Confidence Card */}
-          <Card className="group relative overflow-hidden bg-gradient-to-br from-purple-500 via-violet-600 to-purple-700 hover:from-purple-600 hover:via-violet-700 hover:to-purple-800 transition-all duration-500 transform hover:scale-105 hover:shadow-2xl border-0">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                  <CheckCircle className="w-6 h-6 text-white" />
-                </div>
-                <span className="px-3 py-1 bg-white/20 text-white text-xs font-semibold rounded-full backdrop-blur-sm">
-                  Confidence
-                </span>
-              </div>
+          <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+            <div className="p-6">
               <div className="space-y-2">
-                <p className="text-purple-100 text-sm font-medium">Avg Confidence</p>
-                <p className="text-white text-4xl font-bold">
+                <p className="text-sm font-medium text-muted-foreground">Avg Confidence</p>
+                <p className="text-3xl font-bold text-foreground">
                   {Math.round(animatedValues.confidence || 0)}%
                 </p>
-                <div className="w-full bg-white/20 rounded-full h-2">
+                <div className="w-full bg-muted rounded-full h-2">
                   <div 
-                    className="bg-white h-2 rounded-full transition-all duration-1000 ease-out"
+                    className="bg-primary h-2 rounded-full transition-all duration-1000 ease-out"
                     style={{ width: `${animatedValues.confidence || 0}%` }}
                   ></div>
                 </div>
@@ -266,39 +321,35 @@ const ExecutiveDashboard = () => {
           </Card>
         </section>
 
-        {/* Enhanced Portfolio Health Section */}
+        {/* Portfolio Health Section */}
         <section className="mb-12">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Portfolio Health</h2>
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-1 h-6 bg-primary rounded-full"></div>
+            <h2 className="text-2xl font-semibold text-foreground tracking-tight">Portfolio Health</h2>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Stage Distribution */}
             {Object.keys(metrics.portfolio.stageDistribution ?? {}).length > 0 && (
-              <Card className="group relative overflow-hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-900/20 dark:to-purple-900/20"></div>
-                <div className="relative p-6">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg">
-                      <PieChart className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">Stage Distribution</h3>
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+                <div className="p-6">
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-foreground">Stage Distribution</h3>
                   </div>
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {Object.entries(metrics.portfolio.stageDistribution || {}).map(([stage, count], index) => (
-                      <div key={stage} className="flex items-center justify-between p-3 bg-white/60 dark:bg-slate-700/60 rounded-lg backdrop-blur-sm hover:bg-white/80 dark:hover:bg-slate-700/80 transition-all duration-300">
+                      <div key={stage} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors duration-150">
                         <div className="flex items-center gap-3">
                           <div className={`w-3 h-3 rounded-full ${
-                            index === 0 ? 'bg-blue-500' :
-                            index === 1 ? 'bg-green-500' :
-                            index === 2 ? 'bg-yellow-500' :
-                            index === 3 ? 'bg-purple-500' : 'bg-gray-500'
+                            index === 0 ? 'bg-primary' :
+                            index === 1 ? 'bg-success' :
+                            index === 2 ? 'bg-warning' :
+                            index === 3 ? 'bg-secondary' : 'bg-muted-foreground'
                           }`}></div>
-                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300 capitalize">
+                          <span className="text-sm font-medium text-foreground capitalize">
                             {stage.replace('-', ' ')}
                           </span>
                         </div>
-                        <span className="px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold rounded-full">
+                        <span className="px-3 py-1 bg-primary text-primary-foreground text-sm font-medium rounded-md">
                           {count}
                         </span>
                       </div>
@@ -310,32 +361,28 @@ const ExecutiveDashboard = () => {
 
             {/* Priority Distribution */}
             {Object.keys(metrics.portfolio.priorityDistribution ?? {}).length > 0 && (
-              <Card className="group relative overflow-hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300">
-                <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-emerald-50/50 dark:from-green-900/20 dark:to-emerald-900/20"></div>
-                <div className="relative p-6">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-lg">
-                      <Target className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">Priority Distribution</h3>
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+                <div className="p-6">
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-foreground">Priority Distribution</h3>
                   </div>
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {Object.entries(metrics.portfolio.priorityDistribution || {}).map(([priority, count], index) => (
-                      <div key={priority} className="flex items-center justify-between p-3 bg-white/60 dark:bg-slate-700/60 rounded-lg backdrop-blur-sm hover:bg-white/80 dark:hover:bg-slate-700/80 transition-all duration-300">
+                      <div key={priority} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors duration-150">
                         <div className="flex items-center gap-3">
                           <div className={`w-3 h-3 rounded-full ${
-                            priority.toLowerCase() === 'high' ? 'bg-red-500' :
-                            priority.toLowerCase() === 'medium' ? 'bg-yellow-500' :
-                            priority.toLowerCase() === 'low' ? 'bg-green-500' : 'bg-gray-500'
+                            priority.toLowerCase() === 'high' ? 'bg-destructive' :
+                            priority.toLowerCase() === 'medium' ? 'bg-warning' :
+                            priority.toLowerCase() === 'low' ? 'bg-success' : 'bg-muted-foreground'
                           }`}></div>
-                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300 capitalize">
+                          <span className="text-sm font-medium text-foreground capitalize">
                             {priority}
                           </span>
                         </div>
-                        <span className={`px-3 py-1 text-white text-sm font-semibold rounded-full ${
-                          priority.toLowerCase() === 'high' ? 'bg-gradient-to-r from-red-500 to-red-600' :
-                          priority.toLowerCase() === 'medium' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
-                          priority.toLowerCase() === 'low' ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gradient-to-r from-gray-500 to-gray-600'
+                        <span className={`px-3 py-1 text-sm font-medium rounded-md ${
+                          priority.toLowerCase() === 'high' ? 'bg-destructive text-destructive-foreground' :
+                          priority.toLowerCase() === 'medium' ? 'bg-warning text-warning-foreground' :
+                          priority.toLowerCase() === 'low' ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'
                         }`}>
                           {count}
                         </span>
@@ -348,84 +395,57 @@ const ExecutiveDashboard = () => {
           </div>
         </section>
 
-        {/* Enhanced Financial Metrics Section */}
+        {/* Financial Metrics Section */}
         {metrics.financial && (
           <section className="mb-12">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-1 h-8 bg-gradient-to-b from-green-500 to-emerald-600 rounded-full"></div>
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Financial Metrics</h2>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-1 h-6 bg-primary rounded-full"></div>
+              <h2 className="text-2xl font-semibold text-foreground tracking-tight">Financial Metrics</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Total Investment */}
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-emerald-500 via-green-600 to-teal-600 hover:from-emerald-600 hover:via-green-700 hover:to-teal-700 transition-all duration-500 transform hover:scale-105 hover:shadow-2xl border-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
-                <div className="relative p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                      <DollarSign className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="px-3 py-1 bg-white/20 text-white text-xs font-semibold rounded-full backdrop-blur-sm">
-                      Investment
-                    </span>
-                  </div>
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+                <div className="p-6">
                   <div className="space-y-2">
-                    <p className="text-green-100 text-sm font-medium">Total Investment</p>
-                    <p className="text-white text-2xl font-bold">
+                    <p className="text-sm font-medium text-muted-foreground">Total Investment</p>
+                    <p className="text-2xl font-bold text-foreground">
                       {formatCurrency(metrics.financial.totalInvestment ?? 0)}
                     </p>
                     <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-green-300" />
-                      <span className="text-green-100 text-xs">Growing</span>
+                      <TrendingUp className="w-4 h-4 text-success" />
+                      <span className="text-xs text-muted-foreground">Growing</span>
                     </div>
                   </div>
                 </div>
               </Card>
 
               {/* Total ROI */}
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 hover:from-blue-600 hover:via-indigo-700 hover:to-purple-700 transition-all duration-500 transform hover:scale-105 hover:shadow-2xl border-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
-                <div className="relative p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                      <TrendingUp className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="px-3 py-1 bg-white/20 text-white text-xs font-semibold rounded-full backdrop-blur-sm">
-                      ROI
-                    </span>
-                  </div>
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+                <div className="p-6">
                   <div className="space-y-2">
-                    <p className="text-blue-100 text-sm font-medium">Total ROI</p>
-                    <p className="text-white text-2xl font-bold">
+                    <p className="text-sm font-medium text-muted-foreground">Total ROI</p>
+                    <p className="text-2xl font-bold text-foreground">
                       {formatCurrency(metrics.financial.totalROI ?? 0)}
                     </p>
                     <div className="flex items-center gap-2">
-                      <ArrowUpRight className="w-4 h-4 text-blue-300" />
-                      <span className="text-blue-100 text-xs">Positive</span>
+                      <ArrowUpRight className="w-4 h-4 text-success" />
+                      <span className="text-xs text-muted-foreground">Positive</span>
                     </div>
                   </div>
                 </div>
               </Card>
 
               {/* Average ROI */}
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-amber-500 via-orange-600 to-red-500 hover:from-amber-600 hover:via-orange-700 hover:to-red-600 transition-all duration-500 transform hover:scale-105 hover:shadow-2xl border-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
-                <div className="relative p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                      <BarChart3 className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="px-3 py-1 bg-white/20 text-white text-xs font-semibold rounded-full backdrop-blur-sm">
-                      Average
-                    </span>
-                  </div>
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+                <div className="p-6">
                   <div className="space-y-2">
-                    <p className="text-orange-100 text-sm font-medium">Average ROI</p>
-                    <p className="text-white text-2xl font-bold">
+                    <p className="text-sm font-medium text-muted-foreground">Average ROI</p>
+                    <p className="text-2xl font-bold text-foreground">
                       {(metrics.financial.averageROI ?? 0).toFixed(1)}%
                     </p>
-                    <div className="w-full bg-white/20 rounded-full h-2">
+                    <div className="w-full bg-muted rounded-full h-2">
                       <div 
-                        className="bg-white h-2 rounded-full transition-all duration-1000 ease-out"
+                        className="bg-primary h-2 rounded-full transition-all duration-1000 ease-out"
                         style={{ width: `${Math.min((metrics.financial.averageROI ?? 0) * 2, 100)}%` }}
                       ></div>
                     </div>
@@ -434,25 +454,16 @@ const ExecutiveDashboard = () => {
               </Card>
 
               {/* Average Cost per Use Case */}
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-purple-500 via-violet-600 to-purple-700 hover:from-purple-600 hover:via-violet-700 hover:to-purple-800 transition-all duration-500 transform hover:scale-105 hover:shadow-2xl border-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
-                <div className="relative p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                      <Clock className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="px-3 py-1 bg-white/20 text-white text-xs font-semibold rounded-full backdrop-blur-sm">
-                      Cost
-                    </span>
-                  </div>
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+                <div className="p-6">
                   <div className="space-y-2">
-                    <p className="text-purple-100 text-sm font-medium">Avg Cost per Use Case</p>
-                    <p className="text-white text-2xl font-bold">
+                    <p className="text-sm font-medium text-muted-foreground">Avg Cost per Use Case</p>
+                    <p className="text-2xl font-bold text-foreground">
                       {formatCurrency((metrics.financial.totalInvestment ?? 0) / (metrics.portfolio.totalUseCases || 1))}
                     </p>
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-purple-300 rounded-full animate-pulse"></div>
-                      <span className="text-purple-100 text-xs">Per Case</span>
+                      <div className="w-2 h-2 bg-primary rounded-full"></div>
+                      <span className="text-xs text-muted-foreground">Per Case</span>
                     </div>
                   </div>
                 </div>
@@ -461,109 +472,73 @@ const ExecutiveDashboard = () => {
           </section>
         )}
 
-        {/* Enhanced Risk Assessment Section */}
+        {/* Risk Assessment Section */}
         {metrics.risk && (
           <section className="mb-12">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-1 h-8 bg-gradient-to-b from-red-500 to-orange-600 rounded-full"></div>
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Risk Assessment</h2>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-1 h-6 bg-primary rounded-full"></div>
+              <h2 className="text-2xl font-semibold text-foreground tracking-tight">Risk Assessment</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* High Risk */}
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-red-500 via-red-600 to-pink-600 hover:from-red-600 hover:via-red-700 hover:to-pink-700 transition-all duration-500 transform hover:scale-105 hover:shadow-2xl border-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
-                <div className="relative p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                      <AlertTriangle className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="px-3 py-1 bg-white/20 text-white text-xs font-semibold rounded-full backdrop-blur-sm">
-                      High Risk
-                    </span>
-                  </div>
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+                <div className="p-6">
                   <div className="space-y-2">
-                    <p className="text-red-100 text-sm font-medium">High Risk Use Cases</p>
-                    <p className="text-white text-3xl font-bold">
+                    <p className="text-sm font-medium text-muted-foreground">High Risk Use Cases</p>
+                    <p className="text-3xl font-bold text-foreground">
                       {metrics.risk.riskDistribution?.High ?? 0}
                     </p>
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-red-300 rounded-full animate-pulse"></div>
-                      <span className="text-red-100 text-xs">Critical</span>
+                      <div className="w-2 h-2 bg-destructive rounded-full"></div>
+                      <span className="text-xs text-muted-foreground">Critical</span>
                     </div>
                   </div>
                 </div>
               </Card>
 
               {/* Medium Risk */}
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-amber-500 via-orange-600 to-yellow-600 hover:from-amber-600 hover:via-orange-700 hover:to-yellow-700 transition-all duration-500 transform hover:scale-105 hover:shadow-2xl border-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
-                <div className="relative p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                      <Clock className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="px-3 py-1 bg-white/20 text-white text-xs font-semibold rounded-full backdrop-blur-sm">
-                      Medium Risk
-                    </span>
-                  </div>
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+                <div className="p-6">
                   <div className="space-y-2">
-                    <p className="text-orange-100 text-sm font-medium">Medium Risk Use Cases</p>
-                    <p className="text-white text-3xl font-bold">
+                    <p className="text-sm font-medium text-muted-foreground">Medium Risk Use Cases</p>
+                    <p className="text-3xl font-bold text-foreground">
                       {metrics.risk.riskDistribution?.Medium ?? 0}
                     </p>
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-orange-300 rounded-full animate-pulse"></div>
-                      <span className="text-orange-100 text-xs">Monitor</span>
+                      <div className="w-2 h-2 bg-warning rounded-full"></div>
+                      <span className="text-xs text-muted-foreground">Monitor</span>
                     </div>
                   </div>
                 </div>
               </Card>
 
               {/* Low Risk */}
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-emerald-500 via-green-600 to-teal-600 hover:from-emerald-600 hover:via-green-700 hover:to-teal-700 transition-all duration-500 transform hover:scale-105 hover:shadow-2xl border-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
-                <div className="relative p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                      <Shield className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="px-3 py-1 bg-white/20 text-white text-xs font-semibold rounded-full backdrop-blur-sm">
-                      Low Risk
-                    </span>
-                  </div>
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+                <div className="p-6">
                   <div className="space-y-2">
-                    <p className="text-green-100 text-sm font-medium">Low Risk Use Cases</p>
-                    <p className="text-white text-3xl font-bold">
+                    <p className="text-sm font-medium text-muted-foreground">Low Risk Use Cases</p>
+                    <p className="text-3xl font-bold text-foreground">
                       {metrics.risk.riskDistribution?.Low ?? 0}
                     </p>
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-300 rounded-full animate-pulse"></div>
-                      <span className="text-green-100 text-xs">Safe</span>
+                      <div className="w-2 h-2 bg-success rounded-full"></div>
+                      <span className="text-xs text-muted-foreground">Safe</span>
                     </div>
                   </div>
                 </div>
               </Card>
 
               {/* Total Assessed */}
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 hover:from-blue-600 hover:via-indigo-700 hover:to-purple-700 transition-all duration-500 transform hover:scale-105 hover:shadow-2xl border-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
-                <div className="relative p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                      <CheckCircle className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="px-3 py-1 bg-white/20 text-white text-xs font-semibold rounded-full backdrop-blur-sm">
-                      Assessed
-                    </span>
-                  </div>
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+                <div className="p-6">
                   <div className="space-y-2">
-                    <p className="text-blue-100 text-sm font-medium">Total Assessed</p>
-                    <p className="text-white text-3xl font-bold">
+                    <p className="text-sm font-medium text-muted-foreground">Total Assessed</p>
+                    <p className="text-3xl font-bold text-foreground">
                       {metrics.risk.totalAssessed ?? 0}
                     </p>
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-blue-300" />
-                      <span className="text-blue-100 text-xs">Complete</span>
+                      <CheckCircle className="w-4 h-4 text-primary" />
+                      <span className="text-xs text-muted-foreground">Complete</span>
                     </div>
                   </div>
                 </div>
@@ -572,39 +547,35 @@ const ExecutiveDashboard = () => {
           </section>
         )}
 
-        {/* Enhanced Strategic Insights Section */}
+        {/* Strategic Insights Section */}
         {metrics.strategic && (
           <section className="mb-12">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-1 h-8 bg-gradient-to-b from-purple-500 to-indigo-600 rounded-full"></div>
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Strategic Insights</h2>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-1 h-6 bg-primary rounded-full"></div>
+              <h2 className="text-2xl font-semibold text-foreground tracking-tight">Strategic Insights</h2>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Business Function Performance */}
-              <Card className="group relative overflow-hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20"></div>
-                <div className="relative p-6">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg">
-                      <Building2 className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">Business Function Performance</h3>
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+                <div className="p-6">
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-foreground">Business Function Performance</h3>
                   </div>
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {metrics.strategic.businessFunctionPerformance?.map((func: any, index: number) => (
-                      <div key={func.function} className="flex items-center justify-between p-3 bg-white/60 dark:bg-slate-700/60 rounded-lg backdrop-blur-sm hover:bg-white/80 dark:hover:bg-slate-700/80 transition-all duration-300">
+                      <div key={func.function} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors duration-150">
                         <div className="flex items-center gap-3">
                           <div className={`w-3 h-3 rounded-full ${
-                            index === 0 ? 'bg-blue-500' :
-                            index === 1 ? 'bg-green-500' :
-                            index === 2 ? 'bg-yellow-500' :
-                            index === 3 ? 'bg-purple-500' : 'bg-gray-500'
+                            index === 0 ? 'bg-primary' :
+                            index === 1 ? 'bg-success' :
+                            index === 2 ? 'bg-warning' :
+                            index === 3 ? 'bg-secondary' : 'bg-muted-foreground'
                           }`}></div>
-                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                          <span className="text-sm font-medium text-foreground">
                             {func.function}
                           </span>
                         </div>
-                        <span className="px-3 py-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold rounded-full">
+                        <span className="px-3 py-1 bg-primary text-primary-foreground text-sm font-medium rounded-md">
                           {func.count}
                         </span>
                       </div>
@@ -614,31 +585,27 @@ const ExecutiveDashboard = () => {
               </Card>
               
               {/* Portfolio Balance */}
-              <Card className="group relative overflow-hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300">
-                <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-emerald-50/50 dark:from-green-900/20 dark:to-emerald-900/20"></div>
-                <div className="relative p-6">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-lg">
-                      <Target className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">Portfolio Balance</h3>
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+                <div className="p-6">
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-foreground">Portfolio Balance</h3>
                   </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-lg">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-4 bg-success/10 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Quick Wins</span>
+                        <div className="w-4 h-4 bg-success rounded-full"></div>
+                        <span className="text-sm font-medium text-foreground">Quick Wins</span>
                       </div>
-                      <span className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-lg font-bold rounded-full">
+                      <span className="px-4 py-2 bg-success text-success-foreground text-lg font-bold rounded-md">
                         {metrics.strategic.portfolioBalance?.quickWins ?? 0}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-lg">
+                    <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">High Impact Low Complexity</span>
+                        <div className="w-4 h-4 bg-primary rounded-full"></div>
+                        <span className="text-sm font-medium text-foreground">High Impact Low Complexity</span>
                       </div>
-                      <span className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-lg font-bold rounded-full">
+                      <span className="px-4 py-2 bg-primary text-primary-foreground text-lg font-bold rounded-md">
                         {metrics.strategic.portfolioBalance?.highImpactLowComplexity ?? 0}
                       </span>
                     </div>
@@ -647,30 +614,26 @@ const ExecutiveDashboard = () => {
               </Card>
               
               {/* Average ROI by Function */}
-              <Card className="group relative overflow-hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-900/20 dark:to-pink-900/20"></div>
-                <div className="relative p-6">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl shadow-lg">
-                      <TrendingUp className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">Average ROI by Function</h3>
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+                <div className="p-6">
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-foreground">Average ROI by Function</h3>
                   </div>
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {metrics.strategic.businessFunctionPerformance?.slice(0, 5).map((func: any, index: number) => (
-                      <div key={func.function} className="flex items-center justify-between p-3 bg-white/60 dark:bg-slate-700/60 rounded-lg backdrop-blur-sm hover:bg-white/80 dark:hover:bg-slate-700/80 transition-all duration-300">
+                      <div key={func.function} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors duration-150">
                         <div className="flex items-center gap-3">
                           <div className={`w-3 h-3 rounded-full ${
-                            index === 0 ? 'bg-purple-500' :
-                            index === 1 ? 'bg-pink-500' :
-                            index === 2 ? 'bg-indigo-500' :
-                            index === 3 ? 'bg-violet-500' : 'bg-gray-500'
+                            index === 0 ? 'bg-primary' :
+                            index === 1 ? 'bg-success' :
+                            index === 2 ? 'bg-warning' :
+                            index === 3 ? 'bg-secondary' : 'bg-muted-foreground'
                           }`}></div>
-                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                          <span className="text-sm font-medium text-foreground">
                             {func.function}
                           </span>
                         </div>
-                        <span className="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-600 text-white text-sm font-semibold rounded-full">
+                        <span className="px-3 py-1 bg-primary text-primary-foreground text-sm font-medium rounded-md">
                           {func.averageROI.toFixed(1)}%
                         </span>
                       </div>

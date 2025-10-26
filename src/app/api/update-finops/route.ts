@@ -1,17 +1,16 @@
 import { prismaClient } from "@/utils/db";
 import { NextResponse } from "next/server";
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
 
-
-export async function POST(req: Request) {
+export const POST = withAuth(async (
+    req: Request,
+    { auth }: { auth: any }
+) => {
     try {
-        const user = await currentUser();
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        // auth context is provided by withAuth wrapper
         
         const userRecord = await prismaClient.user.findUnique({
-            where: { clerkId: user.id },
+            where: { clerkId: auth.userId! },
         });
         
         if (!userRecord) {
@@ -50,11 +49,14 @@ export async function POST(req: Request) {
                 if (useCase.userId !== userRecord.id) {
                     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
                 }
-            } else if (userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') {
-                // ORG_ADMIN and ORG_USER can only update use cases in their organization
+            } else if (userRecord.role === 'ORG_ADMIN') {
+                // ORG_ADMIN can only update use cases in their organization
                 if (useCase.organizationId !== userRecord.organizationId) {
                     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
                 }
+            } else if (userRecord.role === 'ORG_USER') {
+                // ORG_USER cannot update FinOps data
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
             }
         }
 
@@ -98,4 +100,4 @@ export async function POST(req: Request) {
         console.error('Error updating FinOps:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
-}
+}, { requireUser: true });

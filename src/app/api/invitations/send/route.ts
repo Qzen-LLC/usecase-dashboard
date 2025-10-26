@@ -1,21 +1,19 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { PrismaClient } from '@/generated/prisma';
 import { createClerkClient } from '@clerk/backend';
 
 const prisma = new PrismaClient();
 const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: Request, { auth }: { auth: any }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     // Only QZen admins can send invitations (add your own role check here)
     const currentUserRecord = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
     if (!currentUserRecord) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -89,4 +87,4 @@ export async function POST(req: Request) {
     console.error('Error sending invitation:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}, { requireUser: true });

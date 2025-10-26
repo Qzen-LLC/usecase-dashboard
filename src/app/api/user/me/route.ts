@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
 import { prismaClient } from '@/utils/db';
+import { withAuth } from '@/lib/auth-gateway';
 
 
 // In-memory cache for development
@@ -45,23 +45,20 @@ async function invalidateUserCache(clerkId: string) {
   }
 }
 
-export async function GET() {
+export const GET = withAuth(async (req, { auth }) => {
   try {
-    const user = await currentUser();
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
+    const clerkId = auth.userId!;
 
     // Check cache first
-    const cached = await getCachedUser(user.id);
+    const cached = await getCachedUser(clerkId);
     if (cached) {
       return NextResponse.json(cached);
     }
 
     // Fetch user data with optimized query
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: clerkId },
       select: {
         id: true,
         email: true,
@@ -82,8 +79,7 @@ export async function GET() {
     if (!userRecord) {
       return NextResponse.json({ 
         error: 'User not found in database',
-        clerkId: user.id,
-        email: user.emailAddresses[0]?.emailAddress 
+        clerkId,
       }, { status: 404 });
     }
 
@@ -100,7 +96,7 @@ export async function GET() {
     };
 
     // Cache the response
-    await setCachedUser(user.id, responseData);
+    await setCachedUser(clerkId, responseData);
 
     return NextResponse.json(responseData);
 
@@ -111,18 +107,15 @@ export async function GET() {
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-}
+}, { requireUser: true });
 
-export async function POST() {
+export const POST = withAuth(async (req, { auth }) => {
   try {
-    const user = await currentUser();
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
+    const clerkId = auth.userId!;
 
     // Invalidate cache for this user
-    await invalidateUserCache(user.id);
+    await invalidateUserCache(clerkId);
 
     return NextResponse.json({ success: true, message: 'Cache invalidated' });
 
@@ -133,4 +126,4 @@ export async function POST() {
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-} 
+}, { requireUser: true });

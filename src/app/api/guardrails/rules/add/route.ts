@@ -1,30 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
 
-export async function POST(request: NextRequest) {
+
+export const POST = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const body = await request.json();
     const { guardrailId, rule } = body;
 
     if (!guardrailId || !rule) {
-      return NextResponse.json(
-        { error: 'Missing required parameters' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Missing required parameters' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Validate required fields in rule
     if (!rule.rule || !rule.description || !rule.type || !rule.severity) {
-      return NextResponse.json(
-        { error: 'Rule must have name, description, type, and severity' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Rule must have name, description, type, and severity' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Verify the guardrail exists
@@ -36,10 +27,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!guardrail) {
-      return NextResponse.json(
-        { error: 'Guardrail not found' },
-        { status: 404 }
-      );
+      return new Response(JSON.stringify({ error: 'Guardrail not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Check for duplicate rule names
@@ -51,11 +39,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingRule) {
-      return NextResponse.json(
-        { error: 'A rule with this name already exists in this guardrail' },
-        { status: 409 }
-      );
+      return new Response(JSON.stringify({ error: 'A rule with this name already exists in this guardrail' }), { status: 409, headers: { 'Content-Type': 'application/json' } });
     }
+
+    const currentUser = await prismaClient.user.findUnique({ where: { clerkId: auth.userId! } });
+    const currentEmail = currentUser?.email || auth.userId!;
 
     // Create the new rule
     const newRule = await prismaClient.guardrailRule.create({
@@ -76,7 +64,7 @@ export async function POST(request: NextRequest) {
         status: 'PENDING',
         isCustom: true,
         isEdited: false,
-        editedBy: user.emailAddresses?.[0]?.emailAddress || user.id,
+        editedBy: currentEmail,
         editedAt: new Date()
       }
     });
@@ -87,8 +75,8 @@ export async function POST(request: NextRequest) {
         guardrailId: guardrailId,
         ruleId: newRule.id,
         action: 'add_rule',
-        userId: user.id,
-        userName: user.emailAddresses?.[0]?.emailAddress || user.id,
+        userId: auth.userId!,
+        userName: currentEmail,
         changes: {
           added: rule
         }
@@ -100,7 +88,7 @@ export async function POST(request: NextRequest) {
       where: { id: guardrailId },
       data: {
         isEdited: true,
-        editedBy: user.emailAddresses?.[0]?.emailAddress || user.id,
+        editedBy: currentEmail,
         editedAt: new Date(),
         status: 'pending_approval',
         version: {
@@ -147,10 +135,15 @@ export async function POST(request: NextRequest) {
     });
 
     // Update guardrail configuration
+    const baseConfig = ((): any => {
+      const cfg = guardrail.configuration as any;
+      if (cfg && typeof cfg === 'object' && !Array.isArray(cfg)) return cfg;
+      try { return JSON.parse(JSON.stringify(cfg ?? {})); } catch { return {}; }
+    })();
     const updatedConfig = {
-      ...guardrail.configuration,
+      ...(baseConfig as Record<string, any>),
       guardrails: {
-        ...((guardrail.configuration as any)?.guardrails || {}),
+        ...((baseConfig as any)?.guardrails || {}),
         rules: categorizedRules
       }
     };
@@ -162,36 +155,27 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    return NextResponse.json({
+    return new Response(JSON.stringify({
       success: true,
       rule: newRule,
       message: 'Custom guardrail rule added successfully'
-    });
+    }), { headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error adding guardrail rule:', error);
-    return NextResponse.json(
-      { error: 'Failed to add guardrail rule', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Failed to add guardrail rule', details: error instanceof Error ? error.message : 'Unknown error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: true });
 
 // Delete a rule
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const { searchParams } = new URL(request.url);
     const ruleId = searchParams.get('ruleId');
 
     if (!ruleId) {
-      return NextResponse.json(
-        { error: 'Rule ID is required' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Rule ID is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Verify the rule exists
@@ -203,19 +187,16 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!rule) {
-      return NextResponse.json(
-        { error: 'Rule not found' },
-        { status: 404 }
-      );
+      return new Response(JSON.stringify({ error: 'Rule not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Check if rule is approved - approved rules cannot be deleted
     if (rule.status === 'APPROVED') {
-      return NextResponse.json(
-        { error: 'Cannot delete approved guardrails' },
-        { status: 403 }
-      );
+      return new Response(JSON.stringify({ error: 'Cannot delete approved guardrails' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
     }
+
+    const currentUser = await prismaClient.user.findUnique({ where: { clerkId: auth.userId! } });
+    const currentEmail = currentUser?.email || auth.userId!;
 
     // Create audit log before deletion
     await prismaClient.guardrailAudit.create({
@@ -223,8 +204,8 @@ export async function DELETE(request: NextRequest) {
         guardrailId: rule.guardrailId,
         ruleId: ruleId,
         action: 'remove_rule',
-        userId: user.id,
-        userName: user.emailAddresses?.[0]?.emailAddress || user.id,
+        userId: auth.userId!,
+        userName: currentEmail,
         changes: {
           removed: rule
         }
@@ -241,21 +222,18 @@ export async function DELETE(request: NextRequest) {
       where: { id: rule.guardrailId },
       data: {
         isEdited: true,
-        editedBy: user.emailAddresses?.[0]?.emailAddress || user.id,
+        editedBy: currentEmail,
         editedAt: new Date(),
         status: 'pending_approval'
       }
     });
 
-    return NextResponse.json({
+    return new Response(JSON.stringify({
       success: true,
       message: 'Guardrail rule deleted successfully'
-    });
+    }), { headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error deleting guardrail rule:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete guardrail rule', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Failed to delete guardrail rule', details: error instanceof Error ? error.message : 'Unknown error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: true });

@@ -1,8 +1,8 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@clerk/nextjs';
-import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X, Eye, Trash2, RefreshCw, AlertTriangle, Users, Building2, Edit as EditIcon, ArrowRight as ArrowRightIcon } from 'lucide-react';
+import { useUserClient, useAuthClient } from '@/hooks/useAuthClient';
+import { Plus, Search, TrendingUp, Zap, DollarSign, Clock, User, X, Eye, Trash2, RefreshCw, AlertTriangle, Users, Building2, Edit as EditIcon, ArrowRight as ArrowRightIcon, GripVertical } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,14 +53,62 @@ import {
 } from '@dnd-kit/core';
 
 const stages = [
-  { id: 'discovery', title: 'Discovery', color: 'bg-card', textColor: 'text-foreground' },
-  { id: 'business-case', title: 'Business Case', color: 'bg-card', textColor: 'text-foreground' },
-  { id: 'proof-of-value', title: 'Proof of Value', color: 'bg-card', textColor: 'text-foreground' },
-  { id: 'backlog', title: 'Backlog', color: 'bg-card', textColor: 'text-foreground' },
-  { id: 'in-progress', title: 'In Progress', color: 'bg-card', textColor: 'text-foreground' },
-  { id: 'solution-validation', title: 'Solution Validation', color: 'bg-card', textColor: 'text-foreground' },
-  { id: 'pilot', title: 'Pilot', color: 'bg-card', textColor: 'text-foreground' },
-  { id: 'deployment', title: 'Deployment', color: 'bg-card', textColor: 'text-foreground' }
+  { 
+    id: 'discovery', 
+    title: 'Discovery', 
+    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
+    textColor: 'text-white dark:text-gray-300', 
+    accentColor: 'bg-gray-500' 
+  },
+  { 
+    id: 'business-case', 
+    title: 'Business Case', 
+    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
+    textColor: 'text-white dark:text-gray-300', 
+    accentColor: 'bg-gray-500' 
+  },
+  { 
+    id: 'proof-of-value', 
+    title: 'Proof of Value', 
+    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
+    textColor: 'text-white dark:text-gray-300', 
+    accentColor: 'bg-gray-500' 
+  },
+  { 
+    id: 'backlog', 
+    title: 'Backlog', 
+    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
+    textColor: 'text-white dark:text-gray-300', 
+    accentColor: 'bg-gray-500' 
+  },
+  { 
+    id: 'in-progress', 
+    title: 'In Progress', 
+    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
+    textColor: 'text-white dark:text-gray-300', 
+    accentColor: 'bg-gray-500' 
+  },
+  { 
+    id: 'solution-validation', 
+    title: 'Solution Validation', 
+    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
+    textColor: 'text-white dark:text-gray-300', 
+    accentColor: 'bg-gray-500' 
+  },
+  { 
+    id: 'pilot', 
+    title: 'Pilot', 
+    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
+    textColor: 'text-white dark:text-gray-300', 
+    accentColor: 'bg-gray-500' 
+  },
+  { 
+    id: 'deployment', 
+    title: 'Deployment', 
+    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
+    textColor: 'text-white dark:text-gray-300', 
+    accentColor: 'bg-gray-500' 
+  }
 ] as const;
 
 const _STAGE_ORDER = [
@@ -75,10 +123,10 @@ const _STAGE_ORDER = [
 ];
 
 const _priorities = {
-  CRITICAL: { color: 'bg-destructive/10 text-destructive border-destructive/20', label: 'Critical' },
-  HIGH: { color: 'bg-warning/10 text-warning border-warning/20', label: 'High' },
-  MEDIUM: { color: 'bg-warning/10 text-warning border-warning/20', label: 'Medium' },
-  LOW: { color: 'bg-success/10 text-success border-success/20', label: 'Low' }
+  CRITICAL: { color: 'bg-red-500 text-white border-red-500', label: 'Critical' },
+  HIGH: { color: 'bg-orange-500 text-white border-orange-500', label: 'High' },
+  MEDIUM: { color: 'bg-yellow-500 text-black border-yellow-500', label: 'Medium' },
+  LOW: { color: 'bg-green-500 text-white border-green-500', label: 'Low' }
 } as const;
 
 const getNextStage = (currentStage: string) => {
@@ -112,81 +160,112 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // Get stage styling
+  const currentStage = stages.find(stage => stage.id === useCase.stage);
+  const stageColor = currentStage?.color || 'bg-card';
+  const stageAccentColor = currentStage?.accentColor || 'bg-primary';
+
   return (
     <Card 
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
-      className={`card-interactive p-3 cursor-grab active:cursor-grabbing transition-all ${
-        isDragging ? 'shadow-xl scale-105 z-50' : 'hover:shadow-md'
+      className={`${stageColor} border-2 transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer relative overflow-hidden ${
+        isDragging ? 'shadow-xl scale-105 z-50 border-primary' : ''
       }`}
       onClick={onClick}
     >
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <div className="font-bold text-xs text-muted-foreground">{formatAiucId(useCase.aiucId, useCase.id)}</div>
-          <div className="flex items-center gap-2">
-            {useCase.priority && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <span 
-                    className={`text-xs px-2 py-1 rounded-full font-semibold cursor-pointer flex items-center gap-1 ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-muted'}`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {_priorities[useCase.priority as keyof typeof _priorities]?.label || useCase.priority}
-                  </span>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((priority) => (
-                    <DropdownMenuItem 
-                      key={priority} 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePriorityChange(useCase.id, priority);
-                      }}
-                    >
-                      {_priorities[priority as keyof typeof _priorities]?.label || priority}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!isDeleting) {
-                  handleDelete(useCase.id);
-                }
-              }}
-              disabled={isDeleting}
-              className={`p-1.5 rounded-full transition-colors ${
-                isDeleting 
-                  ? 'text-muted-foreground cursor-not-allowed' 
-                  : 'text-destructive hover:text-destructive/80 hover:bg-destructive/10'
-              }`}
-              title={isDeleting ? "Deleting..." : "Delete use case"}
-            >
-              {isDeleting ? (
-                <div className="w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Trash2 className="w-3 h-3" />
-              )}
-            </button>
+      {/* Stage indicator bar */}
+      <div className={`absolute top-0 left-0 right-0 h-1 ${stageAccentColor}`} />
+      <div className="p-3 pt-4">
+        {/* Drag Handle */}
+        <div 
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing mb-3 flex items-start justify-between group"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-start gap-2 flex-1">
+            <GripVertical className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground mt-1 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-mono text-muted-foreground mb-1 bg-gray-100 dark:bg-black/20 px-2 py-1 rounded-md inline-block">
+                {formatAiucId(useCase.aiucId, useCase.id)}
+              </div>
+              <h3 className="font-semibold text-sm text-foreground line-clamp-2 leading-tight mb-2">
+                {useCase.title}
+              </h3>
+            </div>
           </div>
         </div>
-        <div className="font-semibold text-sm text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-tight">{useCase.title}</div>
-        <div className="text-xs text-foreground line-clamp-2 leading-relaxed">{stripHtmlTags(useCase.description)}</div>
-        {/* Removed per request: operational/productivity/revenue numbers */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
-          <span className="flex items-center gap-1">
+        
+        {/* Actions */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          {useCase.priority && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <span 
+                  className={`text-xs px-3 py-1.5 rounded-full font-semibold cursor-pointer shadow-sm ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-muted'}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {_priorities[useCase.priority as keyof typeof _priorities]?.label || useCase.priority}
+                </span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((priority) => (
+                  <DropdownMenuItem 
+                    key={priority} 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePriorityChange(useCase.id, priority);
+                    }}
+                  >
+                    {_priorities[priority as keyof typeof _priorities]?.label || priority}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isDeleting) {
+                handleDelete(useCase.id);
+              }
+            }}
+            disabled={isDeleting}
+            className={`p-1.5 rounded-md transition-colors ${
+              isDeleting 
+                ? 'text-muted-foreground cursor-not-allowed' 
+                : 'text-destructive hover:text-destructive/80 hover:bg-destructive/10'
+            }`}
+            title={isDeleting ? "Deleting..." : "Delete use case"}
+          >
+            {isDeleting ? (
+              <div className="w-3.5 h-3.5 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Trash2 className="w-4 h-4" />
+            )}
+          </button>
+        </div>
+        
+        {/* Description */}
+        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-3 bg-gray-50 dark:bg-black/10 p-2 rounded-md">
+          {stripHtmlTags(useCase.description)}
+        </p>
+        
+        {/* Creator and Date */}
+        <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-gray-200 dark:border-white/10">
+          <div className="flex items-center gap-1.5">
             {useCase.creator.type === 'user' ? (
               <User className="w-3 h-3 flex-shrink-0" />
             ) : (
               <Building2 className="w-3 h-3 flex-shrink-0" />
             )}
-            <span className="truncate">{useCase.creator.name}</span>
-          </span>
+            <span className="truncate font-medium">{useCase.creator.name}</span>
+          </div>
+          <div className="text-xs text-muted-foreground/70 font-mono">
+            {useCase.lastUpdated}
+          </div>
         </div>
       </div>
     </Card>
@@ -206,20 +285,14 @@ const DroppableStageColumn = ({ stage, stageUseCases, children }: {
   return (
     <div 
       ref={setNodeRef}
-      className={`space-y-3 p-3 rounded-lg border-2 border-dashed transition-colors h-full ${
+      className={`transition-colors min-h-[300px] ${
         isOver 
-          ? 'bg-primary/10 border-primary/40 shadow-lg' 
-          : 'bg-background border-border shadow-inner'
+          ? 'bg-primary/5 border-2 border-primary/30 border-dashed rounded-lg' 
+          : ''
       }`}
-      style={{ 
-        minHeight: '300px', // Increased minimum height for better drop detection
-        minWidth: '240px', // Ensure minimum width for proper drop detection
-        height: '100%', // Use full height of parent container
-        position: 'relative' // Ensure proper positioning for drop detection
-      }}
     >
       {isOver && (
-        <div className="text-center text-primary text-xs font-medium mb-3">
+        <div className="text-center text-primary text-xs font-medium py-4 mb-2 bg-primary/5 border border-primary/20 rounded-lg">
           Drop here to move to {stage.title}
         </div>
       )}
@@ -232,8 +305,10 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBy, setFilterBy] = useState('all');
   const [selectedUseCase, setSelectedUseCase] = useState<MappedUseCase | null>(null);
+  // Compact, professional default layout (removed detailed toggle)
   const router = useRouter();
-  const { user, isSignedIn, isLoaded } = useUser();
+  const { user, isLoaded } = useUserClient<any>();
+  const { isSignedIn } = useAuthClient();
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>(''); // '' means All Organizations
   const [selectedBusinessFunction, setSelectedBusinessFunction] = useState<string>(''); // '' means All Business Functions
@@ -247,25 +322,38 @@ const Dashboard = () => {
   // Refs for scroll synchronization
   const scrollBarRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const isSyncingScrollRef = useRef(false);
+  const [contentScrollWidth, setContentScrollWidth] = useState<number | null>(null);
+  const boardWidth = (stages.length * 260) + ((stages.length - 1) * 12) + 1; // fallback if measurement not ready
+  const widthCompensationPx = 30; // slightly more to fully cover deployment column
+  const effectiveWidth = (contentScrollWidth ?? boardWidth) + widthCompensationPx;
   
-  // Scroll synchronization handler
+  // Scroll synchronization handlers
   const handleScrollBarScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (!contentRef.current) return;
-    if (isSyncingScrollRef.current) return;
-    isSyncingScrollRef.current = true;
-    contentRef.current.scrollLeft = e.currentTarget.scrollLeft;
-    // allow the browser to process scroll before unlocking
-    requestAnimationFrame(() => { isSyncingScrollRef.current = false; });
+    if (contentRef.current) {
+      contentRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
+  const handleContentScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (scrollBarRef.current) {
+      scrollBarRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    }
   };
 
-  const handleContentScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (!scrollBarRef.current) return;
-    if (isSyncingScrollRef.current) return;
-    isSyncingScrollRef.current = true;
-    scrollBarRef.current.scrollLeft = e.currentTarget.scrollLeft;
-    requestAnimationFrame(() => { isSyncingScrollRef.current = false; });
-  };
+  // Measure actual content width so the top scrollbar track matches exactly
+  useEffect(() => {
+    const updateWidths = () => {
+      if (contentRef.current) {
+        setContentScrollWidth(contentRef.current.scrollWidth);
+      }
+    };
+    updateWidths();
+    const id = window.setTimeout(updateWidths, 50);
+    window.addEventListener('resize', updateWidths);
+    return () => {
+      window.clearTimeout(id);
+      window.removeEventListener('resize', updateWidths);
+    };
+  }, []);
   
   const businessFunctions = [
     'Sales',
@@ -316,10 +404,10 @@ const Dashboard = () => {
   // Check if user is authenticated
   if (!isLoaded) {
     return (
-      <div className="loading-container">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
-          <div className="loading-spinner" />
-          <p className="loading-text">Initializing...</p>
+          <div className="loading-spinner mx-auto mb-4" />
+          <p className="text-muted-foreground">Initializing...</p>
         </div>
       </div>
     );
@@ -327,7 +415,7 @@ const Dashboard = () => {
 
   if (!isSignedIn) {
     return (
-      <div className="loading-container">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
           <p className="text-muted-foreground">Please sign in to access the dashboard.</p>
         </div>
@@ -670,8 +758,15 @@ const Dashboard = () => {
       });
   };
 
-  // Add a handler to update priority (stub for now)
+  // Update priority with optimistic UI and rollback on failure
   const handlePriorityChange = async (useCaseId: string, newPriority: string) => {
+    const existing = useCases.find((uc: any) => uc.id === useCaseId);
+    const prevPriority = existing?.priority;
+
+    // Optimistic UI update
+    updateUseCase(useCaseId, { priority: newPriority });
+    setModalUseCase((prev) => (prev?.id === useCaseId ? { ...prev, priority: newPriority } : prev));
+
     try {
       const response = await fetch('/api/update-priority', {
         method: 'POST',
@@ -679,13 +774,18 @@ const Dashboard = () => {
         body: JSON.stringify({ useCaseId, priority: newPriority })
       });
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to update priority');
+        const data = await response.json().catch(() => ({}));
+        throw new Error((data as any).error || 'Failed to update priority');
       }
-      // Fetch fresh data from the backend to ensure consistency
-      await refetch();
+      // Optionally refresh in background to sync with backend later
+      // void refetch();
     } catch (err) {
-      alert((err as Error).message);
+      // Rollback on failure
+      if (typeof prevPriority !== 'undefined') {
+        updateUseCase(useCaseId, { priority: prevPriority });
+        setModalUseCase((prev) => (prev?.id === useCaseId ? { ...prev, priority: prevPriority } : prev));
+      }
+      alert(err instanceof Error ? err.message : 'Failed to update priority');
     }
   };
 
@@ -761,14 +861,14 @@ const Dashboard = () => {
 
   if (userError) {
     return (
-      <div className="error-container">
-        <div className="error-card">
-          <AlertTriangle className="error-icon" />
-          <h2 className="error-title">Unable to Load User Data</h2>
-          <p className="error-message">{userError}</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
+          <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-foreground mb-2">Unable to Load User Data</h2>
+          <p className="text-muted-foreground mb-6">{userError}</p>
           <button 
             onClick={() => refetchUser()}
-            className="btn-primary"
+            className="btn btn-primary px-6 py-2"
           >
             Try Again
           </button>
@@ -779,14 +879,14 @@ const Dashboard = () => {
 
   if (error) {
     return (
-      <div className="error-container">
-        <div className="error-card">
-          <AlertTriangle className="error-icon" />
-          <h2 className="error-title">Unable to Load Dashboard</h2>
-          <p className="error-message">{error.message}</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
+          <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-foreground mb-2">Unable to Load Dashboard</h2>
+          <p className="text-muted-foreground mb-6">{error.message}</p>
           <button 
             onClick={() => refetch()}
-            className="btn-primary"
+            className="btn btn-primary px-6 py-2"
           >
             Try Again
           </button>
@@ -797,10 +897,10 @@ const Dashboard = () => {
 
   if (isLoading || userLoading) {
     return (
-      <div className="loading-container">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
-          <div className="loading-spinner" />
-          <p className="loading-text">
+          <div className="loading-spinner mx-auto mb-4" />
+          <p className="text-muted-foreground">
             {isLoading ? 'Loading use cases...' : 'Loading user data...'}
           </p>
         </div>
@@ -811,75 +911,77 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <ClerkInvitationHandler />
-      <div className="h-full p-6 flex flex-col min-h-0">
-        {/* Header with role-based tabs */}
-        <div className="page-header flex-shrink-0">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              
-              {userData?.organization && (
-                <p className="page-subtitle mt-2">
-                  {userData.organization.name} • <span className="text-primary font-medium">{userData.role === 'ORG_ADMIN' ? 'Organization Admin' : 'User'}</span>
-                </p>
-              )}
+      <div className="h-full p-3 flex flex-col min-h-0 max-w-6xl mx-auto">
+        {/* Clean Header */}
+        <div className="flex-shrink-0 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-semibold text-foreground tracking-tight"></h1>
+            </div>
+            
+            {/* Quick Actions */}
+            <div className="flex items-center gap-2">
+              <Button onClick={() => router.push('/new-usecase')} size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                New Use Case
+              </Button>
+              <Button onClick={refetch} variant="outline" size="sm">
+                <RefreshCw className="w-4 h-4" />
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* Search and Filter Section */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6 flex-shrink-0">
-          <div className="relative flex-1">
-            <Input
-              placeholder="Search use cases..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-standard"
-            />
-          </div>
-          <div className="flex gap-3 flex-wrap items-center justify-end">
-            <select
-              value={filterBy}
-              onChange={(e) => setFilterBy(e.target.value)}
-              className="select-standard"
-            >
-              <option value="all">All Priorities</option>
-              <option value="critical">Critical</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-            {(userData?.role === 'QZEN_ADMIN') && (
-            <select
-              value={selectedOrgId}
-              onChange={e => setSelectedOrgId(e.target.value)}
-              className="select-standard"
-              style={{ minWidth: 180 }}
-            >
-              <option value="">All Organizations</option>
-              {organizations.map(org => (
-                <option key={org.id} value={org.id}>{org.name}</option>
-              ))}
-            </select>
-            )}
-            <select
-              value={selectedBusinessFunction}
-              onChange={e => setSelectedBusinessFunction(e.target.value)}
-              className="select-standard"
-              style={{ minWidth: 180 }}
-            >
-              <option value="">All Business Functions</option>
-              {businessFunctions.map(func => (
-                <option key={func} value={func}>{func}</option>
-              ))}
-            </select>
-            <Button onClick={() => router.push('/new-usecase')} className="flex items-center gap-2 rounded-full shadow-sm bg-neutral-100 text-foreground border border-neutral-300 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-800">
-              <Plus className="w-4 h-4" />
-              New Use Case
-            </Button>
-            <Button onClick={refetch} variant="outline" className="flex items-center gap-2 bg-muted text-foreground border hover:bg-accent">
-              <RefreshCw className="w-4 h-4" />
-              Refresh
-            </Button>
+        {/* Clean Search and Filter Bar */}
+        <div className="flex-shrink-0 mb-4">
+          <div className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search use cases..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-10 bg-background"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <select
+                value={filterBy}
+                onChange={(e) => setFilterBy(e.target.value)}
+                className="h-10 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              >
+                <option value="all">All Priorities</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+              
+              {(userData?.role === 'QZEN_ADMIN') && (
+                <select
+                  value={selectedOrgId}
+                  onChange={e => setSelectedOrgId(e.target.value)}
+                  className="h-10 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors min-w-[130px]"
+                >
+                  <option value="">All Organizations</option>
+                  {organizations.map(org => (
+                    <option key={org.id} value={org.id}>{org.name}</option>
+                  ))}
+                </select>
+              )}
+              
+              <select
+                value={selectedBusinessFunction}
+                onChange={e => setSelectedBusinessFunction(e.target.value)}
+                className="h-10 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors min-w-[130px]"
+              >
+                <option value="">All Functions</option>
+                {businessFunctions.map(func => (
+                  <option key={func} value={func}>{func}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -926,146 +1028,167 @@ const Dashboard = () => {
           </Alert>
         )}
 
-                 {/* Kanban board with drag and drop */}
-         <div className="relative flex-1 min-h-0 overflow-hidden">
-           {deletingUseCaseId && (
-             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-               <div className="flex flex-col items-center gap-3 p-6 bg-card rounded-lg shadow-lg border">
-                 <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                 <p className="text-sm font-medium text-foreground">Deleting use case...</p>
-               </div>
-             </div>
-           )}
-           <DndContext
-             sensors={sensors}
-             collisionDetection={customCollisionDetection}
-             onDragStart={handleDragStart}
-             onDragEnd={handleDragEnd}
-
-           >
-          <div className="relative w-full h-full flex flex-col">
-            {/* Scroll bar container - fixed at top */}
-            <div 
-              ref={scrollBarRef}
-              className="w-full overflow-x-auto flex-shrink-0"
-              onScroll={handleScrollBarScroll}
-            >
-              <div className="flex flex-row gap-6 px-2 pb-2" style={{ width: `${stages.length * 240 + (stages.length - 1) * 24 + 16}px` }}>
-                {/* Invisible spacer to match stage cards exactly */}
-                {stages.map((stage, idx) => (
-                  <div key={`spacer-${stage.id}`} className="w-60 h-0 flex-shrink-0"></div>
-                ))}
+        {/* Clean Kanban Board */}
+        <div className="relative min-h-[520px] bg-card rounded-lg border border-border">
+          {deletingUseCaseId && (
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-3 p-6 bg-card rounded-lg shadow-lg border">
+                <div className="loading-spinner" />
+                <p className="text-sm font-medium text-foreground">Deleting use case...</p>
               </div>
             </div>
-            
-            {/* Content container - synchronized with scroll bar */}
+          )}
+          
+          {/* Top horizontal scrollbar synchronized with content */}
+          <div 
+            ref={scrollBarRef}
+            className="overflow-x-auto border-b bg-background/70 mb-4"
+            onScroll={handleScrollBarScroll}
+            style={{ width: '100%', scrollbarGutter: 'stable both-edges' }}
+          >
             <div 
-              ref={contentRef}
-              className="w-full flex-1 min-h-0 overflow-x-auto overflow-y-hidden scrollbar-hide"
-              onScroll={handleContentScroll}
-            >
-              <div className="flex flex-col gap-0 px-2 h-full" style={{ width: `${stages.length * 240 + (stages.length - 1) * 24 + 16}px` }}>
-                {/* Stage cards row */}
-                <div className="flex flex-row gap-6 pb-2 flex-shrink-0">
-                  {stages.map((stage, idx) => {
-                    const stageUseCases = getUseCasesByStage(stage.id);
-                    return (
-                      <div key={`header-${stage.id}`} className="flex flex-col items-center w-60">
-                        {/* Summary card */}
-                        <div className="card-interactive w-60 h-24 mb-4 flex flex-col items-center justify-center group flex-shrink-0">
-                          <div className="font-semibold text-muted-foreground text-sm group-hover:text-primary transition-colors mb-1">{stage.title}</div>
-                          <div className="text-2xl font-extrabold text-foreground group-hover:text-primary transition-colors">{stageUseCases.length}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                
-                {/* Use cases row */}
-                <div className="flex flex-row gap-6 flex-1 min-h-0">
-                  {stages.map((stage, idx) => {
-                    const stageUseCases = getUseCasesByStage(stage.id);
-                    return (
-                      <div key={`content-${stage.id}`} className="flex flex-col items-center w-60 h-full">
-                        {/* Use case column */}
-                        <div className="flex-1 w-60 min-h-0 overflow-y-auto">
-                          <DroppableStageColumn stage={stage} stageUseCases={stageUseCases}>
-                            <SortableContext id={stage.id} items={stageUseCases.map(uc => uc.id)} strategy={verticalListSortingStrategy}>
-                              {stageUseCases.length === 0 ? (
-                                <div className="bg-muted rounded-lg p-4 text-center text-muted-foreground border border-dashed text-xs">No use cases in this stage</div>
-                              ) : stageUseCases.map((useCase) => (
-                                  <DraggableUseCaseCard
-                                    key={useCase.id}
-                                    useCase={useCase}
-                                    onClick={() => { setModalUseCase(useCase); setIsSheetOpen(true); }}
-                                    handlePriorityChange={handlePriorityChange}
-                                    formatAiucId={formatAiucId}
-                                    stripHtmlTags={stripHtmlTags}
-                                    _priorities={_priorities}
-                                    handleDelete={handleDelete}
-                                    isDeleting={deletingUseCaseId === useCase.id}
-                                  />
-                                ))}
-                            </SortableContext>
-                          </DroppableStageColumn>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+              className="h-2 bg-transparent" 
+              style={{ 
+                width: `${effectiveWidth}px`
+              }} 
+            />
           </div>
 
-          {/* Drag Overlay */}
-          <DragOverlay>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={customCollisionDetection}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="relative w-full">
+              <div 
+                ref={contentRef}
+                className="w-full h-full overflow-x-auto overflow-y-hidden"
+                onScroll={handleContentScroll}
+                style={{ scrollbarGutter: 'stable both-edges' }}
+              >
+                <div className="flex gap-4 h-full" style={{ width: `${effectiveWidth}px` }}>
+                  {stages.map((stage, idx) => {
+                    const stageUseCases = getUseCasesByStage(stage.id);
+                    const columnWidth = 260;
+                    
+                    return (
+                      <div key={`column-${stage.id}`} className="flex-shrink-0" style={{ width: columnWidth }}>
+                        <DroppableStageColumn stage={stage} stageUseCases={stageUseCases}>
+                          {/* Stage Header */}
+                          <div className="mb-3">
+                            <div className={`${stage.color} border-2 ${stage.accentColor} rounded-lg p-3 shadow-sm`}>
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className={`font-semibold text-sm ${stage.textColor}`}>{stage.title}</div>
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    {stageUseCases.length} {stageUseCases.length === 1 ? 'item' : 'items'}
+                                  </div>
+                                </div>
+                                <div className={`text-lg font-bold text-gray-900 dark:text-gray-300 bg-white/80 dark:bg-black/20 px-2 py-1 rounded-full`}>
+                                  {stageUseCases.length}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Use Cases */}
+                          <div className="space-y-2 min-h-[200px]">
+                            <SortableContext id={stage.id} items={stageUseCases.map(uc => uc.id)} strategy={verticalListSortingStrategy}>
+                              {stageUseCases.length === 0 ? (
+                                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                                  <div className="text-sm text-muted-foreground">No items in this stage</div>
+                                </div>
+                              ) : stageUseCases.map((useCase) => (
+                                <DraggableUseCaseCard
+                                  key={useCase.id}
+                                  useCase={useCase}
+                                  onClick={() => { setModalUseCase(useCase); setIsSheetOpen(true); }}
+                                  handlePriorityChange={handlePriorityChange}
+                                  formatAiucId={formatAiucId}
+                                  stripHtmlTags={stripHtmlTags}
+                                  _priorities={_priorities}
+                                  handleDelete={handleDelete}
+                                  isDeleting={deletingUseCaseId === useCase.id}
+                                />
+                              ))}
+                            </SortableContext>
+                          </div>
+                        </DroppableStageColumn>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Drag Overlay */}
+            <DragOverlay>
             {activeId ? (
               (() => {
                 const useCase = filteredUseCases.find(uc => uc.id === activeId);
                 if (!useCase) return null;
+                const currentStage = stages.find(stage => stage.id === useCase.stage);
+                const stageColor = currentStage?.color || 'bg-card';
+                const stageAccentColor = currentStage?.accentColor || 'bg-primary';
+                
                 return (
-                  <Card className="card-interactive p-3 w-60 shadow-xl">
-                    <div className="flex flex-col gap-2">
+                  <Card className={`${stageColor} border-2 ${stageAccentColor} p-3 w-60 shadow-2xl scale-105`}>
+                    <div className={`absolute top-0 left-0 right-0 h-1 ${stageAccentColor}`} />
+                    <div className="flex flex-col gap-2 pt-1">
                       <div className="flex items-center justify-between">
-                        <div className="font-bold text-xs text-muted-foreground">{formatAiucId(useCase.aiucId, useCase.id)}</div>
+                        <div className="font-bold text-xs text-muted-foreground bg-gray-100 dark:bg-black/20 px-2 py-1 rounded-md">{formatAiucId(useCase.aiucId, useCase.id)}</div>
                         {useCase.priority && (
-                          <span className={`text-xs px-2 py-1 rounded-full font-semibold ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-muted'}`}>
+                          <span className={`text-xs px-3 py-1.5 rounded-full font-semibold shadow-sm ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-muted'}`}>
                             {_priorities[useCase.priority as keyof typeof _priorities]?.label || useCase.priority}
                           </span>
                         )}
                       </div>
                       <div className="font-semibold text-sm text-foreground line-clamp-2 leading-tight">{useCase.title}</div>
-                      <div className="text-xs text-foreground line-clamp-2 leading-relaxed">{stripHtmlTags(useCase.description)}</div>
-                      {/* Removed per request: score numbers in drag overlay */}
-                      <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
-                        <span className="flex items-center gap-1">
+                      <div className="text-xs text-foreground line-clamp-2 leading-relaxed bg-gray-50 dark:bg-black/10 p-2 rounded-md">{stripHtmlTags(useCase.description)}</div>
+                      <div className="flex items-center gap-3 mt-2">
+                        <div className="flex items-center gap-1 text-xs text-primary">
+                          <span>{useCase.scores.operational}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-primary">
+                          <span>{useCase.scores.productivity}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-success">
+                          <span>{useCase.scores.revenue}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mt-2 pt-2 border-t border-gray-200 dark:border-white/10">
+                        <span className="flex items-center gap-1.5">
                           {useCase.creator.type === 'user' ? (
                             <User className="w-3 h-3 flex-shrink-0" />
                           ) : (
                             <Building2 className="w-3 h-3 flex-shrink-0" />
                           )}
-                          <span className="truncate">{useCase.creator.name}</span>
+                          <span className="truncate font-medium">{useCase.creator.name}</span>
                         </span>
+                        <div className="text-xs text-muted-foreground/70 font-mono">
+                          {useCase.lastUpdated}
+                        </div>
                       </div>
                     </div>
                   </Card>
                 );
               })()
             ) : null}
-          </DragOverlay>
-         </DndContext>
-         </div>
+            </DragOverlay>
+          </DndContext>
+        </div>
 
         {/* Sheet Modal for Use Case Actions */}
         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-          <SheetContent side="right">
+          <SheetContent side="right" className="flex flex-col h-full">
             {modalUseCase && (
               <>
-                <SheetHeader>
+                <SheetHeader className="flex-shrink-0">
                   <SheetTitle>{modalUseCase.title}</SheetTitle>
                   <SheetDescription>{stripHtmlTags(modalUseCase.description)}</SheetDescription>
                 </SheetHeader>
-                <div className="flex flex-col gap-3 p-4">
+                <div className="flex-1 overflow-y-auto flex flex-col gap-3 p-4">
                   <div className="text-xs text-muted-foreground mb-3">ID: {formatAiucId(modalUseCase.aiucId, modalUseCase.id)}</div>
                   <div className="flex items-center gap-4 mb-3">
                     <div className="flex items-center gap-1 text-xs text-primary">{modalUseCase.scores.operational}</div>
@@ -1083,13 +1206,13 @@ const Dashboard = () => {
                   </div>
                   <div className="text-xs text-muted-foreground mb-3">Updated {modalUseCase.lastUpdated}</div>
                 </div>
-                <SheetFooter className="flex flex-wrap gap-2 justify-start sm:justify-end">
+                <SheetFooter className="flex-shrink-0 border-t pt-4 mt-auto flex flex-wrap gap-2 justify-start sm:justify-end">
                   <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                    <Button size="sm" variant="outline" className='text-dark' onClick={() => { handleView(modalUseCase.id); setIsSheetOpen(false); }}>
+                    <Button size="sm" variant="outline" onClick={() => { handleView(modalUseCase.id); setIsSheetOpen(false); }}>
                       <Eye className="w-4 h-4 mr-2" /> View
                     </Button>
                     {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && (
-                      <Button size="sm" variant="outline" className='text-dark' onClick={() => { handleEdit(modalUseCase.id); setIsSheetOpen(false); }}>
+                      <Button size="sm" variant="outline" onClick={() => { handleEdit(modalUseCase.id); setIsSheetOpen(false); }}>
                         <EditIcon className="w-4 h-4 mr-2" /> Edit
                       </Button>
                     )}
@@ -1101,21 +1224,21 @@ const Dashboard = () => {
                           handleMoveToStage(modalUseCase.id, getNextStage(modalUseCase.stage)); 
                           setIsSheetOpen(false); 
                         }}
-                        className="whitespace-nowrap text-dark"
+                        className="whitespace-nowrap"
                       >
                         <ArrowRightIcon className="w-4 h-4 mr-2" />
                         Next Stage
                       </Button>
                     )}
                     {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER' || userData?.role === 'QZEN_ADMIN') && modalUseCase.stage !== 'discovery' && (
-                      <Button size="sm" className='text-dark' variant="outline" onClick={() => { handleAssess(modalUseCase.id); setIsSheetOpen(false); }}>
+                      <Button size="sm" variant="outline" onClick={() => { handleAssess(modalUseCase.id); setIsSheetOpen(false); }}>
                         Assess
                       </Button>
                     )}
+                    <SheetClose asChild>
+                      <Button size="sm" variant="secondary">Close</Button>
+                    </SheetClose>
                   </div>
-                  <SheetClose asChild>
-                    <Button size="sm" variant="secondary">Close</Button>
-                  </SheetClose>
                 </SheetFooter>
               </>
             )}

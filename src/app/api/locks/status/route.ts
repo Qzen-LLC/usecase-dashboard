@@ -1,25 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
 
-export async function GET(request: NextRequest) {
+
+export const GET = withAuth(async (request: Request, { auth }: { auth: any }) => {
   try {
     console.log('[LOCK STATUS] Starting lock status check...');
     
-    const user = await currentUser();
-    if (!user) {
-      console.log('[LOCK STATUS] No user found');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    console.log('[LOCK STATUS] User found:', user.id);
+    console.log('[LOCK STATUS] User found:', auth.userId!);
 
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
 
     if (!userRecord) {
-      console.log('[LOCK STATUS] User record not found for clerk ID:', user.id);
+      console.log('[LOCK STATUS] User record not found for clerk ID:', auth.userId!);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
@@ -96,7 +91,7 @@ export async function GET(request: NextRequest) {
       existingLocks = await prismaClient.lock.findMany({
         where: {
           useCaseId,
-          scope,
+          scope: scope as any,
           isActive: true
         },
         include: {
@@ -187,5 +182,4 @@ export async function GET(request: NextRequest) {
       }
     });
   }
-}
-
+}, { requireUser: true });

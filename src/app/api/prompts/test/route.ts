@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { prismaClient } from '@/utils/db';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
@@ -18,15 +19,15 @@ const getAnthropicClient = (apiKey?: string) => {
   });
 };
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (
+  request: Request,
+  { auth }: { auth: any }
+) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
 
     if (!userRecord) {
@@ -45,20 +46,18 @@ export async function POST(request: NextRequest) {
 
     // Get API configuration for the organization
     let apiKey: string | undefined;
-    if (userRecord.organizationId) {
-      const apiConfig = await prismaClient.lLMApiConfiguration.findFirst({
-        where: {
-          organizationId: userRecord.organizationId,
-          service: service,
-          isActive: true,
-        },
-      });
-      
-      if (apiConfig) {
-        // In production, decrypt the API key
-        // For now, we'll use it directly (you should implement proper encryption)
-        apiKey = apiConfig.apiKeyEncrypted;
-      }
+    // Prefer per-user API configuration
+    const apiConfig = await prismaClient.lLMApiConfiguration.findFirst({
+      where: {
+        userId: userRecord.id,
+        service: service,
+        isActive: true,
+      },
+    });
+    
+    if (apiConfig) {
+      // Note: implement encryption/decryption in production if needed
+      apiKey = apiConfig.apiKey;
     }
 
     // Use environment variables as fallback
@@ -180,6 +179,8 @@ export async function POST(request: NextRequest) {
 
       // Save test run to database
       if (promptId) {
+        console.log('[CRUD_LOG] Attempting to save test run for prompt:', promptId);
+        
         const promptTemplate = await prismaClient.promptTemplate.findUnique({
           where: { id: promptId },
           include: {
@@ -190,29 +191,46 @@ export async function POST(request: NextRequest) {
           }
         });
 
-        if (promptTemplate && promptTemplate.PromptVersion[0]) {
-          await prismaClient.promptTestRun.create({
-            data: {
-              versionId: promptTemplate.PromptVersion[0].id,
-              variables: variables || {},
-              requestContent: {
-                content,
-                settings,
-              },
-              responseContent: response || '',
-              tokensUsed,
-              cost,
-              latencyMs,
-              status: 'SUCCESS',
-              userId: userRecord.id,
-              service: service,
-              model: settings.model || 'unknown',
-              promptTemplateId: promptId,
-              settings: settings || {},
-            },
-          });
-          console.log('[CRUD_LOG] Prompt Test Run created:', { templateId: promptId, versionId: promptTemplate.PromptVersion[0].id, model: settings.model || 'unknown', tokensUsed, cost, authoredBy: userRecord.id });
+        console.log('[CRUD_LOG] Found prompt template:', !!promptTemplate);
+        if (promptTemplate) {
+          console.log('[CRUD_LOG] Prompt versions:', promptTemplate.PromptVersion?.length || 0);
         }
+
+        if (promptTemplate) {
+          // Use the latest version if available, otherwise use the prompt template ID as version ID
+          const versionId = promptTemplate.PromptVersion[0]?.id || promptId;
+          console.log('[CRUD_LOG] Using version ID:', versionId);
+          
+          try {
+            await prismaClient.promptTestRun.create({
+              data: {
+                versionId: versionId,
+                variables: variables || {},
+                requestContent: {
+                  content,
+                  settings,
+                },
+                responseContent: response || '',
+                tokensUsed,
+                cost,
+                latencyMs,
+                status: 'SUCCESS',
+                userId: userRecord.id,
+                service: service,
+                model: settings.model || 'unknown',
+                promptTemplateId: promptId,
+                settings: settings || {},
+              },
+            });
+            console.log('[CRUD_LOG] Prompt Test Run created successfully:', { templateId: promptId, versionId: versionId, model: settings.model || 'unknown', tokensUsed, cost, authoredBy: userRecord.id });
+          } catch (dbError) {
+            console.error('[CRUD_LOG] Database error saving test run:', dbError);
+          }
+        } else {
+          console.log('[CRUD_LOG] Prompt template not found:', promptId);
+        }
+      } else {
+        console.log('[CRUD_LOG] No promptId provided, skipping save');
       }
 
       return NextResponse.json({
@@ -238,10 +256,11 @@ export async function POST(request: NextRequest) {
           }
         });
 
-        if (promptTemplate && promptTemplate.PromptVersion[0]) {
+        if (promptTemplate) {
+          const versionId = promptTemplate.PromptVersion[0]?.id || promptId;
           await prismaClient.promptTestRun.create({
             data: {
-              versionId: promptTemplate.PromptVersion[0].id,
+              versionId: versionId,
               variables: variables || {},
               requestContent: {
                 content,
@@ -260,7 +279,7 @@ export async function POST(request: NextRequest) {
               settings: settings || {},
             },
           });
-          console.log('[CRUD_LOG] Prompt Test Run created (error):', { templateId: promptId, versionId: promptTemplate.PromptVersion[0].id, model: settings?.model || 'unknown', error: error.message, authoredBy: userRecord.id });
+          console.log('[CRUD_LOG] Prompt Test Run created (error):', { templateId: promptId, versionId: versionId, model: settings?.model || 'unknown', error: error.message, authoredBy: userRecord.id });
         }
       }
 
@@ -280,4 +299,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

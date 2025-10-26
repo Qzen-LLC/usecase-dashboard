@@ -1,22 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
 
-export async function POST(request: NextRequest) {
+
+export const POST = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const body = await request.json();
     const { ruleId, updates } = body;
 
     if (!ruleId || !updates) {
-      return NextResponse.json(
-        { error: 'Missing required parameters' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Missing required parameters' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Verify the rule exists
@@ -32,18 +26,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!existingRule) {
-      return NextResponse.json(
-        { error: 'Guardrail rule not found' },
-        { status: 404 }
-      );
+      return new Response(JSON.stringify({ error: 'Guardrail rule not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Check if rule is approved - approved rules cannot be edited
     if (existingRule.status === 'APPROVED') {
-      return NextResponse.json(
-        { error: 'Cannot edit approved guardrails. Please create a new version.' },
-        { status: 403 }
-      );
+      return new Response(JSON.stringify({ error: 'Cannot edit approved guardrails. Please create a new version.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Store original value if this is the first edit
@@ -58,6 +46,9 @@ export async function POST(request: NextRequest) {
     };
 
     // Update the rule
+    const currentUser = await prismaClient.user.findUnique({ where: { clerkId: auth.userId! } });
+    const currentEmail = currentUser?.email || auth.userId!;
+
     const updatedRule = await prismaClient.guardrailRule.update({
       where: { id: ruleId },
       data: {
@@ -65,7 +56,7 @@ export async function POST(request: NextRequest) {
         status: 'EDITED',
         isEdited: true,
         originalValue: originalValue,
-        editedBy: user.emailAddresses?.[0]?.emailAddress || user.id,
+        editedBy: currentEmail,
         editedAt: new Date(),
         updatedAt: new Date()
       }
@@ -77,8 +68,8 @@ export async function POST(request: NextRequest) {
         guardrailId: existingRule.guardrailId,
         ruleId: ruleId,
         action: 'edit',
-        userId: user.id,
-        userName: user.emailAddresses?.[0]?.emailAddress || user.id,
+        userId: auth.userId!,
+        userName: currentEmail,
         changes: {
           before: existingRule,
           after: updates
@@ -91,22 +82,19 @@ export async function POST(request: NextRequest) {
       where: { id: existingRule.guardrailId },
       data: {
         isEdited: true,
-        editedBy: user.emailAddresses?.[0]?.emailAddress || user.id,
+        editedBy: currentEmail,
         editedAt: new Date(),
         status: 'pending_approval'
       }
     });
 
-    return NextResponse.json({
+    return new Response(JSON.stringify({
       success: true,
       rule: updatedRule,
       message: 'Guardrail rule updated successfully'
-    });
+    }), { headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error updating guardrail rule:', error);
-    return NextResponse.json(
-      { error: 'Failed to update guardrail rule', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Failed to update guardrail rule', details: error instanceof Error ? error.message : 'Unknown error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: true });

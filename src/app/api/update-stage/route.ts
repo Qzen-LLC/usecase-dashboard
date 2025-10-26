@@ -1,16 +1,13 @@
 import { prismaClient } from "@/utils/db";
 import { NextResponse } from "next/server";
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (req, { auth }) => {
     try {
-        const user = await currentUser();
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-        
+        // auth context is provided by withAuth wrapper
+        const clerkId = auth.userId!;
         const userRecord = await prismaClient.user.findUnique({
-            where: { clerkId: user.id },
+            where: { clerkId },
         });
         
         if (!userRecord) {
@@ -38,11 +35,14 @@ export async function POST(req: Request) {
                 if (useCase.userId !== userRecord.id) {
                     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
                 }
-            } else if (userRecord.role === 'ORG_ADMIN' || userRecord.role === 'ORG_USER') {
-                // ORG_ADMIN and ORG_USER can only update use cases in their organization
+            } else if (userRecord.role === 'ORG_ADMIN') {
+                // ORG_ADMIN can only update use cases in their organization
                 if (useCase.organizationId !== userRecord.organizationId) {
                     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
                 }
+            } else if (userRecord.role === 'ORG_USER') {
+                // ORG_USER cannot update use case stages
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
             }
         }
 
@@ -61,4 +61,4 @@ export async function POST(req: Request) {
         console.error("Unable to update stage", error);
         return NextResponse.json({ success: false, error: 'Unable to update stage' }, { status: 500 });
     }
-}
+}, { requireUser: true });

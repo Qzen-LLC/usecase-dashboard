@@ -1,17 +1,14 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { PrismaClient } from '@/generated/prisma';
 import { validateUserRole } from '@/utils/role-validation';
 
 const prisma = new PrismaClient();
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: Request, { auth }: { auth: any }) => {
   try {
-    const user = await currentUser();
-    
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const { invitationToken, organizationName, organizationDomain } = await req.json();
 
@@ -55,7 +52,7 @@ export async function POST(req: Request) {
 
     // Check if user already exists
     let userRecord = await prisma.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
 
     // Validate and correct role if needed
@@ -66,10 +63,10 @@ export async function POST(req: Request) {
       console.log('[Invitation Accept] Creating new user with organizationId:', organizationId);
       userRecord = await prisma.user.create({
         data: {
-          clerkId: user.id,
-          email: user.emailAddresses[0]?.emailAddress || '',
-          firstName: user.firstName || null,
-          lastName: user.lastName || null,
+          clerkId: auth.userId!,
+          email: auth.user?.email || '',
+          firstName: auth.user?.firstName || null,
+          lastName: auth.user?.lastName || null,
           role: validatedRole,
           organizationId: organizationId,
         },
@@ -116,4 +113,4 @@ export async function POST(req: Request) {
     console.error('Error creating organization:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}, { requireUser: true });

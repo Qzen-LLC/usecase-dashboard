@@ -1,14 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
+
 
 // GET /api/golden/entries - Get entries for a dataset
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const { searchParams } = new URL(request.url);
     const datasetId = searchParams.get('datasetId');
@@ -25,20 +22,14 @@ export async function GET(request: NextRequest) {
       });
 
       if (!entry) {
-        return NextResponse.json(
-          { error: 'Entry not found' },
-          { status: 404 }
-        );
+        return new Response(JSON.stringify({ error: 'Entry not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
       }
 
-      return NextResponse.json(entry);
+      return new Response(JSON.stringify(entry), { headers: { 'Content-Type': 'application/json' } });
     }
 
     if (!datasetId) {
-      return NextResponse.json(
-        { error: 'Dataset ID is required' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Dataset ID is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Build query with filters
@@ -61,23 +52,17 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    return NextResponse.json(entries);
+    return new Response(JSON.stringify(entries), { headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error in GET /api/golden/entries:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: true });
 
 // POST /api/golden/entries - Create new entry
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const body = await request.json();
     const {
@@ -90,10 +75,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!datasetId || !category || !input) {
-      return NextResponse.json(
-        { error: 'Missing required fields: datasetId, category, and input' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Missing required fields: datasetId, category, and input' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Verify dataset exists
@@ -102,10 +84,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!dataset) {
-      return NextResponse.json(
-        { error: 'Dataset not found' },
-        { status: 404 }
-      );
+      return new Response(JSON.stringify({ error: 'Dataset not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Create the entry
@@ -131,36 +110,27 @@ export async function POST(request: NextRequest) {
     // Update dataset statistics
     await updateDatasetStatistics(datasetId);
 
-    return NextResponse.json({
+    return new Response(JSON.stringify({
       success: true,
       entry,
       message: 'Entry created successfully'
-    });
+    }), { headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error in POST /api/golden/entries:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: true });
 
 // PUT /api/golden/entries - Update entry
-export async function PUT(request: NextRequest) {
+export const PUT = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const body = await request.json();
     const { id, ...updates } = body;
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Entry ID is required' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Entry ID is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Get existing entry
@@ -169,22 +139,21 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!existingEntry) {
-      return NextResponse.json(
-        { error: 'Entry not found' },
-        { status: 404 }
-      );
+      return new Response(JSON.stringify({ error: 'Entry not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Store previous version if content is changing
-    const previousVersions = existingEntry.previousVersions || [];
+    const previousVersions: any[] = Array.isArray((existingEntry as any).previousVersions)
+      ? ([...(existingEntry as any).previousVersions] as any[])
+      : [];
     previousVersions.push({
-      version: existingEntry.version,
+      version: (existingEntry as any).version,
       content: {
-        inputSpec: existingEntry.inputSpec,
-        expectedOutputs: existingEntry.expectedOutputs,
-        metadata: existingEntry.metadata
+        inputSpec: (existingEntry as any).inputSpec,
+        expectedOutputs: (existingEntry as any).expectedOutputs,
+        metadata: (existingEntry as any).metadata,
       },
-      updatedAt: existingEntry.updatedAt
+      updatedAt: (existingEntry as any).updatedAt,
     });
 
     // Update the entry
@@ -192,7 +161,7 @@ export async function PUT(request: NextRequest) {
       where: { id },
       data: {
         ...updates,
-        version: existingEntry.version + 1,
+        version: (existingEntry as any).version + 1,
         previousVersions: previousVersions
       }
     });
@@ -200,36 +169,27 @@ export async function PUT(request: NextRequest) {
     // Update dataset statistics
     await updateDatasetStatistics(existingEntry.datasetId);
 
-    return NextResponse.json({
+    return new Response(JSON.stringify({
       success: true,
       entry,
       message: 'Entry updated successfully'
-    });
+    }), { headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error in PUT /api/golden/entries:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: true });
 
 // DELETE /api/golden/entries - Delete entry
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Entry ID is required' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Entry ID is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Get entry to know the dataset
@@ -238,10 +198,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!entry) {
-      return NextResponse.json(
-        { error: 'Entry not found' },
-        { status: 404 }
-      );
+      return new Response(JSON.stringify({ error: 'Entry not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Delete the entry
@@ -252,18 +209,15 @@ export async function DELETE(request: NextRequest) {
     // Update dataset statistics
     await updateDatasetStatistics(entry.datasetId);
 
-    return NextResponse.json({
+    return new Response(JSON.stringify({
       success: true,
       message: 'Entry deleted successfully'
-    });
+    }), { headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error in DELETE /api/golden/entries:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: true });
 
 // Helper function to update dataset statistics
 async function updateDatasetStatistics(datasetId: string) {

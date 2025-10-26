@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, Poppins, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { ClerkProvider } from "@clerk/nextjs";
+import AuthClientProvider from "@/contexts/AuthClientProvider";
 import React from "react";
 import ConditionalSidebarLayout from '@/components/ConditionalSidebarLayout';
 import { UserProvider } from '@/contexts/UserContext';
@@ -51,7 +51,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <ClerkProvider>
+    <AuthClientProvider>
       <html lang="en" suppressHydrationWarning>
         <head>
           <script
@@ -98,6 +98,6 @@ export default function RootLayout({
           </ThemeProvider>
         </body>
       </html>
-    </ClerkProvider>
+    </AuthClientProvider>
   );
 }

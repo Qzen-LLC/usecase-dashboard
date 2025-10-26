@@ -90,6 +90,7 @@
     "csv-parser": "^3.2.0",
     "date-fns": "^4.1.0",
     "js-yaml": "^4.1.0",
+    "jose": "^6.1.0",
     "langsmith": "^0.3.10",
     "lodash": "^4.17.21",
     "lodash.isequal": "^4.5.0",

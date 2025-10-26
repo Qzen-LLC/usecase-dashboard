@@ -1,19 +1,17 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { PrismaClient } from '@/generated/prisma';
 
 const prismaClient = new PrismaClient();
 
-export async function POST(request: Request) {
+export const POST = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     // Get user data from database
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
       include: { organization: true }
     });
 
@@ -65,4 +63,4 @@ export async function POST(request: Request) {
     console.error('Error deleting use case:', error);
     return NextResponse.json({ error: 'Failed to delete use case' }, { status: 500 });
   }
-} 
+}, { requireUser: true });

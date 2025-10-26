@@ -4,17 +4,15 @@ export function QubeValuePillars() {
   const pillars = ['CLARITY', 'CONTROL', 'GOVERNANCE', 'VALUE'];
   
   return (
-    <div className="mt-6">
-      <p className="text-center text-lg font-bold text-gray-800 tracking-wide">
-        {pillars.map((pillar, index) => (
-          <span key={pillar}>
-            {pillar}
-            {index < pillars.length - 1 && (
-              <span className="mx-5 text-gray-300">|</span>
-            )}
-          </span>
-        ))}
-      </p>
+    <div className="flex flex-wrap justify-center gap-3">
+      {pillars.map((pillar) => (
+        <div
+          key={pillar}
+          className="px-4 py-2 bg-muted text-muted-foreground text-xs font-medium rounded-full hover:bg-muted/80 transition-colors duration-150"
+        >
+          {pillar}
+        </div>
+      ))}
     </div>
   );
 }

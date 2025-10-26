@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useUserClient } from '@/hooks/useAuthClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUserData } from '@/contexts/UserContext';
 
 export default function AdminTestPage() {
-  const { user, isSignedIn, isLoaded } = useUser();
+  const { user, isLoaded } = useUserClient<any>();
   const { userData, loading, error } = useUserData();
 
   if (!isLoaded || loading) {

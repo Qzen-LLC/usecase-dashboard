@@ -1,15 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
 
-export async function GET(request: NextRequest) {
+
+export const GET = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
-    const searchParams = request.nextUrl.searchParams;
+    const searchParams = new URL(request.url).searchParams;
     const useCaseId = searchParams.get('useCaseId');
     const evaluationId = searchParams.get('evaluationId');
 
@@ -28,7 +26,7 @@ export async function GET(request: NextRequest) {
       });
     } else if (useCaseId) {
       evaluation = await prismaClient.evaluation.findFirst({
-        where: { useCaseId },
+        where: { useCaseId: useCaseId as string },
         orderBy: { createdAt: 'desc' }
       });
     }
@@ -67,6 +65,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-
+}, { requireUser: true });

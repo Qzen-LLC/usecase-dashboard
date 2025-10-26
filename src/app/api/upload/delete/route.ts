@@ -1,14 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { del } from '@vercel/blob';
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuth(async (
+  request: Request,
+  { auth }: { auth: any }
+) => {
   try {
     // Check authentication
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const { fileUrl } = await request.json();
 
@@ -31,4 +32,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

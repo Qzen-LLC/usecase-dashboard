@@ -1,17 +1,18 @@
-import { currentUser } from '@clerk/nextjs/server';
+
 import { prismaClient } from '@/utils/db';
 import { NextResponse } from "next/server";
+import { withAuth } from '@/lib/auth-gateway';
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (
+    req: Request,
+    { auth }: { auth: any }
+) => {
     try {
-        const user = await currentUser();
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        // auth context is provided by withAuth wrapper
 
         // Get user data from database
         const userRecord = await prismaClient.user.findUnique({
-            where: { clerkId: user.id },
+            where: { clerkId: auth.userId! },
             include: { organization: true }
         });
 
@@ -159,4 +160,4 @@ export async function POST(req: Request) {
             { status: 500 }
         );
     }
-}
+}, { requireUser: true });

@@ -1,21 +1,15 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { prismaClient } from '@/utils/db';
 
-export async function GET() {
+export const GET = withAuth(async (request, { auth }) => {
   try {
-    const user = await currentUser();
-    
-    if (!user) {
-      return NextResponse.json({ 
-        error: 'No authenticated user found',
-        authenticated: false 
-      }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     // Check if user exists in database
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
       select: {
         id: true,
         email: true,
@@ -28,12 +22,12 @@ export async function GET() {
 
     return NextResponse.json({
       authenticated: true,
-      clerkUser: {
-        id: user.id,
-        email: user.emailAddresses[0]?.emailAddress,
-        firstName: user.firstName,
-        lastName: user.lastName,
-      },
+      clerkUser: auth.user ? {
+        id: auth.userId!,
+        email: auth.user.email ?? undefined,
+        firstName: auth.user.firstName ?? undefined,
+        lastName: auth.user.lastName ?? undefined,
+      } : null,
       databaseUser: userRecord,
       existsInDatabase: !!userRecord,
     });
@@ -45,5 +39,4 @@ export async function GET() {
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-}
-
+}, { requireUser: true });

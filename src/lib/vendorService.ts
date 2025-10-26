@@ -152,26 +152,6 @@ export const vendorService = {
     return { error: null };
   },
 
-  // Update approval area status
-  async updateApprovalArea(vendorId: string, area: string, status: string, approvedBy?: string, comments?: string) {
-    try {
-      const response = await fetch(`/api/vendors/${vendorId}/approvals`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ area, status, approvedBy, comments })
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        return { error: error.error || 'Failed to update approval area' };
-      }
-      
-      return { error: null };
-    } catch (error: any) {
-      console.error('Error updating approval area:', error);
-      return { error: error.message };
-    }
-  },
 
   // Get dashboard statistics
   async getDashboardStats() {

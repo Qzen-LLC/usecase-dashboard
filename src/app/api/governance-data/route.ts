@@ -1,34 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prismaClient, retryDatabaseOperation } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
 
 
-export async function GET(request: Request) {
+export const GET = withAuth(async (request, { auth }) => {
   try {
     // Check for cache-busting parameter
     const { searchParams } = new URL(request.url);
     const cacheBust = searchParams.get('t');
     
-    // TEMPORARY: Auth bypass for testing
-    const user = await currentUser();
-    let userRecord;
-    
-    if (!user) {
-      // Use bypass user for testing
-      console.log('[API] Using bypass user for testing');
-      userRecord = await prismaClient.user.findFirst({
-        where: { role: 'QZEN_ADMIN' }
-      });
-      if (!userRecord) {
-        return NextResponse.json({ error: 'No admin user found for bypass' }, { status: 500 });
-      }
-    } else {
-      userRecord = await prismaClient.user.findUnique({
-        where: { clerkId: user.id },
-      });
-      if (!userRecord) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
+    // auth context is provided by withAuth wrapper
+    const clerkId = auth.userId!;
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId },
+    });
+    if (!userRecord) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     
 
@@ -78,6 +65,12 @@ export async function GET(request: Request) {
               text: true,
               type: true,
             }
+          },
+          questionTemplate: {
+            select: {
+              text: true,
+              type: true,
+            }
           }
         }
       }
@@ -121,6 +114,12 @@ export async function GET(request: Request) {
                       text: true,
                       type: true,
                     }
+                  },
+                  questionTemplate: {
+                    select: {
+                      text: true,
+                      type: true,
+                    }
                   }
                 }
               }
@@ -136,6 +135,12 @@ export async function GET(request: Request) {
               answers: {
                 include: {
                   question: {
+                    select: {
+                      text: true,
+                      type: true,
+                    }
+                  },
+                  questionTemplate: {
                     select: {
                       text: true,
                       type: true,
@@ -159,6 +164,12 @@ export async function GET(request: Request) {
                       text: true,
                       type: true,
                     }
+                  },
+                  questionTemplate: {
+                    select: {
+                      text: true,
+                      type: true,
+                    }
                   }
                 }
               }
@@ -175,16 +186,22 @@ export async function GET(request: Request) {
       }));
     }
 
-    const governanceData = useCases
+    const governanceData = (useCases as any[])
       .map((useCase) => {
+        const uc = useCase as any;
         const regulatoryFrameworks: string[] = [];
         const industryStandards: string[] = [];
 
         // Extract regulatory frameworks and standards from answers (dynamic questions)
         if (useCase.answers && Array.isArray(useCase.answers)) {
           useCase.answers.forEach((answer: any) => {
-            if (answer.question) {
-              const questionText = answer.question.text;
+            // Get question text from either question or questionTemplate
+            const questionSource = answer.question || answer.questionTemplate;
+            const sourceType = answer.question ? 'Question' : answer.questionTemplate ? 'QuestionTemplate' : 'Unknown';
+            
+            if (questionSource) {
+              console.log(`[Governance] AIUC-${useCase.aiucId} - Processing answer from ${sourceType}:`, questionSource.text);
+              const questionText = questionSource.text;
               
               // Check for AI-Specific Regulations question
               if (questionText === 'AI-Specific Regulations' && answer.value) {
@@ -251,22 +268,25 @@ export async function GET(request: Request) {
 
         // Debug log for progress values
         if (euAiActAssessments.length > 0 || iso42001Assessments.length > 0 || uaeAiAssessments.length > 0) {
-          console.log(`🔍 Governance Data - Use Case ${useCase.aiucId}:`, {
-            euProgress: euAiActAssessments[0]?.progress || 0,
-            isoProgress: iso42001Assessments[0]?.progress || 0,
-            uaeProgress: uaeAiAssessments[0]?.progress || 0,
-            euStatus: euAiActAssessments[0]?.status || 'N/A',
-            isoStatus: iso42001Assessments[0]?.status || 'N/A',
-            uaeStatus: uaeAiAssessments[0]?.status || 'N/A'
+          const euFirst: any = euAiActAssessments[0] ?? {};
+          const isoFirst: any = iso42001Assessments[0] ?? {};
+          const uaeFirst: any = uaeAiAssessments[0] ?? {};
+          console.log(`🔍 Governance Data - Use Case ${uc.aiucId}:`, {
+            euProgress: euFirst.progress || 0,
+            isoProgress: isoFirst.progress || 0,
+            uaeProgress: uaeFirst.progress || 0,
+            euStatus: euFirst.status || 'N/A',
+            isoStatus: isoFirst.status || 'N/A',
+            uaeStatus: uaeFirst.status || 'N/A'
           });
         }
 
         return {
-          useCaseId: useCase.id,
-          useCaseNumber: useCase.aiucId,
-          useCaseName: useCase.title,
-          useCaseType: useCase.stage || 'N/A',
-          department: useCase.businessFunction,
+          useCaseId: uc.id,
+          useCaseNumber: uc.aiucId,
+          useCaseName: uc.title,
+          useCaseType: uc.stage || 'N/A',
+          department: uc.businessFunction,
           regulatoryFrameworks,
           industryStandards,
           lastUpdated: (useCase as any).assessData?.updatedAt?.toISOString() || useCase.updatedAt.toISOString(),
@@ -289,4 +309,14 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-}
+}, { 
+  requireUser: true,
+  // Use DB-backed authorization to avoid relying on Clerk  
+  customAuthorize: async (ctx) => {
+    const record = await prismaClient.user.findUnique({
+      where: { clerkId: ctx.userId! },
+      select: { role: true },
+    });
+    return record?.role === 'QZEN_ADMIN';
+  }
+});

@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { prismaClient } from '@/utils/db';
 import crypto from 'crypto';
+import type { Prisma } from '@/generated/prisma';
 
 // Helper function to detect variables in prompt content
 function detectVariables(content: any): string[] {
@@ -46,15 +48,15 @@ function generateVersionSha(content: any, settings: any): string {
 }
 
 // GET /api/prompts - List prompts for a use case
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (
+  request: Request,
+  { auth }: { auth: any }
+) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
 
     if (!userRecord) {
@@ -149,18 +151,18 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });
 
 // POST /api/prompts - Create a new prompt template
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (
+  request: Request,
+  { auth }: { auth: any }
+) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
 
     if (!userRecord) {
@@ -215,9 +217,9 @@ export async function POST(request: NextRequest) {
         name,
         description,
         tags,
-        content,
+        content: content as unknown as Prisma.InputJsonValue,
         variables,
-        settings,
+        settings: settings as unknown as Prisma.InputJsonValue,
         type,
         service,
         useCaseId,
@@ -234,8 +236,8 @@ export async function POST(request: NextRequest) {
       data: {
         versionSha,
         versionNumber: 1,
-        content,
-        settings,
+        content: content as unknown as Prisma.InputJsonValue,
+        settings: settings as unknown as Prisma.InputJsonValue,
         variables,
         commitMessage: 'Initial version',
         versionNotes: versionNotes || null,
@@ -253,4 +255,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

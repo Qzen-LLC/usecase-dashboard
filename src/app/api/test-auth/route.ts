@@ -1,15 +1,12 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
 
-export async function GET() {
+
+export const GET = withAuth(async (request, { auth }) => {
   try {
     console.log('[Test Auth] Starting authentication check...');
-    
-    const user = await currentUser();
-    console.log('[Test Auth] Clerk user:', user ? { id: user.id, email: user.emailAddresses[0]?.emailAddress } : 'null');
-    
-    if (!user) {
-      console.log('[Test Auth] No user found - returning 401');
+
+    if (!auth.userId) {
       return NextResponse.json({ 
         error: 'Unauthorized - No user session found',
         message: 'Please sign in through the browser first',
@@ -20,10 +17,10 @@ export async function GET() {
     return NextResponse.json({ 
       message: 'Authentication successful',
       user: {
-        id: user.id,
-        email: user.emailAddresses[0]?.emailAddress,
-        firstName: user.firstName,
-        lastName: user.lastName
+        id: auth.userId!,
+        email: auth.user?.email || null,
+        firstName: auth.user?.firstName || null,
+        lastName: auth.user?.lastName || null
       },
       status: 'authenticated'
     });
@@ -36,4 +33,4 @@ export async function GET() {
       status: 'error'
     }, { status: 500 });
   }
-} 
+}, { requireUser: true });

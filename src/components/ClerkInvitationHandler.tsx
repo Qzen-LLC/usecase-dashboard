@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useUserClient } from '@/hooks/useAuthClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Users, Shield } from 'lucide-react';
@@ -11,7 +11,7 @@ interface ClerkInvitationHandlerProps {
 }
 
 export default function ClerkInvitationHandler({ onInvitationAccepted }: ClerkInvitationHandlerProps) {
-  const { user } = useUser();
+  const { user } = useUserClient<any>();
   const [showInvitation, setShowInvitation] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [invitationData, setInvitationData] = useState<any>(null);

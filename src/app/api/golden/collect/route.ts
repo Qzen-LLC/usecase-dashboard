@@ -1,14 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
+
 
 // POST /api/golden/collect - Collect entry from production or testing
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const body = await request.json();
     const {
@@ -23,10 +20,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!datasetId || !input || !output) {
-      return NextResponse.json(
-        { error: 'Missing required fields: datasetId, input, and output' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Missing required fields: datasetId, input, and output' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Verify dataset exists
@@ -35,10 +29,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!dataset) {
-      return NextResponse.json(
-        { error: 'Dataset not found' },
-        { status: 404 }
-      );
+      return new Response(JSON.stringify({ error: 'Dataset not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Determine category based on input type or metadata
@@ -70,7 +61,7 @@ export async function POST(request: NextRequest) {
           sourceDetails: {
             originalId: sessionId,
             timestamp: new Date().toISOString(),
-            user: user.id,
+            user: auth.userId!,
             session: sessionId,
             confidence: output.confidence
           },
@@ -82,7 +73,7 @@ export async function POST(request: NextRequest) {
           isAdversarial: metadata.isAdversarial || false,
           isRealWorld: true,
           isSynthetic: false,
-          createdBy: user.id,
+          createdBy: auth.userId!,
           modelInfo
         },
         quality: {
@@ -106,19 +97,16 @@ export async function POST(request: NextRequest) {
     // Update dataset statistics
     await updateDatasetStatistics(datasetId);
 
-    return NextResponse.json({
+    return new Response(JSON.stringify({
       success: true,
       entry,
       message: 'Entry collected successfully'
-    });
+    }), { headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error in POST /api/golden/collect:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
-}
+}, { requireUser: true });
 
 // Helper functions
 function generateId(): string {

@@ -1,13 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
 
-export async function POST(request: NextRequest) {
+
+export const POST = withAuth(async (request: Request, { auth }) => {
   try {
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
 
     const body = await request.json();
     const { useCaseId, evaluationConfig, evaluationResult } = body;
@@ -144,4 +142,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

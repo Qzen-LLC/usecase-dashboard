@@ -130,6 +130,59 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
   const [isRunning, setIsRunning] = useState(false);
   const [activeTab, setActiveTab] = useState('setup');
 
+  // Load previously saved executions for this prompt
+  React.useEffect(() => {
+    const loadExistingRuns = async () => {
+      try {
+        if (!prompt?.id) {
+          console.log('[PromptTestLab] No prompt ID, skipping load');
+          return;
+        }
+        
+        console.log('[PromptTestLab] Loading existing executions for prompt:', prompt.id);
+        const res = await fetch(`/api/prompts/${prompt.id}/executions`, { 
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include' // Ensure cookies are sent
+        });
+        
+        console.log('[PromptTestLab] GET response status:', res.status);
+        
+        if (!res.ok) {
+          console.error('[PromptTestLab] GET request failed:', res.status, res.statusText);
+          const errorText = await res.text();
+          console.error('[PromptTestLab] Error response:', errorText);
+          return;
+        }
+        
+        const data = await res.json();
+        console.log('[PromptTestLab] GET response data:', data);
+        
+        if (Array.isArray(data.executions)) {
+          const mapped: TestResult[] = data.executions.map((e: any) => ({
+            configId: `${e.provider}:${e.model}:${e.id}`,
+            provider: e.provider,
+            model: e.model,
+            response: e.response || '',
+            inputTokens: e.inputTokens ?? Math.ceil(JSON.stringify(e.requestContent || '').length / 4),
+            outputTokens: e.outputTokens ?? Math.ceil(String(e.response || '').length / 4),
+            totalTokens: e.totalTokens ?? (e.inputTokens ?? 0) + (e.outputTokens ?? 0),
+            cost: e.cost ?? 0,
+            latencyMs: e.latencyMs ?? 0,
+            status: (e.status === 'success' || e.status === 'SUCCESS') ? 'success' : (e.status === 'error' ? 'error' : 'pending'),
+            timestamp: e.timestamp || new Date().toISOString(),
+          }));
+          console.log('[PromptTestLab] Mapped results:', mapped);
+          setResults(mapped);
+        } else {
+          console.log('[PromptTestLab] No executions array in response');
+        }
+      } catch (error) {
+        console.error('[PromptTestLab] Error loading existing runs:', error);
+      }
+    };
+    loadExistingRuns();
+  }, [prompt?.id]);
+
   // Initialize variables from prompt
   React.useEffect(() => {
     if (prompt?.variables) {
@@ -235,6 +288,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
           headers: {
             'Content-Type': 'application/json',
           },
+          credentials: 'include', // Ensure cookies are sent
           body: JSON.stringify({
             promptId: prompt.id,
             content: interpolatedContent,

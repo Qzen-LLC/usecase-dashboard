@@ -1,11 +1,12 @@
 'use client';
 
-import { useUser } from '@clerk/nextjs';
+import { useUserClient, useAuthClient } from '@/hooks/useAuthClient';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
 export default function DevPage() {
-  const { user, isSignedIn } = useUser();
+  const { user } = useUserClient<any>();
+  const { isSignedIn } = useAuthClient();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
 

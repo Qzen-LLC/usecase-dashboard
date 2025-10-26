@@ -1,22 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
-import { currentUser } from '@clerk/nextjs/server';
 
-export async function POST(request: NextRequest) {
+
+export const POST = withAuth(async (request: Request, { auth }: { auth: any }) => {
   console.log('🔒 [API] Lock release endpoint called');
   console.log('🔒 [API] Request URL:', request.url);
   console.log('🔒 [API] Request method:', request.method);
   console.log('🔒 [API] Request headers:', Object.fromEntries(request.headers.entries()));
   try {
-    const user = await currentUser();
-    if (!user) {
-      console.log('🔒 [API] Unauthorized - no user found');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.log('🔒 [API] User authenticated:', user.id);
+    console.log('🔒 [API] User authenticated:', auth.userId!);
 
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
 
     if (!userRecord) {
@@ -143,4 +139,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

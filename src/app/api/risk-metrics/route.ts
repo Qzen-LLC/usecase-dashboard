@@ -1,29 +1,21 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { withAuth } from '@/lib/auth-gateway';
+
 import { prismaClient } from '@/utils/db';
 
 import { calculateRiskScores, getRiskLevel, getRiskCategoryScores, type StepsData } from '@/lib/risk-calculations';
 
-export async function GET() {
+export const GET = withAuth(async (request, { auth }) => {
   try {
     console.log('[Risk Metrics] Starting request...');
     
-    // Get current user
-    const user = await currentUser();
-    console.log('[Risk Metrics] Clerk user:', user ? { id: user.id, email: user.emailAddresses[0]?.emailAddress } : 'null');
-    
-    if (!user) {
-      console.log('[Risk Metrics] No user found - returning 401');
-      return NextResponse.json({ 
-        error: 'Unauthorized - No user session found',
-        message: 'Please sign in through the browser first'
-      }, { status: 401 });
-    }
+    // auth context is provided by withAuth wrapper
+    console.log('[Risk Metrics] Auth user:', { id: auth.userId! });
     
     // Get user data from database
     console.log('[Risk Metrics] Looking up user in database...');
     const userRecord = await prismaClient.user.findUnique({
-      where: { clerkId: user.id },
+      where: { clerkId: auth.userId! },
     });
     
     console.log('[Risk Metrics] Database user record:', userRecord ? { id: userRecord.id, email: userRecord.email, role: userRecord.role } : 'null');
@@ -32,8 +24,7 @@ export async function GET() {
       console.log('[Risk Metrics] User not found in database - returning 404');
       return NextResponse.json({ 
         error: 'User not found in database',
-        clerkId: user.id,
-        email: user.emailAddresses[0]?.emailAddress,
+        clerkId: auth.userId!,
         message: 'User exists in Clerk but not in database'
       }, { status: 404 });
     }
@@ -149,4 +140,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+}, { requireUser: true });

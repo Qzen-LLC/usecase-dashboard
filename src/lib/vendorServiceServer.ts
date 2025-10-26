@@ -115,6 +115,13 @@ export const vendorServiceServer = {
         orderBy: { createdAt: 'desc' }
       });
 
+      // Debug: Log raw vendor data from database
+      console.log('[CRUD_LOG] Raw vendors from database:', vendors.length, 'vendors');
+      if (vendors.length > 0) {
+        console.log('[CRUD_LOG] First vendor raw data:', vendors[0]);
+        console.log('[CRUD_LOG] First vendor approval areas:', vendors[0].approvalAreas);
+      }
+
       // Transform the data to match the frontend format
       const transformedData: VendorData[] = vendors.map((vendor: any) => {
         const scores = vendor.assessmentScores.reduce((acc: Record<string, number>, score: {
@@ -141,6 +148,7 @@ export const vendorServiceServer = {
 
         const approvals: Record<string, any> = {};
         const approvalAreas = vendor.approvalAreas as ApprovalAreaObj[];
+        
         for (let i = 0; i < approvalAreas.length; i++) {
           const approval: ApprovalAreaObj = approvalAreas[i];
           const areaKey = approvalAreaMap[approval.area as keyof typeof approvalAreaMap];
@@ -160,6 +168,15 @@ export const vendorServiceServer = {
           'Compliance': { status: 'Pending' as const, approvedBy: null, approvedDate: null, comments: '' }
         };
 
+        const finalApprovals = { ...defaultApprovals, ...approvals };
+        
+        // Debug: Log approval data transformation
+        console.log(`[CRUD_LOG] Vendor ${vendor.id} approval transformation:`, {
+          rawApprovalAreas: vendor.approvalAreas,
+          processedApprovals: approvals,
+          finalApprovals
+        });
+
         return {
           id: vendor.id,
           name: vendor.name || '',
@@ -173,7 +190,7 @@ export const vendorServiceServer = {
           notes: vendor.notes || '',
           scores,
           comments,
-          approvals: { ...defaultApprovals, ...approvals } as any,
+          approvals: finalApprovals as any,
           createdAt: vendor.createdAt?.toISOString() || new Date().toISOString(),
           updatedAt: vendor.updatedAt?.toISOString() || new Date().toISOString()
         };
@@ -189,25 +206,54 @@ export const vendorServiceServer = {
   // Create a new vendor
   async createVendor(vendorData: Partial<VendorData> & { userId?: string; organizationId?: string }) {
     try {
-      const vendor = await prisma.vendor.create({
-        data: {
-          name: vendorData.name!,
-          category: vendorData.category!,
-          website: vendorData.website || null,
-          contactPerson: vendorData.contactPerson || null,
-          contactEmail: vendorData.contactEmail || null,
-          assessmentDate: vendorData.assessmentDate ? new Date(vendorData.assessmentDate) : null,
-          overallScore: vendorData.overallScore || 0,
-          status: vendorData.status ? reverseStatusMap[vendorData.status as keyof typeof reverseStatusMap] : 'IN_ASSESSMENT',
-          notes: vendorData.notes || null,
-          userId: vendorData.userId || null,
-          organizationId: vendorData.organizationId || null
-        }
+      // Use a transaction to ensure vendor creation and approval area initialization happen atomically
+      const result = await prisma.$transaction(async (tx) => {
+        // Create the vendor
+        const vendor = await tx.vendor.create({
+          data: {
+            name: vendorData.name!,
+            category: vendorData.category!,
+            website: vendorData.website || null,
+            contactPerson: vendorData.contactPerson || null,
+            contactEmail: vendorData.contactEmail || null,
+            assessmentDate: vendorData.assessmentDate ? new Date(vendorData.assessmentDate) : null,
+            overallScore: vendorData.overallScore || 0,
+            status: vendorData.status ? reverseStatusMap[vendorData.status as keyof typeof reverseStatusMap] : 'IN_ASSESSMENT',
+            notes: vendorData.notes || null,
+            userId: vendorData.userId || null,
+            organizationId: vendorData.organizationId || null
+          }
+        });
+        
+        console.log('[CRUD_LOG] Vendor created:', { id: vendor.id, name: vendor.name, category: vendor.category, status: vendor.status });
+        
+        // Initialize approval areas for the new vendor within the same transaction
+        const approvalAreas = ['PROCUREMENT', 'LEGAL', 'GOVERNANCE', 'COMPLIANCE'] as const;
+        
+        const createPromises = approvalAreas.map(area => 
+          tx.approvalArea.upsert({
+            where: {
+              vendorId_area: {
+                vendorId: vendor.id,
+                area
+              }
+            },
+            update: {},
+            create: {
+              vendorId: vendor.id,
+              area,
+              status: 'PENDING'
+            }
+          })
+        );
+
+        await Promise.all(createPromises);
+        console.log('[CRUD_LOG] Vendor approval areas initialized:', { vendorId: vendor.id, areas: approvalAreas });
+        
+        return vendor;
       });
-      console.log('[CRUD_LOG] Vendor created:', { id: vendor.id, name: vendor.name, category: vendor.category, status: vendor.status });
-      // Initialize approval areas for the new vendor
-      await this.initializeApprovalAreas(vendor.id);
-      return { data: vendor, error: null };
+      
+      return { data: result, error: null };
     } catch (error: any) {
       console.error('Error creating vendor:', error);
       return { data: null, error: error.message };
@@ -217,23 +263,65 @@ export const vendorServiceServer = {
   // Update an existing vendor
   async updateVendor(vendorId: string, vendorData: Partial<VendorData>) {
     try {
-      const vendor = await prisma.vendor.update({
-        where: { id: vendorId },
-        data: {
-          name: vendorData.name,
-          category: vendorData.category,
-          website: vendorData.website || null,
-          contactPerson: vendorData.contactPerson || null,
-          contactEmail: vendorData.contactEmail || null,
-          assessmentDate: vendorData.assessmentDate ? new Date(vendorData.assessmentDate) : null,
-          overallScore: vendorData.overallScore,
-          status: vendorData.status ? reverseStatusMap[vendorData.status as keyof typeof reverseStatusMap] : undefined,
-          notes: vendorData.notes || null
-        }
-      });
-      console.log('[CRUD_LOG] Vendor updated:', { id: vendorId, name: vendor.name, category: vendor.category, status: vendor.status, updatedAt: vendor.updatedAt });
+      // Use a transaction to ensure vendor and approval updates happen atomically
+      const result = await prisma.$transaction(async (tx) => {
+        // Update the vendor
+        const vendor = await tx.vendor.update({
+          where: { id: vendorId },
+          data: {
+            name: vendorData.name,
+            category: vendorData.category,
+            website: vendorData.website || null,
+            contactPerson: vendorData.contactPerson || null,
+            contactEmail: vendorData.contactEmail || null,
+            assessmentDate: vendorData.assessmentDate ? new Date(vendorData.assessmentDate) : null,
+            overallScore: vendorData.overallScore,
+            status: vendorData.status ? reverseStatusMap[vendorData.status as keyof typeof reverseStatusMap] : undefined,
+            notes: vendorData.notes || null
+          }
+        });
 
-      return { data: vendor, error: null };
+        // Update approval areas if provided
+        if (vendorData.approvals) {
+          const approvalUpdates = Object.entries(vendorData.approvals).map(([area, approvalData]) => {
+            const dbArea = reverseApprovalAreaMap[area as keyof typeof reverseApprovalAreaMap];
+            const dbStatus = approvalData.status === 'Pending' ? 'PENDING' : 
+                            approvalData.status === 'Approved' ? 'APPROVED' : 'REJECTED';
+
+            return tx.approvalArea.upsert({
+              where: {
+                vendorId_area: {
+                  vendorId,
+                  area: dbArea
+                }
+              },
+              update: {
+                status: dbStatus,
+                approvedBy: approvalData.approvedBy || null,
+                approvedDate: approvalData.approvedDate ? new Date(approvalData.approvedDate) : null,
+                comments: approvalData.comments || null
+              },
+              create: {
+                vendorId,
+                area: dbArea,
+                status: dbStatus,
+                approvedBy: approvalData.approvedBy || null,
+                approvedDate: approvalData.approvedDate ? new Date(approvalData.approvedDate) : null,
+                comments: approvalData.comments || null
+              }
+            });
+          });
+
+          await Promise.all(approvalUpdates);
+          console.log('[CRUD_LOG] Vendor approval areas updated:', { vendorId, areas: Object.keys(vendorData.approvals) });
+        }
+
+        return vendor;
+      });
+
+      console.log('[CRUD_LOG] Vendor updated:', { id: vendorId, name: result.name, category: result.category, status: result.status, updatedAt: result.updatedAt });
+
+      return { data: result, error: null };
     } catch (error: any) {
       console.error('Error updating vendor:', error);
       return { data: null, error: error.message };
@@ -354,47 +442,58 @@ export const vendorServiceServer = {
     }
   },
 
-  // Update approval area status
-  async updateApprovalArea(vendorId: string, area: string, status: string, approvedBy?: string, comments?: string) {
+  // Initialize approval areas for all vendors that don't have them
+  async initializeAllMissingApprovalAreas() {
     try {
-      const dbArea = reverseApprovalAreaMap[area as keyof typeof reverseApprovalAreaMap];
-      const dbStatus = status === 'Pending' ? 'PENDING' : status === 'Approved' ? 'APPROVED' : 'REJECTED';
-
-      const updateData: any = {
-        status: dbStatus,
-        comments: comments || null
-      };
-
-      if (status === 'Approved' && approvedBy) {
-        updateData.approvedBy = approvedBy;
-        updateData.approvedDate = new Date();
-      }
-
-      await prisma.approvalArea.upsert({
-        where: {
-          vendorId_area: {
-            vendorId,
-            area: dbArea
-          }
-        },
-        update: updateData,
-        create: {
-          vendorId,
-          area: dbArea,
-          ...updateData
-        }
+      console.log('[CRUD_LOG] Starting to initialize missing approval areas for all vendors');
+      
+      // Get all vendors
+      const vendors = await prisma.vendor.findMany({
+        select: { id: true, name: true }
       });
-      console.log('[CRUD_LOG] Vendor approval area updated:', { vendorId, area, status: dbStatus, approvedBy: updateData.approvedBy });
-
-      // Check if all areas are approved and update vendor status
-      await this.checkAndUpdateVendorStatus(vendorId);
-
+      
+      console.log(`[CRUD_LOG] Found ${vendors.length} vendors to check`);
+      
+      for (const vendor of vendors) {
+        // Check if vendor has all required approval areas
+        const existingAreas = await prisma.approvalArea.findMany({
+          where: { vendorId: vendor.id },
+          select: { area: true }
+        });
+        
+        const existingAreaNames = existingAreas.map(area => area.area);
+        const requiredAreas = ['PROCUREMENT', 'LEGAL', 'GOVERNANCE', 'COMPLIANCE'];
+        const missingAreas = requiredAreas.filter(area => !existingAreaNames.includes(area));
+        
+        if (missingAreas.length > 0) {
+          console.log(`[CRUD_LOG] Vendor ${vendor.id} (${vendor.name}) missing approval areas:`, missingAreas);
+          
+          // Create missing approval areas
+          const createPromises = missingAreas.map(area => 
+            prisma.approvalArea.create({
+              data: {
+                vendorId: vendor.id,
+                area,
+                status: 'PENDING'
+              }
+            })
+          );
+          
+          await Promise.all(createPromises);
+          console.log(`[CRUD_LOG] Created missing approval areas for vendor ${vendor.id}`);
+        } else {
+          console.log(`[CRUD_LOG] Vendor ${vendor.id} (${vendor.name}) already has all approval areas`);
+        }
+      }
+      
+      console.log('[CRUD_LOG] Finished initializing missing approval areas');
       return { error: null };
     } catch (error: any) {
-      console.error('Error updating approval area:', error);
+      console.error('Error initializing missing approval areas:', error);
       return { error: error.message };
     }
   },
+
 
   // Check if all approval areas are approved and update vendor status
   async checkAndUpdateVendorStatus(vendorId: string) {

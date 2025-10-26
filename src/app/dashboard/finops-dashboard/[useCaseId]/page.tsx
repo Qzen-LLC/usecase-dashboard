@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useParams, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -57,6 +58,7 @@ function formatK(num: number) {
 export default function FinancialDashboard() {
   const params = useParams();
   const router = useRouter();
+  const pathname = usePathname();
   const useCaseId = params.useCaseId as string;
   
   const [initialDevCost, setInitialDevCost] = useState<number>(0);
@@ -67,12 +69,13 @@ export default function FinancialDashboard() {
   const [valueGrowthRate, setValueGrowthRate] = useState<number>(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [showFormulae, setShowFormulae] = useState(false);
   const [useCaseDetails, setUseCaseDetails] = useState<{ title: string; aiucId: number } | null>(null);
   const [isDark, setIsDark] = useState(false);
 
-  useEffect(() => {
+  const fetchData = () => {
     if (!useCaseId) return;
     setLoading(true);
     
@@ -87,18 +90,18 @@ export default function FinancialDashboard() {
       .catch(console.error);
 
     // Fetch finops data
-    fetch(`/api/get-finops?id=${useCaseId}`)
+    fetch(`/api/get-finops?id=${useCaseId}&_t=${Date.now()}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
           const d = data[0];
           if (d) {
-            setInitialDevCost(d.devCostBase ?? 150000);
-            setBaseApiCost(d.apiCostBase ?? 8000);
-            setBaseInfraCost(d.infraCostBase ?? 2000);
-            setBaseOpCost(d.opCostBase ?? 5000);
-            setBaseMonthlyValue(d.valueBase ?? 25000);
-            setValueGrowthRate(d.valueGrowthRate ?? 0.15);
+            setInitialDevCost(d.devCostBase ?? 0);
+            setBaseApiCost(d.apiCostBase ?? 0);
+            setBaseInfraCost(d.infraCostBase ?? 0);
+            setBaseOpCost(d.opCostBase ?? 0);
+            setBaseMonthlyValue(d.valueBase ?? 0);
+            setValueGrowthRate(d.valueGrowthRate ?? 0);
           }
         }
         setLoading(false);
@@ -106,7 +109,11 @@ export default function FinancialDashboard() {
       .catch(() => {
         setLoading(false);
       });
-  }, [useCaseId]);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [useCaseId, pathname]);
 
   // Track theme to make charts dark-mode aware
   useEffect(() => {
@@ -196,6 +203,7 @@ export default function FinancialDashboard() {
   const handleSave = async () => {
     setSaving(true);
     setError('');
+    setSuccess(false);
     try {
       const last = rows[FORECAST_MONTHS - 1];
       const payload = {
@@ -218,25 +226,9 @@ export default function FinancialDashboard() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Save failed');
-
-      // Refresh data from database after saving to ensure consistency
-      try {
-        const refreshRes = await fetch(`/api/get-finops?id=${useCaseId}`);
-        const data = await refreshRes.json();
-        if (Array.isArray(data) && data.length > 0) {
-          const d = data[0];
-          if (d) {
-            setInitialDevCost(d.devCostBase ?? initialDevCost);
-            setBaseApiCost(d.apiCostBase ?? baseApiCost);
-            setBaseInfraCost(d.infraCostBase ?? baseInfraCost);
-            setBaseOpCost(d.opCostBase ?? baseOpCost);
-            setBaseMonthlyValue(d.valueBase ?? baseMonthlyValue);
-            setValueGrowthRate(d.valueGrowthRate ?? valueGrowthRate);
-          }
-        }
-      } catch (refreshError) {
-        console.error('Failed to refresh data after save:', refreshError);
-      }
+      
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
     } catch {
       setError('Failed to save');
     }
@@ -510,6 +502,17 @@ export default function FinancialDashboard() {
     },
   } as const;
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+          <p className="mt-4 text-lg font-medium text-gray-600 dark:text-gray-300">Loading financial data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col items-center py-8">
       <div className="w-full max-w-7xl bg-card rounded-2xl shadow-2xl border border-border mt-6 mb-6 p-0 relative">
@@ -578,32 +581,79 @@ export default function FinancialDashboard() {
         {/* Main Content */}
         <div className="p-8">
           {error && <div className="text-danger-500 mb-2">{error}</div>}
-          {loading && <div className="text-primary mb-4">Loading saved data...</div>}
+          {success && (
+            <div className="w-full text-center py-3 mb-4 rounded-xl bg-green-100 text-green-800 font-semibold border border-green-300 shadow-sm animate-fade-in dark:bg-green-900/20 dark:text-green-400 dark:border-green-700">
+              FinOps saved successfully!
+            </div>
+          )}
           <Card className="mb-8 p-6 bg-card border border-border shadow-md rounded-xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="font-semibold text-foreground">Initial Dev Cost</label>
-                <Input type="number" value={initialDevCost} min={0} onChange={e => setInitialDevCost(Number(e.target.value))} className="w-full" />
+                <Input 
+                  type="number" 
+                  value={initialDevCost} 
+                  min={0} 
+                  onChange={e => setInitialDevCost(Number(e.target.value))} 
+                  onFocus={e => { if (e.target.value === '0') e.target.select(); }}
+                  className="w-full" 
+                />
               </div>
               <div>
                 <label className="font-semibold text-foreground">Monthly API Cost</label>
-                <Input type="number" value={baseApiCost} min={0} onChange={e => setBaseApiCost(Number(e.target.value))} className="w-full" />
+                <Input 
+                  type="number" 
+                  value={baseApiCost} 
+                  min={0} 
+                  onChange={e => setBaseApiCost(Number(e.target.value))} 
+                  onFocus={e => { if (e.target.value === '0') e.target.select(); }}
+                  className="w-full" 
+                />
               </div>
               <div>
                 <label className="font-semibold text-foreground">Monthly Infrastructure</label>
-                <Input type="number" value={baseInfraCost} min={0} onChange={e => setBaseInfraCost(Number(e.target.value))} className="w-full" />
+                <Input 
+                  type="number" 
+                  value={baseInfraCost} 
+                  min={0} 
+                  onChange={e => setBaseInfraCost(Number(e.target.value))} 
+                  onFocus={e => { if (e.target.value === '0') e.target.select(); }}
+                  className="w-full" 
+                />
               </div>
               <div>
                 <label className="font-semibold text-foreground">Monthly Operations</label>
-                <Input type="number" value={baseOpCost} min={0} onChange={e => setBaseOpCost(Number(e.target.value))} className="w-full" />
+                <Input 
+                  type="number" 
+                  value={baseOpCost} 
+                  min={0} 
+                  onChange={e => setBaseOpCost(Number(e.target.value))} 
+                  onFocus={e => { if (e.target.value === '0') e.target.select(); }}
+                  className="w-full" 
+                />
               </div>
               <div>
                 <label className="font-semibold text-foreground">Monthly Value Generated</label>
-                <Input type="number" value={baseMonthlyValue} min={0} onChange={e => setBaseMonthlyValue(Number(e.target.value))} className="w-full" />
+                <Input 
+                  type="number" 
+                  value={baseMonthlyValue} 
+                  min={0} 
+                  onChange={e => setBaseMonthlyValue(Number(e.target.value))} 
+                  onFocus={e => { if (e.target.value === '0') e.target.select(); }}
+                  className="w-full" 
+                />
               </div>
               <div>
                 <label className="font-semibold text-foreground">Value Growth Rate (%)</label>
-                <Input type="number" value={valueGrowthRate * 100} min={0} max={100} onChange={e => setValueGrowthRate(Number(e.target.value) / 100)} className="w-full" />
+                <Input 
+                  type="number" 
+                  value={valueGrowthRate} 
+                  min={0} 
+                  max={100} 
+                  onChange={e => setValueGrowthRate(Number(e.target.value))} 
+                  onFocus={e => { if (e.target.value === '0') e.target.select(); }}
+                  className="w-full" 
+                />
               </div>
             </div>
             <div className="mt-6 flex justify-center">
