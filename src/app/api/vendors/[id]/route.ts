@@ -25,6 +25,23 @@ export const PUT = withAuth(async (
 
     const vendorData = await request.json();
     const resolvedParams = await params;
+    console.log('[API_LOG] Received vendor update data:', {
+      id: resolvedParams.id,
+      name: vendorData.name,
+      website: vendorData.website,
+      category: vendorData.category,
+      contactPerson: vendorData.contactPerson,
+      contactEmail: vendorData.contactEmail
+    });
+    
+    console.log('[API_LOG] Full vendor update data received:', vendorData);
+    
+    console.log('[API_LOG] Update args being passed to vendorService:', {
+      vendorId: resolvedParams.id,
+      name: vendorData.name,
+      website: vendorData.website,
+      category: vendorData.category
+    });
 
     // Get the vendor to check ownership
     const vendor = await prismaClient.vendor.findUnique({

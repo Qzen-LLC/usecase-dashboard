@@ -18,8 +18,6 @@ export const GET = withAuth(async (request, { auth }) => {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     
-
-    
     // Only include use cases for this user if USER role
     let useCases;
     

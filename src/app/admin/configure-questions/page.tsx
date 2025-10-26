@@ -1062,21 +1062,21 @@ export default function ConfigureQuestionTemplatesPage() {
         <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent leading-tight">
+              <h1 className="text-4xl font-bold text-foreground leading-tight">
                 Configure Question Templates
               </h1>
-              <p className="text-muted-foreground mt-3 text-lg">
+              <p className="text-foreground/80 mt-3 text-lg">
                 Manage assessment question templates for your organization
               </p>
             </div>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="flex items-center gap-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-primary-foreground px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex-shrink-0">
+                <Button className="flex items-center gap-3 bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex-shrink-0 border-2 border-primary/20 hover:border-primary/40 font-semibold">
                   <Plus className="w-6 h-6" />
                   Add Question Template
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Settings className="w-5 h-5" />
@@ -1302,7 +1302,6 @@ export default function ConfigureQuestionTemplatesPage() {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  <HelpCircle className="w-5 h-5" />
                   Assessment Question Templates
                 </CardTitle>
                 <CardDescription>
@@ -1399,17 +1398,6 @@ export default function ConfigureQuestionTemplatesPage() {
                     Showing {filteredQuestionTemplates.length} of {questionTemplates.length} question templates
                     {selectedStage !== "all" && ` for ${getStageLabel(selectedStage as Stage)}`}
                   </span>
-                  {selectedStage !== "all" && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearFilter}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="w-3 h-3 mr-1" />
-                      Clear filter
-                    </Button>
-                  )}
                 </div>
 
                 <DndContext
@@ -1455,7 +1443,7 @@ export default function ConfigureQuestionTemplatesPage() {
 
         {/* Edit Question Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Edit className="w-5 h-5" />

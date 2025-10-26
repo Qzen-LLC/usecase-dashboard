@@ -39,13 +39,13 @@ export default function HomePage() {
       return;
     }
 
-    // Otherwise set a short fallback timer to avoid hanging
+    // Otherwise set a shorter fallback timer to avoid hanging
     const t = setTimeout(() => {
       setFallbackTriggered(true);
       setIsCheckingRole(true);
       router.push('/dashboard');
       setIsCheckingRole(false);
-    }, 1200);
+    }, 500); // Reduced from 1200ms to 500ms
 
     return () => clearTimeout(t);
   }, [isSignedIn, isLoaded, userData, loading, router]);

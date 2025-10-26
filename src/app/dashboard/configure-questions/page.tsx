@@ -1158,7 +1158,7 @@ export default function ConfigureQuestionsPage() {
                   Add Question
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Settings className="w-5 h-5" />
@@ -1384,7 +1384,6 @@ export default function ConfigureQuestionsPage() {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <HelpCircle className="w-4 h-4" />
                   Assessment Questions
                 </CardTitle>
                 <CardDescription className="text-sm">
@@ -1481,17 +1480,6 @@ export default function ConfigureQuestionsPage() {
                     Showing {filteredQuestions.length} of {questions.length} questions
                     {selectedStage !== "all" && ` for ${getStageLabel(selectedStage as Stage)}`}
                   </span>
-                  {selectedStage !== "all" && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearFilter}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="w-3 h-3 mr-1" />
-                      Clear filter
-                    </Button>
-                  )}
                 </div>
 
                 <DndContext
@@ -1537,7 +1525,7 @@ export default function ConfigureQuestionsPage() {
 
         {/* Edit Question Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Edit className="w-5 h-5" />

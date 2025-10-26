@@ -119,6 +119,7 @@ export const vendorServiceServer = {
       console.log('[CRUD_LOG] Raw vendors from database:', vendors.length, 'vendors');
       if (vendors.length > 0) {
         console.log('[CRUD_LOG] First vendor raw data:', vendors[0]);
+        console.log('[CRUD_LOG] First vendor website:', vendors[0].website);
         console.log('[CRUD_LOG] First vendor approval areas:', vendors[0].approvalAreas);
       }
 
@@ -177,6 +178,12 @@ export const vendorServiceServer = {
           finalApprovals
         });
 
+        // Debug: Log website field transformation
+        console.log(`[CRUD_LOG] Vendor ${vendor.id} website transformation:`, {
+          rawWebsite: vendor.website,
+          transformedWebsite: vendor.website || ''
+        });
+
         return {
           id: vendor.id,
           name: vendor.name || '',
@@ -206,40 +213,50 @@ export const vendorServiceServer = {
   // Create a new vendor
   async createVendor(vendorData: Partial<VendorData> & { userId?: string; organizationId?: string }) {
     try {
-      // Use a transaction to ensure vendor creation and approval area initialization happen atomically
-      const result = await prisma.$transaction(async (tx) => {
-        // Create the vendor
-        const vendor = await tx.vendor.create({
-          data: {
-            name: vendorData.name!,
-            category: vendorData.category!,
-            website: vendorData.website || null,
-            contactPerson: vendorData.contactPerson || null,
-            contactEmail: vendorData.contactEmail || null,
-            assessmentDate: vendorData.assessmentDate ? new Date(vendorData.assessmentDate) : null,
-            overallScore: vendorData.overallScore || 0,
-            status: vendorData.status ? reverseStatusMap[vendorData.status as keyof typeof reverseStatusMap] : 'IN_ASSESSMENT',
-            notes: vendorData.notes || null,
-            userId: vendorData.userId || null,
-            organizationId: vendorData.organizationId || null
-          }
-        });
-        
-        console.log('[CRUD_LOG] Vendor created:', { id: vendor.id, name: vendor.name, category: vendor.category, status: vendor.status });
-        
-        // Initialize approval areas for the new vendor within the same transaction
+      console.log('[CRUD_LOG] Creating vendor with data:', {
+        name: vendorData.name,
+        website: vendorData.website,
+        category: vendorData.category,
+        userId: vendorData.userId,
+        organizationId: vendorData.organizationId
+      });
+      
+      // Create the vendor first
+      const createData = {
+        name: vendorData.name!,
+        category: vendorData.category!,
+        website: vendorData.website || null,
+        contactPerson: vendorData.contactPerson || null,
+        contactEmail: vendorData.contactEmail || null,
+        assessmentDate: vendorData.assessmentDate ? new Date(vendorData.assessmentDate) : null,
+        overallScore: vendorData.overallScore || 0,
+        status: vendorData.status ? reverseStatusMap[vendorData.status as keyof typeof reverseStatusMap] : 'IN_ASSESSMENT',
+        notes: vendorData.notes || null,
+        userId: vendorData.userId || null,
+        organizationId: vendorData.organizationId || null
+      };
+      
+      console.log('[CRUD_LOG] Prisma create data:', createData);
+      
+      const vendor = await prisma.vendor.create({
+        data: createData
+      });
+      
+      console.log('[CRUD_LOG] Vendor created:', { 
+        id: vendor.id, 
+        name: vendor.name, 
+        category: vendor.category, 
+        website: vendor.website,
+        status: vendor.status 
+      });
+      
+      // Initialize approval areas for the new vendor in a separate operation
+      try {
         const approvalAreas = ['PROCUREMENT', 'LEGAL', 'GOVERNANCE', 'COMPLIANCE'] as const;
         
         const createPromises = approvalAreas.map(area => 
-          tx.approvalArea.upsert({
-            where: {
-              vendorId_area: {
-                vendorId: vendor.id,
-                area
-              }
-            },
-            update: {},
-            create: {
+          prisma.approvalArea.create({
+            data: {
               vendorId: vendor.id,
               area,
               status: 'PENDING'
@@ -249,11 +266,12 @@ export const vendorServiceServer = {
 
         await Promise.all(createPromises);
         console.log('[CRUD_LOG] Vendor approval areas initialized:', { vendorId: vendor.id, areas: approvalAreas });
-        
-        return vendor;
-      });
+      } catch (approvalError) {
+        console.warn('[CRUD_LOG] Failed to initialize approval areas, but vendor was created:', approvalError);
+        // Don't fail the entire operation if approval areas fail
+      }
       
-      return { data: result, error: null };
+      return { data: vendor, error: null };
     } catch (error: any) {
       console.error('Error creating vendor:', error);
       return { data: null, error: error.message };
@@ -263,32 +281,51 @@ export const vendorServiceServer = {
   // Update an existing vendor
   async updateVendor(vendorId: string, vendorData: Partial<VendorData>) {
     try {
-      // Use a transaction to ensure vendor and approval updates happen atomically
-      const result = await prisma.$transaction(async (tx) => {
-        // Update the vendor
-        const vendor = await tx.vendor.update({
-          where: { id: vendorId },
-          data: {
-            name: vendorData.name,
-            category: vendorData.category,
-            website: vendorData.website || null,
-            contactPerson: vendorData.contactPerson || null,
-            contactEmail: vendorData.contactEmail || null,
-            assessmentDate: vendorData.assessmentDate ? new Date(vendorData.assessmentDate) : null,
-            overallScore: vendorData.overallScore,
-            status: vendorData.status ? reverseStatusMap[vendorData.status as keyof typeof reverseStatusMap] : undefined,
-            notes: vendorData.notes || null
-          }
-        });
+      console.log('[CRUD_LOG] Updating vendor with data:', {
+        vendorId,
+        name: vendorData.name,
+        website: vendorData.website,
+        category: vendorData.category
+      });
+      
+      // Update the vendor - only include fields that are provided
+      const updateData: any = {};
+      
+      // Only include fields that are provided
+      if (vendorData.name !== undefined) updateData.name = vendorData.name;
+      if (vendorData.category !== undefined) updateData.category = vendorData.category;
+      if (vendorData.website !== undefined) updateData.website = vendorData.website || null;
+      if (vendorData.contactPerson !== undefined) updateData.contactPerson = vendorData.contactPerson || null;
+      if (vendorData.contactEmail !== undefined) updateData.contactEmail = vendorData.contactEmail || null;
+      if (vendorData.assessmentDate !== undefined) updateData.assessmentDate = vendorData.assessmentDate ? new Date(vendorData.assessmentDate) : null;
+      if (vendorData.overallScore !== undefined) updateData.overallScore = vendorData.overallScore;
+      if (vendorData.status !== undefined) updateData.status = vendorData.status ? reverseStatusMap[vendorData.status as keyof typeof reverseStatusMap] : undefined;
+      if (vendorData.notes !== undefined) updateData.notes = vendorData.notes || null;
+      
+      console.log('[CRUD_LOG] Prisma update data:', updateData);
+      
+      const vendor = await prisma.vendor.update({
+        where: { id: vendorId },
+        data: updateData
+      });
 
-        // Update approval areas if provided
-        if (vendorData.approvals) {
+      console.log('[CRUD_LOG] Vendor updated:', { 
+        id: vendor.id, 
+        name: vendor.name, 
+        category: vendor.category, 
+        website: vendor.website,
+        status: vendor.status 
+      });
+
+      // Update approval areas if provided
+      if (vendorData.approvals) {
+        try {
           const approvalUpdates = Object.entries(vendorData.approvals).map(([area, approvalData]) => {
             const dbArea = reverseApprovalAreaMap[area as keyof typeof reverseApprovalAreaMap];
             const dbStatus = approvalData.status === 'Pending' ? 'PENDING' : 
                             approvalData.status === 'Approved' ? 'APPROVED' : 'REJECTED';
 
-            return tx.approvalArea.upsert({
+            return prisma.approvalArea.upsert({
               where: {
                 vendorId_area: {
                   vendorId,
@@ -314,14 +351,15 @@ export const vendorServiceServer = {
 
           await Promise.all(approvalUpdates);
           console.log('[CRUD_LOG] Vendor approval areas updated:', { vendorId, areas: Object.keys(vendorData.approvals) });
+        } catch (approvalError) {
+          console.warn('[CRUD_LOG] Failed to update approval areas, but vendor was updated:', approvalError);
+          // Don't fail the entire operation if approval areas fail
         }
+      }
 
-        return vendor;
-      });
+      console.log('[CRUD_LOG] Vendor updated:', { id: vendorId, name: vendor.name, category: vendor.category, status: vendor.status, updatedAt: vendor.updatedAt });
 
-      console.log('[CRUD_LOG] Vendor updated:', { id: vendorId, name: result.name, category: result.category, status: result.status, updatedAt: result.updatedAt });
-
-      return { data: result, error: null };
+      return { data: vendor, error: null };
     } catch (error: any) {
       console.error('Error updating vendor:', error);
       return { data: null, error: error.message };

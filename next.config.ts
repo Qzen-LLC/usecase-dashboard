@@ -42,6 +42,15 @@ const nextConfig: NextConfig = {
     webpackBuildWorker: false,
     // Enable modern JavaScript features
     optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react', 'chart.js'],
+    // Enable faster builds and better performance
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
   },
 
   // Optimize headers

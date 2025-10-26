@@ -2,6 +2,7 @@
 import React, { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useParams, useRouter } from "next/navigation";
 import { ChartRadarDots } from "@/components/ui/radar-chart";
 import { ApprovalsRiskSummary } from "@/components/ui/approvals-risk-summary"
@@ -1028,43 +1029,51 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
   };
 
   const handleComplete = async () => {
-    // Check for missing assessment fields
-    const missingFields = getMissingAssessmentFields(qnAData ?? []);
-    if (missingFields.length > 0) {
-      // The original code had an alert here, but the edit hint implies removing it.
-      // Since the edit hint is to remove the alert, and the alert is directly related to the missingFields,
-      // we should remove the alert.
-      // The original code had `alert('Please complete the following fields before completing assessment:\n' + missingFields.join('\n'));`
-      // This line is removed as per the edit hint.
-      return;
-    }
+    setSaving(true);
+    setError("");
+    setSuccess(false);
+
     try {
+      // Check for missing assessment fields
+      // const missingFields = getMissingAssessmentFields(qnAData ?? []);
+      // if (missingFields.length > 0) {
+      //   setError(`Please complete the following fields before completing assessment:\n${missingFields.join('\n')}`);
+      //   setSaving(false);
+      //   return;
+      // }
+
+      // Save approval data first
       await handleSave();
       
       // Update the assessment status
-      const response = await fetch(`/api/post-stepdata`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          useCaseId,
-          assessData: {
-            metadata: {
-              status: "completed",
-              completedAt: new Date().toISOString(),
-              approvals: form
-            }
-          }
-        }),
-      });
+      // const response = await fetch(`/api/post-stepdata`, {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     useCaseId,
+      //     assessData: {
+      //       metadata: {
+      //         status: "completed",
+      //         completedAt: new Date().toISOString(),
+      //         approvals: form
+      //       }
+      //     }
+      //   }),
+      // });
 
-      if (!response.ok) {
-        throw new Error("Failed to update assessment status");
-      }
+      // if (!response.ok) {
+      //   throw new Error("Failed to update assessment status");
+      // }
 
-      router.push(`/dashboard/${useCaseId}`);
-    } catch {
-      setError("Failed to complete assessment");
-      setTimeout(() => setError(""), 3000);
+      setSuccess(true);
+      setTimeout(() => {
+        router.push(`/dashboard/${useCaseId}`);
+      }, 1000);
+    } catch (error) {
+      console.error('Error completing assessment:', error);
+      setError(error instanceof Error ? error.message : "Failed to complete assessment");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -1254,8 +1263,16 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
           </>
         )}
         <h2 className="text-2xl font-bold mb-8 text-[#9461fd]">Approvals</h2>
-        {_error && <div className="text-red-500 mb-2">{_error}</div>}
-        {success && <div className="text-green-600 mb-2">Data saved/updated successfully!</div>}
+        {_error && (
+          <div className="text-red-500 mb-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="whitespace-pre-line">{_error}</div>
+          </div>
+        )}
+        {success && (
+          <div className="text-green-600 mb-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+            Assessment completed successfully! Redirecting...
+          </div>
+        )}
         {/* Final Usecase Qualification */}
         <Card className="mb-6 p-6">
           <h3 className="font-semibold text-lg mb-4">Final Usecase Qualification</h3>
@@ -1311,8 +1328,8 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
           </Card>
         </div>
 
-        {/* AI-Specific Approvals Section */}
-        {(() => {
+         {/* AI-Specific Approvals Section */}
+         {(() => {
           const aiModelTypes = getAnswer(qnAData, 'TECHNICAL_FEASIBILITY', 'Model Type') || [];
           return Array.isArray(aiModelTypes) && (
             aiModelTypes.includes("Generative AI") || 
@@ -1358,6 +1375,26 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
             </div>
           </>
         )}
+
+        
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-end mt-8 pt-6 border-t border-border">
+          <Button
+            variant="outline"
+            onClick={handleSave}
+            disabled={_saving}
+            className="min-w-[120px]"
+          >
+            {_saving ? "Saving..." : "Save Draft"}
+          </Button>
+          <Button
+            onClick={handleComplete}
+            disabled={_saving}
+            className="min-w-[180px] bg-primary hover:bg-primary/90"
+          >
+            Complete Assessment
+          </Button>
+        </div>
       </div>
     </div>
   );

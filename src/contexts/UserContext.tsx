@@ -74,10 +74,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
     
-    // Wait a bit for data to be loaded
+    // Reduce delay for faster rendering
     const timer = setTimeout(() => {
       setDataReady(true);
-    }, 100);
+    }, 50); // Reduced from 100ms to 50ms
     return () => clearTimeout(timer);
   }, [mounted, isLoaded, isSignedIn]);
 
