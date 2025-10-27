@@ -193,34 +193,38 @@ export default function UseCasePromptManagement() {
         </div>
       </div>
 
-      {/* Use Case Info Card */}
-      <Card className="mb-4">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Use Case Details</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-medium text-sm text-muted-foreground mb-2">Problem Statement</h4>
-              <div 
-                className="text-sm text-foreground" 
-                dangerouslySetInnerHTML={{ 
-                  __html: useCase?.problemStatement || '' 
-                }} 
-              />
-            </div>
-            <div>
-              <h4 className="font-medium text-sm text-muted-foreground mb-2">Proposed AI Solution</h4>
-              <div 
-                className="text-sm text-foreground" 
-                dangerouslySetInnerHTML={{ 
-                  __html: useCase?.proposedAISolution || '' 
-                }} 
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Use Case Info Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        {/* Problem Statement Card */}
+        <Card className="border-l-4 border-l-red-500">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base text-red-700 dark:text-red-400">Problem Statement</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div 
+              className="text-sm text-foreground leading-relaxed" 
+              dangerouslySetInnerHTML={{ 
+                __html: useCase?.problemStatement || '' 
+              }} 
+            />
+          </CardContent>
+        </Card>
+
+        {/* Proposed AI Solution Card */}
+        <Card className="border-l-4 border-l-green-500">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base text-green-700 dark:text-green-400">Proposed AI Solution</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div 
+              className="text-sm text-foreground leading-relaxed" 
+              dangerouslySetInnerHTML={{ 
+                __html: useCase?.proposedAISolution || '' 
+              }} 
+            />
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Main Content Area */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
