@@ -45,6 +45,8 @@ import {
   Filter,
   X,
   GripVertical,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   DndContext,
@@ -355,6 +357,10 @@ export default function ConfigureQuestionTemplatesPage() {
   const [pendingOperations, setPendingOperations] = useState<Map<string, 'add' | 'edit' | 'delete'>>(new Map());
   const [operationStatus, setOperationStatus] = useState<Map<string, 'pending' | 'success' | 'error'>>(new Map());
   const [reorderMode, setReorderMode] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -456,6 +462,8 @@ export default function ConfigureQuestionTemplatesPage() {
       });
       setFilteredQuestionTemplates(filtered);
     }
+    // Reset to page 1 when filter changes
+    setCurrentPage(1);
   }, [questionTemplates, selectedStage]);
 
   const handleAddQuestion = async () => {
@@ -915,6 +923,10 @@ export default function ConfigureQuestionTemplatesPage() {
       const oldIndex = filteredQuestionTemplates.findIndex((item) => item.id === active.id);
       const newIndex = filteredQuestionTemplates.findIndex((item) => item.id === over.id);
 
+      // Check if both items are in the current page for visual feedback
+      const oldPageIndex = paginatedQuestionTemplates.findIndex((item) => item.id === active.id);
+      const newPageIndex = paginatedQuestionTemplates.findIndex((item) => item.id === over.id);
+
       // Update local state optimistically
       const newQuestionTemplates = arrayMove(filteredQuestionTemplates, oldIndex, newIndex);
       setFilteredQuestionTemplates(newQuestionTemplates);
@@ -988,6 +1000,18 @@ export default function ConfigureQuestionTemplatesPage() {
       default:
         return 'technicalOrderIndex';
     }
+  };
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredQuestionTemplates.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedQuestionTemplates = filteredQuestionTemplates.slice(startIndex, endIndex);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    // Scroll to top of content
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // All hooks must be called before any conditional returns
@@ -1395,7 +1419,7 @@ export default function ConfigureQuestionTemplatesPage() {
                 {/* Results Summary */}
                 <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
                   <span>
-                    Showing {filteredQuestionTemplates.length} of {questionTemplates.length} question templates
+                    Showing {startIndex + 1} to {Math.min(endIndex, filteredQuestionTemplates.length)} of {filteredQuestionTemplates.length} question templates
                     {selectedStage !== "all" && ` for ${getStageLabel(selectedStage as Stage)}`}
                   </span>
                 </div>
@@ -1410,7 +1434,7 @@ export default function ConfigureQuestionTemplatesPage() {
                     strategy={verticalListSortingStrategy}
                   >
                     <div className="space-y-4">
-                      {filteredQuestionTemplates.map((questionTemplate) => {
+                      {paginatedQuestionTemplates.map((questionTemplate) => {
                         const isPending = Array.from(pendingOperations.entries()).some(([opId, op]) => 
                           (op === 'add' && opId.includes(questionTemplate.id)) ||
                           (op === 'edit' && opId.includes(questionTemplate.id)) ||
@@ -1436,6 +1460,67 @@ export default function ConfigureQuestionTemplatesPage() {
                     </div>
                   </SortableContext>
                 </DndContext>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between pt-6 border-t border-border">
+                    <div className="text-sm text-muted-foreground">
+                      Page {currentPage} of {totalPages}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="flex items-center gap-1"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        Previous
+                      </Button>
+                      
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                          if (
+                            page === 1 ||
+                            page === totalPages ||
+                            (page >= currentPage - 1 && page <= currentPage + 1)
+                          ) {
+                            return (
+                              <Button
+                                key={page}
+                                variant={currentPage === page ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handlePageChange(page)}
+                                className="min-w-[2.5rem]"
+                              >
+                                {page}
+                              </Button>
+                            );
+                          } else if (page === currentPage - 2 || page === currentPage + 2) {
+                            return (
+                              <span key={page} className="px-2 text-muted-foreground">
+                                ...
+                              </span>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="flex items-center gap-1"
+                      >
+                        Next
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
