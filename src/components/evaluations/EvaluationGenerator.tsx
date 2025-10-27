@@ -601,8 +601,23 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <>
+      <style jsx>{`
+        select option {
+          background-color: var(--background) !important;
+          color: var(--foreground) !important;
+        }
+        select option:hover {
+          background-color: var(--accent) !important;
+          color: var(--accent-foreground) !important;
+        }
+        select option:checked {
+          background-color: var(--primary) !important;
+          color: var(--primary-foreground) !important;
+        }
+      `}</style>
+      <Card>
+        <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
@@ -663,11 +678,11 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
               <div className="space-y-3">
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Generation Strategy</label>
+                    <label className="text-sm font-medium mb-1 block text-foreground">Generation Strategy</label>
                     <select
                       value={generationStrategy}
                       onChange={(e) => setGenerationStrategy(e.target.value as any)}
-                      className="w-full px-3 py-2 border rounded-md text-sm"
+                      className="w-full px-3 py-2 border rounded-md text-sm bg-background text-foreground [&>option]:bg-background [&>option]:text-foreground"
                     >
                       <option value="comprehensive">Comprehensive</option>
                       <option value="targeted">Targeted</option>
@@ -675,11 +690,11 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Test Intensity</label>
+                    <label className="text-sm font-medium mb-1 block text-foreground">Test Intensity</label>
                     <select
                       value={testIntensity}
                       onChange={(e) => setTestIntensity(e.target.value as any)}
-                      className="w-full px-3 py-2 border rounded-md text-sm"
+                      className="w-full px-3 py-2 border rounded-md text-sm bg-background text-foreground [&>option]:bg-background [&>option]:text-foreground"
                     >
                       <option value="light">Light (5-10 tests)</option>
                       <option value="standard">Standard (10-15 tests)</option>
@@ -687,11 +702,11 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Engine Mode</label>
+                    <label className="text-sm font-medium mb-1 block text-foreground">Engine Mode</label>
                     <select
                       value={useOrchestrator ? 'orchestrator' : 'engine'}
                       onChange={(e) => setUseOrchestrator(e.target.value === 'orchestrator')}
-                      className="w-full px-3 py-2 border rounded-md text-sm"
+                      className="w-full px-3 py-2 border rounded-md text-sm bg-background text-foreground [&>option]:bg-background [&>option]:text-foreground"
                     >
                       <option value="engine">Direct LLM</option>
                       <option value="orchestrator">Multi-Agent</option>
@@ -957,6 +972,7 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
         )}
       </CardContent>
     </Card>
+    </>
   );
 };
 
