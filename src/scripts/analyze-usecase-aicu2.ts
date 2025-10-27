@@ -111,7 +111,7 @@ async function analyzeUseCaseAICU2(): Promise<AssessmentReport> {
 
     console.log('✅ Found use case:', useCase.title);
     console.log('   ID:', useCase.id);
-    console.log('   AIUC ID:', useCase.aiucId);
+    console.log('   AICU ID:', useCase.aiucId);
     console.log('   Stage:', useCase.stage);
     console.log('   Priority:', useCase.priority);
     console.log('   Business Function:', useCase.businessFunction);

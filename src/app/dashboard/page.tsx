@@ -701,15 +701,15 @@ const Dashboard = () => {
   const formatAiucId = (aiucId: string | number | undefined, id: string): string => {
     if (aiucId) {
       const aiucIdStr = String(aiucId);
-      // If aiucId already has AICU- prefix, return as is
-      if (aiucIdStr.startsWith('AICU-')) {
+      // If aiucId already has AIUC- prefix, return as is
+      if (aiucIdStr.startsWith('AIUC-')) {
         return aiucIdStr;
       }
-      // Otherwise add AICU- prefix
-      return `AICU-${aiucIdStr}`;
+      // Otherwise add AIUC- prefix
+      return `AIUC-${aiucIdStr}`;
     }
-    // Fallback to using regular id with AICU- prefix
-    return `AICU-${id}`;
+    // Fallback to using regular id with AIUC- prefix
+    return `AIUC-${id}`;
   };
 
   // Fix: Only show use cases in the column matching their current stage
