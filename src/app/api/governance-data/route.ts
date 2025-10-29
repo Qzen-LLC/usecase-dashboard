@@ -309,12 +309,13 @@ export const GET = withAuth(async (request, { auth }) => {
   }
 }, { 
   requireUser: true,
-  // Use DB-backed authorization to avoid relying on Clerk  
+  // Allow platform and organization roles; scope applied in handler
   customAuthorize: async (ctx) => {
     const record = await prismaClient.user.findUnique({
       where: { clerkId: ctx.userId! },
       select: { role: true },
     });
-    return record?.role === 'QZEN_ADMIN';
+    const role = record?.role;
+    return role === 'QZEN_ADMIN' || role === 'ORG_ADMIN' || role === 'ORG_USER' || role === 'USER';
   }
 });

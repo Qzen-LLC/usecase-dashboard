@@ -4,6 +4,14 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Plus, Edit2, Save, X, Eye, Trash2, Search, BarChart3, Users } from 'lucide-react';
 import { vendorService, type Vendor } from '@/lib/vendorService';
 import { useStableRender } from '@/hooks/useStableRender';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 // Types
 interface User {
@@ -607,20 +615,27 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
               <div key={area} className="bg-muted rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-medium text-foreground">{area}</h4>
-                  <select
+                  <Select
                     value={approval.status}
-                    onChange={(e) => updateApprovalStatus(area, e.target.value)}
+                    onValueChange={(value) => updateApprovalStatus(area, value)}
                     disabled={!isEditing}
-                    className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-primary disabled:opacity-75 text-dark ${
-              approval.status === 'Approved' ? 'bg-success/20 text-dark border border-success/30' :
-              approval.status === 'Rejected' ? 'bg-destructive/20 text-dark border border-destructive/30' :
-              'bg-warning/20 text-dark border border-warning/30'
-            }`}
                   >
-                    <option value="Pending">Pending</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Rejected">Rejected</option>
-                  </select>
+                    <SelectTrigger
+                      className={cn(
+                        "w-auto min-w-[120px] h-auto px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-primary disabled:opacity-75",
+                        approval.status === 'Approved' ? 'bg-success/20 text-foreground border border-success/30' :
+                        approval.status === 'Rejected' ? 'bg-destructive/20 text-foreground border border-destructive/30' :
+                        'bg-warning/20 text-foreground border border-warning/30'
+                      )}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="Approved">Approved</SelectItem>
+                      <SelectItem value="Rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 {approval.status === 'Approved' && (

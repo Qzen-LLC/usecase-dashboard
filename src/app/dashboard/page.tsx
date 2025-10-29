@@ -56,57 +56,57 @@ const stages = [
   { 
     id: 'discovery', 
     title: 'Discovery', 
-    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
-    textColor: 'text-white dark:text-gray-300', 
+    color: 'bg-gray-300 border-gray-400 dark:bg-gray-700/50 dark:border-gray-600/50', 
+    textColor: 'text-gray-900 dark:text-gray-100', 
     accentColor: 'bg-gray-500' 
   },
   { 
     id: 'business-case', 
     title: 'Business Case', 
-    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
-    textColor: 'text-white dark:text-gray-300', 
+    color: 'bg-gray-300 border-gray-400 dark:bg-gray-700/50 dark:border-gray-600/50', 
+    textColor: 'text-gray-900 dark:text-gray-100', 
     accentColor: 'bg-gray-500' 
   },
   { 
     id: 'proof-of-value', 
     title: 'Proof of Value', 
-    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
-    textColor: 'text-white dark:text-gray-300', 
+    color: 'bg-gray-300 border-gray-400 dark:bg-gray-700/50 dark:border-gray-600/50', 
+    textColor: 'text-gray-900 dark:text-gray-100', 
     accentColor: 'bg-gray-500' 
   },
   { 
     id: 'backlog', 
     title: 'Backlog', 
-    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
-    textColor: 'text-white dark:text-gray-300', 
+    color: 'bg-gray-300 border-gray-400 dark:bg-gray-700/50 dark:border-gray-600/50', 
+    textColor: 'text-gray-900 dark:text-gray-100', 
     accentColor: 'bg-gray-500' 
   },
   { 
     id: 'in-progress', 
     title: 'In Progress', 
-    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
-    textColor: 'text-white dark:text-gray-300', 
+    color: 'bg-gray-300 border-gray-400 dark:bg-gray-700/50 dark:border-gray-600/50', 
+    textColor: 'text-gray-900 dark:text-gray-100', 
     accentColor: 'bg-gray-500' 
   },
   { 
     id: 'solution-validation', 
     title: 'Solution Validation', 
-    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
-    textColor: 'text-white dark:text-gray-300', 
+    color: 'bg-gray-300 border-gray-400 dark:bg-gray-700/50 dark:border-gray-600/50', 
+    textColor: 'text-gray-900 dark:text-gray-100', 
     accentColor: 'bg-gray-500' 
   },
   { 
     id: 'pilot', 
     title: 'Pilot', 
-    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
-    textColor: 'text-white dark:text-gray-300', 
+    color: 'bg-gray-300 border-gray-400 dark:bg-gray-700/50 dark:border-gray-600/50', 
+    textColor: 'text-gray-900 dark:text-gray-100', 
     accentColor: 'bg-gray-500' 
   },
   { 
     id: 'deployment', 
     title: 'Deployment', 
-    color: 'bg-gray-200 border-gray-400 dark:bg-gray-800/20 dark:border-gray-700/30', 
-    textColor: 'text-white dark:text-gray-300', 
+    color: 'bg-gray-300 border-gray-400 dark:bg-gray-700/50 dark:border-gray-600/50', 
+    textColor: 'text-gray-900 dark:text-gray-100', 
     accentColor: 'bg-gray-500' 
   }
 ] as const;
@@ -169,7 +169,7 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
     <Card 
       ref={setNodeRef}
       style={style}
-      className={`${stageColor} border-2 transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer relative overflow-hidden ${
+      className={`bg-gray-50 dark:bg-gray-800/15 border-2 transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer relative overflow-hidden border-gray-200 dark:border-gray-600 ${
         isDragging ? 'shadow-xl scale-105 z-50 border-primary' : ''
       }`}
       onClick={onClick}
@@ -247,11 +247,6 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
             )}
           </button>
         </div>
-        
-        {/* Description */}
-        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-3 bg-gray-50 dark:bg-black/10 p-2 rounded-md">
-          {stripHtmlTags(useCase.description)}
-        </p>
         
         {/* Creator and Date */}
         <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-gray-200 dark:border-white/10">
@@ -911,7 +906,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <ClerkInvitationHandler />
-      <div className="h-full p-3 flex flex-col min-h-0 max-w-6xl mx-auto">
+      <div className="h-full p-3 flex flex-col min-h-0 w-full">
         {/* Clean Header */}
         <div className="flex-shrink-0 mb-4">
           <div className="flex items-center justify-between">
@@ -1042,14 +1037,15 @@ const Dashboard = () => {
           {/* Top horizontal scrollbar synchronized with content */}
           <div 
             ref={scrollBarRef}
-            className="overflow-x-auto border-b bg-background/70 mb-4"
+            className="overflow-x-auto overflow-y-hidden border-b bg-background/70 mb-4"
             onScroll={handleScrollBarScroll}
-            style={{ width: '100%', scrollbarGutter: 'stable both-edges' }}
+            style={{ width: '100%', height: '17px', scrollbarGutter: 'stable both-edges' }}
           >
             <div 
-              className="h-2 bg-transparent" 
+              className="h-4 bg-transparent" 
               style={{ 
-                width: `${effectiveWidth}px`
+                width: contentScrollWidth ? `${contentScrollWidth + 32}px` : '100%',
+                minWidth: '100%'
               }} 
             />
           </div>
@@ -1067,17 +1063,16 @@ const Dashboard = () => {
                 onScroll={handleContentScroll}
                 style={{ scrollbarGutter: 'stable both-edges' }}
               >
-                <div className="flex gap-4 h-full" style={{ width: `${effectiveWidth}px` }}>
+                <div className="flex gap-4 h-full pr-8">
                   {stages.map((stage, idx) => {
                     const stageUseCases = getUseCasesByStage(stage.id);
-                    const columnWidth = 260;
                     
                     return (
-                      <div key={`column-${stage.id}`} className="flex-shrink-0" style={{ width: columnWidth }}>
+                      <div key={`column-${stage.id}`} className="flex-shrink-0 flex-1 min-w-[260px]">
                         <DroppableStageColumn stage={stage} stageUseCases={stageUseCases}>
                           {/* Stage Header */}
                           <div className="mb-3">
-                            <div className={`${stage.color} border-2 ${stage.accentColor} rounded-lg p-3 shadow-sm`}>
+                            <div className={`${stage.color} border-2 rounded-lg p-3 shadow-sm`}>
                               <div className="flex items-center justify-between">
                                 <div>
                                   <div className={`font-semibold text-sm ${stage.textColor}`}>{stage.title}</div>
@@ -1118,6 +1113,8 @@ const Dashboard = () => {
                       </div>
                     );
                   })}
+                  {/* Right-side spacer to allow full scroll visibility of last column */}
+                  <div className="flex-shrink-0 w-6" />
                 </div>
               </div>
             </div>
@@ -1145,7 +1142,6 @@ const Dashboard = () => {
                         )}
                       </div>
                       <div className="font-semibold text-sm text-foreground line-clamp-2 leading-tight">{useCase.title}</div>
-                      <div className="text-xs text-foreground line-clamp-2 leading-relaxed bg-gray-50 dark:bg-black/10 p-2 rounded-md">{stripHtmlTags(useCase.description)}</div>
                       <div className="flex items-center gap-3 mt-2">
                         <div className="flex items-center gap-1 text-xs text-primary">
                           <span>{useCase.scores.operational}</span>

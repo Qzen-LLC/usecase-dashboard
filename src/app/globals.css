@@ -240,6 +240,22 @@
   .error-message {
     @apply text-sm text-muted-foreground;
   }
+
+  /* Select and Option Styling - Ensure proper contrast */
+  select {
+    @apply bg-background text-foreground;
+  }
+
+  select option {
+    color: rgb(var(--foreground)) !important;
+    background-color: rgb(var(--background)) !important;
+  }
+
+  /* Ensure options are visible in both light and dark mode */
+  .dark select option {
+    color: rgb(var(--foreground)) !important;
+    background-color: rgb(var(--popover)) !important;
+  }
 }
 
 @layer utilities {

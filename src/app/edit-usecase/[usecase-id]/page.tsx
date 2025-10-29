@@ -282,12 +282,12 @@ const AIUseCaseTool = () => {
     return invalid.length === 0;
   };
 
-  const renderStep1 = () => (
-    <div className="space-y-6">
-                      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
-        <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">Use Case Documentation</h3>
-        <p className="text-blue-700 dark:text-blue-300">Define and structure your AI use case with clear problem statements and success criteria.</p>
-      </div>
+  const renderStep1 = () => {
+    return (<div className="space-y-6">
+        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+          <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">Use Case Documentation</h3>
+          <p className="text-blue-700 dark:text-blue-300">Define and structure your AI use case with clear problem statements and success criteria.</p>
+        </div>
       <div className="grid grid-cols-1">
         <Card className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 space-y-6">
           <div className="space-y-2">
@@ -359,6 +359,7 @@ const AIUseCaseTool = () => {
             <option value="Data Office">Data Office</option>
             <option value="PMO">PMO</option>
           </select>
+          </div>
           <ArrayInput
             label="Primary Stakeholders"
             field="primaryStakeholders"
@@ -377,8 +378,8 @@ const AIUseCaseTool = () => {
           />
         </Card>
       </div>
-    </div>
-  );
+      </div>);
+  };
 
   const renderStep2 = () => (
     <div className="space-y-6">
