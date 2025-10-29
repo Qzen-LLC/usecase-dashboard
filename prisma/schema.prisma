@@ -82,6 +82,7 @@ model FinOps {
   valueBase       Float
   valueGrowthRate Float
   budgetRange     String?
+  breakEvenMonth  Int?
   useCase         UseCase @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
 }
 
