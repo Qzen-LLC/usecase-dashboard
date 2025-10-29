@@ -245,12 +245,15 @@ export default function RiskManagementPage() {
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Filter by Organization
                 </label>
-                <Select value={selectedOrgId} onValueChange={setSelectedOrgId}>
+                <Select
+                  value={selectedOrgId === '' ? 'ALL' : selectedOrgId}
+                  onValueChange={(v) => setSelectedOrgId(v === 'ALL' ? '' : v)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="All Organizations" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Organizations</SelectItem>
+                    <SelectItem value="ALL">All Organizations</SelectItem>
                     {organizations.map(org => (
                       <SelectItem key={org.id} value={org.id}>
                         <div className="flex items-center gap-2">
