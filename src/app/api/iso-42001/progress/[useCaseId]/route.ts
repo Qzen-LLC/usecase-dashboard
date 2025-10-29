@@ -9,8 +9,6 @@ export const GET = withAuth(async (
 ) => {
   try {
     // auth context is provided by withAuth wrapper
-
-    const { params } = await Promise.resolve(context as any);
     const { useCaseId } = await params;
 
     // Check if use case exists and user has access
