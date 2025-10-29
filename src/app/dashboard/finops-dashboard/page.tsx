@@ -1,9 +1,17 @@
 // This file will be replaced by a dynamic [useCaseId] route for individual financial assessment pages.
 'use client';
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import { useStableRender } from '@/hooks/useStableRender';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from '@/components/ui/button';
 
 function formatCurrency(num: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -13,6 +21,9 @@ function formatCurrency(num: number): string {
     maximumFractionDigits: 0
   }).format(num);
 }
+
+type FilterColumn = 'breakEvenMonth' | 'totalInvestment' | 'ROI' | 'none';
+type SortDirection = 'asc' | 'desc';
 
 interface UseCase {
   title: string;
@@ -35,6 +46,7 @@ interface FinOpsData {
   valueBase: number;
   valueGrowthRate: number;
   budgetRange?: string;
+  breakEvenMonth?: number;
   useCase?: UseCase;
 }
 
@@ -44,9 +56,35 @@ const FinOpsDashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [filterColumn, setFilterColumn] = useState<FilterColumn>('none');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   
   // Use global stable render hook
   const { isReady } = useStableRender();
+
+  // Filter and sort data - MUST be called before any conditional returns
+  const filteredFinops = useMemo(() => {
+    let result = finops.filter(f =>
+      f.useCase?.title.toLowerCase().includes(search.toLowerCase()) ||
+      (f.useCase?.owner || '').toLowerCase().includes(search.toLowerCase())
+    );
+
+    // Apply sorting if a filter column is selected
+    if (filterColumn !== 'none') {
+      result = [...result].sort((a, b) => {
+        const aValue = a[filterColumn];
+        const bValue = b[filterColumn];
+        
+        if (sortDirection === 'asc') {
+          return aValue - bValue;
+        } else {
+          return bValue - aValue;
+        } 
+      });
+    }
+
+    return result;
+  }, [finops, search, filterColumn, sortDirection]);
 
   useEffect(() => {
     async function fetchData() {
@@ -82,11 +120,6 @@ const FinOpsDashboardPage = () => {
     );
   }
 
-  const filteredFinops = finops.filter(f =>
-    f.useCase?.title.toLowerCase().includes(search.toLowerCase()) ||
-    (f.useCase?.owner || '').toLowerCase().includes(search.toLowerCase())
-  );
-
   const handleRowClick = (useCaseId: string) => {
     router.push(`/dashboard/finops-dashboard/${useCaseId}`);
   };
@@ -94,18 +127,6 @@ const FinOpsDashboardPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Page Header */}
-        <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent leading-tight">
-                FinOps Dashboard
-              </h1>
-              <p className="text-muted-foreground mt-3 text-lg">Financial operations and cost management for AI use cases</p>
-            </div>
-          </div>
-        </div>
-
         {/* Search Section */}
         <div className="bg-card rounded-2xl shadow-sm border border-border p-6">
           <div className="flex flex-col md:flex-row gap-4 items-center">
@@ -118,9 +139,52 @@ const FinOpsDashboardPage = () => {
                 className="w-full border border-border bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-primary rounded-xl"
               />
             </div>
+            <div className="flex gap-3 items-center">
+              <Select
+                value={filterColumn}
+                onValueChange={(value) => setFilterColumn(value as FilterColumn)}
+              >
+                <SelectTrigger className="w-[180px] border border-border bg-background text-foreground">
+                  <SelectValue placeholder="Sort by..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sort By..</SelectItem>
+                  <SelectItem value="totalInvestment">Total Investment</SelectItem>
+                  <SelectItem value="ROI">Return on Investment</SelectItem>
+                  <SelectItem value="breakEvenMonth">Break Even Month</SelectItem>
+                </SelectContent>
+              </Select>
+              {filterColumn !== 'none' && (
+                <Select
+                  value={sortDirection}
+                  onValueChange={(value) => setSortDirection(value as SortDirection)}
+                >
+                  <SelectTrigger className="w-[120px] border border-border bg-background text-foreground">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="desc">Descending</SelectItem>
+                    <SelectItem value="asc">Ascending</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
             <div className="text-sm text-muted-foreground">
               {filteredFinops.length} of {finops.length} use cases
             </div>
+            {filterColumn !== 'none' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setFilterColumn('none');
+                  setSortDirection('desc');
+                  setSearch('');
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
           </div>
         </div>
 

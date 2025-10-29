@@ -156,7 +156,7 @@ export default function FinancialDashboard() {
   const rows = useMemo(() => {
     let cumulativeValue = 0;
     let cumulativeOpCosts = 0;
-    let breakEvenMonth = null;
+    let breakEvenMonth = 0;
     const result = [];
     for (let month = 1; month <= FORECAST_MONTHS; month++) {
       const apiCost = baseApiCost * Math.pow(1.12, month / 12);
@@ -170,7 +170,7 @@ export default function FinancialDashboard() {
       const monthlyProfit = monthlyValue - totalMonthlyCost;
       const netValue = cumulativeValue - totalInvestment;
       const ROI = totalInvestment > 0 ? (netValue / totalInvestment) * 100 : 0;
-      if (breakEvenMonth === null && netValue >= 0) breakEvenMonth = month;
+      if (breakEvenMonth === 0 && netValue >= 0) breakEvenMonth = month;
       result.push({
         month,
         apiCost,
@@ -184,6 +184,7 @@ export default function FinancialDashboard() {
         monthlyProfit,
         netValue,
         ROI,
+        breakEvenMonth,
       });
     }
     return result.map(r => ({ ...r, breakEvenMonth }));
