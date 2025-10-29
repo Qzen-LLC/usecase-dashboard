@@ -73,7 +73,11 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
     'Data Governance & Security': {
       'Data Handling': 'Is customer data used for model training? Is your data isolated or pooled?',
       'Compliance': 'GDPR, HIPAA, SOC 2, ISO 27001, and internal data residency requirements',
-      'Security Controls': 'Encryption at rest & transit, API security, access control, incident response'
+      'Security Controls': 'Encryption at rest & transit, API security, access control, incident response',
+      'Security Audits & Certifications': 'Has the vendor undergone a recent third-party security audit?',
+      'Security Incident History': 'Are there known vulnerabilities or data breaches reported?',
+      'Authentication & Access Management': 'Is multi-factor authentication (MFA) required for access?',
+      'Access Management & Authorization': 'Does the tool allow administrators to restrict access by role?'
     },
     'Responsible AI & Ethics': {
       'Bias & Fairness Checks': 'Does the provider audit models for demographic or institutional bias?',
@@ -99,7 +103,8 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
     'Regulatory & Legal Considerations': {
       'Model Licensing Restrictions': 'Risk in using open-source models in commercial settings?',
       'IP & Copyright Risks': 'Can they demonstrate outputs don\'t violate copyright/IP?',
-      'Liability Clauses': 'Who is responsible for AI misbehavior?'
+      'Liability Clauses': 'Who is responsible for AI misbehavior?',
+      'Data Protection Agreements': 'Can the vendor provide a Data Processing Agreement (DPA)?'
     },
     'Operational Excellence & Support': {
       'Documentation Quality': 'How thorough are technical docs, API references, implementation guides?',
