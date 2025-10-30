@@ -395,29 +395,6 @@ const Dashboard = () => {
     loading: lockLoading,
     error: lockError
   } = useLock(selectedUseCaseForLock || '');
-
-  // Check if user is authenticated
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
-          <div className="loading-spinner mx-auto mb-4" />
-          <p className="text-muted-foreground">Initializing...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isSignedIn) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
-          <p className="text-muted-foreground">Please sign in to access the dashboard.</p>
-        </div>
-      </div>
-    );
-  }
-
   // Use closestCenter for more reliable drop detection
   const customCollisionDetection = closestCenter;
 
@@ -456,6 +433,28 @@ const Dashboard = () => {
   useEffect(() => {
     setDeletedUseCaseIds(new Set());
   }, []);
+
+  // Check if user is authenticated (place after all hooks above to keep order stable)
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
+          <div className="loading-spinner mx-auto mb-4" />
+          <p className="text-muted-foreground">Initializing...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isSignedIn) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
+          <p className="text-muted-foreground">Please sign in to access the dashboard.</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleEdit = (id: string) => {
     router.push(`/edit-usecase/${id}`);

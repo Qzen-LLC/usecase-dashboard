@@ -3,9 +3,9 @@ import { Geist, Geist_Mono, Inter, Poppins, JetBrains_Mono } from "next/font/goo
 import "./globals.css";
 import AuthClientProvider from "@/contexts/AuthClientProvider";
 import React from "react";
-import ConditionalSidebarLayout from '@/components/ConditionalSidebarLayout';
 import { UserProvider } from '@/contexts/UserContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import SidebarLayout from '@/components/ui/sidebar-layout';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -93,7 +93,7 @@ export default function RootLayout({
         >
           <ThemeProvider>
             <UserProvider>
-              <ConditionalSidebarLayout>{children}</ConditionalSidebarLayout>
+              <SidebarLayout>{children}</SidebarLayout>
             </UserProvider>
           </ThemeProvider>
         </body>
