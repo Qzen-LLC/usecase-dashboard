@@ -32,14 +32,14 @@ import { usePathname } from "next/navigation"
 const data = {
   navMain: [
     {
-      title: "Qube Settings",
+      title: "Qube Admin Settings",
       url: "",
       icon: SquareTerminal,
       isActive: true,
       items: [
         {
           title: "General Settings",
-          url: "#",
+          url: "/admin",
         },
         {
           title: "Question Templates",
@@ -97,7 +97,7 @@ const data = {
 }
 
 export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-    const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [dataReady, setDataReady] = useState(false);
   const pathname = usePathname();
