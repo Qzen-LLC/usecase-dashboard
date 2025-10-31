@@ -29,11 +29,36 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function ChartRadarDots({ chartData }: { chartData: Array<{ month: string; desktop: number }> }) {
+  // Theme-aware palette for high-contrast light/dark rendering
+  const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+  const COLORS = isDark ? {
+    grid: '#334155',          // slate-700
+    axis: '#94a3b8',          // slate-400
+    label: '#e2e8f0',         // slate-200
+    tooltipBg: '#111827',     // gray-900
+    tooltipText: '#e5e7eb',   // gray-200
+    radarStroke: '#f59e0b',   // amber-500
+    radarFill: 'rgba(245, 158, 11, 0.25)',
+    high: '#ef4444',          // red-500
+    medium: '#f59e0b',        // amber-500
+    low: '#22c55e',           // green-500
+  } : {
+    grid: '#e5e7eb',          // gray-200
+    axis: '#6b7280',          // gray-500
+    label: '#374151',         // gray-700
+    tooltipBg: '#ffffff',
+    tooltipText: '#111827',   // gray-900
+    radarStroke: '#fb923c',   // orange-400
+    radarFill: 'rgba(251, 146, 60, 0.25)',
+    high: '#ef4444',          // red-500
+    medium: '#f59e0b',        // amber-500
+    low: '#10b981',           // emerald-500
+  } as const;
   // Helper to determine color based on risk value
   const getRiskColor = (value: number) => {
-    if (value >= 8) return 'hsl(var(--destructive))'; // High
-    if (value >= 4) return 'hsl(var(--warning))'; // Medium
-    return 'hsl(var(--success))'; // Low
+    if (value >= 8) return COLORS.high; // High
+    if (value >= 4) return COLORS.medium; // Medium
+    return COLORS.low; // Low
   };
   // Find top risk
   const topRisk = chartData.reduce((max, curr) => curr.desktop > max.desktop ? curr : max, chartData[0]);
@@ -45,7 +70,7 @@ export function ChartRadarDots({ chartData }: { chartData: Array<{ month: string
       <g>
         <circle cx={cx} cy={cy} r={3} fill={color} stroke={color} strokeWidth={1.5} />
         {/* Value label */}
-        <text x={cx} y={cy - 8} textAnchor="middle" fontSize="12" fill={color} fontWeight="bold">{payload.desktop}</text>
+        <text x={cx} y={cy - 8} textAnchor="middle" fontSize="12" fill={COLORS.label} fontWeight="bold">{payload.desktop}</text>
       </g>
     );
   };
@@ -55,7 +80,7 @@ export function ChartRadarDots({ chartData }: { chartData: Array<{ month: string
         {/* Top Risk Callout */}
         <div className="flex items-center gap-2 mb-2">
           <span className="font-semibold text-base text-foreground">Top Risk:</span>
-          <span className="px-2 py-1 rounded-full text-xs font-bold" style={{ background: getRiskColor(topRisk.desktop), color: '#fff' }}>{topRisk.month} ({topRisk.desktop}/10)</span>
+          <span className="px-2 py-1 rounded-full text-xs font-bold" style={{ background: getRiskColor(topRisk.desktop), color: '#ffffff' }}>{topRisk.month} ({topRisk.desktop}/10)</span>
         </div>
         <CardTitle>Risk Radar Chart</CardTitle>
         <CardDescription>
@@ -65,27 +90,27 @@ export function ChartRadarDots({ chartData }: { chartData: Array<{ month: string
       <CardContent className="pb-0">
                  <ChartContainer
            config={chartConfig}
-           className="mx-auto w-full max-w-[600px] h-[400px] bg-card/50 rounded-lg p-4"
+           className="mx-auto w-full max-w-[600px] h-[400px] rounded-lg p-4"
          >
-                     <RadarChart data={chartData} outerRadius={120} style={{ background: 'hsl(var(--card))' }}>
+                    <RadarChart data={chartData} outerRadius={120} style={{ background: 'transparent' }}>
                          <Tooltip 
                formatter={(value, name, props) => [`${value}/10`, `${props && props.payload ? props.payload.month : name}`]}
                contentStyle={{
-                 backgroundColor: 'hsl(var(--card))',
-                 border: '1px solid hsl(var(--border))',
+                backgroundColor: COLORS.tooltipBg,
+                border: `1px solid ${COLORS.grid}`,
                  borderRadius: '8px',
-                 color: 'hsl(var(--foreground))'
+                color: COLORS.tooltipText
                }}
              />
-                         <PolarGrid stroke="hsl(var(--muted-foreground))" strokeOpacity={0.3} />
-            <PolarAngleAxis dataKey="month" tick={{ fontSize: 14, fill: 'hsl(var(--foreground))' }} />
-            <PolarRadiusAxis domain={[0, 10]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                        <PolarGrid stroke={COLORS.grid} strokeOpacity={0.9} />
+            <PolarAngleAxis dataKey="month" tick={{ fontSize: 14, fill: COLORS.label }} stroke={COLORS.grid} />
+            <PolarRadiusAxis domain={[0, 10]} tick={{ fill: COLORS.axis }} stroke={COLORS.grid} />
                          <Radar
                dataKey="desktop"
-               fill="hsl(var(--primary))"
-               fillOpacity={0.4}
+              fill={COLORS.radarFill}
+              fillOpacity={1}
                dot={<CustomDot />}
-               stroke="hsl(var(--primary))"
+              stroke={COLORS.radarStroke}
                strokeWidth={3}
              />
           </RadarChart>
@@ -94,9 +119,9 @@ export function ChartRadarDots({ chartData }: { chartData: Array<{ month: string
       <CardFooter className="flex-col gap-2 text-sm">
         {/* Add a legend for color coding */}
         <div className="flex gap-4 mt-2">
-          <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-destructive" /> High Risk</span>
-          <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-warning" /> Medium Risk</span>
-          <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-success" /> Low Risk</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full" style={{ background: COLORS.high }} /> High Risk</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full" style={{ background: COLORS.medium }} /> Medium Risk</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full" style={{ background: COLORS.low }} /> Low Risk</span>
         </div>
       </CardFooter>
     </Card>

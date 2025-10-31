@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -75,6 +75,7 @@ interface UseCaseData {
 export default function RiskManagementPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const useCaseId = params.useCaseId as string;
 
   const [loading, setLoading] = useState(true);
@@ -265,10 +266,10 @@ export default function RiskManagementPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-          <Link href="/dashboard/governance">
+          <Link href={(searchParams.get('from') === 'risks') ? '/dashboard/risks' : (searchParams.get('from') === 'governance') ? '/dashboard/governance' : '/dashboard'}>
                 <Button variant="outline" size="sm" className="text-dark">
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Governance
+                  {(searchParams.get('from') === 'risks') ? 'Back to Risk Management' : (searchParams.get('from') === 'governance') ? 'Back to Governance' : 'Back to Use Cases'}
                 </Button>
               </Link>
             <h1 className="text-3xl font-bold text-foreground mb-2 py-4">Risk Management</h1>

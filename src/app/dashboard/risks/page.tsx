@@ -17,6 +17,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUserData } from '@/contexts/UserContext';
+import { calculateRiskScores } from '@/lib/risk-calculations';
+import { ChartRadarDots } from '@/components/ui/radar-chart';
 
 interface Risk {
   id: string;
@@ -36,6 +38,9 @@ interface UseCase {
   title: string;
   description: string;
   stage: string;
+  assessData?: {
+    stepsData?: any;
+  };
   organization?: {
     id: string;
     name: string;
@@ -316,6 +321,16 @@ export default function RiskManagementPage() {
             ).length;
             const isExpanded = expandedUseCase === useCase.id;
 
+            const assessmentSteps = useCase.assessData?.stepsData;
+            const riskCalc = (() => {
+              try {
+                if (assessmentSteps && Object.keys(assessmentSteps || {}).length > 0) {
+                  return calculateRiskScores(assessmentSteps);
+                }
+              } catch (_) {}
+              return null;
+            })();
+
             return (
               <Card key={useCase.id} className="overflow-hidden">
                 <CardHeader 
@@ -347,6 +362,19 @@ export default function RiskManagementPage() {
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-4">
+                      <div className="text-right mr-2 min-w-[150px]">
+                        <div className="text-sm text-muted-foreground">Overall Risk</div>
+                        {riskCalc ? (
+                          <div className="flex items-center justify-end gap-2 mt-1">
+                            <span className="text-2xl font-bold text-foreground">{riskCalc.score}</span>
+                            <Badge className={getRiskLevelColor((riskCalc.riskTier || '').charAt(0).toUpperCase() + (riskCalc.riskTier || '').slice(1))}>
+                              {((riskCalc.riskTier || '') as string).charAt(0).toUpperCase() + ((riskCalc.riskTier || '') as string).slice(1)}
+                            </Badge>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-muted-foreground mt-1">Insufficient assessment data</div>
+                        )}
+                      </div>
                       <div className="text-right">
                         <div className="text-sm text-muted-foreground">Risks</div>
                         <div className="text-2xl font-bold text-foreground">{riskCount}</div>
@@ -366,7 +394,7 @@ export default function RiskManagementPage() {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          router.push(`/dashboard/${useCase.id}/risks`);
+                          router.push(`/dashboard/${useCase.id}/risks?from=risks`);
                         }}
                         className="mr-2"
                       >
@@ -384,6 +412,67 @@ export default function RiskManagementPage() {
 
                 {isExpanded && (
                   <CardContent className="pt-0">
+                    {riskCalc && riskCalc.chartData && riskCalc.chartData.length > 0 && (
+                      <div className="mb-4 p-4 rounded border border-border bg-card">
+                        <div className="mb-2 text-sm font-semibold text-foreground">Risk Radar</div>
+                        <ChartRadarDots chartData={riskCalc.chartData} />
+                      </div>
+                    )}
+                    {riskCalc && (
+                      <div className="mb-4 p-4 rounded border border-border bg-muted/30">
+                        <div className="mb-2 text-sm font-semibold text-foreground">Risk Feedback</div>
+                        {riskCalc.regulatoryWarnings && riskCalc.regulatoryWarnings.length > 0 && (
+                          <div className="mb-3">
+                            <div className="text-xs font-medium text-muted-foreground mb-1">Regulatory Warnings</div>
+                            <ul className="list-disc pl-5 text-sm text-foreground">
+                              {riskCalc.regulatoryWarnings.map((w: string, idx: number) => (
+                                <li key={idx}>{w}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {riskCalc.dataPrivacyInfo && riskCalc.dataPrivacyInfo.length > 0 && (
+                          <div className="mb-3">
+                            <div className="text-xs font-medium text-muted-foreground mb-1">Data Privacy</div>
+                            <ul className="list-disc pl-5 text-sm text-foreground">
+                              {riskCalc.dataPrivacyInfo.map((m: string, idx: number) => (
+                                <li key={idx}>{m}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {riskCalc.securityInfo && riskCalc.securityInfo.length > 0 && (
+                          <div className="mb-3">
+                            <div className="text-xs font-medium text-muted-foreground mb-1">Security</div>
+                            <ul className="list-disc pl-5 text-sm text-foreground">
+                              {riskCalc.securityInfo.map((m: string, idx: number) => (
+                                <li key={idx}>{m}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {riskCalc.operationalInfo && riskCalc.operationalInfo.length > 0 && (
+                          <div className="mb-3">
+                            <div className="text-xs font-medium text-muted-foreground mb-1">Operational</div>
+                            <ul className="list-disc pl-5 text-sm text-foreground">
+                              {riskCalc.operationalInfo.map((m: string, idx: number) => (
+                                <li key={idx}>{m}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {riskCalc.ethicalInfo && riskCalc.ethicalInfo.length > 0 && (
+                          <div className="mb-1">
+                            <div className="text-xs font-medium text-muted-foreground mb-1">Ethical</div>
+                            <ul className="list-disc pl-5 text-sm text-foreground">
+                              {riskCalc.ethicalInfo.map((m: string, idx: number) => (
+                                <li key={idx}>{m}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {riskCount === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
                         No risks identified for this use case.
