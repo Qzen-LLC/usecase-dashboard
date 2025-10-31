@@ -198,13 +198,11 @@ export const GET = withAuth(async (request, { auth }) => {
             const sourceType = answer.question ? 'Question' : answer.questionTemplate ? 'QuestionTemplate' : 'Unknown';
             
             if (questionSource) {
-              console.log(`[Governance] AIUC-${useCase.aiucId} - Processing answer from ${sourceType}:`, questionSource.text);
               const questionText = questionSource.text;
               
               // Check for AI-Specific Regulations question
               if (questionText === 'AI-Specific Regulations' && answer.value) {
                 const labels = answer.value.labels || [];
-                console.log(`[Governance] AIUC-${useCase.aiucId} - Found AI-Specific Regulations:`, labels);
                 labels.forEach((label: string) => {
                   if (!regulatoryFrameworks.includes(label)) {
                     regulatoryFrameworks.push(label);
@@ -215,7 +213,6 @@ export const GET = withAuth(async (request, { auth }) => {
               // Check for Certifications/Standards question
               if (questionText === 'Certifications/Standards' && answer.value) {
                 const labels = answer.value.labels || [];
-                console.log(`[Governance] AIUC-${useCase.aiucId} - Found Certifications/Standards:`, labels);
                 labels.forEach((label: string) => {
                   if (!industryStandards.includes(label)) {
                     industryStandards.push(label);
@@ -225,11 +222,6 @@ export const GET = withAuth(async (request, { auth }) => {
             }
           });
         }
-        
-        console.log(`[Governance] AIUC-${useCase.aiucId} - Final frameworks:`, {
-          regulatoryFrameworks,
-          industryStandards
-        });
         
         // Fallback: Also check old stepsData structure for backward compatibility
         if (regulatoryFrameworks.length === 0 && industryStandards.length === 0 && useCase.assessData?.stepsData) {

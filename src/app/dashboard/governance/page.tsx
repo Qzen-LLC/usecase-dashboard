@@ -448,10 +448,17 @@ export default function GovernancePage() {
                       <div className="border-l-4 border-gray-400 dark:border-gray-500 bg-gradient-to-r from-gray-50 dark:from-gray-800 to-gray-25 dark:to-gray-700/10 pl-3 pr-2 py-2.5 rounded-r">
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-xs font-medium text-gray-900 dark:text-gray-100">EU AI ACT</span>
-                          <span className="text-xs text-gray-700 dark:text-gray-300 font-semibold">{assessmentProgress[item.useCaseId]?.euAiAct ? `${Math.round(assessmentProgress[item.useCaseId].euAiAct!.progress)}%` : '0%'}</span>
+                          <span className="text-xs text-gray-700 dark:text-gray-300 font-semibold">{(() => {
+                            const progress = assessmentProgress[item.useCaseId]?.euAiAct?.progress;
+                            const validProgress = (typeof progress === 'number' && !isNaN(progress)) ? progress : 0;
+                            return `${Math.round(validProgress)}%`;
+                          })()}</span>
                         </div>
                         <div className="w-full bg-gray-200/60 dark:bg-gray-700/40 rounded-full h-1.5 mb-2">
-                          <div className="bg-gray-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${assessmentProgress[item.useCaseId]?.euAiAct?.progress || 0}%` }}></div>
+                          <div className="bg-gray-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${(() => {
+                            const progress = assessmentProgress[item.useCaseId]?.euAiAct?.progress;
+                            return (typeof progress === 'number' && !isNaN(progress)) ? progress : 0;
+                          })()}%` }}></div>
                         </div>
                         <div className="flex justify-between items-center">
                           <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${assessmentProgress[item.useCaseId]?.euAiAct?.status === 'completed' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' : 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700'}`}>
@@ -474,10 +481,17 @@ export default function GovernancePage() {
                       <div className="border-l-4 border-purple-400 dark:border-purple-500 bg-gradient-to-r from-purple-50 dark:from-purple-900/20 to-purple-25 dark:to-purple-800/10 pl-3 pr-2 py-2.5 rounded-r">
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-xs font-medium text-purple-900 dark:text-purple-100">ISO 42001</span>
-                          <span className="text-xs text-purple-700 dark:text-purple-300 font-semibold">{assessmentProgress[item.useCaseId]?.iso42001 ? `${Math.round(assessmentProgress[item.useCaseId].iso42001!.progress)}%` : '0%'}</span>
+                          <span className="text-xs text-purple-700 dark:text-purple-300 font-semibold">{(() => {
+                            const progress = assessmentProgress[item.useCaseId]?.iso42001?.progress;
+                            const validProgress = (typeof progress === 'number' && !isNaN(progress)) ? progress : 0;
+                            return `${Math.round(validProgress)}%`;
+                          })()}</span>
                         </div>
                         <div className="w-full bg-purple-200/60 dark:bg-purple-700/40 rounded-full h-1.5 mb-2">
-                          <div className="bg-purple-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${assessmentProgress[item.useCaseId]?.iso42001?.progress || 0}%` }}></div>
+                          <div className="bg-purple-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${(() => {
+                            const progress = assessmentProgress[item.useCaseId]?.iso42001?.progress;
+                            return (typeof progress === 'number' && !isNaN(progress)) ? progress : 0;
+                          })()}%` }}></div>
                         </div>
                         <div className="flex justify-between items-center">
                           <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${assessmentProgress[item.useCaseId]?.iso42001?.status === 'completed' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' : 'bg-yellow-100 dark:text-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700'}`}>
@@ -501,7 +515,11 @@ export default function GovernancePage() {
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-xs font-medium text-emerald-900 dark:text-emerald-100">UAE AI Controls</span>
                           <div className="flex items-center gap-1">
-                            <span className="text-xs text-emerald-700 dark:text-emerald-300 font-semibold">{assessmentProgress[item.useCaseId]?.uaeAi ? `${Math.round(assessmentProgress[item.useCaseId].uaeAi!.progress)}%` : '0%'}</span>
+                            <span className="text-xs text-emerald-700 dark:text-emerald-300 font-semibold">{(() => {
+                              const progress = assessmentProgress[item.useCaseId]?.uaeAi?.progress;
+                              const validProgress = (typeof progress === 'number' && !isNaN(progress)) ? progress : 0;
+                              return `${Math.round(validProgress)}%`;
+                            })()}</span>
                             {assessmentProgress[item.useCaseId]?.uaeAi && (
                               <span className={`text-xs px-1.5 py-0.5 rounded ${
                                 assessmentProgress[item.useCaseId].uaeAi!.maturityLevel === 'mature' ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300' :
@@ -515,7 +533,10 @@ export default function GovernancePage() {
                           </div>
                         </div>
                         <div className="w-full bg-emerald-200/60 dark:bg-emerald-700/40 rounded-full h-1.5 mb-2">
-                          <div className="bg-emerald-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${assessmentProgress[item.useCaseId]?.uaeAi?.progress || 0}%` }}></div>
+                          <div className="bg-emerald-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${(() => {
+                            const progress = assessmentProgress[item.useCaseId]?.uaeAi?.progress;
+                            return (typeof progress === 'number' && !isNaN(progress)) ? progress : 0;
+                          })()}%` }}></div>
                         </div>
                         <div className="flex justify-between items-center">
                           <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${assessmentProgress[item.useCaseId]?.uaeAi?.status === 'completed' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' : 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700'}`}>
@@ -538,10 +559,17 @@ export default function GovernancePage() {
                       <div className="border-l-4 border-emerald-400 dark:border-emerald-500 bg-gradient-to-r from-emerald-50 dark:from-emerald-900/20 to-emerald-25 dark:to-emerald-800/10 pl-3 pr-2 py-2.5 rounded-r">
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-xs font-medium text-emerald-900 dark:text-emerald-100">ISO 27001</span>
-                          <span className="text-xs text-emerald-700 dark:text-emerald-300 font-semibold">{assessmentProgress[item.useCaseId]?.iso27001 ? `${Math.round(assessmentProgress[item.useCaseId].iso27001!.progress)}%` : '0%'}</span>
+                          <span className="text-xs text-emerald-700 dark:text-emerald-300 font-semibold">{(() => {
+                            const progress = assessmentProgress[item.useCaseId]?.iso27001?.progress;
+                            const validProgress = (typeof progress === 'number' && !isNaN(progress)) ? progress : 0;
+                            return `${Math.round(validProgress)}%`;
+                          })()}</span>
                         </div>
                         <div className="w-full bg-emerald-200/60 dark:bg-emerald-700/40 rounded-full h-1.5 mb-2">
-                          <div className="bg-emerald-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${assessmentProgress[item.useCaseId]?.iso27001?.progress || 0}%` }}></div>
+                          <div className="bg-emerald-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${(() => {
+                            const progress = assessmentProgress[item.useCaseId]?.iso27001?.progress;
+                            return (typeof progress === 'number' && !isNaN(progress)) ? progress : 0;
+                          })()}%` }}></div>
                         </div>
                         <div className="flex justify-between items-center">
                           <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${assessmentProgress[item.useCaseId]?.iso27001?.status === 'completed' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' : 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700'}`}>
