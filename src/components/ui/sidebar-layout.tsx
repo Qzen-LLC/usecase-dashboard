@@ -3,20 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  LayoutDashboard, 
-  Users, 
-  ShieldCheck, 
-  Building, 
-  DollarSign, 
-  FileText, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  LayoutDashboard,
+  Users,
+  ShieldCheck,
+  Building,
+  DollarSign,
+  FileText,
   Shield,
   Home,
   Settings,
   HelpCircle,
-  Code2
+  Code2,
+  Cog,
+  GraduationCap,
+  Leaf,
+  Eye
 } from 'lucide-react';
 import { Button } from './button';
 import { UserButton } from '@/components/auth';
@@ -83,6 +87,30 @@ const navigationItems: NavigationItem[] = [
     href: '/dashboard/governance',
     icon: Shield,
     description: 'Compliance & Governance'
+  },
+  {
+    title: 'Governance Setup',
+    href: '/dashboard/governance-setup',
+    icon: Cog,
+    description: 'Governance Configuration'
+  },
+  {
+    title: 'Training & Competency',
+    href: '/dashboard/training',
+    icon: GraduationCap,
+    description: 'AI Training Programs'
+  },
+  {
+    title: 'Sustainable AI',
+    href: '/dashboard/sustainability',
+    icon: Leaf,
+    description: 'Environmental Impact'
+  },
+  {
+    title: 'Oversight & Monitoring',
+    href: '/dashboard/oversight',
+    icon: Eye,
+    description: 'Governance Control Tower'
   }
 ];
 
