@@ -121,16 +121,22 @@ export const POST = withAuth(async (
             });
             console.log('[CRUD_LOG] UseCase updated:', { id: useCase.id, title: useCase.title, updatedAt: useCase.updatedAt, authoredBy: userRecord.id });
         } else {
-            // For new use cases, calculate the next aiucId for this user/organization
+            // For new use cases, calculate the next aiucId
+            // We need to ensure uniqueness across both @@unique([aiucId, organizationId]) and @@unique([aiucId, userId])
             let nextAiucId = 1;
-            
+
             if (userRecord.organizationId) {
-                // For organization users, get the next aiucId for the organization
+                // For organization users, get the max aiucId from both organization and user perspectives
                 const maxOrgAiucId = await prismaClient.useCase.aggregate({
                     where: { organizationId: userRecord.organizationId },
                     _max: { aiucId: true }
                 });
-                nextAiucId = (maxOrgAiucId._max.aiucId || 0) + 1;
+                const maxUserAiucId = await prismaClient.useCase.aggregate({
+                    where: { userId: userRecord.id },
+                    _max: { aiucId: true }
+                });
+                // Use the maximum of both to avoid constraint violations
+                nextAiucId = Math.max(maxOrgAiucId._max.aiucId || 0, maxUserAiucId._max.aiucId || 0) + 1;
             } else {
                 // For individual users, get the next aiucId for the user
                 const maxUserAiucId = await prismaClient.useCase.aggregate({
@@ -153,10 +159,20 @@ export const POST = withAuth(async (
         }
 
         return NextResponse.json({ success: true, useCase });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error saving use case:', error);
+        console.error('Error details:', {
+            message: error?.message,
+            code: error?.code,
+            meta: error?.meta,
+            stack: error?.stack
+        });
         return NextResponse.json(
-            { success: false, error: 'Failed to save use case' },
+            {
+                success: false,
+                error: 'Failed to save use case',
+                details: error?.message || 'Unknown error'
+            },
             { status: 500 }
         );
     }
