@@ -52,6 +52,28 @@ const data = {
       ],
     },
   ],
+  navOrgAdmin: [
+    {
+      title: "Organization Settings",
+      url: "",
+      icon: SquareTerminal,
+      isActive: true,
+      items: [
+        {
+          title: "Manage Users",
+          url: "/dashboard/users",
+        },
+        {
+          title: "Manage Questions",
+          url: "/dashboard/configure-questions",
+        },
+        {
+          title: "Manage Models",
+          url: "/dashboard/configure-models",
+        },
+      ],
+    },
+  ],
   projects: [
     {
       name: "Executive Dashboard",
@@ -125,6 +147,9 @@ export default function AppSidebar({ ...props }: React.ComponentProps<typeof Sid
       <SidebarContent>
         {userData?.role === 'QZEN_ADMIN' && (
           <NavMain items={data.navMain} />
+        )}
+        {userData?.role === 'ORG_ADMIN' && (
+          <NavMain items={data.navOrgAdmin} />
         )}
         <NavProjects projects={data.projects} />
       </SidebarContent>

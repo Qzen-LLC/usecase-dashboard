@@ -442,6 +442,42 @@ export default function AdminDashboard() {
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              {/* Configure AI Models Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg"
+                  >
+                    <Settings className="w-4 h-4" />
+                    Configure Models
+                    <ChevronDown className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-64" align="end">
+                  {organizations.length === 0 ? (
+                    <DropdownMenuItem disabled>
+                      <span className="text-muted-foreground">No organizations available</span>
+                    </DropdownMenuItem>
+                  ) : (
+                    organizations.map((org) => (
+                      <DropdownMenuItem
+                        key={org.id}
+                        onClick={() => router.push(`/dashboard/configure-models?orgId=${org.id}`)}
+                        className="cursor-pointer"
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">{org.name}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {org.users.length} user{org.users.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
