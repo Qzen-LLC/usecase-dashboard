@@ -309,14 +309,19 @@ export default function DecisionAuthorityTab({ organizationId, onUpdate, isDarkM
               <div className="space-y-2">
                 <Label htmlFor="riskLevel" className={isDarkMode ? 'text-gray-200' : ''}>Risk Level (Optional)</Label>
                 <Select
-                  value={formData.riskLevel || ''}
-                  onValueChange={(value) => setFormData({ ...formData, riskLevel: value || undefined })}
+                  value={formData.riskLevel ?? '__NONE__'}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      riskLevel: value === '__NONE__' ? undefined : value,
+                    })
+                  }
                 >
                   <SelectTrigger className={isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}>
                     <SelectValue placeholder="Select risk level..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__NONE__">None</SelectItem>
                     {RISK_LEVELS.map(level => (
                       <SelectItem key={level} value={level}>
                         {level}

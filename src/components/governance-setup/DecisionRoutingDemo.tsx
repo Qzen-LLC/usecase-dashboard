@@ -87,12 +87,15 @@ export default function DecisionRoutingDemo({ organizationId, isDarkMode }: Prop
 
           <div className="space-y-2">
             <Label className={isDarkMode ? 'text-gray-200' : ''}>Risk Level (Optional)</Label>
-            <Select value={riskLevel} onValueChange={setRiskLevel}>
+            <Select
+              value={riskLevel === '' ? '__NONE__' : riskLevel}
+              onValueChange={(value) => setRiskLevel(value === '__NONE__' ? '' : value)}
+            >
               <SelectTrigger className={isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}>
                 <SelectValue placeholder="Select risk level..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="__NONE__">None</SelectItem>
                 {RISK_LEVELS.map(level => (
                   <SelectItem key={level.value} value={level.value}>
                     {level.label}
