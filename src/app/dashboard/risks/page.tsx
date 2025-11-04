@@ -241,6 +241,229 @@ export default function RiskManagementPage() {
         </Card>
       </div>
 
+      {/* Executive Dashboard - Heat Map & Status Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Risk Heatmap */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5" />
+              Risk Heatmap
+            </CardTitle>
+            <CardDescription>Severity vs. Likelihood Matrix</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              // Calculate risk distribution for heatmap
+              const allRisks = useCases.flatMap(uc => uc.risks);
+              const heatmapData = [
+                { severity: 'Critical', likelihood: 'High', risks: [] as Risk[] },
+                { severity: 'Critical', likelihood: 'Medium', risks: [] as Risk[] },
+                { severity: 'Critical', likelihood: 'Low', risks: [] as Risk[] },
+                { severity: 'High', likelihood: 'High', risks: [] as Risk[] },
+                { severity: 'High', likelihood: 'Medium', risks: [] as Risk[] },
+                { severity: 'High', likelihood: 'Low', risks: [] as Risk[] },
+                { severity: 'Medium', likelihood: 'High', risks: [] as Risk[] },
+                { severity: 'Medium', likelihood: 'Medium', risks: [] as Risk[] },
+                { severity: 'Medium', likelihood: 'Low', risks: [] as Risk[] },
+                { severity: 'Low', likelihood: 'High', risks: [] as Risk[] },
+                { severity: 'Low', likelihood: 'Medium', risks: [] as Risk[] },
+                { severity: 'Low', likelihood: 'Low', risks: [] as Risk[] },
+              ];
+
+              allRisks.forEach(risk => {
+                const cell = heatmapData.find(
+                  d => d.severity === risk.riskLevel && d.likelihood === risk.likelihood
+                );
+                if (cell) cell.risks.push(risk);
+              });
+
+              const getCellColor = (count: number, severity: string) => {
+                if (count === 0) return 'bg-gray-100 dark:bg-gray-800';
+                if (severity === 'Critical') return count > 2 ? 'bg-red-600' : count > 1 ? 'bg-red-500' : 'bg-red-400';
+                if (severity === 'High') return count > 2 ? 'bg-orange-600' : count > 1 ? 'bg-orange-500' : 'bg-orange-400';
+                if (severity === 'Medium') return count > 2 ? 'bg-yellow-600' : count > 1 ? 'bg-yellow-500' : 'bg-yellow-400';
+                return count > 2 ? 'bg-green-600' : count > 1 ? 'bg-green-500' : 'bg-green-400';
+              };
+
+              return (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-4 gap-2 text-xs font-medium text-center">
+                    <div></div>
+                    <div className="text-muted-foreground">Low</div>
+                    <div className="text-muted-foreground">Medium</div>
+                    <div className="text-muted-foreground">High</div>
+                  </div>
+                  {['Critical', 'High', 'Medium', 'Low'].map(severity => (
+                    <div key={severity} className="grid grid-cols-4 gap-2">
+                      <div className="flex items-center text-xs font-medium text-muted-foreground">{severity}</div>
+                      {['Low', 'Medium', 'High'].map(likelihood => {
+                        const cell = heatmapData.find(d => d.severity === severity && d.likelihood === likelihood);
+                        const count = cell?.risks.length || 0;
+                        return (
+                          <div
+                            key={likelihood}
+                            className={`${getCellColor(count, severity)} rounded-md h-16 flex items-center justify-center text-white font-bold text-lg transition-all hover:scale-105 cursor-pointer`}
+                            title={`${severity} Severity / ${likelihood} Likelihood: ${count} risks`}
+                          >
+                            {count}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                  <div className="text-xs text-muted-foreground pt-2 border-t">
+                    <div className="flex justify-center gap-4">
+                      <span>Darker = More Risks</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+
+        {/* Risk Status & Category Breakdown */}
+        <div className="space-y-6">
+          {/* Status Breakdown */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Risk Status</CardTitle>
+              <CardDescription>Distribution by workflow status</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const allRisks = useCases.flatMap(uc => uc.risks);
+                const openCount = allRisks.filter(r => r.status === 'OPEN').length;
+                const inProgressCount = allRisks.filter(r => r.status === 'IN_PROGRESS').length;
+                const mitigatedCount = allRisks.filter(r => r.status === 'MITIGATED').length;
+                const closedCount = allRisks.filter(r => r.status === 'CLOSED').length;
+                const total = allRisks.length || 1;
+
+                return (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                          <span className="text-sm">Open</span>
+                        </div>
+                        <span className="text-sm font-bold">{openCount}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-red-500 h-2 rounded-full transition-all"
+                          style={{ width: `${(openCount / total) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                          <span className="text-sm">In Progress</span>
+                        </div>
+                        <span className="text-sm font-bold">{inProgressCount}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-yellow-500 h-2 rounded-full transition-all"
+                          style={{ width: `${(inProgressCount / total) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                          <span className="text-sm">Mitigated</span>
+                        </div>
+                        <span className="text-sm font-bold">{mitigatedCount}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-green-500 h-2 rounded-full transition-all"
+                          style={{ width: `${(mitigatedCount / total) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                          <span className="text-sm">Closed</span>
+                        </div>
+                        <span className="text-sm font-bold">{closedCount}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-gray-500 h-2 rounded-full transition-all"
+                          style={{ width: `${(closedCount / total) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          {/* Category Breakdown */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Risk Categories</CardTitle>
+              <CardDescription>Distribution by risk type</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const allRisks = useCases.flatMap(uc => uc.risks);
+                const categories = ['technical', 'data', 'operational', 'regulatory', 'ethical', 'business'];
+                const categoryLabels: Record<string, string> = {
+                  'technical': 'Technical',
+                  'data': 'Data Privacy',
+                  'operational': 'Operational',
+                  'regulatory': 'Regulatory',
+                  'ethical': 'Ethical',
+                  'business': 'Business'
+                };
+                const categoryCounts = categories.map(cat => ({
+                  category: cat,
+                  label: categoryLabels[cat],
+                  count: allRisks.filter(r => r.category === cat).length
+                })).filter(c => c.count > 0);
+
+                const total = allRisks.length || 1;
+
+                return (
+                  <div className="space-y-3">
+                    {categoryCounts.map(({ category, label, count }) => (
+                      <div key={category} className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{label}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                            <div
+                              className="bg-blue-500 h-2 rounded-full transition-all"
+                              style={{ width: `${(count / total) * 100}%` }}
+                            ></div>
+                          </div>
+                          <span className="font-bold w-8 text-right">{count}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {categoryCounts.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">No risks found</p>
+                    )}
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
       {/* Filters */}
       <Card className="mb-6">
         <CardContent className="pt-6">
