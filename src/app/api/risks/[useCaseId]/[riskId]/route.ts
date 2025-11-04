@@ -6,9 +6,12 @@ import { prismaClient } from '@/utils/db';
 // PUT /api/risks/[useCaseId]/[riskId] - Update a risk
 export const PUT = withAuth(async (
   request: Request,
-  { params, auth }: { params: { useCaseId: string; riskId: string }, auth: any }
+  { params, auth }: { params: Promise<{ useCaseId: string; riskId: string }>, auth: any }
 ) => {
   try {
+    // Await params as required by Next.js 15
+    const { useCaseId, riskId } = await params;
+
     const userRecord = await prismaClient.user.findUnique({
       where: { clerkId: auth.userId! },
     });
@@ -35,10 +38,10 @@ export const PUT = withAuth(async (
     if (data.notes !== undefined) updateData.notes = data.notes;
 
     const risk = await prismaClient.risk.update({
-      where: { id: params.riskId },
+      where: { id: riskId },
       data: updateData
     });
-    console.log('[CRUD_LOG] Risk updated:', { id: params.riskId, useCaseId: params.useCaseId, status: data.status, updatedAt: risk.updatedAt, authoredBy: userRecord.id });
+    console.log('[CRUD_LOG] Risk updated:', { id: riskId, useCaseId: useCaseId, status: data.status, updatedAt: risk.updatedAt, authoredBy: userRecord.id });
 
     return NextResponse.json(risk);
   } catch (error) {
@@ -53,9 +56,12 @@ export const PUT = withAuth(async (
 // DELETE /api/risks/[useCaseId]/[riskId] - Delete a risk
 export const DELETE = withAuth(async (
   request: Request,
-  { params, auth }: { params: { useCaseId: string; riskId: string }, auth: any }
+  { params, auth }: { params: Promise<{ useCaseId: string; riskId: string }>, auth: any }
 ) => {
   try {
+    // Await params as required by Next.js 15
+    const { useCaseId, riskId } = await params;
+
     // auth context is provided by withAuth wrapper
     const userRecord = await prismaClient.user.findUnique({
       where: { clerkId: auth.userId! },
@@ -65,9 +71,9 @@ export const DELETE = withAuth(async (
     }
 
     await prismaClient.risk.delete({
-      where: { id: params.riskId }
+      where: { id: riskId }
     });
-    console.log('[CRUD_LOG] Risk deleted:', { id: params.riskId, useCaseId: params.useCaseId, authoredBy: userRecord.id });
+    console.log('[CRUD_LOG] Risk deleted:', { id: riskId, useCaseId: useCaseId, authoredBy: userRecord.id });
 
     return NextResponse.json({ success: true });
   } catch (error) {

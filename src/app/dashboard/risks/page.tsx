@@ -1,11 +1,12 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  AlertTriangle, 
-  Shield, 
-  RefreshCw, 
-  ChevronDown, 
+import Link from 'next/link';
+import {
+  AlertTriangle,
+  Shield,
+  RefreshCw,
+  ChevronDown,
   ChevronUp,
   ExternalLink,
   Search,
@@ -389,6 +390,35 @@ export default function RiskManagementPage() {
                           </div>
                         )}
                       </div>
+                      {riskCount === 0 && useCase.assessData?.stepsData && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            try {
+                              const response = await fetch(`/api/risks/${useCase.id}/auto-create`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ stepsData: useCase.assessData.stepsData })
+                              });
+                              if (response.ok) {
+                                alert('✅ Risks created successfully! Click "Manage Risks" to view them.');
+                                fetchData(); // Refresh the data
+                              } else {
+                                const error = await response.text();
+                                alert(`❌ Failed to create risks: ${error}`);
+                              }
+                            } catch (error) {
+                              alert(`❌ Error: ${error}`);
+                            }
+                          }}
+                          className="mr-2 bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          <Shield className="w-4 h-4 mr-2" />
+                          Generate Risks
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -505,11 +535,6 @@ export default function RiskManagementPage() {
                                   <p className="text-sm text-muted-foreground">
                                     {risk.description}
                                   </p>
-                                  {risk.mitigationStrategy && (
-                                    <div className="mt-2 p-2 bg-muted rounded text-sm">
-                                      <strong>Mitigation:</strong> {risk.mitigationStrategy}
-                                    </div>
-                                  )}
                                 </div>
                               </div>
                             </CardContent>

@@ -6,9 +6,12 @@ import { prismaClient } from '@/utils/db';
 // GET /api/risks/[useCaseId] - Get all risks for a use case
 export const GET = withAuth(async (
   request: Request,
-  { params, auth }: { params: { useCaseId: string }, auth: any }
+  { params, auth }: { params: Promise<{ useCaseId: string }>, auth: any }
 ) => {
   try {
+    // Await params as required by Next.js 15
+    const { useCaseId } = await params;
+
     const userRecord = await prismaClient.user.findUnique({
       where: { clerkId: auth.userId! },
     });
@@ -18,7 +21,7 @@ export const GET = withAuth(async (
 
     try {
       const risks = await prismaClient.risk.findMany({
-        where: { useCaseId: params.useCaseId },
+        where: { useCaseId: useCaseId },
         orderBy: [
           { status: 'asc' },
           { riskScore: 'desc' },
