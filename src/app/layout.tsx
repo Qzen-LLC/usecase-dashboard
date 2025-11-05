@@ -88,7 +88,7 @@ export default function RootLayout({
           />
         </head>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${poppins.variable} ${jetbrainsMono.variable} antialiased font-sans bg-background text-foreground`}
+          className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${poppins.variable} ${jetbrainsMono.variable} antialiased font-sans bg-background text-foreground text-sm`}
           suppressHydrationWarning
         >
           <ThemeProvider>

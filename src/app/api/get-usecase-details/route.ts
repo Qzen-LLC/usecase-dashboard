@@ -73,7 +73,7 @@ export const GET = withAuth(async (req: Request, { auth }) => {
         priority: true,
         createdAt: true,
         updatedAt: true,
-        assessData: true,
+        // assessData removed: using template/question answers elsewhere
         user: {
           select: {
             firstName: true,

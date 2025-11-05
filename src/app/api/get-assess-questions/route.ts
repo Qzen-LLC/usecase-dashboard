@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch questions with options and answers
-    const questions = await prisma.question.findMany({
+    let questions = await prisma.question.findMany({
       where: {
         organizationId: useCase.organizationId || undefined,
         isInactive: false  // Only fetch active questions
@@ -41,6 +41,72 @@ export async function GET(request: NextRequest) {
         },
       },
     });
+
+    // Fallback: if no org-specific questions are configured, use templates
+    if (!questions || questions.length === 0) {
+      const templates = await prisma.questionTemplate.findMany({
+        where: { isInactive: false },
+        include: { optionTemplates: true },
+      });
+
+      const templateAnswers = await prisma.answer.findMany({
+        where: { useCaseId, templateId: { not: null } },
+      });
+
+      const answersByTemplateId: Record<string, any[]> = {};
+      templateAnswers.forEach(answer => {
+        if (answer.templateId) {
+          if (!answersByTemplateId[answer.templateId]) {
+            answersByTemplateId[answer.templateId] = [];
+          }
+          answersByTemplateId[answer.templateId].push(answer);
+        }
+      });
+
+      // Map templates into the same shape as questions
+      const formattedTemplates = templates.map((template: any) => {
+        const answerList = answersByTemplateId[template.id] || [];
+        const answerData = answerList.length > 0 ? answerList[0].value : null;
+
+        let answers: any[] = [];
+        if (answerData) {
+          if (answerData.optionIds && answerData.labels) {
+            if (template.type === 'RISK') {
+              const probLabel = answerData.labels.find((label: string) => label.startsWith('pro:'));
+              const impactLabel = answerData.labels.find((label: string) => label.startsWith('imp:'));
+              const probOptionId = answerData.optionIds[answerData.labels.findIndex((label: string) => label.startsWith('pro:'))];
+              const impactOptionId = answerData.optionIds[answerData.labels.findIndex((label: string) => label.startsWith('imp:'))];
+              if (probLabel && probOptionId) {
+                answers.push({ id: `${template.id}-probability`, value: probLabel, questionId: template.id, optionId: probOptionId });
+              }
+              if (impactLabel && impactOptionId) {
+                answers.push({ id: `${template.id}-impact`, value: impactLabel, questionId: template.id, optionId: impactOptionId });
+              }
+            } else {
+              answers = answerData.optionIds.map((optionId: string, index: number) => ({
+                id: `${template.id}-${optionId}`,
+                value: answerData.labels[index],
+                questionId: template.id,
+                optionId,
+              }));
+            }
+          } else if (answerData.text) {
+            answers = [{ id: `${template.id}-${template.type.toLowerCase()}`, value: answerData.text, questionId: template.id }];
+          }
+        }
+
+        return {
+          id: template.id,
+          text: template.text,
+          type: template.type,
+          stage: template.stage,
+          options: template.optionTemplates.map((opt: any) => ({ id: opt.id, text: opt.text, questionId: template.id })),
+          answers,
+        };
+      });
+
+      return NextResponse.json(formattedTemplates);
+    }
 
     // Group questions by stage and sort by order index
     const questionsByStage = questions.reduce((acc, question) => {

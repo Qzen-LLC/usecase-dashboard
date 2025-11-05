@@ -67,9 +67,7 @@ interface UseCaseData {
   id: string;
   title: string;
   aiucId: number;
-  assessData?: {
-    stepsData: any;
-  };
+  // assessData removed from dependency
 }
 
 export default function RiskManagementPage() {
@@ -114,9 +112,9 @@ export default function RiskManagementPage() {
       const risksData = await risksResponse.json();
       setRisks(risksData);
 
-      // Auto-create risks from assessment if none exist
-      if (risksData.length === 0 && useCaseData.assessData?.stepsData) {
-        await autoCreateRisks(useCaseData.assessData.stepsData);
+      // Auto-create risks from configured templates/questions if none exist
+      if (risksData.length === 0) {
+        await autoCreateRisksFromConfigured();
       }
     } catch (error) {
       console.error('Error fetching data:', error);

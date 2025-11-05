@@ -121,21 +121,21 @@ export default function UseCaseDevelopmentDashboard() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="container mx-auto p-4 max-w-6xl">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
+      <div className="mb-4 bg-muted/50 rounded-md p-4">
+        <div className="flex items-center gap-2 mb-1">
           <Code2 className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-foreground">Use Case Development</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Use Case Development</h1>
         </div>
-        <p className="text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Create and manage prompt templates for your AI use cases
         </p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+        <Card className="bg-muted/50 rounded-md shadow-none">
           <CardHeader className="pb-2">
             <CardDescription>Total Use Cases</CardDescription>
           </CardHeader>
@@ -143,7 +143,7 @@ export default function UseCaseDevelopmentDashboard() {
             <div className="text-2xl font-bold">{useCases.length}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-muted/50 rounded-md shadow-none">
           <CardHeader className="pb-2">
             <CardDescription>In Development</CardDescription>
           </CardHeader>
@@ -153,7 +153,7 @@ export default function UseCaseDevelopmentDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-muted/50 rounded-md shadow-none">
           <CardHeader className="pb-2">
             <CardDescription>Ready for Pilot</CardDescription>
           </CardHeader>
@@ -163,7 +163,7 @@ export default function UseCaseDevelopmentDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-muted/50 rounded-md shadow-none">
           <CardHeader className="pb-2">
             <CardDescription>Total Prompts</CardDescription>
           </CardHeader>
@@ -174,7 +174,7 @@ export default function UseCaseDevelopmentDashboard() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
+      <div className="flex flex-col md:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
@@ -212,7 +212,7 @@ export default function UseCaseDevelopmentDashboard() {
 
       {/* Use Cases Grid */}
       {filteredUseCases.length === 0 ? (
-        <Card className="p-12 text-center">
+        <Card className="p-12 text-center bg-muted/50 rounded-md shadow-none">
           <div className="flex flex-col items-center gap-4">
             <FileText className="w-16 h-16 text-gray-300" />
             <h3 className="text-lg font-semibold text-gray-600">
@@ -225,11 +225,11 @@ export default function UseCaseDevelopmentDashboard() {
           </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredUseCases.map((useCase) => (
             <Card 
               key={useCase.id} 
-              className="hover:shadow-lg transition-shadow cursor-pointer group"
+              className="bg-muted/50 rounded-md hover:shadow-none transition-shadow cursor-pointer group"
               onClick={() => handleUseCaseClick(useCase.id)}
             >
               <CardHeader>
@@ -272,7 +272,7 @@ export default function UseCaseDevelopmentDashboard() {
 
                   {/* Action Button */}
                   <Button 
-                    className="w-full mt-4 bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700"
+                    className="w-full mt-4 !bg-muted !text-foreground !border !border-border hover:!bg-muted/90"
                     variant="outline"
                     size="sm"
                   >
@@ -290,7 +290,7 @@ export default function UseCaseDevelopmentDashboard() {
       <div className="fixed bottom-6 right-6">
         <Button
           size="lg"
-          className="rounded-full shadow-lg bg-neutral-100 text-foreground border border-neutral-300 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-800"
+          className="rounded-full shadow-lg !bg-muted !text-foreground !border !border-border hover:!bg-muted/90"
           onClick={() => router.push('/new-usecase')}
         >
           <Plus className="w-5 h-5 mr-2" />

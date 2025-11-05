@@ -156,7 +156,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
   return (
     <div className="flex h-screen bg-background text-foreground">
       {/* Sidebar */}
-      <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-card border-r border-border shadow-sm transition-all duration-300 ease-in-out flex flex-col`}>
+      <div className={`${isCollapsed ? 'w-16' : 'w-56'} bg-card border-r border-border shadow-sm transition-all duration-300 ease-in-out flex flex-col font-brandSans`}>
         {/* Logo and Brand */}
         <div className="border-b border-border">
           {isCollapsed ? (
@@ -174,22 +174,22 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
               </Button>
             </div>
           ) : (
-            <div className="flex items-center gap-3 p-4">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-card">
-                <Image src="https://vgwacd4qotpurdv6.public.blob.vercel-storage.com/logo/logo.png" alt="Logo" width={40} height={40} className="object-contain" />
+            <div className="flex items-center gap-2.5 p-3">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md bg-card">
+                <Image src="https://vgwacd4qotpurdv6.public.blob.vercel-storage.com/logo/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-extrabold text-foreground leading-tight">QUBE</span>
-                <span className="text-xs text-muted-foreground leading-tight">AI Platform</span>
+                <span className="text-base font-semibold text-foreground leading-tight">QUBE</span>
+                <span className="text-[10px] text-muted-foreground leading-tight">AI Platform</span>
               </div>
               <div className="flex-1 flex justify-end">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={toggleSidebar}
-                  className="p-1.5 hover:bg-muted rounded-lg transition-colors"
+                  className="p-1 hover:bg-muted rounded-lg transition-colors"
                 >
-                  <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+                  <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground" />
                 </Button>
               </div>
             </div>
@@ -197,7 +197,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
         </div>
 
         {/* Navigation */}
-        <nav className={`flex-1 p-2 ${isCollapsed ? 'space-y-2' : 'space-y-1'}`}>
+        <nav className={`flex-1 p-2 ${isCollapsed ? 'space-y-2' : 'space-y-2'}`}>
           {sidebarItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
             const Icon = item.icon;
@@ -205,22 +205,22 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
             return (
               <Link key={item.href} href={item.href}>
                 <div className={`
-                  ${isCollapsed ? 'flex flex-col items-center justify-center p-2' : 'flex items-center gap-3 px-3 py-2.5'} 
+                  ${isCollapsed ? 'flex flex-col items-center justify-center p-2' : 'flex items-center gap-2 px-3 py-2'} 
                   rounded-lg transition-all duration-200 group
                   ${isActive 
-                    ? 'bg-primary/10 text-primary shadow-sm border-l-4 border-primary font-medium' 
+                    ? 'bg-primary/10 text-primary shadow-sm border-l-4 border-primary' 
                     : item.isAdmin 
                       ? 'bg-accent/10 text-accent-foreground border-l-4 border-accent hover:bg-accent/20'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground hover:shadow-sm'
                   }
                 `}>
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary' : item.isAdmin ? 'text-accent-foreground' : 'text-muted-foreground group-hover:text-foreground'}`} />
+                  <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-primary' : item.isAdmin ? 'text-accent-foreground' : 'text-muted-foreground group-hover:text-foreground'}`} />
                   {!isCollapsed && (
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium leading-tight">{item.title}</span>
-                      <span className="text-xs text-muted-foreground leading-tight">{item.description}</span>
+                      <span className="text-xs font-normal leading-snug">{item.title}</span>
+                      {/* Compact mode hides descriptions to reduce vertical space */}
                       {item.isAdmin && (
-                        <span className="text-xs text-accent-foreground font-medium">Admin Only</span>
+                        <span className="text-[10px] text-accent-foreground font-normal leading-snug">Admin Only</span>
                       )}
                     </div>
                   )}
@@ -238,14 +238,14 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
               console.log('Settings button clicked');
             }}
             className={`
-              w-full ${isCollapsed ? 'flex flex-col items-center justify-center p-2' : 'flex items-center gap-3 px-3 py-2.5'} 
+              w-full ${isCollapsed ? 'flex flex-col items-center justify-center p-2' : 'flex items-center gap-2 px-2.5 py-1.5'} 
               rounded-lg transition-all duration-200 group
               text-muted-foreground hover:bg-muted hover:text-foreground hover:shadow-sm
             `}
           >
-            <Settings className={`w-5 h-5 flex-shrink-0 text-muted-foreground group-hover:text-foreground`} />
+            <Settings className={`w-4 h-4 flex-shrink-0 text-muted-foreground group-hover:text-foreground`} />
             {!isCollapsed && (
-              <span className="text-sm font-medium leading-tight">Settings</span>
+              <span className="text-xs font-normal leading-tight">Settings</span>
             )}
           </button>
           
@@ -255,14 +255,14 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
               console.log('Help button clicked');
             }}
             className={`
-              w-full ${isCollapsed ? 'flex flex-col items-center justify-center p-2' : 'flex items-center gap-3 px-3 py-2.5'} 
+              w-full ${isCollapsed ? 'flex flex-col items-center justify-center p-2' : 'flex items-center gap-2 px-2.5 py-1.5'} 
               rounded-lg transition-all duration-200 group
               text-muted-foreground hover:bg-muted hover:text-foreground hover:shadow-sm
             `}
           >
-            <HelpCircle className={`w-5 h-5 flex-shrink-0 text-muted-foreground group-hover:text-foreground`} />
+            <HelpCircle className={`w-4 h-4 flex-shrink-0 text-muted-foreground group-hover:text-foreground`} />
             {!isCollapsed && (
-              <span className="text-sm font-medium leading-tight">Help</span>
+              <span className="text-xs font-normal leading-tight">Help</span>
             )}
           </button>
         </div>

@@ -917,6 +917,7 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
   const [chartData, setChartData] = useState<{ month: string; desktop: number }[]>([]);
   const [finops, setFinops] = useState<any>(null);
   const [qnAData, setQnAData] = useState<any>(null);
+  const [riskResult, setRiskResult] = useState<any>(null);
   // Fetch financial data
   useEffect(() => {
     if (!useCaseId) 
@@ -927,6 +928,34 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
         if (Array.isArray(data) && data.length > 0) setFinops(data[0]);
       });
   }, [useCaseId]);
+
+  // Fetch unified risk score to ensure parity with Risk Management
+  useEffect(() => {
+    if (!useCaseId) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/risk-score/${useCaseId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setRiskResult(data);
+          // Ensure chartData is set from API response for consistency
+          if (Array.isArray(data.chartData) && data.chartData.length > 0) {
+            setChartData(data.chartData);
+          } else {
+            setChartData([]);
+          }
+        } else {
+          // If API fails, clear chartData to avoid stale data
+          setChartData([]);
+          setRiskResult(null);
+        }
+      } catch (error) {
+        console.error('[ApprovalsPage] Error fetching risk score:', error);
+        setChartData([]);
+        setRiskResult(null);
+      }
+    })();
+  }, [useCaseId, useCase]);
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -980,21 +1009,8 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
   }, [useCaseId, useCase]);
 
 
-  useEffect(() => {
-    if (!qnAData) {
-      console.log("[ApprovalsPage] useEffect triggered but qnAData is null");
-      return; // prevents early/invalid call
-    }
-
-    console.log("[ApprovalsPage] ===== Running RiskCalculation =====");
-    console.log("[ApprovalsPage] qnAData is an array?", Array.isArray(qnAData));
-    console.log("[ApprovalsPage] qnAData length:", qnAData?.length);
-    console.log("[ApprovalsPage] Sample question:", qnAData?.[0]);
-    
-    const result = RiskCalculation(qnAData);
-    setChartData(Array.isArray(result.chartData) ? result.chartData : []);
-    console.log("[ApprovalsPage] ===== RiskCalculation Complete =====");
-  }, [qnAData]);
+  // Removed local RiskCalculation - now using unified API endpoint /api/risk-score/[useCaseId]
+  // This ensures consistency between Approvals page and Risk Management page
   
 
   useEffect(() => {
@@ -1137,8 +1153,7 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
               </Card>
             </div>
             {/* Risk Summary Card */}
-            {qnAData && chartData && chartData.length > 0 && (() => {
-              const riskResult = RiskCalculation(qnAData);
+            {riskResult && chartData && chartData.length > 0 && (() => {
               const riskScores = riskResult.chartData.map((d: { month: string; desktop: number }) => d.desktop);
               const criticalCount = riskScores.filter((v: number) => v >= 8).length;
               const highCount = riskScores.filter((v: number) => v >= 6 && v < 8).length;
@@ -1212,16 +1227,15 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
             })()}
             {/* After info messages, add a Risk Action Summary */}
             {(() => {
-              if (!qnAData) return null;
-              const riskResult = RiskCalculation(qnAData);
+              if (!riskResult) return null;
               // Gather risk scores, info, and factors
               const riskScores = [
-                { label: 'Data Privacy', score: riskResult.chartData[0]?.desktop || 0, info: riskResult.dataPrivacyInfo, factors: riskResult.dataPrivacyFactors },
-                { label: 'Security', score: riskResult.chartData[1]?.desktop || 0, info: riskResult.securityInfo, factors: riskResult.securityFactors },
-                { label: 'Regulatory', score: riskResult.chartData[2]?.desktop || 0, info: riskResult.regulatoryWarnings, factors: riskResult.regulatoryFactors },
-                { label: 'Ethical', score: riskResult.chartData[3]?.desktop || 0, info: riskResult.ethicalInfo, factors: riskResult.ethicalFactors },
-                { label: 'Operational', score: riskResult.chartData[4]?.desktop || 0, info: riskResult.operationalInfo, factors: riskResult.operationalFactors },
-                { label: 'Reputational', score: riskResult.chartData[5]?.desktop || 0, info: [], factors: riskResult.reputationalFactors },
+                { label: 'Data Privacy', score: riskResult.chartData[0]?.desktop || 0, info: riskResult.dataPrivacyInfo, factors: riskResult.dataPrivacyFactors || [] },
+                { label: 'Security', score: riskResult.chartData[1]?.desktop || 0, info: riskResult.securityInfo, factors: riskResult.securityFactors || [] },
+                { label: 'Regulatory', score: riskResult.chartData[2]?.desktop || 0, info: riskResult.regulatoryWarnings, factors: riskResult.regulatoryFactors || [] },
+                { label: 'Ethical', score: riskResult.chartData[3]?.desktop || 0, info: riskResult.ethicalInfo, factors: riskResult.ethicalFactors || [] },
+                { label: 'Operational', score: riskResult.chartData[4]?.desktop || 0, info: riskResult.operationalInfo, factors: riskResult.operationalFactors || [] },
+                { label: 'Reputational', score: riskResult.chartData[5]?.desktop || 0, info: [], factors: riskResult.reputationalFactors || [] },
               ];
               
               // Add Gen AI risk if applicable

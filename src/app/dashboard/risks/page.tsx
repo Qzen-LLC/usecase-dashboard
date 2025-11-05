@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUserData } from '@/contexts/UserContext';
 import { calculateRiskScores } from '@/lib/risk-calculations';
+import { buildStepsDataFromQnA } from '@/lib/steps-from-qna';
 import { ChartRadarDots } from '@/components/ui/radar-chart';
 
 interface Risk {
@@ -38,9 +39,7 @@ interface UseCase {
   title: string;
   description: string;
   stage: string;
-  assessData?: {
-    stepsData?: any;
-  };
+  answers?: any[];
   organization?: {
     id: string;
     name: string;
@@ -110,10 +109,142 @@ export default function RiskManagementPage() {
   const [selectedOrgId, setSelectedOrgId] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedUseCase, setExpandedUseCase] = useState<string | null>(null);
+  const [riskCalcs, setRiskCalcs] = useState<Record<string, any>>({});
+
+  // Build minimal StepsData from template/question answers to mirror Assess radar
+  const buildStepsDataFromAnswers = (answers: any[]): any => {
+    const steps: any = {
+      dataReadiness: {},
+      riskAssessment: { dataProtection: {}, operatingJurisdictions: {} },
+      technicalFeasibility: {},
+      businessFeasibility: {},
+      ethicalImpact: {},
+      vendorAssessment: {}
+    };
+
+    const setIfMatch = (src: any, key: string, value: string, patterns: string[]) => {
+      if (patterns.some(p => value.toLowerCase().includes(p))) src[key] = value;
+    };
+
+    const norm = (s: any) => String(s || '').trim();
+
+    (answers || []).forEach((ans: any) => {
+      const q = ans.question || ans.questionTemplate;
+      if (!q) return;
+      const stage = String(q.stage || '').toUpperCase();
+      const type = q.type;
+      const qText = norm(q.text).toLowerCase();
+      const val = ans.value || {};
+      const labels: string[] = Array.isArray(val.labels) ? val.labels : (val.text ? [val.text] : []);
+
+      if (stage === 'DATA_READINESS') {
+        labels.forEach(raw => {
+          const label = norm(raw);
+          // data types
+          if (!steps.dataReadiness.dataTypes) steps.dataReadiness.dataTypes = [];
+          if (/record|biometric|child|financial|health|pii|personal/i.test(label)) steps.dataReadiness.dataTypes.push(label);
+          // cross-border
+          if (/cross\s*-?border|cross border|international transfer/i.test(label) || qText.includes('cross-border')) {
+            steps.dataReadiness.crossBorderTransfer = true;
+          }
+          // volume
+          setIfMatch(steps.dataReadiness, 'dataVolume', label, ['record', 'volume', 'gb', 'tb', 'mb']);
+          // update frequency
+          setIfMatch(steps.dataReadiness, 'dataUpdate', label, ['real-time', 'realtime', 'batch', 'daily', 'weekly', 'hourly']);
+          // retention
+          setIfMatch(steps.dataReadiness, 'dataRetention', label, ['year', 'month', 'retention']);
+        });
+      }
+
+      if (stage === 'RISK_ASSESSMENT') {
+        labels.forEach(raw => {
+          const label = norm(raw);
+          // jurisdictions
+          if (/eu\b|europe|us\b|usa|uae|gcc|apac|emea|apj|gdpr|uk|india|singapore|canada/i.test(label) || qText.includes('jurisdiction')) {
+            const region = 'General';
+            if (!steps.riskAssessment.operatingJurisdictions[region]) steps.riskAssessment.operatingJurisdictions[region] = [];
+            steps.riskAssessment.operatingJurisdictions[region].push(label);
+          }
+          // reporting and tolerance
+          setIfMatch(steps.riskAssessment, 'complianceReporting', label, ['minimal', 'basic', 'enhanced', 'comprehensive', 'reporting']);
+          setIfMatch(steps.riskAssessment, 'riskTolerance', label, ['low', 'medium', 'high']);
+          // specific regulations
+          if (/gdpr|hipaa|finra|pci/i.test(label)) {
+            if (!steps.riskAssessment.dataProtection) steps.riskAssessment.dataProtection = {};
+            steps.riskAssessment.dataProtection.jurisdictions = steps.riskAssessment.dataProtection.jurisdictions || [];
+            (steps.riskAssessment.dataProtection.jurisdictions as any[]).push(label);
+          }
+        });
+      }
+
+      if (stage === 'TECHNICAL_FEASIBILITY') {
+        labels.forEach(raw => {
+          const label = norm(raw);
+          setIfMatch(steps.technicalFeasibility, 'authentication', label, ['basic', 'oauth', 'none', 'mfa', 'sso']);
+          setIfMatch(steps.technicalFeasibility, 'encryption', label, ['encryption', 'none', 'aes', 'tls', 'at rest', 'in transit']);
+          setIfMatch(steps.technicalFeasibility, 'accessControl', label, ['public', 'private', 'role', 'rbac']);
+          setIfMatch(steps.technicalFeasibility, 'incidentResponse', label, ['incident', 'ir plan', 'none']);
+          setIfMatch(steps.technicalFeasibility, 'apiSecurity', label, ['api']);
+        });
+      }
+
+      if (stage === 'BUSINESS_FEASIBILITY') {
+        labels.forEach(raw => {
+          const label = norm(raw);
+          setIfMatch(steps.businessFeasibility, 'businessCriticality', label, ['mission critical', 'business critical', 'critical']);
+          setIfMatch(steps.businessFeasibility, 'sla', label, ['99.999', '99.99', '99.9', 'sla']);
+          setIfMatch(steps.businessFeasibility, 'disasterRecovery', label, ['dr', 'disaster', 'none', 'rpo', 'rto']);
+          setIfMatch(steps.businessFeasibility, 'changeManagement', label, ['change', 'ad-hoc', 'structured', 'itil']);
+        });
+      }
+
+      if (stage === 'ETHICAL_IMPACT') {
+        labels.forEach(raw => {
+          const label = norm(raw);
+          setIfMatch(steps.ethicalImpact, 'biasDetection', label, ['bias', 'none']);
+          setIfMatch(steps.ethicalImpact, 'humanOversight', label, ['oversight', 'none', 'human-in-the-loop']);
+          setIfMatch(steps.ethicalImpact, 'transparencyLevel', label, ['transparency', 'low', 'medium', 'high']);
+          setIfMatch(steps.ethicalImpact, 'appealProcess', label, ['appeal', 'none']);
+        });
+      }
+
+      // Vendor assessment
+      if (/vendor|third[-\s]?party/i.test(qText)) {
+        const count = labels.map(l => parseInt(l, 10)).find(n => !isNaN(n));
+        if (typeof count === 'number') steps.vendorAssessment.vendorCount = count;
+      }
+    });
+
+    return steps;
+  };
 
   useEffect(() => {
     fetchData();
   }, [selectedOrgId]);
+
+  // After loading use cases, fetch QnA exactly like Approvals and compute risk
+  useEffect(() => {
+    const computeRiskForUseCases = async () => {
+      if (!useCases || useCases.length === 0) return;
+
+      const entries = await Promise.all(useCases.map(async (uc) => {
+        try {
+          const res = await fetch(`/api/risk-score/${uc.id}`, { headers: { 'Content-Type': 'application/json' } });
+          if (!res.ok) return [uc.id, null] as const;
+          const calc = await res.json();
+          return [uc.id, calc] as const;
+        } catch {
+          return [uc.id, null] as const;
+        }
+      }));
+
+      const map: Record<string, any> = {};
+      for (const [id, calc] of entries) map[id] = calc;
+      setRiskCalcs(map);
+    };
+
+    computeRiskForUseCases();
+  }, [useCases]);
 
   const fetchData = async () => {
     try {
@@ -321,15 +452,8 @@ export default function RiskManagementPage() {
             ).length;
             const isExpanded = expandedUseCase === useCase.id;
 
-            const assessmentSteps = useCase.assessData?.stepsData;
-            const riskCalc = (() => {
-              try {
-                if (assessmentSteps && Object.keys(assessmentSteps || {}).length > 0) {
-                  return calculateRiskScores(assessmentSteps);
-                }
-              } catch (_) {}
-              return null;
-            })();
+            // Use the same QnA-driven calculation as Approvals
+            const riskCalc = riskCalcs[useCase.id] || null;
 
             return (
               <Card key={useCase.id} className="overflow-hidden">

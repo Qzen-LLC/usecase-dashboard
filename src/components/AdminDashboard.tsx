@@ -362,20 +362,21 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="max-w-6xl mx-auto p-4 space-y-4">
         {/* Modern Header */}
-        <div className="bg-card rounded-xl border border-border p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="bg-muted/50 rounded-md p-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
             <div>
-              <h1 className="text-3xl font-semibold text-foreground leading-tight tracking-tight">
+              <h1 className="text-2xl font-semibold text-foreground leading-tight">
                 QUBE Admin Dashboard
               </h1>
-              <p className="text-muted-foreground mt-2 text-sm">
+              <p className="text-muted-foreground mt-1 text-xs">
                 Manage organizations and platform-wide settings
               </p>
             </div>
             <Button
-              className="flex items-center gap-2 px-6 py-3 rounded-lg shadow-sm hover:shadow-md transition-all duration-150"
+              variant="outline"
+              className="flex items-center gap-2 px-4 py-2 rounded-md text-sm !bg-muted !text-foreground !border !border-border hover:!bg-muted/90"
               onClick={() => setShowCreateOrg(true)}
             >
               <Plus className="w-4 h-4" />
@@ -384,77 +385,122 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Question Management Section */}
-        <div className="bg-card rounded-xl border border-border p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                <HelpCircle className="w-5 h-5 text-primary" />
-                Question Management
-              </h2>
-              <p className="text-muted-foreground mt-2 text-sm">
-                Configure global question templates and organization-specific questions
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              {/* Question Templates Button */}
-              <Button
-                onClick={handleNavigateToQuestionTemplates}
-                variant="outline"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg"
-              >
-                <Settings className="w-4 h-4" />
-                Question Templates
-              </Button>
-              
-              {/* Organization Questions Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg"
-                  >
-                    <Building2 className="w-4 h-4" />
-                    Organization Questions
-                    <ChevronDown className="w-3 h-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-64" align="end">
-                  {organizations.length === 0 ? (
-                    <DropdownMenuItem disabled>
-                      <span className="text-muted-foreground">No organizations available</span>
-                    </DropdownMenuItem>
-                  ) : (
-                    organizations.map((org) => (
-                      <DropdownMenuItem
-                        key={org.id}
-                        onClick={() => handleNavigateToOrgQuestions(org.id)}
-                        className="cursor-pointer"
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-medium">{org.name}</span>
-                          <span className="text-sm text-muted-foreground">
-                            {org.users.length} user{org.users.length !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      </DropdownMenuItem>
-                    ))
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+        {/* Layout Grid: Left content + Right sidebar */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* LEFT: Organizations and lists */}
+          <div className="lg:col-span-2 space-y-4">
+            {/* Compact KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-4xl">
+              <Card className="bg-muted/50 rounded-md shadow-none">
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Organizations</p>
+                    <p className="text-2xl font-bold text-foreground">{totalOrgs}</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-muted/50 rounded-md shadow-none">
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Users</p>
+                    <p className="text-2xl font-bold text-foreground">{totalUsers}</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-muted/50 rounded-md shadow-none">
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Use Cases</p>
+                    <p className="text-2xl font-bold text-foreground">{allUseCases.length}</p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
+          {/* RIGHT: Sidebar */}
+          <aside className="lg:col-span-1 space-y-4">
+            {/* Question Management (moved to sidebar) */}
+            <div className="bg-muted/50 rounded-md p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <HelpCircle className="w-4 h-4 text-primary" />
+                    Question Management
+                  </h2>
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    Configure templates and organization-specific questions
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                <Button
+                  onClick={handleNavigateToQuestionTemplates}
+                  variant="outline"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs"
+                >
+                  <Settings className="w-4 h-4" />
+                  Templates
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs"
+                    >
+                      <Building2 className="w-4 h-4" />
+                      Org Questions
+                      <ChevronDown className="w-3 h-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end">
+                    {organizations.length === 0 ? (
+                      <DropdownMenuItem disabled>
+                        <span className="text-muted-foreground">No organizations</span>
+                      </DropdownMenuItem>
+                    ) : (
+                      organizations.map((org) => (
+                        <DropdownMenuItem
+                          key={org.id}
+                          onClick={() => handleNavigateToOrgQuestions(org.id)}
+                          className="cursor-pointer"
+                        >
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">{org.name}</span>
+                            <span className="text-[11px] text-muted-foreground">{org.users.length} users</span>
+                          </div>
+                        </DropdownMenuItem>
+                      ))
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-muted/50 rounded-md p-4">
+              <h3 className="text-sm font-semibold mb-2">Quick Actions</h3>
+              <div className="grid grid-cols-1 gap-2">
+                <Button 
+                  onClick={() => setShowCreateOrg(true)} 
+                  variant="outline"
+                  className="text-xs py-1.5 !bg-muted !text-foreground !border !border-border hover:!bg-muted/90"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" /> New Org
+                </Button>
+              </div>
+            </div>
+          </aside>
         </div>
 
         {/* Success/Error Messages */}
         {orgSuccess && (
-          <div className="bg-success/10 border border-success/20 rounded-xl p-4 flex items-center gap-2">
+          <div className="bg-success/10 border border-success/20 rounded-lg p-3 flex items-center gap-2 text-sm">
             <div className="w-2 h-2 bg-success rounded-full"></div>
             <span className="text-success font-medium">{orgSuccess}</span>
           </div>
         )}
         {deleteError && (
-          <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-2">
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex items-center gap-2 text-sm">
             <div className="w-2 h-2 bg-destructive rounded-full"></div>
             <span className="text-destructive font-medium">{deleteError}</span>
           </div>
@@ -463,7 +509,7 @@ export default function AdminDashboard() {
         {/* Invitation Success Popup */}
         {globalSuccess && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-            <div className="bg-card rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 border border-border">
+            <div className="bg-card rounded-lg shadow-xl p-8 max-w-md w-full mx-4 border border-border">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-success/10 rounded-xl flex items-center justify-center">
                   <Mail className="w-5 h-5 text-success" />
@@ -497,7 +543,7 @@ export default function AdminDashboard() {
         {/* Create Organization Modal */}
         {showCreateOrg && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-            <div className="bg-card rounded-2xl shadow-2xl p-8 max-w-lg w-full mx-4 border border-border">
+            <div className="bg-card rounded-lg shadow-xl p-8 max-w-lg w-full mx-4 border border-border">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
                   <Building2 className="w-5 h-5 text-primary" />
@@ -622,64 +668,23 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
+        
 
-         {/* Analytics Cards - Clean & Minimal */}
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-           <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-150">
-             <CardContent className="p-6">
-               <div className="text-center">
-                 <p className="text-sm font-medium text-muted-foreground mb-2">
-                   Organizations
-                 </p>
-                 <p className="text-3xl font-bold text-foreground">
-                   {totalOrgs}
-                 </p>
-               </div>
-             </CardContent>
-           </Card>
-
-           <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-150">
-             <CardContent className="p-6">
-               <div className="text-center">
-                 <p className="text-sm font-medium text-muted-foreground mb-2">
-                   Users
-                 </p>
-                 <p className="text-3xl font-bold text-foreground">
-                   {totalUsers}
-                 </p>
-               </div>
-             </CardContent>
-           </Card>
-
-           <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-150">
-             <CardContent className="p-6">
-               <div className="text-center">
-                 <p className="text-sm font-medium text-muted-foreground mb-2">
-                   Use Cases
-                 </p>
-                 <p className="text-3xl font-bold text-foreground">
-                   {allUseCases.length}
-                 </p>
-               </div>
-             </CardContent>
-           </Card>
-         </div>
-
-        {/* Organizations List */}
-        <div className="space-y-4">
+        {/* Organizations List inside Left column of the grid */}
+        <div className="space-y-4 lg:col-span-2 order-1 lg:order-none">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
               <Building2 className="w-4 h-4 text-primary" />
               Organizations
             </h2>
-            <Badge variant="secondary" className="px-2 py-0.5 rounded-full text-xs">
+            <Badge variant="secondary" className="px-2 py-0.5 rounded-full text-[10px]">
               {organizations.length}{" "}
               {organizations.length === 1 ? "Organization" : "Organizations"}
             </Badge>
           </div>
 
           {organizations.length === 0 ? (
-            <Card className="bg-card border border-border shadow-sm rounded-xl">
+            <Card className="bg-muted/50 shadow-none rounded-md">
               <CardContent className="text-center py-8">
                 <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
                   <Building2 className="w-6 h-6 text-muted-foreground" />
@@ -692,35 +697,36 @@ export default function AdminDashboard() {
                   platform
                 </p>
                 <Button
+                  variant="outline"
                   onClick={() => setShowCreateOrg(true)}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg"
+                  className="px-4 py-2 rounded-md bg-muted text-foreground border border-border hover:bg-muted/80"
                 >
                   Create Organization
                 </Button>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 max-w-6xl">
               {organizations.map((org) => (
                 <Card
                   key={org.id}
-                  className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow duration-200 rounded-xl"
+                  className="bg-muted/50 shadow-none transition-shadow duration-200 rounded-md"
                 >
-                  <CardContent className="p-4">
+                  <CardContent className="p-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="mb-2">
-                          <h3 className="text-base font-semibold text-foreground mb-1">
+                          <h3 className="text-sm font-semibold text-foreground mb-1">
                             {org.name}
                           </h3>
                           {org.domain && (
-                            <Badge variant="outline" className="px-2 py-0.5 rounded-full text-xs">
+                            <Badge variant="outline" className="px-2 py-0.5 rounded-full text-[10px]">
                               {org.domain}
                             </Badge>
                           )}
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
                           <div className="flex items-center gap-1.5 text-muted-foreground">
                             <Users className="w-3.5 h-3.5" />
                             <span className="text-xs">
@@ -736,8 +742,8 @@ export default function AdminDashboard() {
                         </div>
 
                         {org.users.length > 0 && (
-                          <div className="mt-4">
-                            <p className="text-xs font-medium text-muted-foreground mb-2">
+                          <div className="mt-3">
+                            <p className="text-xs font-medium text-muted-foreground mb-1">
                               Users:
                             </p>
                             <div className="flex flex-wrap gap-1.5">
@@ -769,7 +775,7 @@ export default function AdminDashboard() {
                             setInviteEmail("");
                             setInviteRole("ORG_USER");
                           }}
-                          className="border-border text-foreground hover:bg-muted"
+                          className="!border !border-border !bg-muted !text-foreground hover:!bg-muted/90"
                         >
                           <UserPlus className="w-3.5 h-3.5 mr-2" />
                           Invite User
@@ -800,7 +806,7 @@ export default function AdminDashboard() {
         {/* Invite User Modal */}
         {inviteModalOrgId && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-            <div className="bg-card rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 border border-border">
+            <div className="bg-card rounded-lg shadow-xl p-8 max-w-md w-full mx-4 border border-border">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
                   <Mail className="w-5 h-5 text-primary" />

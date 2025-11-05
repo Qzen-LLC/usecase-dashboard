@@ -27,7 +27,6 @@ export const GET = withAuth(async (request, { auth }) => {
         // Test if risks table exists by doing a simple query
         await prismaClient.risk.findFirst();
         return {
-          assessData: true,
           euAiActAssessments: true,
           iso42001Assessments: true,
           uaeAiAssessments: true,
@@ -43,7 +42,6 @@ export const GET = withAuth(async (request, { auth }) => {
       } catch (error) {
         console.log('Risks table not available, using fallback include');
         return {
-          assessData: true,
           euAiActAssessments: true,
           iso42001Assessments: true,
           uaeAiAssessments: true,
@@ -59,16 +57,10 @@ export const GET = withAuth(async (request, { auth }) => {
       answers: {
         include: {
           question: {
-            select: {
-              text: true,
-              type: true,
-            }
+            select: { text: true, type: true }
           },
           questionTemplate: {
-            select: {
-              text: true,
-              type: true,
-            }
+            select: { text: true, type: true }
           }
         }
       }
@@ -224,28 +216,7 @@ export const GET = withAuth(async (request, { auth }) => {
         }
         
         // Fallback: Also check old stepsData structure for backward compatibility
-        if (regulatoryFrameworks.length === 0 && industryStandards.length === 0 && useCase.assessData?.stepsData) {
-          const stepsData = useCase.assessData.stepsData as any;
-          const riskAssessment = stepsData.riskAssessment;
-
-          if (riskAssessment) {
-            if (riskAssessment.aiSpecific) {
-              Object.entries(riskAssessment.aiSpecific).forEach(([key, value]) => {
-                if (value === true) {
-                  regulatoryFrameworks.push(key);
-                }
-              });
-            }
-
-            if (riskAssessment.certifications) {
-              Object.entries(riskAssessment.certifications).forEach(([key, value]) => {
-                if (value === true) {
-                  industryStandards.push(key);
-                }
-              });
-            }
-          }
-        }
+        // Removed legacy assessData fallback
 
         // Only show use cases that have regulatory frameworks or industry standards selected
         const hasFrameworks = regulatoryFrameworks.length > 0 || industryStandards.length > 0;
@@ -279,11 +250,11 @@ export const GET = withAuth(async (request, { auth }) => {
           department: uc.businessFunction,
           regulatoryFrameworks,
           industryStandards,
-          lastUpdated: (useCase as any).assessData?.updatedAt?.toISOString() || useCase.updatedAt.toISOString(),
+          lastUpdated: useCase.updatedAt.toISOString(),
           euAiActAssessments,
           iso42001Assessments,
           uaeAiAssessments,
-          assessData: (useCase as any).assessData,
+          // assessData removed
           risks: (useCase as any).risks || [],
         };
       })

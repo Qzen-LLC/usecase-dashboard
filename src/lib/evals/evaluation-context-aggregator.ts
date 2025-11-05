@@ -171,9 +171,7 @@ export class EvaluationContextAggregator {
     return await prismaClient.useCase.findUnique({
       where: { id: useCaseId },
       include: {
-        assessData: true  // Changed from assessments
-        // Note: evaluations and guardrails relationships don't exist in schema
-        // They are fetched separately in other methods
+        // assessData removed; modern flows use template/question answers elsewhere
       }
     });
   }
@@ -358,42 +356,15 @@ export class EvaluationContextAggregator {
    * Fetch all assessments for the use case
    */
   private async fetchAssessments(useCaseId: string): Promise<any> {
-    // Fetch the assess data - it's a single record with JSON data
-    const assessData = await prismaClient.assess.findUnique({
-      where: { useCaseId }
-    });
-
-    // If no assess data, return empty assessments
-    if (!assessData || !assessData.stepsData) {
-      return {
-        technical: null,
-        business: null,
-        ethical: null,
-        risk: null,
-        data: null,
-        compliance: null
-      };
-    }
-
-    // Parse the JSON stepsData to get individual assessments
-    const stepsData = assessData.stepsData as any;
-
-    console.log('🧹 Cleaning assessment data loaded from database...');
-
-    // The stepsData contains assessment data organized by steps
-    // Map the steps to our assessment categories and clean each one
-    const assessmentMap: any = {
-      technical: stepsData?.step2 ? cleanAssessmentData(stepsData.step2, { logChanges: false }) : null,
-      business: stepsData?.step3 ? cleanAssessmentData(stepsData.step3, { logChanges: false }) : null,
-      ethical: stepsData?.step4 ? cleanAssessmentData(stepsData.step4, { logChanges: false }) : null,
-      risk: stepsData?.step5 ? cleanAssessmentData(stepsData.step5, { logChanges: false }) : null,
-      data: stepsData?.step1 ? cleanAssessmentData(stepsData.step1, { logChanges: false }) : null,
-      compliance: stepsData?.compliance ? cleanAssessmentData(stepsData.compliance, { logChanges: false }) : null
+    // Legacy assess table removed from dependency. Return empty buckets; higher layers use answers/templates directly.
+    return {
+      technical: null,
+      business: null,
+      ethical: null,
+      risk: null,
+      data: null,
+      compliance: null
     };
-
-    console.log('✅ Assessment data cleaned - only user-filled fields loaded');
-
-    return assessmentMap;
   }
 
   /**

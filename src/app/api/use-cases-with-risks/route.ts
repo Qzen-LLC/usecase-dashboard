@@ -66,7 +66,12 @@ export const GET = withAuth(async (request, { auth }) => {
             { createdAt: 'desc' }
           ]
         },
-        assessData: true
+        answers: {
+          include: {
+            question: { select: { type: true, text: true, stage: true } },
+            questionTemplate: { select: { type: true, text: true, stage: true } }
+          }
+        }
       },
       orderBy: { updatedAt: 'desc' }
     });
