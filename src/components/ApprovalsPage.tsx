@@ -915,6 +915,7 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
 
   // Chart and financial data state
   const [chartData, setChartData] = useState<{ month: string; desktop: number }[]>([]);
+  const [riskApi, setRiskApi] = useState<any>(null);
   const [finops, setFinops] = useState<any>(null);
   const [qnAData, setQnAData] = useState<any>(null);
   // Fetch financial data
@@ -979,23 +980,19 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
     }
   }, [useCaseId, useCase]);
 
-
+  // Fetch risk metrics (score + radar) from backend for this use case
   useEffect(() => {
-    if (!qnAData) {
-      console.log("[ApprovalsPage] useEffect triggered but qnAData is null");
-      return; // prevents early/invalid call
-    }
-
-    console.log("[ApprovalsPage] ===== Running RiskCalculation =====");
-    console.log("[ApprovalsPage] qnAData is an array?", Array.isArray(qnAData));
-    console.log("[ApprovalsPage] qnAData length:", qnAData?.length);
-    console.log("[ApprovalsPage] Sample question:", qnAData?.[0]);
-    
-    const result = RiskCalculation(qnAData);
-    setChartData(Array.isArray(result.chartData) ? result.chartData : []);
-    console.log("[ApprovalsPage] ===== RiskCalculation Complete =====");
-  }, [qnAData]);
-  
+    if (!useCaseId) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/risk-metrics/${useCaseId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setRiskApi(data?.risk || null);
+        setChartData(Array.isArray(data?.risk?.chartData) ? data.risk.chartData : []);
+      } catch (_) {}
+    })();
+  }, [useCaseId]);
 
   useEffect(() => {
     if (!useCaseId) return;
@@ -1137,73 +1134,72 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
               </Card>
             </div>
             {/* Risk Summary Card */}
-            {qnAData && chartData && chartData.length > 0 && (() => {
-              const riskResult = RiskCalculation(qnAData);
-              const riskScores = riskResult.chartData.map((d: { month: string; desktop: number }) => d.desktop);
+            {chartData && chartData.length > 0 && riskApi && (() => {
+              const riskScores = chartData.map((d: { month: string; desktop: number }) => d.desktop);
               const criticalCount = riskScores.filter((v: number) => v >= 8).length;
               const highCount = riskScores.filter((v: number) => v >= 6 && v < 8).length;
               const mediumCount = riskScores.filter((v: number) => v >= 4 && v < 6).length;
               return (
                 <div className="mb-8">
                   <ApprovalsRiskSummary
-                    score={riskResult.score}
-                    riskTier={riskResult.riskTier as 'critical' | 'high' | 'medium' | 'low'}
+                    score={riskApi.score}
+                    riskTier={riskApi.riskTier as 'critical' | 'high' | 'medium' | 'low'}
                     trend="increasing"
                     criticalCount={criticalCount}
                     highCount={highCount}
                     mediumCount={mediumCount}
                   />
-                  {riskResult.regulatoryWarnings && riskResult.regulatoryWarnings.length > 0 && (
+                  {riskApi.regulatoryWarnings && riskApi.regulatoryWarnings.length > 0 && (
                     <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded flex items-start gap-2 border border-gray-200 dark:border-gray-600">
                       <InformationCircleIcon className="w-5 h-5 mt-0.5 text-gray-400 flex-shrink-0" />
                       <div>
                         <div className="font-semibold mb-1">Regulatory frameworks have been automatically inferred:</div>
-                        {riskResult.regulatoryWarnings.map((w, i) => <div key={i}>{w}</div>)}
+                        {riskApi.regulatoryWarnings.map((w: string, i: number) => <div key={i}>{w}</div>)}
                       </div>
                     </div>
                   )}
-                  {riskResult.dataPrivacyInfo && riskResult.dataPrivacyInfo.length > 0 && (
+                  {riskApi.dataPrivacyInfo && riskApi.dataPrivacyInfo.length > 0 && (
                     <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded flex items-start gap-2 border border-gray-200 dark:border-gray-600">
                       <InformationCircleIcon className="w-5 h-5 mt-0.5 text-gray-400 flex-shrink-0" />
                       <div>
                         <div className="font-semibold mb-1">Data Privacy:</div>
-                        {riskResult.dataPrivacyInfo.map((w, i) => <div key={i}>{w}</div>)}
+                        {riskApi.dataPrivacyInfo.map((w: string, i: number) => <div key={i}>{w}</div>)}
                       </div>
                     </div>
                   )}
-                  {riskResult.securityInfo && riskResult.securityInfo.length > 0 && (
+                  {riskApi.securityInfo && riskApi.securityInfo.length > 0 && (
                     <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded flex items-start gap-2 border border-gray-200 dark:border-gray-600">
                       <InformationCircleIcon className="w-5 h-5 mt-0.5 text-gray-400 flex-shrink-0" />
                       <div>
                         <div className="font-semibold mb-1">Security:</div>
-                        {riskResult.securityInfo.map((w, i) => <div key={i}>{w}</div>)}
+                        {riskApi.securityInfo.map((w: string, i: number) => <div key={i}>{w}</div>)}
                       </div>
                     </div>
                   )}
-                  {riskResult.operationalInfo && riskResult.operationalInfo.length > 0 && (
+                  {riskApi.operationalInfo && riskApi.operationalInfo.length > 0 && (
                     <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded flex items-start gap-2 border border-gray-200 dark:border-gray-600">
-                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-gray-400 flex-shrink-0" />
+                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-gray-400" />
                       <div>
                         <div className="font-semibold mb-1">Operational:</div>
-                        {riskResult.operationalInfo.map((w, i) => <div key={i}>{w}</div>)}
+                        {riskApi.operationalInfo.map((w: string, i: number) => <div key={i}>{w}</div>)}
                       </div>
                     </div>
                   )}
-                  {riskResult.ethicalInfo && riskResult.ethicalInfo.length > 0 && (
+                  {riskApi.ethicalInfo && riskApi.ethicalInfo.length > 0 && (
                     <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded flex items-start gap-2 border border-gray-200 dark:border-gray-600">
-                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-gray-400 flex-shrink-0" />
+                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-gray-400" />
                       <div>
                         <div className="font-semibold mb-1">Ethical:</div>
-                        {riskResult.ethicalInfo.map((w, i) => <div key={i}>{w}</div>)}
+                        {riskApi.ethicalInfo.map((w: string, i: number) => <div key={i}>{w}</div>)}
                       </div>
                     </div>
                   )}
-                  {riskResult.genAIInfo && riskResult.genAIInfo.length > 0 && (
+                  {riskApi.genAIInfo && riskApi.genAIInfo.length > 0 && (
                     <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-900 dark:text-purple-100 rounded flex items-start gap-2 border border-purple-200 dark:border-purple-600">
                       <InformationCircleIcon className="w-5 h-5 mt-0.5 text-purple-400 flex-shrink-0" />
                       <div>
                         <div className="font-semibold mb-1">Gen AI Specific:</div>
-                        {riskResult.genAIInfo.map((w, i) => <div key={i}>{w}</div>)}
+                        {riskApi.genAIInfo.map((w: string, i: number) => <div key={i}>{w}</div>)}
                       </div>
                     </div>
                   )}
@@ -1212,25 +1208,24 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
             })()}
             {/* After info messages, add a Risk Action Summary */}
             {(() => {
-              if (!qnAData) return null;
-              const riskResult = RiskCalculation(qnAData);
+              if (!riskApi) return null;
               // Gather risk scores, info, and factors
               const riskScores = [
-                { label: 'Data Privacy', score: riskResult.chartData[0]?.desktop || 0, info: riskResult.dataPrivacyInfo, factors: riskResult.dataPrivacyFactors },
-                { label: 'Security', score: riskResult.chartData[1]?.desktop || 0, info: riskResult.securityInfo, factors: riskResult.securityFactors },
-                { label: 'Regulatory', score: riskResult.chartData[2]?.desktop || 0, info: riskResult.regulatoryWarnings, factors: riskResult.regulatoryFactors },
-                { label: 'Ethical', score: riskResult.chartData[3]?.desktop || 0, info: riskResult.ethicalInfo, factors: riskResult.ethicalFactors },
-                { label: 'Operational', score: riskResult.chartData[4]?.desktop || 0, info: riskResult.operationalInfo, factors: riskResult.operationalFactors },
-                { label: 'Reputational', score: riskResult.chartData[5]?.desktop || 0, info: [], factors: riskResult.reputationalFactors },
+                { label: 'Data Privacy', score: chartData[0]?.desktop || 0, info: riskApi.dataPrivacyInfo, factors: riskApi.dataPrivacyFactors },
+                { label: 'Security', score: chartData[1]?.desktop || 0, info: riskApi.securityInfo, factors: riskApi.securityFactors },
+                { label: 'Regulatory', score: chartData[2]?.desktop || 0, info: riskApi.regulatoryWarnings, factors: riskApi.regulatoryFactors },
+                { label: 'Ethical', score: chartData[3]?.desktop || 0, info: riskApi.ethicalInfo, factors: riskApi.ethicalFactors },
+                { label: 'Operational', score: chartData[4]?.desktop || 0, info: riskApi.operationalInfo, factors: riskApi.operationalFactors },
+                { label: 'Reputational', score: chartData[5]?.desktop || 0, info: [], factors: riskApi.reputationalFactors },
               ];
               
               // Add Gen AI risk if applicable
-              if (riskResult.chartData[6]) {
+              if (chartData[6]) {
                 riskScores.push({ 
                   label: 'Gen AI', 
-                  score: riskResult.chartData[6]?.desktop || 0, 
-                  info: riskResult.genAIInfo || [], 
-                  factors: riskResult.genAIFactors || [] 
+                  score: chartData[6]?.desktop || 0, 
+                  info: riskApi.genAIInfo || [], 
+                  factors: riskApi.genAIFactors || [] 
                 });
               }
               // Sort by score descending

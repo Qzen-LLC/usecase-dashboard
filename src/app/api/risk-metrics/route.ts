@@ -4,6 +4,7 @@ import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
 
 import { calculateRiskScores, getRiskLevel, getRiskCategoryScores, type StepsData } from '@/lib/risk-calculations';
+import { buildStepsDataFromAnswers } from '@/lib/mappers/answers-to-steps';
 
 export const GET = withAuth(async (request, { auth }) => {
   try {
@@ -72,34 +73,32 @@ export const GET = withAuth(async (request, { auth }) => {
     let totalRiskScore = 0;
     let assessedUseCases = 0;
     
-    // Calculate risk scores for each use case
-    useCases.forEach(uc => {
+    // Calculate risk scores for each use case using Q/A Answer records
+    for (const uc of useCases) {
       let riskScore = 0;
       let riskLevel: 'Low' | 'Medium' | 'High' | 'Critical' = 'Low';
-      let categoryScores = {};
-      
-      // Calculate risk if assessment data exists
-      if (uc.assessData?.stepsData) {
-        const stepsData = uc.assessData.stepsData as StepsData;
-        const riskResult = calculateRiskScores(stepsData);
-        riskScore = riskResult.score;
-        riskLevel = getRiskLevel(riskScore);
-        categoryScores = getRiskCategoryScores(stepsData);
-        
-        // Update distributions
-        assessedUseCases++;
-        totalRiskScore += riskScore;
-        riskDistribution[riskLevel]++;
-        
-        // Update category distributions
-        Object.entries(categoryScores).forEach(([category, score]) => {
-          const level = getRiskLevel(score as number);
-          if (riskCategories[category as keyof typeof riskCategories]) {
-            riskCategories[category as keyof typeof riskCategories][level]++;
-          }
-        });
-      }
-    });
+      let categoryScores = {} as Record<string, number>;
+
+      // Build StepsData from Answer rows
+      const stepsData = await buildStepsDataFromAnswers(uc.id) as StepsData;
+      const riskResult = calculateRiskScores(stepsData);
+      riskScore = riskResult.score;
+      riskLevel = getRiskLevel(riskScore);
+      categoryScores = getRiskCategoryScores(stepsData);
+
+      // Update distributions
+      assessedUseCases++;
+      totalRiskScore += riskScore;
+      riskDistribution[riskLevel]++;
+
+      // Update category distributions
+      Object.entries(categoryScores).forEach(([category, score]) => {
+        const level = getRiskLevel(score as number);
+        if (riskCategories[category as keyof typeof riskCategories]) {
+          riskCategories[category as keyof typeof riskCategories][level]++;
+        }
+      });
+    }
     
     // Calculate average risk score
     const averageRiskScore = assessedUseCases > 0 ? totalRiskScore / assessedUseCases : 0;

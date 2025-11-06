@@ -29,6 +29,7 @@ import { useStableRender } from '@/hooks/useStableRender';
 import { useLock } from '@/hooks/useLock';
 import { mapUIToTypeDefinition, mapTypeDefinitionToUI, ensureCompatibility } from '@/lib/assessment/field-mapper';
 import { QuestionType, Stage } from '@/generated/prisma';
+import { ChartRadarDots } from '@/components/ui/radar-chart';
 
 
 interface UseCase {
@@ -89,6 +90,8 @@ export default function AssessmentPage() {
   const [questionsLoading, setQuestionsLoading] = useState(true);
   const [questionAnswers, setQuestionAnswers] = useState<Record<string, AnswerProps[]>>({});
   const navigationRef = useRef<HTMLDivElement>(null);
+  const [riskApi, setRiskApi] = useState<any>(null);
+  const [riskChartData, setRiskChartData] = useState<{ month: string; desktop: number }[]>([]);
 
   // Add readonly styles to the document when in readonly mode
   useEffect(() => {
@@ -185,6 +188,20 @@ export default function AssessmentPage() {
       }
     };
   }, [isExclusiveLocked, useCaseId]);
+
+  // Fetch risk metrics (overall + radar) from backend for this use case
+  useEffect(() => {
+    if (!useCaseId) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/risk-metrics/${useCaseId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setRiskApi(data?.risk || null);
+        setRiskChartData(Array.isArray(data?.risk?.chartData) ? data.risk.chartData : []);
+      } catch (_) {}
+    })();
+  }, [useCaseId]);
 
   // Attempt to acquire exclusive lock when page mounts (only once)
   const [hasAttemptedLockAcquisition, setHasAttemptedLockAcquisition] = useState(false);
@@ -930,6 +947,8 @@ const validateAssessmentData = useMemo(() => (data: any) => {
       </div>
 
 
+
+      {/* Compact Risk Panel removed as requested */}
 
       {/* Assessment Steps Navigation */}
       <div ref={navigationRef} className="px-8 py-4 border-b border-border bg-muted overflow-x-auto scroll-smooth">

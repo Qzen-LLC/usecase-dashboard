@@ -18,7 +18,6 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUserData } from '@/contexts/UserContext';
-import { calculateRiskScores } from '@/lib/risk-calculations';
 import { ChartRadarDots } from '@/components/ui/radar-chart';
 
 interface Risk {
@@ -111,6 +110,7 @@ export default function RiskManagementPage() {
   const [selectedOrgId, setSelectedOrgId] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedUseCase, setExpandedUseCase] = useState<string | null>(null);
+  const [useCaseRisks, setUseCaseRisks] = useState<Record<string, any>>({});
 
   useEffect(() => {
     fetchData();
@@ -135,6 +135,20 @@ export default function RiskManagementPage() {
       const data: UseCasesWithRisksResponse = await response.json();
       setUseCases(data.useCases);
       setOrganizations(data.organizations || []);
+      // Fetch risk metrics (score + radar) for each use case using Q/A answers
+      const riskPairs = await Promise.all(
+        (data.useCases || []).map(async (uc) => {
+          try {
+            const r = await fetch(`/api/risk-metrics/${uc.id}`).then(res => res.ok ? res.json() : null);
+            return [uc.id, r?.risk || null] as const;
+          } catch {
+            return [uc.id, null] as const;
+          }
+        })
+      );
+      const riskMap: Record<string, any> = {};
+      for (const [id, risk] of riskPairs) riskMap[id] = risk;
+      setUseCaseRisks(riskMap);
       
       // Set initial organization filter for QZEN_ADMIN
       if (data.userRole === 'QZEN_ADMIN' && !selectedOrgId && data.organizations.length > 0) {
@@ -151,6 +165,141 @@ export default function RiskManagementPage() {
   const toggleUseCaseExpansion = (useCaseId: string) => {
     setExpandedUseCase(expandedUseCase === useCaseId ? null : useCaseId);
   };
+
+  // Log risk calculation details when a use case is expanded
+  useEffect(() => {
+    if (!expandedUseCase || !useCaseRisks[expandedUseCase]) return;
+    
+    const riskCalc = useCaseRisks[expandedUseCase];
+    const useCase = useCases.find(uc => uc.id === expandedUseCase);
+    
+    if (!riskCalc || !riskCalc.chartData) return;
+    
+    console.group(`🔍 Risk Calculation Breakdown - ${useCase?.title || expandedUseCase}`);
+    
+    // Radar Chart Values (Category Scores)
+    console.log('\n📊 RADAR CHART VALUES (Category Scores 0-10):');
+    const weights = {
+      dataPrivacy: 0.25,
+      security: 0.20,
+      regulatory: 0.30,
+      ethical: 0.10,
+      operational: 0.10,
+      reputational: 0.05
+    };
+    
+    const categoryMap: Record<string, { score: number; weight: number }> = {};
+    
+    riskCalc.chartData.forEach((item: { month: string; desktop: number }) => {
+      const category = item.month;
+      const score = item.desktop;
+      let weight = 0;
+      
+      if (category === 'Data Privacy') {
+        weight = weights.dataPrivacy;
+        categoryMap.dataPrivacy = { score, weight };
+      } else if (category === 'Security') {
+        weight = weights.security;
+        categoryMap.security = { score, weight };
+      } else if (category === 'Regulatory') {
+        weight = weights.regulatory;
+        categoryMap.regulatory = { score, weight };
+      } else if (category === 'Ethical') {
+        weight = weights.ethical;
+        categoryMap.ethical = { score, weight };
+      } else if (category === 'Operational') {
+        weight = weights.operational;
+        categoryMap.operational = { score, weight };
+      } else if (category === 'Reputational') {
+        weight = weights.reputational;
+        categoryMap.reputational = { score, weight };
+      }
+      
+      console.log(`  ${category}: ${score}/10`);
+    });
+    
+    // Overall Score Calculation
+    console.log('\n🧮 OVERALL RISK SCORE CALCULATION:');
+    console.log('Formula: Weighted Average of Category Scores');
+    console.log('\nWeights:');
+    console.log(`  Data Privacy: ${weights.dataPrivacy} (25%)`);
+    console.log(`  Security: ${weights.security} (20%)`);
+    console.log(`  Regulatory: ${weights.regulatory} (30%)`);
+    console.log(`  Ethical: ${weights.ethical} (10%)`);
+    console.log(`  Operational: ${weights.operational} (10%)`);
+    console.log(`  Reputational: ${weights.reputational} (5%)`);
+    
+    console.log('\nStep-by-step calculation:');
+    let weightedSum = 0;
+    let calculationSteps: string[] = [];
+    
+    if (categoryMap.dataPrivacy) {
+      const contribution = categoryMap.dataPrivacy.score * categoryMap.dataPrivacy.weight;
+      weightedSum += contribution;
+      calculationSteps.push(`  Data Privacy: ${categoryMap.dataPrivacy.score} × ${categoryMap.dataPrivacy.weight} = ${contribution.toFixed(2)}`);
+    }
+    if (categoryMap.security) {
+      const contribution = categoryMap.security.score * categoryMap.security.weight;
+      weightedSum += contribution;
+      calculationSteps.push(`  Security: ${categoryMap.security.score} × ${categoryMap.security.weight} = ${contribution.toFixed(2)}`);
+    }
+    if (categoryMap.regulatory) {
+      const contribution = categoryMap.regulatory.score * categoryMap.regulatory.weight;
+      weightedSum += contribution;
+      calculationSteps.push(`  Regulatory: ${categoryMap.regulatory.score} × ${categoryMap.regulatory.weight} = ${contribution.toFixed(2)}`);
+    }
+    if (categoryMap.ethical) {
+      const contribution = categoryMap.ethical.score * categoryMap.ethical.weight;
+      weightedSum += contribution;
+      calculationSteps.push(`  Ethical: ${categoryMap.ethical.score} × ${categoryMap.ethical.weight} = ${contribution.toFixed(2)}`);
+    }
+    if (categoryMap.operational) {
+      const contribution = categoryMap.operational.score * categoryMap.operational.weight;
+      weightedSum += contribution;
+      calculationSteps.push(`  Operational: ${categoryMap.operational.score} × ${categoryMap.operational.weight} = ${contribution.toFixed(2)}`);
+    }
+    if (categoryMap.reputational) {
+      const contribution = categoryMap.reputational.score * categoryMap.reputational.weight;
+      weightedSum += contribution;
+      calculationSteps.push(`  Reputational: ${categoryMap.reputational.score} × ${categoryMap.reputational.weight} = ${contribution.toFixed(2)}`);
+    }
+    
+    calculationSteps.forEach(step => console.log(step));
+    
+    const finalScore = parseFloat(weightedSum.toFixed(1));
+    console.log(`\n  Sum: ${weightedSum.toFixed(4)}`);
+    console.log(`  Final Score (rounded to 1 decimal): ${finalScore}`);
+    
+    // Risk Tier Determination
+    console.log('\n🎯 RISK TIER DETERMINATION:');
+    console.log('Thresholds:');
+    console.log('  Critical: ≥ 8.0');
+    console.log('  High: ≥ 6.0 and < 8.0');
+    console.log('  Medium: ≥ 4.0 and < 6.0');
+    console.log('  Low: < 4.0');
+    
+    let tier = '';
+    if (finalScore >= 8) {
+      tier = 'Critical';
+    } else if (finalScore >= 6) {
+      tier = 'High';
+    } else if (finalScore >= 4) {
+      tier = 'Medium';
+    } else {
+      tier = 'Low';
+    }
+    
+    console.log(`\n  Score: ${finalScore}`);
+    console.log(`  Tier: ${tier}`);
+    
+    // Summary
+    console.log('\n📋 SUMMARY:');
+    console.log(`  Overall Risk Score: ${finalScore}/10`);
+    console.log(`  Risk Tier: ${tier}`);
+    console.log(`  Radar Chart Points: ${riskCalc.chartData.length} categories`);
+    
+    console.groupEnd();
+  }, [expandedUseCase, useCaseRisks, useCases]);
 
   // Filter use cases based on search term
   const filteredUseCases = useCases.filter(uc => {
@@ -545,15 +694,7 @@ export default function RiskManagementPage() {
             ).length;
             const isExpanded = expandedUseCase === useCase.id;
 
-            const assessmentSteps = useCase.assessData?.stepsData;
-            const riskCalc = (() => {
-              try {
-                if (assessmentSteps && Object.keys(assessmentSteps || {}).length > 0) {
-                  return calculateRiskScores(assessmentSteps);
-                }
-              } catch (_) {}
-              return null;
-            })();
+            const riskCalc = useCaseRisks[useCase.id] || null;
 
             return (
               <Card key={useCase.id} className="overflow-hidden">
