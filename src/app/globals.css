@@ -143,6 +143,16 @@
 @layer components {
   /* Modern Minimalist Component Classes */
   
+  /* Scoped typography for MAIN sidebar navigation only */
+  .main-sidebar-nav {
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    font-size: 13px !important;
+  }
+  .main-sidebar-nav .text-sm,
+  .main-sidebar-nav .text-xs {
+    font-size: 13px !important;
+  }
+  
   /* Card Components - Clean & Minimal */
   .card {
     @apply bg-card border border-border rounded-xl shadow-sm;

@@ -292,7 +292,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
         </div>
 
         {/* Navigation */}
-        <nav className={`flex-1 p-2 ${isCollapsed ? 'space-y-2' : 'space-y-1'} overflow-y-auto`}>
+        <nav className={`flex-1 p-2 ${isCollapsed ? 'space-y-2' : 'space-y-1'} overflow-y-auto main-sidebar-nav`}>
           {sidebarItems.map((item) => {
             const isActive = item.href && (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href)));
             const Icon = item.icon;
@@ -340,7 +340,6 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
                     <Icon className={`w-5 h-5 flex-shrink-0 ${isOrgSetupActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} />
                     <div className="flex flex-col flex-1">
                       <span className="text-sm font-medium leading-tight">{item.title}</span>
-                      <span className="text-xs text-muted-foreground leading-tight">{item.description}</span>
                     </div>
                     <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                   </button>
@@ -366,7 +365,6 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
                   {!isCollapsed && (
                     <div className="flex flex-col">
                       <span className="text-sm font-medium leading-tight">{item.title}</span>
-                      <span className="text-xs text-muted-foreground leading-tight">{item.description}</span>
                       {item.isAdmin && (
                         <span className="text-xs text-accent-foreground font-medium">Admin Only</span>
                       )}
@@ -433,7 +431,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
               
               return (
                 <Link key={subItem.href} href={subItem.href || '#'}>
-                  <div className={`
+                    <div className={`
                     flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group
                     ${isSubActive 
                       ? 'bg-primary/10 text-primary shadow-sm border-l-4 border-primary font-medium' 
@@ -445,7 +443,6 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
                     <SubIcon className={`w-5 h-5 flex-shrink-0 ${isSubActive ? 'text-primary' : subItem.isAdmin ? 'text-accent-foreground' : 'text-muted-foreground group-hover:text-foreground'}`} />
                     <div className="flex flex-col">
                       <span className="text-sm font-medium leading-tight">{subItem.title}</span>
-                      <span className="text-xs text-muted-foreground leading-tight">{subItem.description}</span>
                       {subItem.isAdmin && (
                         <span className="text-xs text-accent-foreground font-medium">Admin Only</span>
                       )}
