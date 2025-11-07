@@ -266,6 +266,38 @@
     color: rgb(var(--foreground)) !important;
     background-color: rgb(var(--popover)) !important;
   }
+
+  /* Disable dropdown menu animations - but keep positioning transforms */
+  [data-slot="dropdown-menu-content"],
+  [data-slot="dropdown-menu-sub-content"],
+  [data-radix-dropdown-menu-content],
+  [data-radix-dropdown-menu-sub-content],
+  [data-radix-popper-content-wrapper],
+  [role="menu"] {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+  }
+
+  /* Disable Radix UI dropdown state-based animations */
+  [data-state="open"][data-slot="dropdown-menu-content"],
+  [data-state="closed"][data-slot="dropdown-menu-content"],
+  [data-state="open"][data-slot="dropdown-menu-sub-content"],
+  [data-state="closed"][data-slot="dropdown-menu-sub-content"],
+  [data-state="open"][role="menu"],
+  [data-state="closed"][role="menu"] {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+  }
+
+  /* Disable all Radix UI menu animations */
+  [data-radix-menu-content],
+  [data-radix-menu-sub-content] {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+  }
 }
 
 @layer utilities {
@@ -277,6 +309,32 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none; /* Chrome, Safari, Opera */
   }
+}
+
+/* Global override for all Radix UI dropdown animations - must be outside @layer */
+/* Note: We keep transform for positioning, only disable animation/transition */
+[data-radix-dropdown-menu-content],
+[data-radix-dropdown-menu-sub-content],
+[data-radix-menu-content],
+[data-radix-menu-sub-content],
+[data-radix-popper-content-wrapper],
+[role="menu"],
+div[data-slot="dropdown-menu-content"],
+div[data-slot="dropdown-menu-sub-content"] {
+  animation: none !important;
+  transition: none !important;
+  opacity: 1 !important;
+}
+
+/* Target any element with Radix UI animation classes */
+[class*="radix-dropdown"],
+[class*="radix-menu"],
+[class*="radix-popper"] {
+  animation: none !important;
+  transition: none !important;
+}
+
+@layer utilities {
   
   /* Animation utilities */
   .animate-fade-in {

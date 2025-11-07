@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   LayoutDashboard,
   Users,
   ShieldCheck,
@@ -228,7 +227,9 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
           isAdmin: true // Add flag for styling
         }]
       : []),
-    organizationSetupItem,
+    ...(userData?.role === 'ORG_ADMIN'
+      ? [organizationSetupItem]
+      : []),
     ...navigationItems
   ];
 
@@ -341,7 +342,6 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
                     <div className="flex flex-col flex-1">
                       <span className="text-sm font-medium leading-tight">{item.title}</span>
                     </div>
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                   </button>
                 </div>
               );
@@ -415,14 +415,18 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
       </div>
 
       {/* Secondary Side Panel for Organization Setup */}
-      {isOrgSetupExpanded && !isCollapsed && (
+      {isOrgSetupExpanded && !isCollapsed && userData?.role === 'ORG_ADMIN' && (
         <div className="w-64 bg-card border-r border-border shadow-sm transition-all duration-300 ease-in-out flex flex-col">
-          <div className="border-b border-border p-4">
-            <div className="flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-semibold text-foreground">Organization Setup</h2>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Organization Configuration</p>
+          <div className="border-b border-border p-2 flex items-center justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExpandedMenu(null)}
+              className="p-1.5 hover:bg-muted rounded-lg transition-colors"
+              title="Collapse sidebar"
+            >
+              <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+            </Button>
           </div>
           <nav className="flex-1 p-2 overflow-y-auto">
             {organizationSetupItems.map((subItem) => {

@@ -45,6 +45,11 @@ function DropdownMenuContent({
           "bg-popover text-popover-foreground z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-[8rem] overflow-x-hidden overflow-y-auto rounded-md border p-1 shadow-md",
           className
         )}
+        style={{
+          animation: 'none',
+          transition: 'none',
+          opacity: 1,
+        }}
         {...props}
       />
     </DropdownMenuPrimitive.Portal>
@@ -233,6 +238,11 @@ function DropdownMenuSubContent({
         "bg-popover text-popover-foreground z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-lg",
         className
       )}
+      style={{
+        animation: 'none',
+        transition: 'none',
+        opacity: 1,
+      }}
       {...props}
     />
   )
