@@ -43,7 +43,6 @@ model UseCase {
   userId                   String?
   answers                  Answer[]
   Approval                 Approval?
-  assessData               Assess?
   euAiActAssessments       EuAiActAssessment?
   finopsData               FinOps?
   guardrails               Guardrail[]
@@ -86,13 +85,6 @@ model FinOps {
   useCase         UseCase @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
 }
 
-model Assess {
-  useCaseId String   @id
-  createdAt DateTime @default(now())
-  stepsData Json
-  updatedAt DateTime @updatedAt
-  UseCase   UseCase  @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
-}
 
 model Approval {
   id                     String   @id @default(uuid())

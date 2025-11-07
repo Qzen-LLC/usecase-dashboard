@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prismaClient, retryDatabaseOperation } from '@/utils/db';
 import { withAuth } from '@/lib/auth-gateway';
+import { buildStepsDataFromAnswers } from '@/lib/mappers/answers-to-steps';
 
 
 export const GET = withAuth(async (request, { auth }) => {
@@ -27,7 +28,12 @@ export const GET = withAuth(async (request, { auth }) => {
         // Test if risks table exists by doing a simple query
         await prismaClient.risk.findFirst();
         return {
-          assessData: true,
+          answers: {
+            include: {
+              question: true,
+              questionTemplate: true,
+            }
+          },
           euAiActAssessments: true,
           iso42001Assessments: true,
           uaeAiAssessments: true,
@@ -43,7 +49,12 @@ export const GET = withAuth(async (request, { auth }) => {
       } catch (error) {
         console.log('Risks table not available, using fallback include');
         return {
-          assessData: true,
+          answers: {
+            include: {
+              question: true,
+              questionTemplate: true,
+            }
+          },
           euAiActAssessments: true,
           iso42001Assessments: true,
           uaeAiAssessments: true,
@@ -104,7 +115,12 @@ export const GET = withAuth(async (request, { auth }) => {
         useCases = await retryDatabaseOperation(() =>
           prismaClient.useCase.findMany({
             include: {
-              assessData: true,
+              answers: {
+            include: {
+              question: true,
+              questionTemplate: true,
+            }
+          },
               answers: {
                 include: {
                   question: {
@@ -129,7 +145,12 @@ export const GET = withAuth(async (request, { auth }) => {
           prismaClient.useCase.findMany({
             where: { organizationId: userRecord.organizationId },
             include: {
-              assessData: true,
+              answers: {
+            include: {
+              question: true,
+              questionTemplate: true,
+            }
+          },
               answers: {
                 include: {
                   question: {
@@ -154,7 +175,12 @@ export const GET = withAuth(async (request, { auth }) => {
           prismaClient.useCase.findMany({
             where: { userId: userRecord.id },
             include: {
-              assessData: true,
+              answers: {
+            include: {
+              question: true,
+              questionTemplate: true,
+            }
+          },
               answers: {
                 include: {
                   question: {
@@ -184,8 +210,8 @@ export const GET = withAuth(async (request, { auth }) => {
       }));
     }
 
-    const governanceData = (useCases as any[])
-      .map((useCase) => {
+    const governanceData = await Promise.all(
+      (useCases as any[]).map(async (useCase) => {
         const uc = useCase as any;
         const regulatoryFrameworks: string[] = [];
         const industryStandards: string[] = [];
@@ -223,27 +249,31 @@ export const GET = withAuth(async (request, { auth }) => {
           });
         }
         
-        // Fallback: Also check old stepsData structure for backward compatibility
-        if (regulatoryFrameworks.length === 0 && industryStandards.length === 0 && useCase.assessData?.stepsData) {
-          const stepsData = useCase.assessData.stepsData as any;
-          const riskAssessment = stepsData.riskAssessment;
+        // Fallback: Build stepsData from answers if not found in direct answer parsing
+        if (regulatoryFrameworks.length === 0 && industryStandards.length === 0) {
+          try {
+            const stepsData = await buildStepsDataFromAnswers(useCase.id);
+            const riskAssessment = (stepsData as any).riskAssessment;
 
-          if (riskAssessment) {
-            if (riskAssessment.aiSpecific) {
-              Object.entries(riskAssessment.aiSpecific).forEach(([key, value]) => {
-                if (value === true) {
-                  regulatoryFrameworks.push(key);
-                }
-              });
-            }
+            if (riskAssessment) {
+              if (riskAssessment.aiSpecific) {
+                Object.entries(riskAssessment.aiSpecific).forEach(([key, value]) => {
+                  if (value === true) {
+                    regulatoryFrameworks.push(key);
+                  }
+                });
+              }
 
-            if (riskAssessment.certifications) {
-              Object.entries(riskAssessment.certifications).forEach(([key, value]) => {
-                if (value === true) {
-                  industryStandards.push(key);
-                }
-              });
+              if (riskAssessment.certifications) {
+                Object.entries(riskAssessment.certifications).forEach(([key, value]) => {
+                  if (value === true) {
+                    industryStandards.push(key);
+                  }
+                });
+              }
             }
+          } catch (error) {
+            console.error('Error building stepsData from answers:', error);
           }
         }
 
@@ -271,6 +301,14 @@ export const GET = withAuth(async (request, { auth }) => {
           });
         }
 
+        // Build stepsData from answers
+        const stepsData = await buildStepsDataFromAnswers(uc.id);
+        const assessData = {
+          stepsData,
+          updatedAt: uc.updatedAt,
+          createdAt: uc.createdAt,
+        };
+
         return {
           useCaseId: uc.id,
           useCaseNumber: uc.aiucId,
@@ -279,15 +317,15 @@ export const GET = withAuth(async (request, { auth }) => {
           department: uc.businessFunction,
           regulatoryFrameworks,
           industryStandards,
-          lastUpdated: (useCase as any).assessData?.updatedAt?.toISOString() || useCase.updatedAt.toISOString(),
+          lastUpdated: uc.updatedAt.toISOString(),
           euAiActAssessments,
           iso42001Assessments,
           uaeAiAssessments,
-          assessData: (useCase as any).assessData,
-          risks: (useCase as any).risks || [],
+          assessData,
+          risks: (uc as any).risks || [],
         };
       })
-      .filter((item) => item !== null);
+    ).then(results => results.filter((item) => item !== null));
 
 
     

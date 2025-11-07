@@ -358,13 +358,14 @@ export class EvaluationContextAggregator {
    * Fetch all assessments for the use case
    */
   private async fetchAssessments(useCaseId: string): Promise<any> {
-    // Fetch the assess data - it's a single record with JSON data
-    const assessData = await prismaClient.assess.findUnique({
-      where: { useCaseId }
-    });
-
-    // If no assess data, return empty assessments
-    if (!assessData || !assessData.stepsData) {
+    // Build stepsData from Answer records (replacing Assess table)
+    const { buildStepsDataFromAnswers } = await import('@/lib/mappers/answers-to-steps');
+    let stepsData: any;
+    
+    try {
+      stepsData = await buildStepsDataFromAnswers(useCaseId);
+    } catch (error) {
+      console.error('Error building stepsData from answers:', error);
       return {
         technical: null,
         business: null,
@@ -375,8 +376,17 @@ export class EvaluationContextAggregator {
       };
     }
 
-    // Parse the JSON stepsData to get individual assessments
-    const stepsData = assessData.stepsData as any;
+    // If no stepsData, return empty assessments
+    if (!stepsData) {
+      return {
+        technical: null,
+        business: null,
+        ethical: null,
+        risk: null,
+        data: null,
+        compliance: null
+      };
+    }
 
     console.log('🧹 Cleaning assessment data loaded from database...');
 

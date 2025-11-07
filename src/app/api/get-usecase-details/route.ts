@@ -1,5 +1,6 @@
 import { prismaClient } from '@/utils/db';
 import { withAuth } from '@/lib/auth-gateway';
+import { buildStepsDataFromAnswers } from '@/lib/mappers/answers-to-steps';
 
 
 export const GET = withAuth(async (req: Request, { auth }) => {
@@ -73,7 +74,12 @@ export const GET = withAuth(async (req: Request, { auth }) => {
         priority: true,
         createdAt: true,
         updatedAt: true,
-        assessData: true,
+        answers: {
+          include: {
+            question: true,
+            questionTemplate: true,
+          }
+        },
         user: {
           select: {
             firstName: true,
@@ -156,8 +162,17 @@ export const GET = withAuth(async (req: Request, { auth }) => {
       }
     }
 
+    // Build stepsData from answers (replacing assessData)
+    const stepsData = await buildStepsDataFromAnswers(useCase.id);
+    const assessData = {
+      stepsData,
+      updatedAt: useCase.updatedAt,
+      createdAt: useCase.createdAt,
+    };
+
     const responseData = {
       ...useCase,
+      assessData,
       lockInfo
     };
 

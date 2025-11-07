@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useExecutiveMetrics } from '@/hooks/useExecutiveMetrics';
 import { Card } from '@/components/ui/card';
-import { TrendingUp, DollarSign, Shield, BarChart3, Target, AlertTriangle, CheckCircle, Clock, Zap, Users, Building2, PieChart, Activity, ArrowUpRight, ArrowDownRight, Minus, RefreshCw, Download, Eye, Filter } from 'lucide-react';
+import { TrendingUp, DollarSign, Shield, Target, AlertTriangle, CheckCircle, Clock, Zap, Users, Building2, PieChart, Activity, ArrowUpRight, ArrowDownRight, Minus, RefreshCw, Download, Eye, Filter } from 'lucide-react';
 
 const ExecutiveDashboard = () => {
   const { data: metrics, isLoading: loading, error, refetch } = useExecutiveMetrics();
@@ -160,11 +160,11 @@ const ExecutiveDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-6">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <div className="space-y-2">
-            <h3 className="text-xl font-semibold text-foreground">Loading Executive Dashboard</h3>
-            <p className="text-muted-foreground">Gathering portfolio insights and metrics...</p>
+        <div className="text-center space-y-4">
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <div className="space-y-1">
+            <h3 className="text-base font-semibold text-foreground">Loading Executive Dashboard</h3>
+            <p className="text-xs text-muted-foreground">Gathering portfolio insights and metrics...</p>
           </div>
         </div>
       </div>
@@ -175,19 +175,19 @@ const ExecutiveDashboard = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="max-w-md w-full">
-          <Card className="p-8 text-center space-y-6">
-            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-              <AlertTriangle className="w-8 h-8 text-destructive" />
+          <Card className="p-6 text-center space-y-4">
+            <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-6 h-6 text-destructive" />
             </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-foreground">Unable to Load Dashboard</h2>
-              <p className="text-muted-foreground">{error?.message}</p>
+            <div className="space-y-1">
+              <h2 className="text-lg font-bold text-foreground">Unable to Load Dashboard</h2>
+              <p className="text-xs text-muted-foreground">{error?.message}</p>
             </div>
             <button 
               onClick={handleRefresh}
-              className="w-full bg-primary text-primary-foreground font-medium py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors duration-150"
+              className="w-full bg-primary text-primary-foreground font-medium py-2 px-4 text-sm rounded-md hover:bg-primary/90 transition-colors duration-150"
             >
-              <RefreshCw className={`w-5 h-5 inline mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 inline mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
               Try Again
             </button>
           </Card>
@@ -199,13 +199,13 @@ const ExecutiveDashboard = () => {
   if (!metrics) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="p-8 text-center space-y-4">
-          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
-            <AlertTriangle className="w-8 h-8 text-muted-foreground" />
+        <Card className="p-6 text-center space-y-3">
+          <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-6 h-6 text-muted-foreground" />
           </div>
-          <div className="space-y-2">
-            <h2 className="text-xl font-semibold text-foreground">No Data Available</h2>
-            <p className="text-muted-foreground">No metrics data available for this organization.</p>
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold text-foreground">No Data Available</h2>
+            <p className="text-xs text-muted-foreground">No metrics data available for this organization.</p>
           </div>
         </Card>
       </div>
@@ -214,54 +214,39 @@ const ExecutiveDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Clean Page Header */}
-        <div className="mb-12">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                <BarChart3 className="w-6 h-6 text-primary" />
-              </div>
-              <div className="space-y-1">
-                <h1 className="text-3xl font-bold text-foreground tracking-tight">
-                  Executive Dashboard
-                </h1>
-                <p className="text-muted-foreground">
-                  Portfolio, Financial, Risk, and Strategic Insights
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleRefresh}
-                className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg hover:bg-muted transition-colors duration-150"
-              >
-                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                Refresh
-              </button>
-              <button 
-                onClick={handleExport}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-150"
-              >
-                <Download className="w-4 h-4" />
-                Export
-              </button>
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        {/* Action Buttons */}
+        <div className="mb-6 flex justify-end">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRefresh}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-card border border-border rounded-md hover:bg-muted transition-colors duration-150"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+            <button 
+              onClick={handleExport}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors duration-150"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export
+            </button>
           </div>
         </div>
 
         {/* Clean KPI Cards */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {/* Total Use Cases Card */}
           <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-            <div className="p-6">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Total Use Cases</p>
-                <p className="text-3xl font-bold text-foreground">
+            <div className="p-4">
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Total Use Cases</p>
+                <p className="text-2xl font-bold text-foreground">
                   {Math.round(animatedValues.totalUseCases || 0)}
                 </p>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-success rounded-full"></div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-success rounded-full"></div>
                   <span className="text-xs text-muted-foreground">Active</span>
                 </div>
               </div>
@@ -270,15 +255,15 @@ const ExecutiveDashboard = () => {
 
           {/* Portfolio Score Card */}
           <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-            <div className="p-6">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Portfolio Score</p>
-                <p className="text-3xl font-bold text-foreground">
+            <div className="p-4">
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Portfolio Score</p>
+                <p className="text-2xl font-bold text-foreground">
                   {(animatedValues.portfolioScore || 0).toFixed(1)}/10
                 </p>
-                <div className="w-full bg-muted rounded-full h-2">
+                <div className="w-full bg-muted rounded-full h-1.5">
                   <div 
-                    className="bg-primary h-2 rounded-full transition-all duration-1000 ease-out"
+                    className="bg-primary h-1.5 rounded-full transition-all duration-1000 ease-out"
                     style={{ width: `${(animatedValues.portfolioScore || 0) * 10}%` }}
                   ></div>
                 </div>
@@ -288,14 +273,14 @@ const ExecutiveDashboard = () => {
 
           {/* Complexity Card */}
           <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-            <div className="p-6">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Avg Complexity</p>
-                <p className="text-3xl font-bold text-foreground">
+            <div className="p-4">
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Avg Complexity</p>
+                <p className="text-2xl font-bold text-foreground">
                   {(animatedValues.complexity || 0).toFixed(1)}/10
                 </p>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-warning rounded-full"></div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-warning rounded-full"></div>
                   <span className="text-xs text-muted-foreground">Moderate</span>
                 </div>
               </div>
@@ -304,15 +289,15 @@ const ExecutiveDashboard = () => {
 
           {/* Confidence Card */}
           <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-            <div className="p-6">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Avg Confidence</p>
-                <p className="text-3xl font-bold text-foreground">
+            <div className="p-4">
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Avg Confidence</p>
+                <p className="text-2xl font-bold text-foreground">
                   {Math.round(animatedValues.confidence || 0)}%
                 </p>
-                <div className="w-full bg-muted rounded-full h-2">
+                <div className="w-full bg-muted rounded-full h-1.5">
                   <div 
-                    className="bg-primary h-2 rounded-full transition-all duration-1000 ease-out"
+                    className="bg-primary h-1.5 rounded-full transition-all duration-1000 ease-out"
                     style={{ width: `${animatedValues.confidence || 0}%` }}
                   ></div>
                 </div>
@@ -322,34 +307,34 @@ const ExecutiveDashboard = () => {
         </section>
 
         {/* Portfolio Health Section */}
-        <section className="mb-12">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-1 h-6 bg-primary rounded-full"></div>
-            <h2 className="text-2xl font-semibold text-foreground tracking-tight">Portfolio Health</h2>
+        <section className="mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-1 h-4 bg-primary rounded-full"></div>
+            <h2 className="text-lg font-semibold text-foreground tracking-tight">Portfolio Health</h2>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Stage Distribution */}
             {Object.keys(metrics.portfolio.stageDistribution ?? {}).length > 0 && (
               <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-6">
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-foreground">Stage Distribution</h3>
+                <div className="p-4">
+                  <div className="mb-3">
+                    <h3 className="text-base font-semibold text-foreground">Stage Distribution</h3>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {Object.entries(metrics.portfolio.stageDistribution || {}).map(([stage, count], index) => (
-                      <div key={stage} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors duration-150">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-3 h-3 rounded-full ${
+                      <div key={stage} className="flex items-center justify-between p-2 bg-muted/50 rounded-md hover:bg-muted transition-colors duration-150">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${
                             index === 0 ? 'bg-primary' :
                             index === 1 ? 'bg-success' :
                             index === 2 ? 'bg-warning' :
                             index === 3 ? 'bg-secondary' : 'bg-muted-foreground'
                           }`}></div>
-                          <span className="text-sm font-medium text-foreground capitalize">
+                          <span className="text-xs font-medium text-foreground capitalize">
                             {stage.replace('-', ' ')}
                           </span>
                         </div>
-                        <span className="px-3 py-1 bg-primary text-primary-foreground text-sm font-medium rounded-md">
+                        <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs font-medium rounded">
                           {count}
                         </span>
                       </div>
@@ -362,24 +347,24 @@ const ExecutiveDashboard = () => {
             {/* Priority Distribution */}
             {Object.keys(metrics.portfolio.priorityDistribution ?? {}).length > 0 && (
               <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-6">
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-foreground">Priority Distribution</h3>
+                <div className="p-4">
+                  <div className="mb-3">
+                    <h3 className="text-base font-semibold text-foreground">Priority Distribution</h3>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {Object.entries(metrics.portfolio.priorityDistribution || {}).map(([priority, count], index) => (
-                      <div key={priority} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors duration-150">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-3 h-3 rounded-full ${
+                      <div key={priority} className="flex items-center justify-between p-2 bg-muted/50 rounded-md hover:bg-muted transition-colors duration-150">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${
                             priority.toLowerCase() === 'high' ? 'bg-destructive' :
                             priority.toLowerCase() === 'medium' ? 'bg-warning' :
                             priority.toLowerCase() === 'low' ? 'bg-success' : 'bg-muted-foreground'
                           }`}></div>
-                          <span className="text-sm font-medium text-foreground capitalize">
+                          <span className="text-xs font-medium text-foreground capitalize">
                             {priority}
                           </span>
                         </div>
-                        <span className={`px-3 py-1 text-sm font-medium rounded-md ${
+                        <span className={`px-2 py-0.5 text-xs font-medium rounded ${
                           priority.toLowerCase() === 'high' ? 'bg-destructive text-destructive-foreground' :
                           priority.toLowerCase() === 'medium' ? 'bg-warning text-warning-foreground' :
                           priority.toLowerCase() === 'low' ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'
@@ -397,22 +382,22 @@ const ExecutiveDashboard = () => {
 
         {/* Financial Metrics Section */}
         {metrics.financial && (
-          <section className="mb-12">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-1 h-6 bg-primary rounded-full"></div>
-              <h2 className="text-2xl font-semibold text-foreground tracking-tight">Financial Metrics</h2>
+          <section className="mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-4 bg-primary rounded-full"></div>
+              <h2 className="text-lg font-semibold text-foreground tracking-tight">Financial Metrics</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Total Investment */}
               <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-6">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Total Investment</p>
-                    <p className="text-2xl font-bold text-foreground">
+                <div className="p-4">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">Total Investment</p>
+                    <p className="text-xl font-bold text-foreground">
                       {formatCurrency(metrics.financial.totalInvestment ?? 0)}
                     </p>
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-success" />
+                    <div className="flex items-center gap-1.5">
+                      <TrendingUp className="w-3.5 h-3.5 text-success" />
                       <span className="text-xs text-muted-foreground">Growing</span>
                     </div>
                   </div>
@@ -421,14 +406,14 @@ const ExecutiveDashboard = () => {
 
               {/* Total ROI */}
               <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-6">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Total ROI</p>
-                    <p className="text-2xl font-bold text-foreground">
+                <div className="p-4">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">Total ROI</p>
+                    <p className="text-xl font-bold text-foreground">
                       {formatCurrency(metrics.financial.totalROI ?? 0)}
                     </p>
-                    <div className="flex items-center gap-2">
-                      <ArrowUpRight className="w-4 h-4 text-success" />
+                    <div className="flex items-center gap-1.5">
+                      <ArrowUpRight className="w-3.5 h-3.5 text-success" />
                       <span className="text-xs text-muted-foreground">Positive</span>
                     </div>
                   </div>
@@ -437,15 +422,15 @@ const ExecutiveDashboard = () => {
 
               {/* Average ROI */}
               <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-6">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Average ROI</p>
-                    <p className="text-2xl font-bold text-foreground">
+                <div className="p-4">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">Average ROI</p>
+                    <p className="text-xl font-bold text-foreground">
                       {(metrics.financial.averageROI ?? 0).toFixed(1)}%
                     </p>
-                    <div className="w-full bg-muted rounded-full h-2">
+                    <div className="w-full bg-muted rounded-full h-1.5">
                       <div 
-                        className="bg-primary h-2 rounded-full transition-all duration-1000 ease-out"
+                        className="bg-primary h-1.5 rounded-full transition-all duration-1000 ease-out"
                         style={{ width: `${Math.min((metrics.financial.averageROI ?? 0) * 2, 100)}%` }}
                       ></div>
                     </div>
@@ -455,14 +440,14 @@ const ExecutiveDashboard = () => {
 
               {/* Average Cost per Use Case */}
               <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-6">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Avg Cost per Use Case</p>
-                    <p className="text-2xl font-bold text-foreground">
+                <div className="p-4">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">Avg Cost per Use Case</p>
+                    <p className="text-xl font-bold text-foreground">
                       {formatCurrency((metrics.financial.totalInvestment ?? 0) / (metrics.portfolio.totalUseCases || 1))}
                     </p>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-primary rounded-full"></div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
                       <span className="text-xs text-muted-foreground">Per Case</span>
                     </div>
                   </div>
@@ -474,22 +459,22 @@ const ExecutiveDashboard = () => {
 
         {/* Risk Assessment Section */}
         {metrics.risk && (
-          <section className="mb-12">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-1 h-6 bg-primary rounded-full"></div>
-              <h2 className="text-2xl font-semibold text-foreground tracking-tight">Risk Assessment</h2>
+          <section className="mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-4 bg-primary rounded-full"></div>
+              <h2 className="text-lg font-semibold text-foreground tracking-tight">Risk Assessment</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* High Risk */}
               <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-6">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">High Risk Use Cases</p>
-                    <p className="text-3xl font-bold text-foreground">
+                <div className="p-4">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">High Risk Use Cases</p>
+                    <p className="text-2xl font-bold text-foreground">
                       {metrics.risk.riskDistribution?.High ?? 0}
                     </p>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-destructive rounded-full"></div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-destructive rounded-full"></div>
                       <span className="text-xs text-muted-foreground">Critical</span>
                     </div>
                   </div>
@@ -498,14 +483,14 @@ const ExecutiveDashboard = () => {
 
               {/* Medium Risk */}
               <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-6">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Medium Risk Use Cases</p>
-                    <p className="text-3xl font-bold text-foreground">
+                <div className="p-4">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">Medium Risk Use Cases</p>
+                    <p className="text-2xl font-bold text-foreground">
                       {metrics.risk.riskDistribution?.Medium ?? 0}
                     </p>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-warning rounded-full"></div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-warning rounded-full"></div>
                       <span className="text-xs text-muted-foreground">Monitor</span>
                     </div>
                   </div>
@@ -514,14 +499,14 @@ const ExecutiveDashboard = () => {
 
               {/* Low Risk */}
               <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-6">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Low Risk Use Cases</p>
-                    <p className="text-3xl font-bold text-foreground">
+                <div className="p-4">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">Low Risk Use Cases</p>
+                    <p className="text-2xl font-bold text-foreground">
                       {metrics.risk.riskDistribution?.Low ?? 0}
                     </p>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-success rounded-full"></div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-success rounded-full"></div>
                       <span className="text-xs text-muted-foreground">Safe</span>
                     </div>
                   </div>
@@ -530,14 +515,14 @@ const ExecutiveDashboard = () => {
 
               {/* Total Assessed */}
               <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-6">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Total Assessed</p>
-                    <p className="text-3xl font-bold text-foreground">
+                <div className="p-4">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">Total Assessed</p>
+                    <p className="text-2xl font-bold text-foreground">
                       {metrics.risk.totalAssessed ?? 0}
                     </p>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-primary" />
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle className="w-3.5 h-3.5 text-primary" />
                       <span className="text-xs text-muted-foreground">Complete</span>
                     </div>
                   </div>
@@ -549,33 +534,33 @@ const ExecutiveDashboard = () => {
 
         {/* Strategic Insights Section */}
         {metrics.strategic && (
-          <section className="mb-12">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-1 h-6 bg-primary rounded-full"></div>
-              <h2 className="text-2xl font-semibold text-foreground tracking-tight">Strategic Insights</h2>
+          <section className="mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-4 bg-primary rounded-full"></div>
+              <h2 className="text-lg font-semibold text-foreground tracking-tight">Strategic Insights</h2>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Business Function Performance */}
               <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-6">
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-foreground">Business Function Performance</h3>
+                <div className="p-4">
+                  <div className="mb-3">
+                    <h3 className="text-base font-semibold text-foreground">Business Function Performance</h3>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {metrics.strategic.businessFunctionPerformance?.map((func: any, index: number) => (
-                      <div key={func.function} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors duration-150">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-3 h-3 rounded-full ${
+                      <div key={func.function} className="flex items-center justify-between p-2 bg-muted/50 rounded-md hover:bg-muted transition-colors duration-150">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${
                             index === 0 ? 'bg-primary' :
                             index === 1 ? 'bg-success' :
                             index === 2 ? 'bg-warning' :
                             index === 3 ? 'bg-secondary' : 'bg-muted-foreground'
                           }`}></div>
-                          <span className="text-sm font-medium text-foreground">
+                          <span className="text-xs font-medium text-foreground">
                             {func.function}
                           </span>
                         </div>
-                        <span className="px-3 py-1 bg-primary text-primary-foreground text-sm font-medium rounded-md">
+                        <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs font-medium rounded">
                           {func.count}
                         </span>
                       </div>
@@ -586,26 +571,26 @@ const ExecutiveDashboard = () => {
               
               {/* Portfolio Balance */}
               <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-6">
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-foreground">Portfolio Balance</h3>
+                <div className="p-4">
+                  <div className="mb-3">
+                    <h3 className="text-base font-semibold text-foreground">Portfolio Balance</h3>
                   </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-4 bg-success/10 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 bg-success rounded-full"></div>
-                        <span className="text-sm font-medium text-foreground">Quick Wins</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-success/10 rounded-md">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 bg-success rounded-full"></div>
+                        <span className="text-xs font-medium text-foreground">Quick Wins</span>
                       </div>
-                      <span className="px-4 py-2 bg-success text-success-foreground text-lg font-bold rounded-md">
+                      <span className="px-3 py-1.5 bg-success text-success-foreground text-base font-bold rounded">
                         {metrics.strategic.portfolioBalance?.quickWins ?? 0}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 bg-primary rounded-full"></div>
-                        <span className="text-sm font-medium text-foreground">High Impact Low Complexity</span>
+                    <div className="flex items-center justify-between p-3 bg-primary/10 rounded-md">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 bg-primary rounded-full"></div>
+                        <span className="text-xs font-medium text-foreground">High Impact Low Complexity</span>
                       </div>
-                      <span className="px-4 py-2 bg-primary text-primary-foreground text-lg font-bold rounded-md">
+                      <span className="px-3 py-1.5 bg-primary text-primary-foreground text-base font-bold rounded">
                         {metrics.strategic.portfolioBalance?.highImpactLowComplexity ?? 0}
                       </span>
                     </div>
@@ -615,25 +600,25 @@ const ExecutiveDashboard = () => {
               
               {/* Average ROI by Function */}
               <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-6">
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-foreground">Average ROI by Function</h3>
+                <div className="p-4">
+                  <div className="mb-3">
+                    <h3 className="text-base font-semibold text-foreground">Average ROI by Function</h3>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {metrics.strategic.businessFunctionPerformance?.slice(0, 5).map((func: any, index: number) => (
-                      <div key={func.function} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors duration-150">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-3 h-3 rounded-full ${
+                      <div key={func.function} className="flex items-center justify-between p-2 bg-muted/50 rounded-md hover:bg-muted transition-colors duration-150">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${
                             index === 0 ? 'bg-primary' :
                             index === 1 ? 'bg-success' :
                             index === 2 ? 'bg-warning' :
                             index === 3 ? 'bg-secondary' : 'bg-muted-foreground'
                           }`}></div>
-                          <span className="text-sm font-medium text-foreground">
+                          <span className="text-xs font-medium text-foreground">
                             {func.function}
                           </span>
                         </div>
-                        <span className="px-3 py-1 bg-primary text-primary-foreground text-sm font-medium rounded-md">
+                        <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs font-medium rounded">
                           {func.averageROI.toFixed(1)}%
                         </span>
                       </div>

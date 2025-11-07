@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
+import { buildStepsDataFromAnswers } from '@/lib/mappers/answers-to-steps';
 
 export const GET = withAuth(async (request, { auth }) => {
   try {
@@ -66,7 +67,12 @@ export const GET = withAuth(async (request, { auth }) => {
             { createdAt: 'desc' }
           ]
         },
-        assessData: true
+        answers: {
+          include: {
+            question: true,
+            questionTemplate: true,
+          }
+        }
       },
       orderBy: { updatedAt: 'desc' }
     });
@@ -83,8 +89,23 @@ export const GET = withAuth(async (request, { auth }) => {
       });
     }
 
+    // Build stepsData from answers for each use case (replacing assessData)
+    const useCasesWithStepsData = await Promise.all(
+      useCases.map(async (useCase) => {
+        const stepsData = await buildStepsDataFromAnswers(useCase.id);
+        return {
+          ...useCase,
+          assessData: {
+            stepsData,
+            updatedAt: useCase.updatedAt,
+            createdAt: useCase.createdAt,
+          }
+        };
+      })
+    );
+
     return NextResponse.json({
-      useCases,
+      useCases: useCasesWithStepsData,
       organizations,
       userRole: userRecord.role,
       userOrganizationId: userRecord.organizationId

@@ -37,7 +37,12 @@ export const GET = withAuth(async (request, { auth }) => {
         include: {
           Approval: true,
           finopsData: true,
-          assessData: true,
+          answers: {
+            include: {
+              question: true,
+              questionTemplate: true,
+            }
+          },
         },
         orderBy: { updatedAt: 'desc' }
       });
@@ -47,7 +52,12 @@ export const GET = withAuth(async (request, { auth }) => {
         include: {
           Approval: true,
           finopsData: true,
-          assessData: true,
+          answers: {
+            include: {
+              question: true,
+              questionTemplate: true,
+            }
+          },
         },
         orderBy: { updatedAt: 'desc' }
       });
