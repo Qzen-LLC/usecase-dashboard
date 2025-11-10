@@ -89,7 +89,11 @@ export class EvaluationContextAggregator {
     useCaseId: string,
     guardrailsId?: string
   ): Promise<EvaluationContext> {
-    console.log('📊 Building comprehensive evaluation context...');
+    console.log(`🏗️ Building evaluation context...`);
+    console.log(`   Use Case ID: ${useCaseId}`);
+    console.log(`   Guardrails ID parameter: ${guardrailsId}`);
+    console.log(`   Guardrails ID type: ${typeof guardrailsId}`);
+    console.log(`   Guardrails ID truthy: ${!!guardrailsId}`);
     
     // Fetch use case with all relations
     const useCase = await this.fetchUseCase(useCaseId);
@@ -101,6 +105,87 @@ export class EvaluationContextAggregator {
     console.log(`🔍 Fetching guardrails for use case: ${useCaseId}, guardrailsId: ${guardrailsId}`);
     const guardrails = await this.fetchGuardrails(useCaseId, guardrailsId);
     if (!guardrails) {
+      // Double-check: maybe guardrails exist but weren't detected properly
+      const doubleCheck = await prismaClient.guardrail.findFirst({
+        where: { useCaseId },
+        orderBy: { createdAt: 'desc' },
+        include: { rules: true }
+      });
+      
+      if (doubleCheck) {
+        console.error(`❌ Guardrails exist but couldn't be loaded for use case: ${useCaseId}`);
+        console.error(`   Guardrail ID: ${doubleCheck.id}`);
+        console.error(`   Status: ${doubleCheck.status}`);
+        console.error(`   Has Configuration: ${!!doubleCheck.configuration}`);
+        console.error(`   Configuration Type: ${typeof doubleCheck.configuration}`);
+        console.error(`   Rules Count: ${doubleCheck.rules?.length || 0}`);
+        
+        // Try to reconstruct one more time
+        if (doubleCheck.rules && doubleCheck.rules.length > 0) {
+          console.log(`🔄 Attempting to reconstruct configuration from ${doubleCheck.rules.length} rules...`);
+          const reconstructed = this.reconstructConfigFromRules(doubleCheck.rules);
+          
+          // Check if reconstruction was successful - the structure has guardrails.rules
+          const hasRules = reconstructed && 
+            reconstructed.guardrails && 
+            reconstructed.guardrails.rules && 
+            Object.keys(reconstructed.guardrails.rules).length > 0;
+          
+          if (hasRules) {
+            console.log(`✅ Successfully reconstructed configuration`);
+            console.log(`   Rules categories: ${Object.keys(reconstructed.guardrails.rules).join(', ')}`);
+            // Update the database
+            try {
+              await prismaClient.guardrail.update({
+                where: { id: doubleCheck.id },
+                data: { configuration: reconstructed }
+              });
+              console.log(`💾 Saved reconstructed configuration`);
+              // Retry fetch
+              const retryGuardrails = await this.fetchGuardrails(useCaseId, guardrailsId);
+              if (retryGuardrails) {
+                console.log(`✅ Guardrails loaded after reconstruction`);
+                const guardrailsInfo = this.getGuardrailsInfo(retryGuardrails);
+                console.log(`✅ Found guardrails:`, guardrailsInfo);
+                // Continue with the retried guardrails
+                const assessments = await this.fetchAssessments(useCaseId);
+                const risks = this.analyzeRisks(assessments);
+                const compliance = this.extractCompliance(assessments);
+                const performance = this.extractPerformance(assessments, useCase);
+                const testingContext = await this.fetchTestingContext(useCaseId);
+                const organizational = this.buildOrganizationalContext(assessments, useCase);
+                
+                const context: EvaluationContext = {
+                  useCase: {
+                    id: useCase.id,
+                    title: useCase.title,
+                    description: useCase.proposedAISolution || '',
+                    department: useCase.businessFunction || 'Unknown'
+                  },
+                  guardrails: retryGuardrails,
+                  risks,
+                  compliance,
+                  performance,
+                  testing: testingContext,
+                  organizational
+                };
+                
+                return context;
+              }
+            } catch (updateError) {
+              console.error(`❌ Failed to save reconstructed configuration:`, updateError);
+            }
+          } else {
+            console.error(`❌ Reconstruction failed - no valid rules structure`);
+            console.error(`   Reconstructed structure:`, {
+              hasGuardrails: !!reconstructed?.guardrails,
+              hasRules: !!reconstructed?.guardrails?.rules,
+              ruleKeys: reconstructed?.guardrails?.rules ? Object.keys(reconstructed.guardrails.rules) : []
+            });
+          }
+        }
+      }
+      
       console.error(`❌ No guardrails found for use case: ${useCaseId}`);
       throw new Error(
         `No guardrails configuration found for use case: ${useCaseId}. ` +
@@ -168,13 +253,12 @@ export class EvaluationContextAggregator {
    * Fetch use case data
    */
   private async fetchUseCase(useCaseId: string): Promise<any> {
+    // Note: assessData is not a relation in Prisma schema - it's computed from Answer records
+    // We fetch it separately using buildStepsDataFromAnswers if needed
     return await prismaClient.useCase.findUnique({
-      where: { id: useCaseId },
-      include: {
-        assessData: true  // Changed from assessments
-        // Note: evaluations and guardrails relationships don't exist in schema
-        // They are fetched separately in other methods
-      }
+      where: { id: useCaseId }
+      // Note: evaluations and guardrails relationships don't exist in schema
+      // They are fetched separately in other methods
     });
   }
 
@@ -185,16 +269,39 @@ export class EvaluationContextAggregator {
     let guardrailRecord;
 
     if (guardrailsId) {
-      console.log(`Fetching guardrails by ID: ${guardrailsId}`);
+      console.log(`🔍 Fetching guardrails by ID: ${guardrailsId}`);
+      console.log(`   ID type: ${typeof guardrailsId}, length: ${guardrailsId?.length || 0}`);
       guardrailRecord = await prismaClient.guardrail.findUnique({
         where: { id: guardrailsId },
         include: { rules: true }
       });
+      
+      if (!guardrailRecord) {
+        console.warn(`⚠️ Guardrail not found by ID: ${guardrailsId}`);
+        console.warn(`   Will try useCaseId lookup as fallback`);
+        
+        // Debug: Check if there are any guardrails with similar IDs
+        const allGuardrails = await prismaClient.guardrail.findMany({
+          where: { useCaseId },
+          select: { id: true, useCaseId: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 5
+        });
+        console.warn(`   Available guardrails for useCaseId ${useCaseId}:`, allGuardrails.map(g => ({ id: g.id, createdAt: g.createdAt })));
+        if (allGuardrails.length > 0) {
+          console.warn(`   Latest guardrail ID: ${allGuardrails[0].id}`);
+          console.warn(`   Requested ID matches latest: ${allGuardrails[0].id === guardrailsId}`);
+        }
+      } else {
+        console.log(`✅ Found guardrail by ID: ${guardrailRecord.id}`);
+        console.log(`   Status: ${guardrailRecord.status}`);
+        console.log(`   Rules count: ${guardrailRecord.rules?.length || 0}`);
+      }
     }
 
     // If no ID provided or not found by ID, get the latest guardrails for the use case
     if (!guardrailRecord) {
-      console.log(`Fetching latest guardrails for use case: ${useCaseId}`);
+      console.log(`🔍 Fetching latest guardrails for use case: ${useCaseId}`);
       guardrailRecord = await prismaClient.guardrail.findFirst({
         where: { useCaseId },
         orderBy: { createdAt: 'desc' },
@@ -202,15 +309,20 @@ export class EvaluationContextAggregator {
       });
 
       if (guardrailRecord) {
-        console.log(`Found guardrail record with ID: ${guardrailRecord.id}`);
+        console.log(`✅ Found guardrail record with ID: ${guardrailRecord.id}`);
+        console.log(`   Status: ${guardrailRecord.status}`);
+        console.log(`   Rules count: ${guardrailRecord.rules?.length || 0}`);
       } else {
-        console.log(`No guardrail records found for use case: ${useCaseId}`);
+        console.log(`❌ No guardrail records found for use case: ${useCaseId}`);
 
         // Try to list all guardrails to debug
         const allGuardrails = await prismaClient.guardrail.findMany({
           select: { id: true, useCaseId: true }
         });
-        console.log(`All guardrails in database:`, allGuardrails);
+        console.log(`   Total guardrails in database: ${allGuardrails.length}`);
+        if (allGuardrails.length > 0) {
+          console.log(`   Sample guardrails:`, allGuardrails.slice(0, 3));
+        }
       }
     }
 
@@ -229,9 +341,37 @@ export class EvaluationContextAggregator {
     });
 
     // If we have a valid configuration, return it
-    if (guardrailRecord.configuration && typeof guardrailRecord.configuration === 'object') {
-      console.log(`✅ Using configuration from database`);
-      return guardrailRecord.configuration as GuardrailsConfig;
+    let config = guardrailRecord.configuration;
+    
+    // Handle case where configuration might be a JSON string
+    if (typeof config === 'string' && config.trim().length > 0) {
+      try {
+        config = JSON.parse(config);
+        console.log(`📝 Parsed configuration from JSON string`);
+      } catch (e) {
+        console.warn(`⚠️ Failed to parse configuration string:`, e);
+        config = null;
+      }
+    }
+    
+    // Check if configuration is valid (not null, not empty object, has content)
+    if (config && typeof config === 'object' && config !== null) {
+      // Check if it's an empty object
+      const configKeys = Object.keys(config);
+      const hasGuardrails = (config as any).guardrails && typeof (config as any).guardrails === 'object';
+      const hasRules = hasGuardrails && (config as any).guardrails.rules && Object.keys((config as any).guardrails.rules || {}).length > 0;
+      const hasMetadata = (config as any).metadata || (config as any).reasoning || (config as any).confidence;
+      
+      if (configKeys.length > 0 && (hasRules || hasMetadata || hasGuardrails)) {
+        console.log(`✅ Using configuration from database (${configKeys.length} top-level keys)`);
+        if (hasRules) {
+          console.log(`   Rules categories: ${Object.keys((config as any).guardrails.rules || {}).join(', ')}`);
+        }
+        return config as GuardrailsConfig;
+      } else {
+        console.log(`⚠️ Configuration exists but appears to be empty or invalid, will try to reconstruct`);
+        console.log(`   Has guardrails: ${hasGuardrails}, Has rules: ${hasRules}, Has metadata: ${hasMetadata}`);
+      }
     }
 
     // Fallback: If configuration is missing but we have rules, reconstruct it

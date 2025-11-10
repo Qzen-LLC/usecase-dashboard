@@ -80,6 +80,21 @@ const ViewUseCasePage = () => {
         }
         const data = await response.json();
         setUseCase(data);
+        
+        // Debug: Log assessData structure
+        if (data.assessData?.stepsData) {
+          console.log('🔍 [DEBUG] assessData.stepsData keys:', Object.keys(data.assessData.stepsData));
+          Object.entries(data.assessData.stepsData).forEach(([key, value]) => {
+            if (value && typeof value === 'object') {
+              console.log(`🔍 [DEBUG] ${key}:`, Object.keys(value as any).length, 'fields');
+            }
+          });
+        }
+        
+        // Also check if answers are included
+        if (data.answers) {
+          console.log('🔍 [DEBUG] UseCase has', data.answers.length, 'answers directly');
+        }
       } catch (err) {
         setError('Failed to load use case details');
         console.error('Error fetching use case details:', err);
@@ -151,7 +166,13 @@ const ViewUseCasePage = () => {
         if (Array.isArray(data)) {
           // Filter to only questions with answers
           const questionsWithAnswers = data.filter((q: any) => q.answers && q.answers.length > 0);
-          console.log('🔍 [DEBUG] Questions with answers:', questionsWithAnswers);
+          console.log('🔍 [DEBUG] Questions with answers:', questionsWithAnswers.length, 'total');
+          console.log('🔍 [DEBUG] Questions by stage:', 
+            questionsWithAnswers.reduce((acc: any, q: any) => {
+              acc[q.stage] = (acc[q.stage] || 0) + 1;
+              return acc;
+            }, {})
+          );
           setQuestionsData(questionsWithAnswers);
         }
       })
@@ -308,43 +329,140 @@ const ViewUseCasePage = () => {
     });
   };
 
+  // Helper function to build questions from useCase answers as fallback
+  const buildQuestionsFromAnswers = (): any[] => {
+    if (!useCase?.answers || useCase.answers.length === 0) return [];
+    
+    const questionsMap = new Map<string, any>();
+    
+    useCase.answers.forEach((answer: any) => {
+      const question = answer.question || answer.questionTemplate;
+      if (!question) return;
+      
+      const questionId = question.id;
+      if (!questionsMap.has(questionId)) {
+        questionsMap.set(questionId, {
+          id: questionId,
+          text: question.text,
+          type: question.type,
+          stage: question.stage,
+          answers: []
+        });
+      }
+      
+      const q = questionsMap.get(questionId)!;
+      // Format answer value based on type
+      const answerValue = answer.value;
+      let formattedValue = '';
+      
+      if (answerValue) {
+        if (answerValue.labels && Array.isArray(answerValue.labels)) {
+          formattedValue = answerValue.labels.join(', ');
+        } else if (answerValue.text) {
+          formattedValue = answerValue.text;
+        } else if (typeof answerValue === 'string') {
+          formattedValue = answerValue;
+        } else {
+          formattedValue = JSON.stringify(answerValue);
+        }
+      }
+      
+      if (formattedValue) {
+        q.answers.push({
+          id: answer.id,
+          value: formattedValue,
+          questionId: questionId
+        });
+      }
+    });
+    
+    return Array.from(questionsMap.values()).filter(q => q.answers.length > 0);
+  };
+
   // Helper function to get questions by stage
   const getQuestionsByStage = (stage: string): any[] => {
-    return questionsData.filter((q: any) => q.stage === stage);
+    // First try questionsData from API
+    let filtered = questionsData.filter((q: any) => q.stage === stage);
+    
+    // If no questions found, try building from useCase answers
+    if (filtered.length === 0 && useCase?.answers) {
+      const fallbackQuestions = buildQuestionsFromAnswers();
+      filtered = fallbackQuestions.filter((q: any) => q.stage === stage);
+      
+      if (filtered.length > 0) {
+        console.log(`[ViewUseCase] Using fallback questions for stage: ${stage} (${filtered.length} found)`);
+      }
+    }
+    
+    // Debug logging
+    if (filtered.length === 0 && (questionsData.length > 0 || (useCase?.answers && useCase.answers.length > 0))) {
+      console.log(`[ViewUseCase] No questions found for stage: ${stage}`);
+      if (questionsData.length > 0) {
+        console.log(`[ViewUseCase] Available stages from API:`, [...new Set(questionsData.map((q: any) => q.stage))]);
+      }
+      if (useCase?.answers) {
+        const stagesFromAnswers = [...new Set(useCase.answers.map((a: any) => (a.question || a.questionTemplate)?.stage).filter(Boolean))];
+        console.log(`[ViewUseCase] Available stages from answers:`, stagesFromAnswers);
+      }
+    }
+    
+    return filtered;
   };
 
   // Helper function to format answer value for display
   const formatAnswerValue = (question: any): string => {
-    if (!question.answers || question.answers.length === 0) return 'Not answered';
+    if (!question.answers || question.answers.length === 0) {
+      // Try to get raw answer value if available
+      if (question.rawAnswerValue) {
+        if (typeof question.rawAnswerValue === 'object') {
+          return JSON.stringify(question.rawAnswerValue);
+        }
+        return String(question.rawAnswerValue);
+      }
+      return 'Not answered';
+    }
     
     const answers = question.answers;
     
     // For TEXT and SLIDER type questions
-    if (question.type === 'TEXT' || question.type === 'SLIDER') {
-      return answers[0]?.value || 'Not answered';
+    if (question.type === 'TEXT' || question.type === 'SLIDER' || question.type === 'TEXT_MINI') {
+      const value = answers[0]?.value;
+      if (value) return value;
+      // Fallback to raw value if formatted value is missing
+      if (answers[0]?.rawValue) return String(answers[0].rawValue);
+      return 'Not answered';
     }
     
     // For CHECKBOX type questions (multiple selections)
     if (question.type === 'CHECKBOX') {
-      return answers.map((a: any) => a.value).join(', ');
+      const values = answers.map((a: any) => a.value).filter(Boolean);
+      if (values.length > 0) return values.join(', ');
+      return 'Not answered';
     }
     
     // For RADIO type questions (single selection)
     if (question.type === 'RADIO') {
-      return answers[0]?.value || 'Not answered';
+      const value = answers[0]?.value;
+      if (value) return value;
+      return 'Not answered';
     }
     
     // For RISK type questions (probability and impact)
     if (question.type === 'RISK') {
-      const probability = answers.find((a: any) => a.value.startsWith('pro:'))?.value.replace('pro:', '') || '';
-      const impact = answers.find((a: any) => a.value.startsWith('imp:'))?.value.replace('imp:', '') || '';
+      const probability = answers.find((a: any) => a.value && (a.value.startsWith('pro:') || a.value.includes('Probability')))?.value.replace('pro:', '').replace('Probability:', '').trim() || '';
+      const impact = answers.find((a: any) => a.value && (a.value.startsWith('imp:') || a.value.includes('Impact')))?.value.replace('imp:', '').replace('Impact:', '').trim() || '';
       if (probability && impact) {
         return `Probability: ${probability}, Impact: ${impact}`;
       }
-      return answers.map((a: any) => a.value).join(', ');
+      const allValues = answers.map((a: any) => a.value).filter(Boolean);
+      if (allValues.length > 0) return allValues.join(', ');
+      return 'Not answered';
     }
     
-    return answers.map((a: any) => a.value).join(', ');
+    // Default: join all answer values
+    const allValues = answers.map((a: any) => a.value).filter(Boolean);
+    if (allValues.length > 0) return allValues.join(', ');
+    return 'Not answered';
   };
 
   // Helper function to get assessment data from multiple possible locations (fallback for old data)
@@ -368,6 +486,98 @@ const ViewUseCasePage = () => {
     }
     
     return undefined;
+  };
+
+  // Helper function to render assessment section data (questions first, then fallback to assessData)
+  const renderAssessmentSection = (stage: string, sectionName: string) => {
+    // First, try to get questions with answers
+    const questions = getQuestionsByStage(stage);
+    
+    // Get assessData as fallback
+    const assessmentData = getAssessmentData(sectionName);
+    const filteredData = assessmentData ? filterTechnicalFeasibilityData(assessmentData) : {};
+    const hasAssessData = assessmentData && Object.keys(filteredData).length > 0;
+    
+    // If we have questions with answers, show those
+    if (questions.length > 0) {
+      return (
+        <div className="space-y-3">
+          {questions.map((question: any) => (
+            <div key={question.id} className="flex flex-col gap-1">
+              <span className="text-sm font-medium text-foreground">{question.text}</span>
+              <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
+                {formatAnswerValue(question)}
+              </div>
+            </div>
+          ))}
+          {/* Also show assessData if available (as additional context) */}
+          {hasAssessData && (
+            <>
+              <div className="mt-4 pt-4 border-t border-border">
+                <h4 className="text-sm font-semibold text-foreground mb-3">Additional Assessment Data</h4>
+                {Object.entries(filteredData).map(([key, value]) => (
+                  <div key={key} className="flex flex-col gap-1 mb-3">
+                    <span className="text-sm font-medium text-foreground">{key}:</span>
+                    <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
+                      {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
+                        <div className="space-y-1">
+                          {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
+                            <div key={nestedKey} className="flex justify-between">
+                              <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
+                              <span>{formatFieldValue(nestedValue)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        formatFieldValue(value)
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+    
+    // If no questions but we have assessData, show that
+    if (hasAssessData) {
+      return (
+        <div className="space-y-3">
+          {Object.entries(filteredData).map(([key, value]) => (
+            <div key={key} className="flex flex-col gap-1">
+              <span className="text-sm font-medium text-foreground">{key}:</span>
+              <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
+                {typeof value === 'object' && value !== null && !Array.isArray(value) ? (
+                  <div className="space-y-1">
+                    {Object.entries(value as Record<string, unknown>).map(([nestedKey, nestedValue]) => (
+                      <div key={nestedKey} className="flex justify-between">
+                        <span className="font-medium">{nestedKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}:</span>
+                        <span>{formatFieldValue(nestedValue)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  formatFieldValue(value)
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    
+    // No data available
+    const sectionDisplayName = sectionName
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, str => str.toUpperCase())
+      .trim();
+    return (
+      <p className="text-sm text-muted-foreground italic">
+        No {sectionDisplayName.toLowerCase()} data available.
+      </p>
+    );
   };
 
   const renderSection = (title: string, icon: React.ReactNode, children: React.ReactNode) => (
@@ -690,30 +900,7 @@ const ViewUseCasePage = () => {
                    </div>
                    {expandedSections.technicalFeasibility && (
                      <div className="px-5 py-4 bg-muted/30 border-t border-border">
-                       {(() => {
-                         const technicalQuestions = getQuestionsByStage('TECHNICAL_FEASIBILITY');
-                         
-                         if (technicalQuestions.length === 0) {
-                           return (
-                             <p className="text-sm text-muted-foreground italic">
-                               No technical feasibility data available.
-                             </p>
-                           );
-                         }
-                         
-                         return (
-                           <div className="space-y-3">
-                             {technicalQuestions.map((question: any) => (
-                               <div key={question.id} className="flex flex-col gap-1">
-                                 <span className="text-sm font-medium text-foreground">{question.text}</span>
-                                 <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
-                                   {formatAnswerValue(question)}
-                                 </div>
-                               </div>
-                             ))}
-                           </div>
-                         );
-                       })()}
+                       {renderAssessmentSection('TECHNICAL_FEASIBILITY', 'technicalFeasibility')}
                      </div>
                    )}
                  </div>
@@ -733,30 +920,7 @@ const ViewUseCasePage = () => {
                    </div>
                    {expandedSections.businessFeasibility && (
                      <div className="px-5 py-4 bg-muted/30 border-t border-border">
-                       {(() => {
-                         const businessQuestions = getQuestionsByStage('BUSINESS_FEASIBILITY');
-                         
-                         if (businessQuestions.length === 0) {
-                           return (
-                             <p className="text-sm text-muted-foreground italic">
-                               No business feasibility data available.
-                             </p>
-                           );
-                         }
-                         
-                         return (
-                           <div className="space-y-3">
-                             {businessQuestions.map((question: any) => (
-                               <div key={question.id} className="flex flex-col gap-1">
-                                 <span className="text-sm font-medium text-foreground">{question.text}</span>
-                                 <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
-                                   {formatAnswerValue(question)}
-                                 </div>
-                               </div>
-                             ))}
-                           </div>
-                         );
-                       })()}
+                       {renderAssessmentSection('BUSINESS_FEASIBILITY', 'businessFeasibility')}
                      </div>
                    )}
                  </div>
@@ -776,30 +940,7 @@ const ViewUseCasePage = () => {
                    </div>
                    {expandedSections.ethicalImpact && (
                      <div className="px-5 py-4 bg-muted/30 border-t border-border">
-                       {(() => {
-                         const ethicalQuestions = getQuestionsByStage('ETHICAL_IMPACT');
-                         
-                         if (ethicalQuestions.length === 0) {
-                           return (
-                             <p className="text-sm text-muted-foreground italic">
-                               No ethical impact data available.
-                             </p>
-                           );
-                         }
-                         
-                         return (
-                           <div className="space-y-3">
-                             {ethicalQuestions.map((question: any) => (
-                               <div key={question.id} className="flex flex-col gap-1">
-                                 <span className="text-sm font-medium text-foreground">{question.text}</span>
-                                 <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
-                                   {formatAnswerValue(question)}
-                                 </div>
-                               </div>
-                             ))}
-                           </div>
-                         );
-                       })()}
+                       {renderAssessmentSection('ETHICAL_IMPACT', 'ethicalImpact')}
                      </div>
                    )}
                  </div>
@@ -819,30 +960,7 @@ const ViewUseCasePage = () => {
                    </div>
                    {expandedSections.riskAssessment && (
                      <div className="px-5 py-4 bg-muted/30 border-t border-border">
-                       {(() => {
-                         const riskQuestions = getQuestionsByStage('RISK_ASSESSMENT');
-                         
-                         if (riskQuestions.length === 0) {
-                           return (
-                             <p className="text-sm text-muted-foreground italic">
-                               No risk assessment data available.
-                             </p>
-                           );
-                         }
-                         
-                         return (
-                           <div className="space-y-3">
-                             {riskQuestions.map((question: any) => (
-                               <div key={question.id} className="flex flex-col gap-1">
-                                 <span className="text-sm font-medium text-foreground">{question.text}</span>
-                                 <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
-                                   {formatAnswerValue(question)}
-                                 </div>
-                               </div>
-                             ))}
-                           </div>
-                         );
-                       })()}
+                       {renderAssessmentSection('RISK_ASSESSMENT', 'riskAssessment')}
                      </div>
                    )}
                  </div>
@@ -863,30 +981,7 @@ const ViewUseCasePage = () => {
                    </div>
                    {expandedSections.dataReadiness && (
                      <div className="px-5 py-4 bg-muted/30 border-t border-border">
-                       {(() => {
-                         const dataReadinessQuestions = getQuestionsByStage('DATA_READINESS');
-                         
-                         if (dataReadinessQuestions.length === 0) {
-                           return (
-                             <p className="text-sm text-muted-foreground italic">
-                               No data readiness information available.
-                             </p>
-                           );
-                         }
-                         
-                         return (
-                           <div className="space-y-3">
-                             {dataReadinessQuestions.map((question: any) => (
-                               <div key={question.id} className="flex flex-col gap-1">
-                                 <span className="text-sm font-medium text-foreground">{question.text}</span>
-                                 <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
-                                   {formatAnswerValue(question)}
-                                 </div>
-                               </div>
-                             ))}
-                           </div>
-                         );
-                       })()}
+                       {renderAssessmentSection('DATA_READINESS', 'dataReadiness')}
                      </div>
                    )}
                  </div>
@@ -907,30 +1002,7 @@ const ViewUseCasePage = () => {
                    </div>
                    {expandedSections.roadmapPosition && (
                      <div className="px-5 py-4 bg-muted/30 border-t border-border">
-                       {(() => {
-                         const roadmapQuestions = getQuestionsByStage('ROADMAP_POSITION');
-                         
-                         if (roadmapQuestions.length === 0) {
-                           return (
-                             <p className="text-sm text-muted-foreground italic">
-                               No roadmap position data available.
-                             </p>
-                           );
-                         }
-                         
-                         return (
-                           <div className="space-y-3">
-                             {roadmapQuestions.map((question: any) => (
-                               <div key={question.id} className="flex flex-col gap-1">
-                                 <span className="text-sm font-medium text-foreground">{question.text}</span>
-                                 <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
-                                   {formatAnswerValue(question)}
-                                 </div>
-                               </div>
-                             ))}
-                           </div>
-                         );
-                       })()}
+                       {renderAssessmentSection('ROADMAP_POSITION', 'roadmapPosition')}
                      </div>
                    )}
                  </div>
@@ -951,30 +1023,7 @@ const ViewUseCasePage = () => {
                    </div>
                    {expandedSections.budgetPlanning && (
                      <div className="px-5 py-4 bg-muted/30 border-t border-border">
-                       {(() => {
-                         const budgetQuestions = getQuestionsByStage('BUDGET_PLANNING');
-                         
-                         if (budgetQuestions.length === 0) {
-                           return (
-                             <p className="text-sm text-muted-foreground italic">
-                               No budget planning data available.
-                             </p>
-                           );
-                         }
-                         
-                         return (
-                           <div className="space-y-3">
-                             {budgetQuestions.map((question: any) => (
-                               <div key={question.id} className="flex flex-col gap-1">
-                                 <span className="text-sm font-medium text-foreground">{question.text}</span>
-                                 <div className="text-sm text-muted-foreground bg-card p-2 rounded border">
-                                   {formatAnswerValue(question)}
-                                 </div>
-                               </div>
-                             ))}
-                           </div>
-                         );
-                       })()}
+                       {renderAssessmentSection('BUDGET_PLANNING', 'budgetPlanning')}
                      </div>
                    )}
                  </div>

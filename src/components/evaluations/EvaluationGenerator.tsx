@@ -76,18 +76,22 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
   const [agentProgress, setAgentProgress] = useState<Record<string, string>>({}); // Track agent progress
   const [generationPhase, setGenerationPhase] = useState<string>('');
   
-  // Load existing evaluation on mount
+  // State to store loaded guardrails config
+  const [loadedGuardrailsConfig, setLoadedGuardrailsConfig] = useState<any>(null);
+
+  // Load existing evaluation and guardrails on mount
   useEffect(() => {
-    const loadExistingEvaluation = async () => {
+    const loadExistingData = async () => {
       try {
-        const response = await fetch(`/api/evaluations/get?useCaseId=${useCaseId}`, {
+        // Load existing evaluation
+        const evalResponse = await fetch(`/api/evaluations/get?useCaseId=${useCaseId}`, {
           method: 'GET'
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.evaluationConfig) {
-            const evalConfig = data.evaluationConfig;
+        if (evalResponse.ok) {
+          const evalData = await evalResponse.json();
+          if (evalData.success && evalData.evaluationConfig) {
+            const evalConfig = evalData.evaluationConfig;
             setEvaluationConfig(evalConfig);
             setTestSuites(evalConfig.testSuites.map((suite: any) => ({
               ...suite,
@@ -98,15 +102,78 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
             })));
           }
         }
+
+        // Load guardrails if not provided as prop
+        if (!guardrailsConfig) {
+          console.log('🔍 Guardrails config not provided, loading from API...');
+          const guardrailsResponse = await fetch(`/api/guardrails/get?useCaseId=${useCaseId}`);
+          if (guardrailsResponse.ok) {
+            const guardrailsData = await guardrailsResponse.json();
+            console.log('🔍 Guardrails API response:', guardrailsData);
+            
+            // Check if guardrails actually exist and have content
+            // If we have a database ID, that means guardrails exist - even if config is empty, we can reconstruct
+            const hasGuardrails = guardrailsData.success && 
+              guardrailsData.id && // Must have database ID (this confirms guardrails exist)
+              (
+                // Has guardrails object (even if empty, we can reconstruct)
+                guardrailsData.guardrails ||
+                // Or has rules in the response
+                (guardrailsData.rules && Array.isArray(guardrailsData.rules) && guardrailsData.rules.length > 0)
+              );
+            
+            if (hasGuardrails) {
+              // The API returns { guardrails: {...}, id: ... }
+              // We need to preserve the full structure or ensure it has the ID
+              let loadedConfig = guardrailsData.guardrails || {};
+              
+              // If guardrailsData.guardrails is the actual config structure, use it
+              // Otherwise, wrap it properly
+              if (!loadedConfig.guardrails && !loadedConfig.rules && !loadedConfig.metadata) {
+                // This might be a nested structure, check if it needs unwrapping
+                if (guardrailsData.guardrails?.guardrails) {
+                  loadedConfig = guardrailsData.guardrails;
+                }
+              }
+              
+              // Add the database ID if available - this is critical for the backend
+              if (guardrailsData.id) {
+                loadedConfig.id = guardrailsData.id;
+              }
+              
+              console.log('✅ Loaded guardrails config:', {
+                hasId: !!loadedConfig.id,
+                id: loadedConfig.id,
+                hasGuardrails: !!loadedConfig.guardrails,
+                hasRules: !!loadedConfig.guardrails?.rules,
+                topLevelKeys: Object.keys(loadedConfig)
+              });
+              setLoadedGuardrailsConfig(loadedConfig);
+            } else {
+              console.warn('⚠️ Guardrails API returned but no valid guardrails data found');
+              console.warn('   - Has ID:', !!guardrailsData.id);
+              console.warn('   - Has guardrails object:', !!guardrailsData.guardrails);
+              console.warn('   - Guardrails keys:', guardrailsData.guardrails ? Object.keys(guardrailsData.guardrails) : 'none');
+              console.warn('   - Rules count:', guardrailsData.rules?.length || 0);
+            }
+          } else {
+            console.warn('⚠️ Failed to load guardrails from API:', guardrailsResponse.status);
+          }
+        } else {
+          console.log('✅ Using guardrails config from props');
+        }
       } catch (error) {
-        console.log('No existing evaluation found, ready to generate new one');
+        console.log('Error loading existing data:', error);
       }
     };
 
     if (useCaseId) {
-      loadExistingEvaluation();
+      loadExistingData();
     }
-  }, [useCaseId]);
+  }, [useCaseId, guardrailsConfig]);
+
+  // Use provided guardrailsConfig or loaded one
+  const effectiveGuardrailsConfig = guardrailsConfig || loadedGuardrailsConfig;
 
   // Mock test suite icons
   const suiteIcons: Record<string, React.ReactNode> = {
@@ -120,8 +187,32 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
 
   const generateEvaluations = async () => {
     console.log('🎯 Starting generateEvaluations...');
-    console.log('🎯 guardrailsConfig present?', !!guardrailsConfig);
-    console.log('🎯 guardrailsConfig value:', guardrailsConfig);
+    console.log('🎯 guardrailsConfig prop present?', !!guardrailsConfig);
+    console.log('🎯 loadedGuardrailsConfig present?', !!loadedGuardrailsConfig);
+    console.log('🎯 effectiveGuardrailsConfig:', effectiveGuardrailsConfig);
+    
+    // Check if we have guardrails before proceeding
+    if (!effectiveGuardrailsConfig) {
+      console.error('❌ No guardrails config available');
+      alert('Guardrails Required\n\nPlease generate guardrails first on the AI Guardrails tab before creating evaluations.');
+      return;
+    }
+    
+    // Ensure we have a valid ID - this is critical for the backend
+    if (!effectiveGuardrailsConfig.id) {
+      console.error('❌ Guardrails config exists but missing ID');
+      console.error('   Config structure:', {
+        keys: Object.keys(effectiveGuardrailsConfig),
+        hasGuardrails: !!effectiveGuardrailsConfig.guardrails,
+        hasRules: !!effectiveGuardrailsConfig.rules
+      });
+      alert('Guardrails configuration is missing ID. Please regenerate guardrails on the AI Guardrails tab.');
+      return;
+    }
+    
+    console.log('✅ Guardrails validation passed');
+    console.log('   - ID:', effectiveGuardrailsConfig.id);
+    console.log('   - Has guardrails structure:', !!effectiveGuardrailsConfig.guardrails);
     
     setIsGenerating(true);
     setProgress(0);
@@ -173,8 +264,8 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
       const apiEndpoint = useAIGeneration ? '/api/evaluations/generate-v2' : '/api/evaluations/generate';
 
       console.log('🔍 Use Case ID:', useCaseId);
-      console.log('🔍 Guardrails config:', guardrailsConfig);
-      console.log('🔍 Guardrails ID:', guardrailsConfig?.id);
+      console.log('🔍 Effective Guardrails config:', effectiveGuardrailsConfig);
+      console.log('🔍 Guardrails ID:', effectiveGuardrailsConfig?.id);
 
       // Clean assessment data before sending - only pass user-filled fields
       const cleanedAssessmentData = assessmentData
@@ -185,17 +276,33 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
         console.log('🧹 Assessment data cleaned for evaluation generation');
       }
 
+      // Ensure we have a valid guardrails ID
+      const guardrailsIdToSend = effectiveGuardrailsConfig?.id || null;
+      
+      console.log('📤 Request details:');
+      console.log('   - Use Case ID:', useCaseId);
+      console.log('   - Guardrails ID to send:', guardrailsIdToSend);
+      console.log('   - Effective Guardrails Config:', {
+        hasId: !!effectiveGuardrailsConfig?.id,
+        id: effectiveGuardrailsConfig?.id,
+        hasGuardrails: !!effectiveGuardrailsConfig?.guardrails,
+        hasRules: !!effectiveGuardrailsConfig?.rules,
+        keys: effectiveGuardrailsConfig ? Object.keys(effectiveGuardrailsConfig) : []
+      });
+
       const requestBody = useAIGeneration ? {
         useCaseId,
-        guardrailsId: guardrailsConfig?.id || null,
+        guardrailsId: guardrailsIdToSend,
         generationStrategy,
         testIntensity,
         useOrchestrator
       } : {
         useCaseId,
-        guardrailsConfig,
+        guardrailsConfig: effectiveGuardrailsConfig,
         assessmentData: cleanedAssessmentData  // Send cleaned data
       };
+
+      console.log('📤 Full request body:', JSON.stringify(requestBody, null, 2).substring(0, 500));
 
       const response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -215,25 +322,47 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
       setAgentProgress(completedProgress);
 
       if (!response.ok) {
-        let errorData;
+        let errorData: any = {};
+        let responseText = '';
+        
         try {
-          errorData = await response.json();
+          responseText = await response.text();
+          console.error('📄 Raw response text:', responseText);
+          
+          if (responseText) {
+            try {
+              errorData = JSON.parse(responseText);
+            } catch (parseError) {
+              console.error('⚠️ Failed to parse error response as JSON, using raw text');
+              errorData = { message: responseText, raw: responseText };
+            }
+          }
         } catch (e) {
+          console.error('⚠️ Failed to read response:', e);
           errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
         }
-        console.error('API Error:', errorData);
-        console.error('Response status:', response.status);
-        console.error('Response statusText:', response.statusText);
+        
+        console.error('❌ API Error Details:');
+        console.error('   Status:', response.status);
+        console.error('   Status Text:', response.statusText);
+        console.error('   Error Object:', errorData);
+        console.error('   Error Keys:', Object.keys(errorData));
+        console.error('   Error Message:', errorData.message || errorData.error || 'No message');
+        console.error('   Error Details:', errorData.details || 'No details');
         
         // Show specific error message based on error type
-        if (errorData.error === 'GUARDRAILS_REQUIRED') {
-          alert('Guardrails Required\n\nPlease generate guardrails first on the AI Guardrails tab before creating evaluations.');
+        if (errorData.error === 'GUARDRAILS_REQUIRED' || errorData.message?.includes('guardrails')) {
+          const detailedMessage = errorData.details 
+            ? `Guardrails Required\n\n${errorData.details}\n\nPlease check the server logs for more details.`
+            : 'Guardrails Required\n\nPlease generate guardrails first on the AI Guardrails tab before creating evaluations.';
+          alert(detailedMessage);
         } else if (errorData.error === 'LLM_CONFIGURATION_ERROR') {
           alert('LLM Configuration Required\n\nOpenAI API key is not configured. Please check your environment configuration.');
         } else {
-          alert(`Generation Failed\n\n${errorData.message || errorData.details || 'Failed to generate evaluations. Please try again.'}`);
+          const errorMsg = errorData.message || errorData.details || errorData.error || 'Failed to generate evaluations. Please try again.';
+          alert(`Generation Failed\n\n${errorMsg}`);
         }
-        throw new Error(errorData.message || errorData.details || 'Failed to generate evaluations');
+        throw new Error(errorData.message || errorData.details || errorData.error || 'Failed to generate evaluations');
       }
       
       if (response.ok) {
@@ -719,11 +848,28 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
                   {useOrchestrator ? ' Multi-agent mode uses specialized agents for comprehensive coverage.' : ' Direct mode is faster but less comprehensive.'}
                 </div>
                 
+                {/* Guardrails Status Indicator */}
+                {effectiveGuardrailsConfig ? (
+                  <Alert className="mt-4 border-green-500/50 bg-green-500/10">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <AlertDescription className="text-green-700 dark:text-green-400">
+                      Guardrails loaded {effectiveGuardrailsConfig.id ? `(ID: ${effectiveGuardrailsConfig.id.substring(0, 8)}...)` : ''}
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Alert className="mt-4 border-yellow-500/50 bg-yellow-500/10">
+                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                    <AlertDescription className="text-yellow-700 dark:text-yellow-400">
+                      No guardrails found. Please generate guardrails first on the AI Guardrails tab.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 {/* Generate Button */}
                 <div className="mt-4 flex justify-center">
                   <Button
                     onClick={generateEvaluations}
-                    disabled={isGenerating}
+                    disabled={isGenerating || !effectiveGuardrailsConfig}
                     size="lg"
                     className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                   >
