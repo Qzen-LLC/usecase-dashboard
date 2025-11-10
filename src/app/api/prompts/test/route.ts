@@ -79,6 +79,8 @@ export const POST = withAuth(async (
     const startTime = Date.now();
     let response: any;
     let tokensUsed = 0;
+    let inputTokens = 0;
+    let outputTokens = 0;
     let cost = 0;
 
     try {
@@ -108,11 +110,15 @@ export const POST = withAuth(async (
           });
 
           response = completion.choices[0].message.content;
+          inputTokens = completion.usage?.prompt_tokens || 0;
+          outputTokens = completion.usage?.completion_tokens || 0;
           tokensUsed = completion.usage?.total_tokens || 0;
           
           // Log for debugging
           console.log('OpenAI Response received:', {
             model: settings.model,
+            inputTokens,
+            outputTokens,
             tokensUsed,
             responseLength: response?.length,
             messageCount: messages.length
@@ -120,8 +126,7 @@ export const POST = withAuth(async (
           
           // Rough cost estimation for GPT-4
           if (settings.model?.includes('gpt-4')) {
-            cost = (completion.usage?.prompt_tokens || 0) * 0.00003 + 
-                   (completion.usage?.completion_tokens || 0) * 0.00006;
+            cost = inputTokens * 0.00003 + outputTokens * 0.00006;
           } else {
             cost = tokensUsed * 0.000002; // GPT-3.5 pricing
           }
@@ -138,6 +143,8 @@ export const POST = withAuth(async (
           });
 
           response = completion.choices[0].text;
+          inputTokens = completion.usage?.prompt_tokens || 0;
+          outputTokens = completion.usage?.completion_tokens || 0;
           tokensUsed = completion.usage?.total_tokens || 0;
           cost = tokensUsed * 0.000002;
         }
@@ -157,16 +164,25 @@ export const POST = withAuth(async (
           ? message.content[0].text 
           : JSON.stringify(message.content);
         
-        // Anthropic doesn't provide token counts in the same way
-        tokensUsed = Math.ceil(response.length / 4); // Rough estimate
+        // Extract token counts from Anthropic response
+        if (message.usage) {
+          inputTokens = message.usage.input_tokens || 0;
+          outputTokens = message.usage.output_tokens || 0;
+          tokensUsed = inputTokens + outputTokens;
+        } else {
+          // Fallback estimation if usage not available
+          tokensUsed = Math.ceil(response.length / 4);
+          inputTokens = Math.floor(tokensUsed * 0.5);
+          outputTokens = Math.ceil(tokensUsed * 0.5);
+        }
         
         // Rough cost estimation for Claude
         if (settings.model?.includes('opus')) {
-          cost = tokensUsed * 0.000015;
+          cost = (inputTokens / 1000 * 0.015) + (outputTokens / 1000 * 0.075);
         } else if (settings.model?.includes('sonnet')) {
-          cost = tokensUsed * 0.000003;
+          cost = (inputTokens / 1000 * 0.003) + (outputTokens / 1000 * 0.015);
         } else {
-          cost = tokensUsed * 0.0000008; // Haiku pricing
+          cost = (inputTokens / 1000 * 0.00025) + (outputTokens / 1000 * 0.00125); // Haiku pricing
         }
       } else {
         return NextResponse.json(
@@ -212,6 +228,8 @@ export const POST = withAuth(async (
                 },
                 responseContent: response || '',
                 tokensUsed,
+                inputTokens,
+                outputTokens,
                 cost,
                 latencyMs,
                 status: 'SUCCESS',
@@ -236,6 +254,8 @@ export const POST = withAuth(async (
       return NextResponse.json({
         response,
         tokensUsed,
+        inputTokens,
+        outputTokens,
         cost,
         latencyMs,
         status: 'SUCCESS',
@@ -268,6 +288,8 @@ export const POST = withAuth(async (
               },
               responseContent: '',
               tokensUsed: 0,
+              inputTokens: 0,
+              outputTokens: 0,
               cost: 0,
               latencyMs: Date.now() - startTime,
               status: 'ERROR',

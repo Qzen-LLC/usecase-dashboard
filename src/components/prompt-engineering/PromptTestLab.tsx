@@ -310,10 +310,10 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
         const latencyMs = Date.now() - startTime;
 
         if (response.ok && data.response) {
-          // Calculate tokens (estimate if not provided)
-          const inputTokens = Math.ceil(JSON.stringify(interpolatedContent).length / 4);
-          const outputTokens = Math.ceil(data.response.length / 4);
-          const totalTokens = data.tokensUsed || (inputTokens + outputTokens);
+          // Use API-provided token values, fallback to estimation if not available
+          const inputTokens = data.inputTokens ?? Math.ceil(JSON.stringify(interpolatedContent).length / 4);
+          const outputTokens = data.outputTokens ?? Math.ceil(data.response.length / 4);
+          const totalTokens = data.tokensUsed ?? (inputTokens + outputTokens);
 
           // Calculate cost based on model pricing
           const modelInfo = PROVIDER_MODELS[config.provider as keyof typeof PROVIDER_MODELS]
@@ -629,7 +629,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                             <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
                               <span className="flex items-center gap-1">
                                 <Activity className="w-4 h-4" />
-                                {result.totalTokens} tokens
+                                {result.inputTokens} in / {result.outputTokens} out ({result.totalTokens} total)
                               </span>
                               <span className="flex items-center gap-1">
                                 <Coins className="w-4 h-4" />
@@ -712,7 +712,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                                       </span>
                                       <span className="flex items-center gap-1">
                                         <Activity className="w-4 h-4 text-blue-600" />
-                                        {result.totalTokens} tokens
+                                        {result.inputTokens} in / {result.outputTokens} out ({result.totalTokens} total)
                                       </span>
                                     </div>
                                   </div>
