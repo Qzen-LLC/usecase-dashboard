@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -149,9 +149,16 @@ export default function EuAiActAssessmentPage() {
     acquireLock,
     releaseLock,
     refreshLockStatus,
+    markLockForNavigation,
     loading: lockLoading,
     error: lockError
   } = useGovernanceLock(useCaseId, 'GOVERNANCE_EU_AI_ACT');
+  const navigateWithLockRetention = useCallback((path: string, retain = true) => {
+    if (retain) {
+      markLockForNavigation();
+    }
+    router.push(path);
+  }, [markLockForNavigation, router]);
 
   // Check for dark mode
   useEffect(() => {
@@ -212,28 +219,6 @@ export default function EuAiActAssessmentPage() {
     }
   }, [useCaseId, refreshLockStatus]);
 
-  // Cleanup: Release lock when component unmounts or user navigates away
-  useEffect(() => {
-    return () => {
-      // Release lock when component unmounts
-      if (lockInfo?.hasLock && canEdit) {
-        console.log('🔒 Component unmounting, releasing lock...');
-        // Use sendBeacon for reliable delivery during navigation
-        const data = new FormData();
-        data.append('useCaseId', useCaseId);
-        data.append('lockType', 'EXCLUSIVE');
-        data.append('scope', 'GOVERNANCE_EU_AI_ACT');
-        
-        try {
-          navigator.sendBeacon('/api/locks/release', data);
-          console.log('🔒 Lock release beacon sent');
-        } catch (error) {
-          console.error('🔒 Failed to send lock release beacon:', error);
-        }
-      }
-    };
-  }, [useCaseId, lockInfo?.hasLock, canEdit]);
-
   // Monitor assessment state changes for debugging
   useEffect(() => {
     if (assessment) {
@@ -286,7 +271,7 @@ export default function EuAiActAssessmentPage() {
       const gateCheck = checkAssessmentGate(assessmentData);
       if (gateCheck.shouldRedirectToClassification) {
         console.log('🚪 Redirecting to risk classification - not yet completed');
-        router.push(`/dashboard/${useCaseId}/eu-ai-act/risk-classification`);
+        navigateWithLockRetention(`/dashboard/${useCaseId}/eu-ai-act/risk-classification`);
         return;
       }
 
@@ -1528,7 +1513,7 @@ export default function EuAiActAssessmentPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => router.push(`/dashboard/${useCaseId}/eu-ai-act/risk-classification`)}
+                            onClick={() => navigateWithLockRetention(`/dashboard/${useCaseId}/eu-ai-act/risk-classification`)}
                             className="text-xs"
                           >
                             View/Edit Classification

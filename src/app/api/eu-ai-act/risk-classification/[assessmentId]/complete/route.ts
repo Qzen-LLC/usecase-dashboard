@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
 import { calculateRiskLevel } from '@/lib/framework-data/eu-ai-act-risk-classification';
+import { hasActiveExclusiveGovernanceLock } from '@/utils/locks';
 
 
 export const POST = withAuth(async (
@@ -43,6 +44,19 @@ export const POST = withAuth(async (
           return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
       }
+    }
+
+    const hasLock = await hasActiveExclusiveGovernanceLock({
+      useCaseId: assessment.useCaseId,
+      userId: userRecord.id,
+      scope: 'GOVERNANCE_EU_AI_ACT'
+    });
+
+    if (!hasLock) {
+      return NextResponse.json(
+        { error: 'Framework lock required to complete EU AI Act risk classification' },
+        { status: 423 }
+      );
     }
 
     // Parse all answers

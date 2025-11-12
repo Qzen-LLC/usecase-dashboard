@@ -7,7 +7,7 @@
 // - Proper contrast and readability in both light and dark themes
 // - Framework-specific lock management for exclusive editing
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import { Loader2, Shield, Users, Building, RefreshCw, AlertTriangle, Lock } from
 import Link from 'next/link';
 import { calculateRiskScores, getRiskLevel, type StepsData } from '@/lib/risk-calculations';
 import { type GovernanceFramework } from '@/hooks/useGovernanceLock';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface UseCase {
   useCaseId: string;
@@ -57,6 +58,12 @@ export default function GovernancePage() {
   // Lock management state
   const [selectedUseCase, setSelectedUseCase] = useState<UseCase | null>(null);
   const [selectedFramework, setSelectedFramework] = useState<GovernanceFramework | null>(null);
+  const [lockConflict, setLockConflict] = useState<{
+    acquiredBy: string;
+    expiresAt?: string | null;
+    framework: GovernanceFramework;
+    useCaseName: string;
+  } | null>(null);
 
   // Check for dark mode
   useEffect(() => {
@@ -186,9 +193,34 @@ export default function GovernancePage() {
     if (!inFlight.current) fetchAllData(true);
   };
 
+  const formatTimeRemaining = (expiresAt?: string | null) => {
+    if (!expiresAt) return null;
+    const diffMs = new Date(expiresAt).getTime() - Date.now();
+    if (Number.isNaN(diffMs)) return null;
+    if (diffMs <= 0) return 'less than a minute';
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    if (minutes > 0) {
+      return `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
+    }
+    return `${seconds}s`;
+  };
+
+  const conflictTimeRemaining = useMemo(
+    () => (lockConflict?.expiresAt ? formatTimeRemaining(lockConflict.expiresAt) : null),
+    [lockConflict?.expiresAt]
+  );
+
   const handleStartAssessment = async (useCase: UseCase, framework: GovernanceFramework) => {
     setSelectedUseCase(useCase);
     setSelectedFramework(framework);
+    setError(null);
+    setLockConflict(null);
     
     // Automatically acquire lock without showing modal
     try {
@@ -209,8 +241,12 @@ export default function GovernancePage() {
       if (!response.ok) {
         if (response.status === 409) {
           console.log(`❌ Lock already held by another user: ${data.lockDetails?.acquiredBy}`);
-          // Show error message for lock conflict
-          setError(`This framework is currently being edited by ${data.lockDetails?.acquiredBy}. Please try again later.`);
+          setLockConflict({
+            acquiredBy: data.lockDetails?.acquiredBy || 'another user',
+            expiresAt: data.lockDetails?.expiresAt ?? null,
+            framework,
+            useCaseName: useCase.useCaseName,
+          });
           return;
         }
         throw new Error(data.error || 'Failed to acquire lock');
@@ -297,7 +333,34 @@ export default function GovernancePage() {
   }
 
   return (
-    <div className="bg-background min-h-full">
+    <>
+      <Dialog
+        open={Boolean(lockConflict)}
+        onOpenChange={(open) => {
+          if (!open) setLockConflict(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assessment in Progress</DialogTitle>
+            <DialogDescription>
+              {(lockConflict?.useCaseName || 'This assessment')} is currently being edited by {lockConflict?.acquiredBy}.
+            </DialogDescription>
+          </DialogHeader>
+          {conflictTimeRemaining && (
+            <p className="text-sm text-muted-foreground">
+              Lock expires in {conflictTimeRemaining}
+            </p>
+          )}
+          <DialogFooter className="sm:justify-end">
+            <Button variant="outline" onClick={() => { setLockConflict(null); handleRefresh(); }}>
+              Refresh Status
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="bg-background min-h-full">
       <div className="px-6 py-6">
         {/* Header */}
         <div className="mb-6">
@@ -596,6 +659,7 @@ export default function GovernancePage() {
         </div>
       </div>
 
-    </div>
+      </div>
+    </>
   );
 }

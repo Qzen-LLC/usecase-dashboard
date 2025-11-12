@@ -47,7 +47,13 @@ export const GET = withAuth(async (
     let assessment = await prismaClient.euAiActAssessment.findUnique({
       where: { useCaseId },
       include: {
-        riskClassificationAnswers: true
+        riskClassificationAnswers: true,
+        useCase: {
+          select: {
+            id: true,
+            title: true
+          }
+        }
       }
     });
 
@@ -61,7 +67,13 @@ export const GET = withAuth(async (
           riskClassificationCompleted: false
         },
         include: {
-          riskClassificationAnswers: true
+          riskClassificationAnswers: true,
+          useCase: {
+            select: {
+              id: true,
+              title: true
+            }
+          }
         }
       });
       console.log('[CRUD_LOG] EU AI Act Assessment created for risk classification:', {

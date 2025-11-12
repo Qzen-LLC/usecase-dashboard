@@ -1,11 +1,13 @@
 'use client';
 
-import React, { use, useState, useEffect } from 'react';
+import React, { use, useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Info, Lock as LockIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { RISK_CLASSIFICATION_QUESTIONS, calculateRiskLevel, RiskLevel } from '@/lib/framework-data/eu-ai-act-risk-classification';
+import { useGovernanceLock } from '@/hooks/useGovernanceLock';
+import { GovernanceLockModal } from '@/components/GovernanceLockModal';
 
 interface RiskClassificationPageProps {
   params: Promise<{
@@ -23,14 +25,72 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
   const [saving, setSaving] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [classification, setClassification] = useState<any>(null);
+  const [isLockModalOpen, setIsLockModalOpen] = useState(false);
+
+  const {
+    lockInfo,
+    canEdit,
+    acquireLock,
+    releaseLock,
+    markLockForNavigation,
+    loading: lockLoading,
+    error: lockError
+  } = useGovernanceLock(useCaseId, 'GOVERNANCE_EU_AI_ACT');
+
+  const navigateWithLockRetention = useCallback((path: string, retain = true) => {
+    if (retain) {
+      markLockForNavigation();
+    }
+    router.push(path);
+  }, [markLockForNavigation, router]);
 
   const totalSteps = 4;
   const currentStepQuestions = RISK_CLASSIFICATION_QUESTIONS.filter(q => q.step === currentStep);
+  const isReadOnly = !canEdit;
+  const readOnlyBannerText = useMemo(() => {
+    if (!isReadOnly || lockLoading) return null;
+    if (lockInfo?.lockDetails?.isOwnedByCurrentUser) return null;
+    if (lockInfo?.lockDetails?.acquiredBy) {
+      return `${lockInfo.lockDetails.acquiredBy} is currently working on this EU AI Act assessment.\nYou can review answers in read-only mode until they release the lock.`;
+    }
+    return 'Another team member is currently working on this EU AI Act assessment. You can review answers in read-only mode until the lock is released.';
+  }, [isReadOnly, lockInfo, lockLoading]);
+  const useCaseName = assessment?.useCase?.title ?? 'Selected Use Case';
+  const lockModal = (
+    <GovernanceLockModal
+      isOpen={isLockModalOpen}
+      onClose={() => setIsLockModalOpen(false)}
+      lockInfo={lockInfo}
+      framework="GOVERNANCE_EU_AI_ACT"
+      useCaseId={useCaseId}
+      useCaseName={useCaseName}
+      onAcquireLock={acquireLock}
+      onReleaseLock={releaseLock}
+      loading={lockLoading}
+    />
+  );
+
 
   // Load assessment and existing answers
   useEffect(() => {
     fetchAssessment();
   }, [useCaseId]);
+
+  useEffect(() => {
+    if (lockLoading) {
+      return;
+    }
+
+    if (lockInfo?.canEdit) {
+      if (!lockInfo.hasLock) {
+        acquireLock();
+      } else {
+        setIsLockModalOpen(false);
+      }
+    } else if (lockInfo) {
+      setIsLockModalOpen(true);
+    }
+  }, [lockInfo, lockLoading, acquireLock]);
 
   const fetchAssessment = async () => {
     try {
@@ -78,7 +138,7 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
   };
 
   const saveAnswer = async (questionId: string, answer: any) => {
-    if (!assessment) return;
+    if (!assessment || isReadOnly) return;
 
     try {
       await fetch(`/api/eu-ai-act/risk-classification/${assessment.id}/answer`, {
@@ -92,12 +152,22 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
   };
 
   const handleAnswerChange = async (questionId: string, answer: any) => {
+    if (isReadOnly) {
+      setIsLockModalOpen(true);
+      return;
+    }
+
     const newAnswers = { ...answers, [questionId]: answer };
     setAnswers(newAnswers);
     await saveAnswer(questionId, answer);
   };
 
   const handleNext = () => {
+    if (isReadOnly) {
+      setIsLockModalOpen(true);
+      return;
+    }
+
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -112,7 +182,12 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
   };
 
   const completeClassification = async () => {
-    if (!assessment) return;
+    if (!assessment || isReadOnly) {
+      if (isReadOnly) {
+        setIsLockModalOpen(true);
+      }
+      return;
+    }
 
     setSaving(true);
     try {
@@ -134,6 +209,10 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
   };
 
   const canProceed = () => {
+    if (isReadOnly) {
+      return false;
+    }
+
     // Check if all questions in current step are answered
     return currentStepQuestions.every(q => {
       const answer = answers[q.id];
@@ -163,20 +242,25 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading risk classification...</p>
+      <>
+        {lockModal}
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading risk classification...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   // Show result page if classification is complete
   if (showResult && classification) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Card className="p-8">
+      <>
+        {lockModal}
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          <Card className="p-8">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               {getRiskLevelIcon(classification.riskLevel)}
@@ -247,7 +331,7 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
                   <li>Post-Market Monitoring (Article 72)</li>
                 </ul>
                 <Button
-                  onClick={() => router.push(`/dashboard/${useCaseId}/eu-ai-act`)}
+                  onClick={() => navigateWithLockRetention(`/dashboard/${useCaseId}/eu-ai-act`)}
                   className="w-full"
                 >
                   Start Full Assessment
@@ -260,7 +344,7 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
                 <p className="mb-2">Your AI system requires transparency obligations only.</p>
                 <p className="mb-4">Ensure users are informed about AI interaction, content generation, or biometric processing.</p>
                 <Button
-                  onClick={() => router.push(`/dashboard/${useCaseId}/eu-ai-act`)}
+                  onClick={() => navigateWithLockRetention(`/dashboard/${useCaseId}/eu-ai-act`)}
                   variant="outline"
                   className="w-full"
                 >
@@ -274,7 +358,7 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
                 <p className="mb-2">Your AI system is classified as minimal risk.</p>
                 <p className="mb-4">No specific EU AI Act obligations apply, but voluntary codes of conduct are encouraged.</p>
                 <Button
-                  onClick={() => router.push(`/dashboard/${useCaseId}`)}
+                  onClick={() => navigateWithLockRetention(`/dashboard/${useCaseId}`, false)}
                   variant="outline"
                   className="w-full"
                 >
@@ -297,27 +381,53 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
           </div>
         </Card>
       </div>
+      </>
     );
   }
 
   // Show wizard
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <>
+      {lockModal}
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-8">
-        <Button
-          onClick={() => router.push(`/dashboard/${useCaseId}/eu-ai-act`)}
-          variant="ghost"
-          className="mb-4"
-        >
-          <ChevronLeft className="h-4 w-4 mr-2" />
-          Back to EU AI Act
-        </Button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+          <Button
+            onClick={() => navigateWithLockRetention(`/dashboard/${useCaseId}/eu-ai-act`)}
+            variant="ghost"
+            className="w-full sm:w-auto"
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Back to EU AI Act
+          </Button>
+          <Button
+            onClick={() => setIsLockModalOpen(true)}
+            variant="outline"
+            size="sm"
+            className="w-full sm:w-auto"
+          >
+            <LockIcon className="h-4 w-4 mr-2" />
+            Lock Status
+          </Button>
+        </div>
 
         <h1 className="text-3xl font-bold mb-2">EU AI Act Risk Classification</h1>
         <p className="text-gray-600">
           Complete this assessment to determine your AI system's risk level and compliance requirements (5-10 minutes)
         </p>
       </div>
+
+      {lockError && (
+        <div className="mb-6 rounded-md border border-red-200 bg-red-50 p-4 text-red-800">
+          Failed to check lock status. Refresh the page or try again later.
+        </div>
+      )}
+
+      {readOnlyBannerText && (
+        <div className="mb-6 rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-900 whitespace-pre-line">
+          {readOnlyBannerText}
+        </div>
+      )}
 
       {/* Progress Bar */}
       <div className="mb-8">
@@ -389,11 +499,11 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
                 {question.options.map((option) => (
                   <label
                     key={option.value}
-                    className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    className={`flex items-start p-4 border-2 rounded-lg transition-all ${
                       answers[question.id] === option.value
                         ? 'border-blue-600 bg-blue-50'
                         : 'border-gray-200 hover:border-blue-300'
-                    }`}
+                    } ${isReadOnly ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
                   >
                     <input
                       type="radio"
@@ -402,6 +512,7 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
                       checked={answers[question.id] === option.value}
                       onChange={(e) => handleAnswerChange(question.id, e.target.value)}
                       className="mt-1 mr-3"
+                      disabled={isReadOnly || saving}
                     />
                     <div className="flex-1">
                       <div className="font-medium">{option.label}</div>
@@ -423,15 +534,16 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
                   return (
                     <label
                       key={option.value}
-                      className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      className={`flex items-start p-4 border-2 rounded-lg transition-all ${
                         isChecked
                           ? 'border-blue-600 bg-blue-50'
                           : 'border-gray-200 hover:border-blue-300'
-                      }`}
+                      } ${isReadOnly ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
                     >
                       <input
                         type="checkbox"
                         checked={isChecked}
+                        disabled={isReadOnly || saving}
                         onChange={(e) => {
                           let newAnswers = [...currentAnswers];
                           if (e.target.checked) {
@@ -478,7 +590,7 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
 
         <Button
           onClick={handleNext}
-          disabled={!canProceed() || saving}
+          disabled={isReadOnly || !canProceed() || saving || lockLoading}
         >
           {currentStep === totalSteps ? (
             saving ? 'Completing...' : 'Complete Classification'
@@ -491,5 +603,6 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
         </Button>
       </div>
     </div>
+    </>
   );
 }
