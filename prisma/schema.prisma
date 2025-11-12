@@ -240,17 +240,44 @@ model EuAiActAnswer {
 }
 
 model EuAiActAssessment {
-  id        String           @id @default(uuid())
-  useCaseId String           @unique
-  status    String           @default("in_progress")
-  progress  Float            @default(0)
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  answers   EuAiActAnswer[]
-  useCase   UseCase          @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
-  controls  EuAiActControl[]
+  id                          String                               @id @default(uuid())
+  useCaseId                   String                               @unique
+  status                      String                               @default("in_progress")
+  progress                    Float                                @default(0)
+  createdAt                   DateTime                             @default(now())
+  updatedAt                   DateTime                             @updatedAt
+
+  // Risk Classification Fields
+  riskClassificationCompleted Boolean                              @default(false)
+  riskLevel                   String?                              // "minimal", "limited", "high", "prohibited"
+  riskLevelRationale          String?
+  applicableAnnexCategories   String[]                             @default([])
+  hasProhibitedPractices      Boolean                              @default(false)
+  prohibitedPracticesList     String[]                             @default([])
+  isSubjectToAct              Boolean?
+  classificationDate          DateTime?
+
+  answers                     EuAiActAnswer[]
+  useCase                     UseCase                              @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  controls                    EuAiActControl[]
+  riskClassificationAnswers   EuAiActRiskClassificationAnswer[]
 
   @@index([status])
+  @@index([riskLevel])
+  @@index([riskClassificationCompleted])
+}
+
+model EuAiActRiskClassificationAnswer {
+  id           String            @id @default(uuid())
+  assessmentId String
+  questionId   String
+  answer       String            // JSON string for flexibility
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  assessment   EuAiActAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, questionId])
+  @@index([assessmentId])
 }
 
 model EuAiActControlCategory {

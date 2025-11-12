@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { FileUpload } from '@/components/ui/file-upload';
 import { useGovernanceLock } from '@/hooks/useGovernanceLock';
 import { GovernanceLockModal } from '@/components/GovernanceLockModal';
+import { checkAssessmentGate, getRiskLevelBadgeColor } from '@/lib/eu-ai-act-gate';
 
 interface Question {
   id: string;
@@ -102,6 +103,15 @@ interface Assessment {
   progress: number;
   createdAt: string;
   updatedAt: string;
+  // Risk Classification Fields
+  riskClassificationCompleted: boolean;
+  riskLevel: string | null;
+  riskLevelRationale: string | null;
+  applicableAnnexCategories: string[];
+  hasProhibitedPractices: boolean;
+  prohibitedPracticesList: string[];
+  isSubjectToAct: boolean | null;
+  classificationDate: string | null;
   controls?: Control[];
   answers?: {
     id: string;
@@ -269,6 +279,14 @@ export default function EuAiActAssessmentPage() {
       if (assessmentData.status === 'not_available') {
         setError('Use case not found. Please ensure you are accessing a valid use case from the dashboard.');
         setLoading(false);
+        return;
+      }
+
+      // Check if we need to redirect to risk classification
+      const gateCheck = checkAssessmentGate(assessmentData);
+      if (gateCheck.shouldRedirectToClassification) {
+        console.log('🚪 Redirecting to risk classification - not yet completed');
+        router.push(`/dashboard/${useCaseId}/eu-ai-act/risk-classification`);
         return;
       }
 
@@ -1499,12 +1517,29 @@ export default function EuAiActAssessmentPage() {
             {assessment && (
               <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
                 <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="text-lg font-semibold text-foreground">Assessment Progress</h2>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h2 className="text-lg font-semibold text-foreground">Assessment Progress</h2>
+                      {assessment.riskClassificationCompleted && assessment.riskLevel && (
+                        <>
+                          <Badge className={`${getRiskLevelBadgeColor(assessment.riskLevel)} border`}>
+                            {assessment.riskLevel.toUpperCase()} RISK
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/dashboard/${useCaseId}/eu-ai-act/risk-classification`)}
+                            className="text-xs"
+                          >
+                            View/Edit Classification
+                          </Button>
+                        </>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">Complete all required questions and controls to ensure compliance</p>
                   </div>
-                  <Badge 
-                    variant="outline" 
+                  <Badge
+                    variant="outline"
                     className={assessment.status === 'completed' ? 'bg-success/20 text-success border-success/30' : 'bg-warning/20 text-warning border-warning/30'}
                   >
                     {assessment.status === 'completed' ? 'Completed' : 'In Progress'}
