@@ -819,58 +819,158 @@ const ViewUseCasePage = () => {
         </div>
 
         {/* Main Content */}
-        <div className={`flex flex-col gap-5 px-5 pb-5 ${
+        <div className={`flex flex-col gap-5 px-5 pb-5 min-w-0 ${
           expandedSections.financial || expandedSections.approvals
             ? 'lg:flex-col'
             : 'lg:flex-row'
         }`}>
           {/* Left Panel */}
-          <div className={`flex flex-col gap-5 ${
+          <div className={`flex flex-col gap-5 min-w-0 ${
             expandedSections.financial || expandedSections.approvals
               ? 'w-full'
               : 'w-full lg:w-1/2'
           }`}>
                          {/* Problem Statement */}
-             <div className="bg-muted/30 rounded-lg p-5 border border-border">
+             <div className="bg-muted/30 rounded-lg p-5 border border-border w-full box-border overflow-x-hidden">
+               <style dangerouslySetInnerHTML={{__html: `
+                 .problem-statement-content,
+                 .problem-statement-content * {
+                   word-break: break-word !important;
+                   overflow-wrap: anywhere !important;
+                   max-width: 100% !important;
+                   white-space: normal !important;
+                   width: 100% !important;
+                   box-sizing: border-box !important;
+                 }
+               `}} />
                <h2 className="text-[15px] font-semibold mb-3 text-foreground">Problem Statement:</h2>
                <div 
-                 className="text-sm leading-relaxed text-foreground"
+                 className="problem-statement-content text-sm leading-relaxed text-foreground break-words min-w-0 w-full"
+                 style={{ 
+                   wordBreak: 'break-word', 
+                   overflowWrap: 'anywhere', 
+                   maxWidth: '100%', 
+                   overflowX: 'hidden',
+                   overflowY: 'visible',
+                   boxSizing: 'border-box',
+                   width: '100%'
+                 }}
                  dangerouslySetInnerHTML={{ __html: useCase.problemStatement || 'Legal teams are overwhelmed with reviewing large volumes of contracts—NDAs, MSAs, SLAs, procurement documents—each containing clauses that may pose risks, require negotiation, or violate internal policy.' }}
                />
              </div>
 
              {/* Proposed Solution */}
-             <div className="bg-muted/30 rounded-lg p-5 border border-border">
+             <div className="bg-muted/30 rounded-lg p-5 border border-border w-full box-border overflow-x-hidden">
+               <style dangerouslySetInnerHTML={{__html: `
+                 .proposed-solution-content,
+                 .proposed-solution-content * {
+                   word-break: break-word !important;
+                   overflow-wrap: anywhere !important;
+                   max-width: 100% !important;
+                   white-space: normal !important;
+                   width: 100% !important;
+                   box-sizing: border-box !important;
+                 }
+               `}} />
                <h2 className="text-[15px] font-semibold mb-3 text-foreground">Proposed Solution:</h2>
                <div 
-                 className="text-sm leading-relaxed text-foreground"
+                 className="proposed-solution-content text-sm leading-relaxed text-foreground break-words min-w-0 w-full"
+                 style={{ 
+                   wordBreak: 'break-word', 
+                   overflowWrap: 'anywhere', 
+                   maxWidth: '100%', 
+                   overflowX: 'hidden',
+                   overflowY: 'visible',
+                   boxSizing: 'border-box',
+                   width: '100%'
+                 }}
                  dangerouslySetInnerHTML={{ __html: useCase.proposedAISolution || 'Legal teams are overwhelmed with reviewing large volumes of contracts—NDAs, MSAs, SLAs, procurement documents—each containing clauses that may pose risks, require negotiation, or violate internal policy.' }}
                />
              </div>
 
              {/* Key Benefits */}
-             <div className="bg-muted/30 rounded-lg p-5 border border-border">
+             <div className="bg-muted/30 rounded-lg p-5 border border-border w-full box-border overflow-x-hidden">
+               <style dangerouslySetInnerHTML={{__html: `
+                 .key-benefits-content,
+                 .key-benefits-content * {
+                   word-break: break-word !important;
+                   overflow-wrap: anywhere !important;
+                   max-width: 100% !important;
+                   white-space: normal !important;
+                   width: 100% !important;
+                   box-sizing: border-box !important;
+                 }
+               `}} />
                <h2 className="text-[15px] font-semibold mb-3 text-foreground">Key Benefits</h2>
                <div 
-                 className="text-sm leading-relaxed text-foreground"
+                 className="key-benefits-content text-sm leading-relaxed text-foreground break-words min-w-0 w-full"
+                 style={{ 
+                   wordBreak: 'break-word', 
+                   overflowWrap: 'anywhere', 
+                   maxWidth: '100%', 
+                   overflowX: 'hidden',
+                   overflowY: 'visible',
+                   boxSizing: 'border-box',
+                   width: '100%'
+                 }}
                  dangerouslySetInnerHTML={{ __html: useCase.keyBenefits || 'Legal teams are overwhelmed with reviewing large volumes of contracts—NDAs, MSAs, SLAs, procurement documents—each containing clauses that may pose risks, require negotiation, or violate internal policy.' }}
                />
              </div>
 
              {/* Success Criteria */}
-             <div className="bg-muted/30 rounded-lg p-5 border border-border">
+             <div className="bg-muted/30 rounded-lg p-5 border border-border w-full box-border overflow-x-hidden">
+               <style dangerouslySetInnerHTML={{__html: `
+                 .success-criteria-content,
+                 .success-criteria-content * {
+                   word-break: break-word !important;
+                   overflow-wrap: anywhere !important;
+                   max-width: 100% !important;
+                   white-space: normal !important;
+                   width: 100% !important;
+                   box-sizing: border-box !important;
+                 }
+               `}} />
                <h2 className="text-[15px] font-semibold mb-3 text-foreground">Success Criteria</h2>
                <div 
-                 className="text-sm leading-relaxed text-foreground"
+                 className="success-criteria-content text-sm leading-relaxed text-foreground break-words min-w-0 w-full"
+                 style={{ 
+                   wordBreak: 'break-word', 
+                   overflowWrap: 'anywhere', 
+                   maxWidth: '100%', 
+                   overflowX: 'hidden',
+                   overflowY: 'visible',
+                   boxSizing: 'border-box',
+                   width: '100%'
+                 }}
                  dangerouslySetInnerHTML={{ __html: useCase.successCriteria || 'Legal teams are overwhelmed with reviewing large volumes of contracts—NDAs, MSAs, SLAs, procurement documents—each containing clauses that may pose risks, require negotiation, or violate internal policy.' }}
                />
              </div>
 
              {/* Key Assumption */}
-             <div className="bg-muted/30 rounded-lg p-5 border border-border">
+             <div className="bg-muted/30 rounded-lg p-5 border border-border w-full box-border overflow-x-hidden">
+               <style dangerouslySetInnerHTML={{__html: `
+                 .key-assumption-content,
+                 .key-assumption-content * {
+                   word-break: break-word !important;
+                   overflow-wrap: anywhere !important;
+                   max-width: 100% !important;
+                   white-space: normal !important;
+                   width: 100% !important;
+                   box-sizing: border-box !important;
+                 }
+               `}} />
                <h2 className="text-[15px] font-semibold mb-3 text-foreground">Key Assumption</h2>
                <div 
-                 className="text-sm leading-relaxed text-foreground"
+                 className="key-assumption-content text-sm leading-relaxed text-foreground break-words min-w-0 w-full"
+                 style={{ 
+                   wordBreak: 'break-word', 
+                   overflowWrap: 'anywhere', 
+                   maxWidth: '100%', 
+                   overflowX: 'hidden',
+                   overflowY: 'visible',
+                   boxSizing: 'border-box',
+                   width: '100%'
+                 }}
                  dangerouslySetInnerHTML={{ __html: useCase.keyAssumptions || 'Legal teams are overwhelmed with reviewing large volumes of contracts—NDAs, MSAs, SLAs, procurement documents—each containing clauses that may pose risks, require negotiation, or violate internal policy.' }}
                />
              </div>
