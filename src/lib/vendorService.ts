@@ -28,7 +28,9 @@ export const vendorService = {
   // Get all vendors
   async getVendors() {
     try {
-      const response = await fetch('/api/vendors');
+      const response = await fetch('/api/vendors', {
+        cache: 'no-store',
+      });
       if (!response.ok) {
         const error = await response.json();
         return { data: null, error: error.error || 'Failed to fetch vendors' };

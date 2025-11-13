@@ -4,6 +4,9 @@ import { vendorServiceServer } from '@/lib/vendorServiceServer';
 
 import { prismaClient } from '@/utils/db';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const GET = withAuth(async (request, { auth }) => {
   try {
     // auth context is provided by withAuth wrapper
@@ -24,9 +27,12 @@ export const GET = withAuth(async (request, { auth }) => {
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
-    const response = NextResponse.json(result.data);
-    response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
-    return response;
+    return NextResponse.json(result.data, {
+      headers: {
+        'Cache-Control': 'no-store, max-age=0, must-revalidate',
+        'Pragma': 'no-cache',
+      },
+    });
   } catch (error: any) {
     console.error('Vendors API error:', error);
     return NextResponse.json({ error: 'Failed to fetch vendors' }, { status: 500 });
