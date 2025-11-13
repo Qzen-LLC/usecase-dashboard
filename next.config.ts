@@ -8,13 +8,12 @@ const nextConfig: NextConfig = {
   // Vercel handles output automatically, no need for standalone mode
   // output: 'standalone', // Only needed for self-hosting/Docker
 
-  // Ignore TypeScript and ESLint errors during build to avoid scanning issues
+  // Ignore TypeScript errors during build to avoid scanning issues
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // Note: ESLint configuration is now handled via eslint.config.js or .eslintrc.json
+  // The eslint option in next.config.ts is no longer supported in Next.js 16
 
   images: {
     dangerouslyAllowSVG: true,

@@ -113,7 +113,9 @@ export default function GovernancePage() {
         setRefreshing(true);
       }
 
-      const response = await fetch('/api/governance-data');
+      const response = await fetch('/api/governance-data', {
+        cache: 'no-store'
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch governance data');
       }
@@ -138,7 +140,7 @@ export default function GovernancePage() {
 
         if (hasEuAiAct) {
           promises.push(
-            fetch(`/api/eu-ai-act/progress/${useCaseId}`)
+            fetch(`/api/eu-ai-act/progress/${useCaseId}`, { cache: 'no-store' })
               .then(res => res.json())
               .then(data => { progressData[useCaseId].euAiAct = data; })
               .catch(err => console.error(`Error fetching EU AI Act progress for ${useCaseId}:`, err))
@@ -147,7 +149,7 @@ export default function GovernancePage() {
 
         if (hasIso42001) {
           promises.push(
-            fetch(`/api/iso-42001/progress/${useCaseId}`)
+            fetch(`/api/iso-42001/progress/${useCaseId}`, { cache: 'no-store' })
               .then(res => res.json())
               .then(data => { progressData[useCaseId].iso42001 = data; })
               .catch(err => console.error(`Error fetching ISO 42001 progress for ${useCaseId}:`, err))
@@ -156,7 +158,7 @@ export default function GovernancePage() {
 
         if (hasUaeAi) {
           promises.push(
-            fetch(`/api/uae-ai/progress/${useCaseId}`)
+            fetch(`/api/uae-ai/progress/${useCaseId}`, { cache: 'no-store' })
               .then(res => res.json())
               .then(data => { progressData[useCaseId].uaeAi = data; })
               .catch(err => console.error(`Error fetching UAE AI progress for ${useCaseId}:`, err))
@@ -165,7 +167,7 @@ export default function GovernancePage() {
 
         if (hasIso27001) {
           promises.push(
-            fetch(`/api/iso-27001/progress/${useCaseId}`)
+            fetch(`/api/iso-27001/progress/${useCaseId}`, { cache: 'no-store' })
               .then(res => res.json())
               .then(data => { progressData[useCaseId].iso27001 = data; })
               .catch(err => console.error(`Error fetching ISO 27001 progress for ${useCaseId}:`, err))
@@ -233,7 +235,8 @@ export default function GovernancePage() {
           useCaseId: useCase.useCaseId,
           lockType: 'EXCLUSIVE',
           scope: framework
-        })
+        }),
+        cache: 'no-store'
       });
       
       const data = await response.json();
@@ -557,7 +560,7 @@ export default function GovernancePage() {
                           })()}%` }}></div>
                         </div>
                         <div className="flex justify-between items-center">
-                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${assessmentProgress[item.useCaseId]?.iso42001?.status === 'completed' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' : 'bg-yellow-100 dark:text-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700'}`}>
+                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${assessmentProgress[item.useCaseId]?.iso42001?.status === 'completed' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' : 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700'}`}>
                             {assessmentProgress[item.useCaseId]?.iso42001?.status === 'completed' ? 'Completed' : 'In Progress'}
                           </Badge>
                           <Button 

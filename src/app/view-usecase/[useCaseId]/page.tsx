@@ -74,7 +74,9 @@ const ViewUseCasePage = () => {
   useEffect(() => {
     const fetchUseCaseDetails = async () => {
       try {
-        const response = await fetch(`/api/get-usecase-details?useCaseId=${useCaseId}`);
+        const response = await fetch(`/api/get-usecase-details?useCaseId=${useCaseId}`, {
+          cache: 'no-store'
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch use case details');
         }
@@ -112,7 +114,7 @@ const ViewUseCasePage = () => {
   useEffect(() => {
     if (!useCaseId) return;
     // Guardrails
-    fetch(`/api/guardrails/get?useCaseId=${useCaseId}`)
+    fetch(`/api/guardrails/get?useCaseId=${useCaseId}`, { cache: 'no-store' })
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (data && data.success) {
@@ -122,7 +124,7 @@ const ViewUseCasePage = () => {
       })
       .catch(() => {});
     // Evaluations (latest)
-    fetch(`/api/evaluations/get?useCaseId=${useCaseId}`)
+    fetch(`/api/evaluations/get?useCaseId=${useCaseId}`, { cache: 'no-store' })
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (data && data.success && (data.evaluationConfig || (Array.isArray(data.results) && data.results.length > 0))) {
@@ -131,21 +133,21 @@ const ViewUseCasePage = () => {
       })
       .catch(() => {});
     // Golden datasets (list)
-    fetch(`/api/golden/datasets?useCaseId=${useCaseId}`)
+    fetch(`/api/golden/datasets?useCaseId=${useCaseId}`, { cache: 'no-store' })
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (Array.isArray(data)) setGoldenDatasets(data);
       })
       .catch(() => {});
     // Approvals data
-    fetch(`/api/read-approvals?useCaseId=${useCaseId}`)
+    fetch(`/api/read-approvals?useCaseId=${useCaseId}`, { cache: 'no-store' })
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (data) setApprovalsData(data);
       })
       .catch(() => {});
     // Financial data
-    fetch(`/api/get-finops?id=${useCaseId}&_t=${Date.now()}`)
+    fetch(`/api/get-finops?id=${useCaseId}&_t=${Date.now()}`, { cache: 'no-store' })
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         console.log('🔍 [DEBUG] Finops API Response:', data);
@@ -160,7 +162,7 @@ const ViewUseCasePage = () => {
         console.error('🔍 [DEBUG] Error fetching finops data:', error);
       });
     // Questions with answers
-    fetch(`/api/get-assess-questions?useCaseId=${useCaseId}`)
+    fetch(`/api/get-assess-questions?useCaseId=${useCaseId}`, { cache: 'no-store' })
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (Array.isArray(data)) {

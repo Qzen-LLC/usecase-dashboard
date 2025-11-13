@@ -112,7 +112,9 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
 
   const fetchAssessment = async () => {
     try {
-      const response = await fetch(`/api/eu-ai-act/risk-classification/by-usecase/${useCaseId}`);
+      const response = await fetch(`/api/eu-ai-act/risk-classification/by-usecase/${useCaseId}`, {
+        cache: 'no-store'
+      });
       if (response.ok) {
         const data = await response.json();
         console.log('📊 Risk Classification Data:', {
@@ -162,7 +164,8 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
       await fetch(`/api/eu-ai-act/risk-classification/${assessment.id}/answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questionId, answer })
+        body: JSON.stringify({ questionId, answer }),
+        cache: 'no-store'
       });
     } catch (error) {
       console.error('Error saving answer:', error);
@@ -211,7 +214,8 @@ export default function RiskClassificationPage({ params }: RiskClassificationPag
     try {
       const response = await fetch(`/api/eu-ai-act/risk-classification/${assessment.id}/complete`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store'
       });
 
       if (response.ok) {

@@ -5,7 +5,7 @@ import { hasActiveExclusiveGovernanceLock } from '@/utils/locks';
 
 export const POST = withAuth(async (
   request: Request,
-  { params, auth }: { params: { assessmentId: string }, auth: any }
+  { params, auth }: { params: Promise<{ assessmentId: string }>, auth: any }
 ) => {
   try {
     const userRecord = await prismaClient.user.findUnique({
@@ -16,7 +16,7 @@ export const POST = withAuth(async (
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { assessmentId } = params;
+    const { assessmentId } = await params;
     const { questionId, answer } = await request.json();
 
     // Get the assessment to check ownership

@@ -76,7 +76,9 @@ export const useGovernanceLock = (
       setError(null);
       
       // Check for existing locks on this specific framework
-      const response = await fetch(`/api/locks/status?useCaseId=${useCaseId}&scope=${framework}`);
+      const response = await fetch(`/api/locks/status?useCaseId=${useCaseId}&scope=${framework}`, {
+        cache: 'no-store'
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch lock status');
@@ -111,7 +113,8 @@ export const useGovernanceLock = (
           useCaseId, 
           lockType: 'EXCLUSIVE', 
           scope: framework 
-        })
+        }),
+        cache: 'no-store'
       });
       
       const data = await response.json();
@@ -172,7 +175,8 @@ export const useGovernanceLock = (
           useCaseId, 
           lockType: 'EXCLUSIVE', 
           scope: framework 
-        })
+        }),
+        cache: 'no-store'
       });
       
       if (!response.ok) {

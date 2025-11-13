@@ -239,14 +239,61 @@ export default function EuAiActAssessmentPage() {
   const fetchAssessmentData = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      if (!useCaseId) {
+        setError('Use case ID is missing. Please navigate from the dashboard.');
+        setLoading(false);
+        return;
+      }
+
+      console.log('EU AI Act - Fetching assessment data for useCaseId:', useCaseId);
+      
       const [topicsResponse, controlCategoriesResponse, assessmentResponse] = await Promise.all([
-        fetch('/api/eu-ai-act/topics'),
-        fetch('/api/eu-ai-act/control-categories'),
-        fetch(`/api/eu-ai-act/assessment/by-usecase/${useCaseId}`)
+        fetch('/api/eu-ai-act/topics', { cache: 'no-store' }),
+        fetch('/api/eu-ai-act/control-categories', { cache: 'no-store' }),
+        fetch(`/api/eu-ai-act/assessment/by-usecase/${useCaseId}`, { cache: 'no-store' })
       ]);
 
-      if (!topicsResponse.ok || !controlCategoriesResponse.ok || !assessmentResponse.ok) {
-        throw new Error('Failed to fetch assessment data');
+      console.log('EU AI Act - API responses:', {
+        topics: topicsResponse.status,
+        controlCategories: controlCategoriesResponse.status,
+        assessment: assessmentResponse.status
+      });
+
+      // Handle topics response
+      if (!topicsResponse.ok) {
+        const errorData = await topicsResponse.json().catch(() => ({ error: 'Failed to fetch topics' }));
+        throw new Error(`Failed to fetch topics: ${errorData.error || topicsResponse.statusText}`);
+      }
+
+      // Handle control categories response
+      if (!controlCategoriesResponse.ok) {
+        const errorData = await controlCategoriesResponse.json().catch(() => ({ error: 'Failed to fetch control categories' }));
+        throw new Error(`Failed to fetch control categories: ${errorData.error || controlCategoriesResponse.statusText}`);
+      }
+
+      // Handle assessment response separately to provide better error messages
+      if (!assessmentResponse.ok) {
+        const errorData = await assessmentResponse.json().catch(() => ({ error: 'Failed to fetch assessment' }));
+        
+        console.error('EU AI Act - Assessment API error:', {
+          status: assessmentResponse.status,
+          statusText: assessmentResponse.statusText,
+          errorData
+        });
+        
+        if (assessmentResponse.status === 403) {
+          setError(`Access denied: ${errorData.error || 'You do not have permission to access this assessment'}`);
+          setLoading(false);
+          return;
+        } else if (assessmentResponse.status === 404) {
+          setError(`Use case not found: ${errorData.message || errorData.error || 'The use case does not exist or you do not have access to it'}`);
+          setLoading(false);
+          return;
+        } else {
+          throw new Error(`API Error (${assessmentResponse.status}): ${errorData.error || errorData.message || 'Failed to fetch assessment data'}`);
+        }
       }
 
       const topicsData = await topicsResponse.json();
@@ -332,7 +379,8 @@ export default function EuAiActAssessmentPage() {
         setExpandedCategories(new Set([controlCategoriesData[0].categoryId]));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('EU AI Act - Error fetching assessment data:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred while fetching assessment data');
     } finally {
       setLoading(false);
     }
@@ -413,7 +461,8 @@ export default function EuAiActAssessmentPage() {
             questionId,
             answer: question?.answer?.answer || '',
             evidenceFiles
-          })
+          }),
+          cache: 'no-store'
         });
 
         if (!response.ok) {
@@ -428,7 +477,8 @@ export default function EuAiActAssessmentPage() {
             await fetch('/api/upload/delete', {
               method: 'DELETE',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ fileUrl: removedFile })
+              body: JSON.stringify({ fileUrl: removedFile }),
+              cache: 'no-store'
             });
           } catch (fileDeleteErr) {
             console.error('Failed to delete file from server:', removedFile, fileDeleteErr);
@@ -467,7 +517,8 @@ export default function EuAiActAssessmentPage() {
           questionId,
           answer: question.answer?.answer || '',
           evidenceFiles: question.answer?.evidenceFiles || []
-        })
+        }),
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -605,7 +656,8 @@ export default function EuAiActAssessmentPage() {
       await fetch(`/api/eu-ai-act/assessment/${assessment?.id}/progress`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ progress })
+        body: JSON.stringify({ progress }),
+        cache: 'no-store'
       });
 
       setAssessment(currentAssessment => {
@@ -937,7 +989,8 @@ export default function EuAiActAssessmentPage() {
           await fetch('/api/upload/delete', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fileUrl: removedFile })
+            body: JSON.stringify({ fileUrl: removedFile }),
+            cache: 'no-store'
           });
         } catch (fileDeleteErr) {
           console.error('Failed to delete file from server:', removedFile, fileDeleteErr);
@@ -1141,7 +1194,8 @@ export default function EuAiActAssessmentPage() {
               status: existingControl.status || 'pending',
               notes: existingControl.notes || '',
               evidenceFiles: existingControl.evidenceFiles || []
-            })
+            }),
+            cache: 'no-store'
           });
 
           if (!controlResponse.ok) {
@@ -1279,7 +1333,8 @@ export default function EuAiActAssessmentPage() {
           status: control.status,
           notes: control.notes,
           evidenceFiles: control.evidenceFiles
-        })
+        }),
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -1327,7 +1382,8 @@ export default function EuAiActAssessmentPage() {
             status: control.status || 'pending',
             notes: control.notes || '',
             evidenceFiles: control.evidenceFiles || []
-          })
+          }),
+          cache: 'no-store'
         });
 
         if (!controlResponse.ok) {

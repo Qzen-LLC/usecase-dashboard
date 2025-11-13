@@ -5,12 +5,12 @@ import { prismaClient } from '@/utils/db';
 
 export const GET = withAuth(async (
   request: Request,
-  { params, auth }: { params: { useCaseId: string }, auth: any }
+  { params, auth }: { params: Promise<{ useCaseId: string }>, auth: any }
 ) => {
   try {
     // auth context is provided by withAuth wrapper
 
-    const { useCaseId } = params;
+    const { useCaseId } = await params;
 
     // Check if use case exists and user has access
     const userRecord = await prismaClient.user.findUnique({
@@ -107,8 +107,13 @@ export const GET = withAuth(async (
     return NextResponse.json(assessment);
   } catch (error) {
     console.error('Error fetching EU AI Act assessment:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: 'Failed to fetch assessment' },
+      { 
+        error: 'Failed to fetch assessment',
+        message: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? String(error) : undefined
+      },
       { status: 500 }
     );
   }

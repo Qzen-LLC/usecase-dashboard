@@ -919,6 +919,55 @@ const validateAssessmentData = useMemo(() => (data: any) => {
     }
   };
 
+  const handleCompleteGoldenDatasetAssessment = async () => {
+    console.log('🔒 [ASSESSMENT] Complete Golden Dataset Assessment button clicked');
+    
+    try {
+      // Release lock before redirecting - ensure it completes
+      if (isExclusiveLocked) {
+        console.log('🔒 [ASSESSMENT] Releasing lock...');
+        await releaseLock('EXCLUSIVE');
+        console.log('🔒 [ASSESSMENT] Lock released successfully');
+        
+        // Wait a moment to ensure the release is processed
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      // Navigate to dashboard
+      console.log('🔒 [ASSESSMENT] Navigating to dashboard...');
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('🔒 [ASSESSMENT] Error completing golden dataset assessment:', error);
+      // Try to release lock via direct API call if hook method fails
+      try {
+        console.log('🔒 [ASSESSMENT] Attempting direct API lock release...');
+        const response = await fetch('/api/locks/release', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            useCaseId, 
+            lockType: 'EXCLUSIVE', 
+            scope: 'ASSESS' 
+          }),
+          cache: 'no-store'
+        });
+        
+        if (response.ok) {
+          console.log('🔒 [ASSESSMENT] Direct API lock release successful');
+          router.push('/dashboard');
+        } else {
+          console.error('🔒 [ASSESSMENT] Direct API lock release failed:', await response.json());
+          // Navigate anyway - lock will expire naturally
+          router.push('/dashboard');
+        }
+      } catch (lockError) {
+        console.error('🔒 [ASSESSMENT] Error releasing lock via direct API:', lockError);
+        // Navigate anyway - lock will expire naturally
+        router.push('/dashboard');
+      }
+    }
+  };
+
   if (loading || !isReady) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -1175,65 +1224,84 @@ const validateAssessmentData = useMemo(() => (data: any) => {
       </Card>
 
       {/* Bottom Navigation Buttons */}
-      <div className="px-8 py-6 border-t border-border bg-card flex justify-between items-center">
-        <button
-          className={`flex items-center px-4 py-2 rounded-md ${isFirstStep ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-gray-600 dark:bg-gray-500 text-white hover:bg-gray-700 dark:hover:bg-gray-600"} ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
-          disabled={isFirstStep || isReadOnly}
-          onClick={handlePrev}
-        >
-          <ChevronLeft className="w-4 h-4 mr-2" />
-          Previous
-        </button>
-        <button
-          onClick={handleCancel}
-          className={`flex items-center px-4 py-2 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90`}
-        >
-          Cancel
-        </button>
-        {currentStep < 8 && (
-          <>
-            <button
-              className={`px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold flex items-center gap-2 ${saving ? 'opacity-75 cursor-not-allowed' : ''} ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={handleSave}
-              disabled={saving || isReadOnly}
-            >
-              {saving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Saving...
-                </>
-              ) : (
-                'Save Progress'
+      <div className="px-8 py-6 border-t border-border bg-card flex items-center relative">
+        {/* Left: Previous Button */}
+        <div className="flex-1 flex justify-start">
+          <button
+            className={`flex items-center px-4 py-2 rounded-md ${isFirstStep ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-gray-600 dark:bg-gray-500 text-white hover:bg-gray-700 dark:hover:bg-gray-600"} ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={isFirstStep || isReadOnly}
+            onClick={handlePrev}
+          >
+            <ChevronLeft className="w-4 h-4 mr-2" />
+            Previous
+          </button>
+        </div>
+
+        {/* Center: Cancel Button and Save Progress (for steps < 8) */}
+        <div className="flex-1 flex justify-center items-center gap-4">
+          <button
+            onClick={handleCancel}
+            className={`flex items-center px-4 py-2 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90`}
+          >
+            Cancel
+          </button>
+          {currentStep < 8 && (
+            <>
+              <button
+                className={`px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold flex items-center gap-2 ${saving ? 'opacity-75 cursor-not-allowed' : ''} ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={handleSave}
+                disabled={saving || isReadOnly}
+              >
+                {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Saving...
+                  </>
+                ) : (
+                  'Save Progress'
+                )}
+              </button>
+              {saveSuccess && (
+                <div className="text-green-600 dark:text-green-400 font-semibold">Progress saved!</div>
               )}
+              {error && (
+                <div className="text-red-600 dark:text-red-400 font-semibold">{error}</div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Right: Next/Complete Assessment Button */}
+        <div className="flex-1 flex justify-end">
+          {currentStep < 12 ? (
+            <button
+              className={`flex items-center px-4 py-2 rounded-md bg-gray-600 dark:bg-gray-700 text-white hover:bg-gray-700 dark:hover:bg-gray-600 ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={handleNext}
+              disabled={isReadOnly}
+            >
+              Next
+              <ChevronRight className="w-4 h-4 ml-2" />
             </button>
-            {saveSuccess && (
-              <div className="ml-4 text-green-600 dark:text-green-400 font-semibold">Progress saved!</div>
-            )}
-            {error && (
-              <div className="ml-4 text-red-600 dark:text-red-400 font-semibold">{error}</div>
-            )}
-          </>
-        )}
-        {currentStep < 12 ? (
-          <button
-            className={`flex items-center px-4 py-2 rounded-md bg-gray-600 dark:bg-gray-700 text-white hover:bg-gray-700 dark:hover:bg-gray-600 ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
-            onClick={handleNext}
-            disabled={isReadOnly}
-          >
-            Next
-            <ChevronRight className="w-4 h-4 ml-2" />
-          </button>
-        ) : currentStep === 10 ? (
-          <button
-            className={`px-4 py-2 w-64 rounded-xl shadow-lg font-semibold text-lg transition ${isReadOnly ? 'bg-gray-400 text-gray-200 cursor-not-allowed opacity-50' : 'bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white hover:shadow-xl'}`}
-            onClick={handleCompleteAssessment}
-            disabled={isReadOnly}
-          >
-            Complete Assessment
-          </button>
-        ) : (
-          <div />
-        )}
+          ) : currentStep === 10 ? (
+            <button
+              className={`px-4 py-2 w-64 rounded-xl shadow-lg font-semibold text-lg transition ${isReadOnly ? 'bg-gray-400 text-gray-200 cursor-not-allowed opacity-50' : 'bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white hover:shadow-xl'}`}
+              onClick={handleCompleteAssessment}
+              disabled={isReadOnly}
+            >
+              Complete Assessment
+            </button>
+          ) : currentStep === 12 ? (
+            <button
+              className={`px-4 py-2 rounded-xl shadow-lg font-semibold text-lg transition ${isReadOnly ? 'bg-gray-400 text-gray-200 cursor-not-allowed opacity-50' : 'bg-green-600 hover:bg-green-700 text-white hover:shadow-xl'}`}
+              onClick={handleCompleteGoldenDatasetAssessment}
+              disabled={isReadOnly}
+            >
+              Complete Assessment
+            </button>
+          ) : (
+            <div />
+          )}
+        </div>
       </div>
       
 

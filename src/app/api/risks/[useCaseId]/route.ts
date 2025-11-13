@@ -47,9 +47,10 @@ export const GET = withAuth(async (
 // POST /api/risks/[useCaseId] - Create a new risk
 export const POST = withAuth(async (
   request: Request,
-  { params, auth }: { params: { useCaseId: string }, auth: any }
+  { params, auth }: { params: Promise<{ useCaseId: string }>, auth: any }
 ) => {
   try {
+    const { useCaseId } = await params;
     const userRecord = await prismaClient.user.findUnique({
       where: { clerkId: auth.userId! },
     });
@@ -79,7 +80,7 @@ export const POST = withAuth(async (
       
       const risk = await prismaClient.risk.create({
         data: {
-          useCaseId: params.useCaseId,
+          useCaseId: useCaseId,
           category: data.category,
           riskLevel: data.riskLevel,
           riskScore: data.riskScore || riskScoreMap[data.riskLevel] || 5,
@@ -98,7 +99,7 @@ export const POST = withAuth(async (
           notes: data.notes
         }
       });
-      console.log('[CRUD_LOG] Risk created:', { id: risk.id, useCaseId: params.useCaseId, category: data.category, riskLevel: data.riskLevel, status: risk.status, createdAt: risk.createdAt, authoredBy: userRecord.id });
+      console.log('[CRUD_LOG] Risk created:', { id: risk.id, useCaseId: useCaseId, category: data.category, riskLevel: data.riskLevel, status: risk.status, createdAt: risk.createdAt, authoredBy: userRecord.id });
 
       return NextResponse.json(risk);
     } catch (dbError) {

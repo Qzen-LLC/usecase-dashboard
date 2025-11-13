@@ -5,10 +5,10 @@ import { prismaClient } from '@/utils/db';
 
 export const GET = withAuth(async (
   request: Request,
-  { params, auth }: { params: { useCaseId: string }, auth: any }
+  { params, auth }: { params: Promise<{ useCaseId: string }>, auth: any }
 ) => {
   try {
-    const { useCaseId } = params;
+    const { useCaseId } = await params;
 
     // Check if use case exists and user has access
     const userRecord = await prismaClient.user.findUnique({

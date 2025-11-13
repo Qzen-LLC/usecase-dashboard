@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prismaClient } from '@/utils/db';
 
 
-export async function GET(req: NextRequest, { params }: { params: { useCaseId: string } }) {
-  const { useCaseId } = params;
+export async function GET(req: NextRequest, { params }: { params: Promise<{ useCaseId: string }> }) {
+  const { useCaseId } = await params;
   try {
     const [clauses, annexCategories, assessment] = await Promise.all([
       prismaClient.iso42001Clause.findMany({ orderBy: { orderIndex: 'asc' } }),

@@ -7,7 +7,7 @@ import { hasActiveExclusiveGovernanceLock } from '@/utils/locks';
 
 export const POST = withAuth(async (
   request: Request,
-  { params, auth }: { params: { assessmentId: string }, auth: any }
+  { params, auth }: { params: Promise<{ assessmentId: string }>, auth: any }
 ) => {
   try {
     const userRecord = await prismaClient.user.findUnique({
@@ -18,7 +18,7 @@ export const POST = withAuth(async (
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { assessmentId } = params;
+    const { assessmentId } = await params;
 
     // Get the assessment with all answers
     const assessment = await prismaClient.euAiActAssessment.findUnique({
@@ -103,8 +103,13 @@ export const POST = withAuth(async (
     });
   } catch (error) {
     console.error('Error completing risk classification:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: 'Failed to complete classification' },
+      { 
+        error: 'Failed to complete classification',
+        message: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? String(error) : undefined
+      },
       { status: 500 }
     );
   }
