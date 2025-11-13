@@ -917,7 +917,7 @@ export class GuardrailsOrchestrator {
 
     // Determine winning rule based on priority and context
     const resolvedRules: Guardrail[] = [];
-    const approach = this.determineResolutionApproach(conflict, context);
+    let approach = this.determineResolutionApproach(conflict, context);
     
     // Extract rules from conflict
     const conflictingRules = conflict.rules || [];
