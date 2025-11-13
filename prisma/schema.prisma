@@ -800,8 +800,6 @@ model PromptTestRun {
   service          String
   settings         Json
   userId           String
-  inputTokens      Int            @default(0)
-  outputTokens     Int            @default(0)
   PromptTemplate   PromptTemplate @relation(fields: [promptTemplateId], references: [id], onDelete: Cascade)
   User             User           @relation(fields: [userId], references: [id])
 
