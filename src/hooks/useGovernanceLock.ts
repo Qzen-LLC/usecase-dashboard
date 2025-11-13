@@ -22,6 +22,7 @@ export interface UseGovernanceLockReturn {
   acquireLock: () => Promise<boolean>;
   releaseLock: () => Promise<void>;
   refreshLockStatus: () => Promise<void>;
+  markLockForNavigation: () => void;
   loading: boolean;
   error: string | null;
 }
@@ -34,6 +35,36 @@ export const useGovernanceLock = (
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const getRetentionKey = useCallback(() => {
+    if (typeof window === 'undefined') return null;
+    return `retain-governance-lock:${framework}:${useCaseId}`;
+  }, [framework, useCaseId]);
+
+  const markLockForNavigation = useCallback(() => {
+    const key = getRetentionKey();
+    if (!key) return;
+    try {
+      window.sessionStorage.setItem(key, 'true');
+    } catch (err) {
+      console.warn('Failed to set lock retention flag', err);
+    }
+  }, [getRetentionKey]);
+
+  const consumeRetentionFlag = useCallback(() => {
+    const key = getRetentionKey();
+    if (!key) return false;
+    try {
+      const shouldRetain = window.sessionStorage.getItem(key) === 'true';
+      if (shouldRetain) {
+        window.sessionStorage.removeItem(key);
+      }
+      return shouldRetain;
+    } catch (err) {
+      console.warn('Failed to read lock retention flag', err);
+      return false;
+    }
+  }, [getRetentionKey]);
+
   const isLocked = lockInfo?.hasLock || false;
   const canEdit = lockInfo?.canEdit || false;
 
@@ -45,7 +76,9 @@ export const useGovernanceLock = (
       setError(null);
       
       // Check for existing locks on this specific framework
-      const response = await fetch(`/api/locks/status?useCaseId=${useCaseId}&scope=${framework}`);
+      const response = await fetch(`/api/locks/status?useCaseId=${useCaseId}&scope=${framework}`, {
+        cache: 'no-store'
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch lock status');
@@ -80,7 +113,8 @@ export const useGovernanceLock = (
           useCaseId, 
           lockType: 'EXCLUSIVE', 
           scope: framework 
-        })
+        }),
+        cache: 'no-store'
       });
       
       const data = await response.json();
@@ -141,7 +175,8 @@ export const useGovernanceLock = (
           useCaseId, 
           lockType: 'EXCLUSIVE', 
           scope: framework 
-        })
+        }),
+        cache: 'no-store'
       });
       
       if (!response.ok) {
@@ -210,6 +245,10 @@ export const useGovernanceLock = (
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      const shouldRetainLock = consumeRetentionFlag();
+      if (shouldRetainLock) {
+        return;
+      }
       // Release on unmount to handle in-app navigation
       const data = new FormData();
       data.append('useCaseId', useCaseId);
@@ -217,7 +256,7 @@ export const useGovernanceLock = (
       data.append('scope', framework);
       try { navigator.sendBeacon('/api/locks/release', data); } catch (_) {}
     };
-  }, [useCaseId, framework, lockInfo?.hasLock, lockInfo?.canEdit]);
+  }, [useCaseId, framework, lockInfo?.hasLock, lockInfo?.canEdit, consumeRetentionFlag]);
 
   return {
     lockInfo,
@@ -226,6 +265,7 @@ export const useGovernanceLock = (
     acquireLock,
     releaseLock,
     refreshLockStatus,
+    markLockForNavigation,
     loading,
     error
   };

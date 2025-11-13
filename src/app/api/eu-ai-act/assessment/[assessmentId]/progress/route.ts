@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
+import { hasActiveExclusiveGovernanceLock } from '@/utils/locks';
 
 export const PATCH = withAuth(async (
   request: Request,
@@ -43,6 +44,19 @@ export const PATCH = withAuth(async (
           return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
       }
+    }
+
+    const hasLock = await hasActiveExclusiveGovernanceLock({
+      useCaseId: assessment.useCaseId,
+      userId: userRecord.id,
+      scope: 'GOVERNANCE_EU_AI_ACT'
+    });
+
+    if (!hasLock) {
+      return NextResponse.json(
+        { error: 'Framework lock required to update EU AI Act assessment progress' },
+        { status: 423 }
+      );
     }
 
     const updatedAssessment = await prismaClient.euAiActAssessment.update({

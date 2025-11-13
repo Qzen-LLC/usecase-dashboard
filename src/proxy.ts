@@ -24,12 +24,12 @@ export default clerkMiddleware(async (auth, req) => {
   // Only fetch auth for protected, non-API routes
   // Use a timeout to prevent hanging
   const authPromise = auth();
-  const timeoutPromise = new Promise((_, reject) => 
+  const timeoutPromise = new Promise<never>((_, reject) => 
     setTimeout(() => reject(new Error('Auth timeout')), 5000)
   );
   
   try {
-    const authObject = await Promise.race([authPromise, timeoutPromise]);
+    const authObject = await Promise.race([authPromise, timeoutPromise]) as Awaited<ReturnType<typeof auth>>;
     const userId = authObject.userId;
 
     // Check if user is authenticated
@@ -44,7 +44,7 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.next();
   } catch (error) {
     // If auth times out or fails, redirect to sign-in
-    console.warn('Auth middleware timeout or error:', error);
+    console.warn('Auth proxy timeout or error:', error);
     const signInUrl = new URL('/sign-in', req.url);
     signInUrl.searchParams.set('redirect_url', pathname);
     return NextResponse.redirect(signInUrl);
@@ -56,3 +56,4 @@ export const config = {
     '/((?!_next/static|_next/image|_next/webpack-hmr|_next/data|_next|.*\\..*|favicon.ico).*)',
   ],
 };
+

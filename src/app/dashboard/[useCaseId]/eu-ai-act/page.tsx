@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { FileUpload } from '@/components/ui/file-upload';
 import { useGovernanceLock } from '@/hooks/useGovernanceLock';
 import { GovernanceLockModal } from '@/components/GovernanceLockModal';
+import { checkAssessmentGate, getRiskLevelBadgeColor } from '@/lib/eu-ai-act-gate';
 
 interface Question {
   id: string;
@@ -102,6 +103,15 @@ interface Assessment {
   progress: number;
   createdAt: string;
   updatedAt: string;
+  // Risk Classification Fields
+  riskClassificationCompleted: boolean;
+  riskLevel: string | null;
+  riskLevelRationale: string | null;
+  applicableAnnexCategories: string[];
+  hasProhibitedPractices: boolean;
+  prohibitedPracticesList: string[];
+  isSubjectToAct: boolean | null;
+  classificationDate: string | null;
   controls?: Control[];
   answers?: {
     id: string;
@@ -139,9 +149,16 @@ export default function EuAiActAssessmentPage() {
     acquireLock,
     releaseLock,
     refreshLockStatus,
+    markLockForNavigation,
     loading: lockLoading,
     error: lockError
   } = useGovernanceLock(useCaseId, 'GOVERNANCE_EU_AI_ACT');
+  const navigateWithLockRetention = useCallback((path: string, retain = true) => {
+    if (retain) {
+      markLockForNavigation();
+    }
+    router.push(path);
+  }, [markLockForNavigation, router]);
 
   // Check for dark mode
   useEffect(() => {
@@ -202,28 +219,6 @@ export default function EuAiActAssessmentPage() {
     }
   }, [useCaseId, refreshLockStatus]);
 
-  // Cleanup: Release lock when component unmounts or user navigates away
-  useEffect(() => {
-    return () => {
-      // Release lock when component unmounts
-      if (lockInfo?.hasLock && canEdit) {
-        console.log('🔒 Component unmounting, releasing lock...');
-        // Use sendBeacon for reliable delivery during navigation
-        const data = new FormData();
-        data.append('useCaseId', useCaseId);
-        data.append('lockType', 'EXCLUSIVE');
-        data.append('scope', 'GOVERNANCE_EU_AI_ACT');
-        
-        try {
-          navigator.sendBeacon('/api/locks/release', data);
-          console.log('🔒 Lock release beacon sent');
-        } catch (error) {
-          console.error('🔒 Failed to send lock release beacon:', error);
-        }
-      }
-    };
-  }, [useCaseId, lockInfo?.hasLock, canEdit]);
-
   // Monitor assessment state changes for debugging
   useEffect(() => {
     if (assessment) {
@@ -244,14 +239,61 @@ export default function EuAiActAssessmentPage() {
   const fetchAssessmentData = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      if (!useCaseId) {
+        setError('Use case ID is missing. Please navigate from the dashboard.');
+        setLoading(false);
+        return;
+      }
+
+      console.log('EU AI Act - Fetching assessment data for useCaseId:', useCaseId);
+      
       const [topicsResponse, controlCategoriesResponse, assessmentResponse] = await Promise.all([
-        fetch('/api/eu-ai-act/topics'),
-        fetch('/api/eu-ai-act/control-categories'),
-        fetch(`/api/eu-ai-act/assessment/by-usecase/${useCaseId}`)
+        fetch('/api/eu-ai-act/topics', { cache: 'no-store' }),
+        fetch('/api/eu-ai-act/control-categories', { cache: 'no-store' }),
+        fetch(`/api/eu-ai-act/assessment/by-usecase/${useCaseId}`, { cache: 'no-store' })
       ]);
 
-      if (!topicsResponse.ok || !controlCategoriesResponse.ok || !assessmentResponse.ok) {
-        throw new Error('Failed to fetch assessment data');
+      console.log('EU AI Act - API responses:', {
+        topics: topicsResponse.status,
+        controlCategories: controlCategoriesResponse.status,
+        assessment: assessmentResponse.status
+      });
+
+      // Handle topics response
+      if (!topicsResponse.ok) {
+        const errorData = await topicsResponse.json().catch(() => ({ error: 'Failed to fetch topics' }));
+        throw new Error(`Failed to fetch topics: ${errorData.error || topicsResponse.statusText}`);
+      }
+
+      // Handle control categories response
+      if (!controlCategoriesResponse.ok) {
+        const errorData = await controlCategoriesResponse.json().catch(() => ({ error: 'Failed to fetch control categories' }));
+        throw new Error(`Failed to fetch control categories: ${errorData.error || controlCategoriesResponse.statusText}`);
+      }
+
+      // Handle assessment response separately to provide better error messages
+      if (!assessmentResponse.ok) {
+        const errorData = await assessmentResponse.json().catch(() => ({ error: 'Failed to fetch assessment' }));
+        
+        console.error('EU AI Act - Assessment API error:', {
+          status: assessmentResponse.status,
+          statusText: assessmentResponse.statusText,
+          errorData
+        });
+        
+        if (assessmentResponse.status === 403) {
+          setError(`Access denied: ${errorData.error || 'You do not have permission to access this assessment'}`);
+          setLoading(false);
+          return;
+        } else if (assessmentResponse.status === 404) {
+          setError(`Use case not found: ${errorData.message || errorData.error || 'The use case does not exist or you do not have access to it'}`);
+          setLoading(false);
+          return;
+        } else {
+          throw new Error(`API Error (${assessmentResponse.status}): ${errorData.error || errorData.message || 'Failed to fetch assessment data'}`);
+        }
       }
 
       const topicsData = await topicsResponse.json();
@@ -269,6 +311,14 @@ export default function EuAiActAssessmentPage() {
       if (assessmentData.status === 'not_available') {
         setError('Use case not found. Please ensure you are accessing a valid use case from the dashboard.');
         setLoading(false);
+        return;
+      }
+
+      // Check if we need to redirect to risk classification
+      const gateCheck = checkAssessmentGate(assessmentData);
+      if (gateCheck.shouldRedirectToClassification) {
+        console.log('🚪 Redirecting to risk classification - not yet completed');
+        navigateWithLockRetention(`/dashboard/${useCaseId}/eu-ai-act/risk-classification`);
         return;
       }
 
@@ -329,7 +379,8 @@ export default function EuAiActAssessmentPage() {
         setExpandedCategories(new Set([controlCategoriesData[0].categoryId]));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('EU AI Act - Error fetching assessment data:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred while fetching assessment data');
     } finally {
       setLoading(false);
     }
@@ -410,7 +461,8 @@ export default function EuAiActAssessmentPage() {
             questionId,
             answer: question?.answer?.answer || '',
             evidenceFiles
-          })
+          }),
+          cache: 'no-store'
         });
 
         if (!response.ok) {
@@ -425,7 +477,8 @@ export default function EuAiActAssessmentPage() {
             await fetch('/api/upload/delete', {
               method: 'DELETE',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ fileUrl: removedFile })
+              body: JSON.stringify({ fileUrl: removedFile }),
+              cache: 'no-store'
             });
           } catch (fileDeleteErr) {
             console.error('Failed to delete file from server:', removedFile, fileDeleteErr);
@@ -464,7 +517,8 @@ export default function EuAiActAssessmentPage() {
           questionId,
           answer: question.answer?.answer || '',
           evidenceFiles: question.answer?.evidenceFiles || []
-        })
+        }),
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -602,7 +656,8 @@ export default function EuAiActAssessmentPage() {
       await fetch(`/api/eu-ai-act/assessment/${assessment?.id}/progress`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ progress })
+        body: JSON.stringify({ progress }),
+        cache: 'no-store'
       });
 
       setAssessment(currentAssessment => {
@@ -934,7 +989,8 @@ export default function EuAiActAssessmentPage() {
           await fetch('/api/upload/delete', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fileUrl: removedFile })
+            body: JSON.stringify({ fileUrl: removedFile }),
+            cache: 'no-store'
           });
         } catch (fileDeleteErr) {
           console.error('Failed to delete file from server:', removedFile, fileDeleteErr);
@@ -1138,7 +1194,8 @@ export default function EuAiActAssessmentPage() {
               status: existingControl.status || 'pending',
               notes: existingControl.notes || '',
               evidenceFiles: existingControl.evidenceFiles || []
-            })
+            }),
+            cache: 'no-store'
           });
 
           if (!controlResponse.ok) {
@@ -1276,7 +1333,8 @@ export default function EuAiActAssessmentPage() {
           status: control.status,
           notes: control.notes,
           evidenceFiles: control.evidenceFiles
-        })
+        }),
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -1324,7 +1382,8 @@ export default function EuAiActAssessmentPage() {
             status: control.status || 'pending',
             notes: control.notes || '',
             evidenceFiles: control.evidenceFiles || []
-          })
+          }),
+          cache: 'no-store'
         });
 
         if (!controlResponse.ok) {
@@ -1499,12 +1558,29 @@ export default function EuAiActAssessmentPage() {
             {assessment && (
               <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
                 <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="text-lg font-semibold text-foreground">Assessment Progress</h2>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h2 className="text-lg font-semibold text-foreground">Assessment Progress</h2>
+                      {assessment.riskClassificationCompleted && assessment.riskLevel && (
+                        <>
+                          <Badge className={`${getRiskLevelBadgeColor(assessment.riskLevel)} border`}>
+                            {assessment.riskLevel.toUpperCase()} RISK
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigateWithLockRetention(`/dashboard/${useCaseId}/eu-ai-act/risk-classification`)}
+                            className="text-xs"
+                          >
+                            View/Edit Classification
+                          </Button>
+                        </>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">Complete all required questions and controls to ensure compliance</p>
                   </div>
-                  <Badge 
-                    variant="outline" 
+                  <Badge
+                    variant="outline"
                     className={assessment.status === 'completed' ? 'bg-success/20 text-success border-success/30' : 'bg-warning/20 text-warning border-warning/30'}
                   >
                     {assessment.status === 'completed' ? 'Completed' : 'In Progress'}

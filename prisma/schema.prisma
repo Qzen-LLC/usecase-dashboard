@@ -43,7 +43,6 @@ model UseCase {
   userId                   String?
   answers                  Answer[]
   Approval                 Approval?
-  assessData               Assess?
   euAiActAssessments       EuAiActAssessment?
   finopsData               FinOps?
   guardrails               Guardrail[]
@@ -86,14 +85,6 @@ model FinOps {
   useCase         UseCase @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
 }
 
-model Assess {
-  useCaseId String   @id
-  createdAt DateTime @default(now())
-  stepsData Json
-  updatedAt DateTime @updatedAt
-  UseCase   UseCase  @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
-}
-
 model Approval {
   id                     String   @id @default(uuid())
   useCaseId              String   @unique
@@ -111,18 +102,17 @@ model Approval {
   businessStatus         String?
   businessComment        String?
   finalQualification     String?
-  // AI-specific approval fields
-  aiGovernanceName       String?
-  aiGovernanceStatus     String?
-  aiGovernanceComment    String?
-  modelValidationName    String?
-  modelValidationStatus  String?
-  modelValidationComment String?
-  aiEthicsName           String?
-  aiEthicsStatus         String?
-  aiEthicsComment        String?
   updatedAt              DateTime @updatedAt
   createdAt              DateTime @default(now())
+  aiEthicsComment        String?
+  aiEthicsName           String?
+  aiEthicsStatus         String?
+  aiGovernanceComment    String?
+  aiGovernanceName       String?
+  aiGovernanceStatus     String?
+  modelValidationComment String?
+  modelValidationName    String?
+  modelValidationStatus  String?
   useCase                UseCase  @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
 
   @@index([governanceStatus])
@@ -248,17 +238,41 @@ model EuAiActAnswer {
 }
 
 model EuAiActAssessment {
-  id        String           @id @default(uuid())
-  useCaseId String           @unique
-  status    String           @default("in_progress")
-  progress  Float            @default(0)
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  answers   EuAiActAnswer[]
-  useCase   UseCase          @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
-  controls  EuAiActControl[]
+  id                          String                            @id @default(uuid())
+  useCaseId                   String                            @unique
+  status                      String                            @default("in_progress")
+  progress                    Float                             @default(0)
+  createdAt                   DateTime                          @default(now())
+  updatedAt                   DateTime                          @updatedAt
+  applicableAnnexCategories   String[]                          @default([])
+  classificationDate          DateTime?
+  hasProhibitedPractices      Boolean                           @default(false)
+  isSubjectToAct              Boolean?
+  prohibitedPracticesList     String[]                          @default([])
+  riskClassificationCompleted Boolean                           @default(false)
+  riskLevel                   String?
+  riskLevelRationale          String?
+  answers                     EuAiActAnswer[]
+  useCase                     UseCase                           @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  controls                    EuAiActControl[]
+  riskClassificationAnswers   EuAiActRiskClassificationAnswer[]
 
   @@index([status])
+  @@index([riskLevel])
+  @@index([riskClassificationCompleted])
+}
+
+model EuAiActRiskClassificationAnswer {
+  id           String            @id @default(uuid())
+  assessmentId String
+  questionId   String
+  answer       String
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  assessment   EuAiActAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, questionId])
+  @@index([assessmentId])
 }
 
 model EuAiActControlCategory {
@@ -605,18 +619,38 @@ model User {
 }
 
 model Organization {
-  id             String           @id @default(uuid())
-  name           String
-  domain         String?          @unique
-  isActive       Boolean          @default(true)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  invitations    Invitation[]     @relation("OrganizationInvitations")
-  PromptTemplate PromptTemplate[]
-  Question       Question[]
-  useCases       UseCase[]
-  users          User[]
-  vendors        Vendor[]
+  id                     String                  @id @default(uuid())
+  name                   String
+  domain                 String?                 @unique
+  isActive               Boolean                 @default(true)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  governanceCharterId    String?
+  auditLogs              AuditLog[]
+  carbonFootprints       CarbonFootprint[]
+  changeManagementPlans  ChangeManagementPlan[]
+  competencyFrameworks   CompetencyFramework[]
+  complianceCalendar     ComplianceCalendar[]
+  cultureAssessments     CultureAssessment[]
+  energyConsumptions     EnergyConsumption[]
+  governanceAlerts       GovernanceAlert[]
+  governanceBodies       GovernanceBody[]
+  governanceKPIs         GovernanceKPI[]
+  greenAIRecommendations GreenAIRecommendation[]
+  incidents              Incident[]
+  invitations            Invitation[]            @relation("OrganizationInvitations")
+  maturityAssessments    MaturityAssessment[]
+  governanceCharter      GovernanceCharter?      @relation(fields: [governanceCharterId], references: [id])
+  periodicReviews        PeriodicReview[]
+  policyExceptions       PolicyException[]
+  policyVersions         PolicyVersion[]
+  PromptTemplate         PromptTemplate[]
+  Question               Question[]
+  sustainabilityMetrics  SustainabilityMetrics[]
+  trainingPrograms       TrainingProgram[]
+  useCases               UseCase[]
+  users                  User[]
+  vendors                Vendor[]
 
   @@index([name])
   @@index([domain])
@@ -766,6 +800,8 @@ model PromptTestRun {
   service          String
   settings         Json
   userId           String
+  inputTokens      Int            @default(0)
+  outputTokens     Int            @default(0)
   PromptTemplate   PromptTemplate @relation(fields: [promptTemplateId], references: [id], onDelete: Cascade)
   User             User           @relation(fields: [userId], references: [id])
 
@@ -1114,6 +1150,567 @@ model Answer {
   useCase          UseCase           @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
 }
 
+model GovernanceBody {
+  id             String              @id @default(uuid())
+  organizationId String
+  name           String
+  type           GovernanceBodyType
+  description    String?
+  charter        String?
+  mandate        String?
+  scope          String?
+  parentId       String?
+  orderIndex     Int                 @default(0)
+  isActive       Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  meetings       GovernanceMeeting[]
+  members        GovernanceRole[]
+
+  @@index([organizationId])
+  @@index([type])
+  @@index([isActive])
+}
+
+model GovernanceRole {
+  id               String             @id @default(uuid())
+  organizationId   String
+  governanceBodyId String?
+  userId           String?
+  roleTitle        String
+  roleType         GovernanceRoleType
+  responsibilities String?
+  raci             Json?
+  isActive         Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  governanceBody   GovernanceBody?    @relation(fields: [governanceBodyId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([governanceBodyId])
+  @@index([userId])
+  @@index([roleType])
+}
+
+model DecisionAuthority {
+  id             String   @id @default(uuid())
+  organizationId String
+  decisionType   String
+  riskLevel      String?
+  investmentMin  Float?
+  investmentMax  Float?
+  approverRole   String
+  escalationRole String?
+  description    String?
+  conditions     Json?
+  orderIndex     Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([decisionType])
+  @@index([riskLevel])
+}
+
+model EscalationRule {
+  id               String   @id @default(uuid())
+  organizationId   String
+  triggerType      String
+  triggerCondition Json
+  escalateTo       String
+  escalationPath   Json?
+  notifyEmails     String[]
+  autoEscalate     Boolean  @default(true)
+  description      String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([triggerType])
+  @@index([isActive])
+}
+
+model GovernanceMeeting {
+  id               String                @id @default(uuid())
+  organizationId   String
+  governanceBodyId String
+  title            String
+  meetingType      GovernanceMeetingType
+  frequency        String?
+  scheduledDate    DateTime
+  duration         Int?
+  agenda           Json?
+  attendees        String[]
+  minutes          String?
+  decisions        Json?
+  actionItems      Json?
+  status           MeetingStatus         @default(SCHEDULED)
+  completedAt      DateTime?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  governanceBody   GovernanceBody        @relation(fields: [governanceBodyId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([governanceBodyId])
+  @@index([scheduledDate])
+  @@index([status])
+  @@index([meetingType])
+}
+
+model GovernanceCharter {
+  id              String         @id @default(uuid())
+  organizationId  String         @unique
+  mission         String?
+  vision          String?
+  principles      String[]
+  objectives      String[]
+  scope           String?
+  mandate         String?
+  decisionRights  Json?
+  escalationPaths Json?
+  reviewCycle     String?
+  approvedBy      String?
+  approvedAt      DateTime?
+  version         Int            @default(1)
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  Organization    Organization[]
+
+  @@index([organizationId])
+}
+
+model TrainingProgram {
+  id             String               @id @default(uuid())
+  organizationId String
+  title          String
+  description    String?
+  category       TrainingCategory
+  level          TrainingLevel
+  duration       Int?
+  content        Json?
+  prerequisites  String[]
+  targetRoles    String[]
+  isRequired     Boolean              @default(false)
+  passingScore   Int?
+  certificateUrl String?
+  isActive       Boolean              @default(true)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  completions    TrainingCompletion[]
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([category])
+  @@index([isRequired])
+  @@index([isActive])
+}
+
+model TrainingCompletion {
+  id             String           @id @default(uuid())
+  userId         String
+  programId      String
+  organizationId String
+  status         CompletionStatus @default(NOT_STARTED)
+  progress       Int              @default(0)
+  score          Int?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  expiresAt      DateTime?
+  certificateUrl String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  program        TrainingProgram  @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, programId])
+  @@index([userId])
+  @@index([programId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model CompetencyFramework {
+  id                 String             @id @default(uuid())
+  organizationId     String
+  roleTitle          String
+  category           CompetencyCategory
+  competencies       Json
+  proficiencyLevels  Json
+  assessmentCriteria Json?
+  isActive           Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([roleTitle])
+  @@index([category])
+}
+
+model CultureAssessment {
+  id               String           @id @default(uuid())
+  organizationId   String
+  assessmentDate   DateTime
+  responses        Json
+  aggregatedScores Json
+  insights         String?
+  recommendations  Json?
+  conductedBy      String?
+  status           AssessmentStatus @default(IN_PROGRESS)
+  completedAt      DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([assessmentDate])
+  @@index([status])
+}
+
+model ChangeManagementPlan {
+  id             String       @id @default(uuid())
+  organizationId String
+  initiativeName String
+  description    String?
+  objectives     String[]
+  stakeholders   Json
+  phases         Json
+  kpis           Json?
+  risks          Json?
+  mitigationPlan String?
+  status         ChangeStatus @default(PLANNING)
+  startDate      DateTime?
+  targetDate     DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model CarbonFootprint {
+  id                 String       @id @default(uuid())
+  useCaseId          String
+  organizationId     String
+  modelName          String?
+  provider           String?
+  trainingEmissions  Float?
+  inferenceEmissions Float?
+  totalEmissions     Float?
+  energyConsumption  Float?
+  computeHours       Float?
+  measurementDate    DateTime
+  calculationMethod  String?
+  metadata           Json?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([useCaseId])
+  @@index([organizationId])
+  @@index([measurementDate])
+}
+
+model EnergyConsumption {
+  id              String       @id @default(uuid())
+  useCaseId       String?
+  organizationId  String
+  resourceType    String
+  provider        String?
+  region          String?
+  consumption     Float
+  cost            Float?
+  carbonIntensity Float?
+  periodStart     DateTime
+  periodEnd       DateTime
+  metadata        Json?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([useCaseId])
+  @@index([organizationId])
+  @@index([periodStart])
+  @@index([resourceType])
+}
+
+model SustainabilityMetrics {
+  id                     String       @id @default(uuid())
+  organizationId         String
+  metricDate             DateTime
+  totalCarbonFootprint   Float?
+  totalEnergyConsumption Float?
+  greenEnergyPercentage  Float?
+  efficiencyScore        Float?
+  costPerRequest         Float?
+  carbonPerRequest       Float?
+  recommendations        Json?
+  trends                 Json?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  organization           Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([metricDate])
+}
+
+model GreenAIRecommendation {
+  id                   String               @id @default(uuid())
+  useCaseId            String
+  organizationId       String
+  category             GreenAICategory
+  title                String
+  description          String
+  potentialSavings     Json?
+  implementationEffort String?
+  priority             String?
+  status               RecommendationStatus @default(PENDING)
+  implementedAt        DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  organization         Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([useCaseId])
+  @@index([organizationId])
+  @@index([category])
+  @@index([status])
+}
+
+model GovernanceKPI {
+  id              String       @id @default(uuid())
+  organizationId  String
+  name            String
+  description     String?
+  category        KPICategory
+  target          Float
+  current         Float?
+  unit            String?
+  trend           String?
+  status          KPIStatus    @default(ON_TRACK)
+  measurementDate DateTime
+  formula         String?
+  dataSource      String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([category])
+  @@index([measurementDate])
+  @@index([status])
+}
+
+model ComplianceCalendar {
+  id             String              @id @default(uuid())
+  organizationId String
+  title          String
+  description    String?
+  framework      String?
+  eventType      ComplianceEventType
+  dueDate        DateTime
+  reminderDays   Int[]               @default([30, 14, 7, 1])
+  assignedTo     String[]
+  status         CalendarEventStatus @default(UPCOMING)
+  completedAt    DateTime?
+  evidence       String[]
+  notes          String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([framework])
+  @@index([dueDate])
+  @@index([status])
+  @@index([eventType])
+}
+
+model GovernanceAlert {
+  id              String        @id @default(uuid())
+  organizationId  String
+  useCaseId       String?
+  alertType       AlertType
+  severity        AlertSeverity
+  title           String
+  description     String
+  source          String?
+  triggeredBy     Json?
+  status          AlertStatus   @default(ACTIVE)
+  assignedTo      String?
+  resolvedBy      String?
+  resolvedAt      DateTime?
+  resolutionNotes String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([useCaseId])
+  @@index([alertType])
+  @@index([severity])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model PeriodicReview {
+  id              String       @id @default(uuid())
+  organizationId  String
+  reviewType      ReviewType
+  subject         String
+  subjectId       String?
+  scheduledDate   DateTime
+  reviewers       String[]
+  findings        Json?
+  recommendations Json?
+  actionItems     Json?
+  status          ReviewStatus @default(SCHEDULED)
+  completedAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([reviewType])
+  @@index([scheduledDate])
+  @@index([status])
+}
+
+model PolicyVersion {
+  id             String       @id @default(uuid())
+  organizationId String
+  policyName     String
+  version        String
+  content        String
+  summary        String?
+  changes        String?
+  status         PolicyStatus @default(DRAFT)
+  approvedBy     String?
+  approvedAt     DateTime?
+  publishedAt    DateTime?
+  effectiveDate  DateTime?
+  expiryDate     DateTime?
+  attestations   Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([policyName])
+  @@index([status])
+  @@index([effectiveDate])
+}
+
+model PolicyException {
+  id             String          @id @default(uuid())
+  organizationId String
+  policyName     String
+  useCaseId      String?
+  requestedBy    String
+  justification  String
+  riskAssessment Json?
+  approverRole   String
+  approvedBy     String?
+  status         ExceptionStatus @default(PENDING)
+  grantedAt      DateTime?
+  expiresAt      DateTime?
+  reviewDate     DateTime?
+  conditions     String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([useCaseId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model Incident {
+  id             String           @id @default(uuid())
+  organizationId String
+  useCaseId      String?
+  title          String
+  description    String
+  severity       IncidentSeverity
+  status         IncidentStatus   @default(OPEN)
+  category       String?
+  impact         String?
+  rootCause      String?
+  reportedBy     String
+  reportedAt     DateTime         @default(now())
+  assignedTo     String?
+  resolvedBy     String?
+  resolvedAt     DateTime?
+  resolution     String?
+  lessons        String?
+  metadata       Json?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([useCaseId])
+  @@index([severity])
+  @@index([status])
+  @@index([reportedAt])
+}
+
+model AuditLog {
+  id              String       @id @default(uuid())
+  organizationId  String
+  useCaseId       String?
+  auditType       AuditType
+  title           String
+  description     String?
+  auditor         String
+  scope           String?
+  findings        Json?
+  recommendations Json?
+  status          AuditStatus  @default(PLANNED)
+  scheduledDate   DateTime
+  completedDate   DateTime?
+  followUpDate    DateTime?
+  evidence        String[]
+  timestamp       DateTime     @default(now())
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([useCaseId])
+  @@index([auditType])
+  @@index([status])
+  @@index([scheduledDate])
+  @@index([timestamp])
+}
+
+model MaturityAssessment {
+  id                String        @id @default(uuid())
+  organizationId    String
+  assessmentDate    DateTime
+  overallLevel      MaturityLevel
+  dimensions        Json
+  strengths         String[]
+  gaps              String[]
+  recommendations   Json?
+  assessedBy        String?
+  methodology       String?
+  nextAssessmentDue DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  organization      Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([assessmentDate])
+  @@index([overallLevel])
+}
+
 enum GuardrailRuleStatus {
   PENDING
   APPROVED
@@ -1201,4 +1798,235 @@ enum Stage {
   DATA_READINESS
   ROADMAP_POSITION
   BUDGET_PLANNING
+}
+
+enum GovernanceBodyType {
+  BOARD
+  COMMITTEE
+  COUNCIL
+  WORKING_GROUP
+  CENTER_OF_EXCELLENCE
+}
+
+enum GovernanceRoleType {
+  EXECUTIVE
+  GOVERNANCE_LEAD
+  RISK_OFFICER
+  COMPLIANCE_OFFICER
+  ETHICS_OFFICER
+  TECHNICAL_LEAD
+  BUSINESS_REPRESENTATIVE
+  ADVISOR
+}
+
+enum GovernanceMeetingType {
+  STRATEGIC_REVIEW
+  APPROVAL_REVIEW
+  RISK_REVIEW
+  COMPLIANCE_REVIEW
+  AD_HOC
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum TrainingCategory {
+  AI_LITERACY
+  AI_ETHICS
+  AI_SECURITY
+  GOVERNANCE_BASICS
+  RESPONSIBLE_AI
+  TECHNICAL_SKILLS
+  COMPLIANCE
+}
+
+enum TrainingLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum CompletionStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  EXPIRED
+  FAILED
+}
+
+enum CompetencyCategory {
+  TECHNICAL
+  GOVERNANCE
+  ETHICS
+  RISK_MANAGEMENT
+  COMPLIANCE
+  LEADERSHIP
+}
+
+enum AssessmentStatus {
+  PLANNING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ChangeStatus {
+  PLANNING
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum GreenAICategory {
+  MODEL_OPTIMIZATION
+  COMPUTE_EFFICIENCY
+  DATA_REDUCTION
+  CARBON_OFFSET
+  GREEN_INFRASTRUCTURE
+}
+
+enum RecommendationStatus {
+  PENDING
+  APPROVED
+  IN_PROGRESS
+  IMPLEMENTED
+  REJECTED
+  DEFERRED
+}
+
+enum KPICategory {
+  SPEED
+  QUALITY
+  RISK
+  COMPLIANCE
+  VALUE
+  TRAINING
+  COVERAGE
+}
+
+enum KPIStatus {
+  ON_TRACK
+  AT_RISK
+  OFF_TRACK
+  EXCEEDED
+}
+
+enum ComplianceEventType {
+  AUDIT
+  REVIEW
+  SUBMISSION
+  RENEWAL
+  ASSESSMENT
+  TRAINING_DEADLINE
+}
+
+enum CalendarEventStatus {
+  UPCOMING
+  DUE_SOON
+  OVERDUE
+  COMPLETED
+  CANCELLED
+}
+
+enum AlertType {
+  RISK
+  COMPLIANCE
+  PERFORMANCE
+  SECURITY
+  DEADLINE
+  ANOMALY
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AlertStatus {
+  ACTIVE
+  ACKNOWLEDGED
+  IN_PROGRESS
+  RESOLVED
+  FALSE_POSITIVE
+}
+
+enum ReviewType {
+  USE_CASE
+  POLICY
+  FRAMEWORK
+  GOVERNANCE
+  RISK
+  VENDOR
+}
+
+enum ReviewStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  POSTPONED
+  CANCELLED
+}
+
+enum PolicyStatus {
+  DRAFT
+  UNDER_REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ExceptionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  REVOKED
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IncidentStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  REOPENED
+}
+
+enum AuditType {
+  COMPLIANCE
+  SECURITY
+  PERFORMANCE
+  ETHICS
+  OPERATIONAL
+  TECHNICAL
+}
+
+enum AuditStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MaturityLevel {
+  LEVEL_1_INITIAL
+  LEVEL_2_DEVELOPING
+  LEVEL_3_DEFINED
+  LEVEL_4_MANAGED
+  LEVEL_5_OPTIMIZING
 }

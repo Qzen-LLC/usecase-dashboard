@@ -673,7 +673,9 @@ const AIUseCaseToolContent = () => {
         });   
         
         if (!res.ok) {
-          throw new Error('Failed to save use case');
+          const errorData = await res.json();
+          console.error('API Error Response:', errorData);
+          throw new Error(errorData.details || errorData.error || 'Failed to save use case');
         }
 
         router.push('/dashboard');

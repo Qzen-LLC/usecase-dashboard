@@ -1,22 +1,27 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  LayoutDashboard, 
-  Users, 
-  ShieldCheck, 
-  Building, 
-  DollarSign, 
-  FileText, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  LayoutDashboard,
+  Users,
+  ShieldCheck,
+  Building,
+  DollarSign,
+  FileText,
   Shield,
   Home,
   Settings,
   HelpCircle,
-  Code2
+  Code2,
+  Cog,
+  GraduationCap,
+  Leaf,
+  Eye,
+  Building2
 } from 'lucide-react';
 import { Button } from './button';
 import { UserButton } from '@/components/auth';
@@ -27,10 +32,12 @@ import ThemeToggle from './theme-toggle';
 
 interface NavigationItem {
   title: string;
-  href: string;
+  href?: string;
   icon: React.ComponentType<any>;
   description: string;
   isAdmin?: boolean;
+  children?: NavigationItem[];
+  isCollapsible?: boolean;
 }
 
 const navigationItems: NavigationItem[] = [
@@ -94,6 +101,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [dataReady, setDataReady] = useState(false);
+  const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
   const pathname = usePathname();
   const { user, isLoaded: userLoaded } = useUserClient();
   const { isSignedIn } = useAuthClient();
@@ -109,12 +117,99 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
     return () => clearTimeout(timer);
   }, []);
 
+  // Track previous pathname to detect actual navigation
+  const prevPathnameRef = useRef(pathname);
+
+  // Auto-close Organization Setup panel when navigating away from its sub-items
+  useEffect(() => {
+    if (dataReady && userData) {
+      // Only check if pathname actually changed (not on initial render or menu state change)
+      const pathnameChanged = prevPathnameRef.current !== pathname;
+      
+      if (pathnameChanged && expandedMenu === 'Organization Setup') {
+        // Check if current path matches any Organization Setup sub-item
+        const orgSetupPaths = [
+          '/dashboard/configure-questions',
+          '/dashboard/governance-setup',
+          '/dashboard/training',
+          '/dashboard/oversight',
+          '/dashboard/sustainability'
+        ];
+        const isOrgSetupPath = orgSetupPaths.some(path => 
+          pathname === path || pathname.startsWith(path)
+        );
+        
+        // If we navigated away from Organization Setup pages, close the panel
+        if (!isOrgSetupPath) {
+          setExpandedMenu(null);
+        }
+      }
+      
+      // Update previous pathname
+      prevPathnameRef.current = pathname;
+    }
+  }, [pathname, dataReady, userData, expandedMenu]);
+
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
+    if (isCollapsed) {
+      // If collapsing, also close expanded menu
+      setExpandedMenu(null);
+    }
+  };
+
+  const toggleMenu = (menuTitle: string) => {
+    setExpandedMenu(expandedMenu === menuTitle ? null : menuTitle);
+  };
+
+  // Organization Setup sub-items
+  const organizationSetupItems: NavigationItem[] = [
+    ...(userData?.role === 'ORG_ADMIN'
+      ? [{
+          title: 'Configure Questions',
+          href: '/dashboard/configure-questions',
+          icon: HelpCircle,
+          description: 'Question Management',
+          isAdmin: true
+        }]
+      : []),
+    {
+      title: 'Governance Setup',
+      href: '/dashboard/governance-setup',
+      icon: Cog,
+      description: 'Governance Configuration'
+    },
+    {
+      title: 'Training & Competency',
+      href: '/dashboard/training',
+      icon: GraduationCap,
+      description: 'AI Training Programs'
+    },
+    {
+      title: 'Oversight & Monitoring',
+      href: '/dashboard/oversight',
+      icon: Eye,
+      description: 'Governance Control Tower'
+    },
+    {
+      title: 'Sustainable AI',
+      href: '/dashboard/sustainability',
+      icon: Leaf,
+      description: 'Environmental Impact'
+    }
+  ];
+
+  // Organization Setup parent item
+  const organizationSetupItem: NavigationItem = {
+    title: 'Organization Setup',
+    icon: Building2,
+    description: 'Organization Configuration',
+    isCollapsible: true,
+    children: organizationSetupItems
   };
   
   // Build sidebar items, add Admin Dashboard for QZEN_ADMIN and Manage Users for ORG_ADMIN
-  const sidebarItems = [
+  const sidebarItems: NavigationItem[] = [
     ...(userData?.role === 'QZEN_ADMIN'
       ? [{
           title: 'Admin Dashboard',
@@ -132,15 +227,9 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
           isAdmin: true // Add flag for styling
         }]
       : []),
-      ...(userData?.role === 'ORG_ADMIN'
-        ? [{
-            title: 'Configure Questions',
-            href: '/dashboard/configure-questions',
-            icon: Users,
-            description: 'Question Management',
-            isAdmin: true // Add flag for styling
-          }]
-        : []),
+    ...(userData?.role === 'ORG_ADMIN'
+      ? [organizationSetupItem]
+      : []),
     ...navigationItems
   ];
 
@@ -152,6 +241,13 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
       </div>
     );
   }
+
+  // Check if current path matches any Organization Setup sub-item (for styling only)
+  const isOrgSetupActive = organizationSetupItems.some(item => 
+    item.href && (pathname === item.href || pathname.startsWith(item.href))
+  );
+  // Only show secondary panel when explicitly clicked, not auto-expanded
+  const isOrgSetupExpanded = expandedMenu === 'Organization Setup';
 
   return (
     <div className="flex h-screen bg-background text-foreground">
@@ -197,10 +293,61 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
         </div>
 
         {/* Navigation */}
-        <nav className={`flex-1 p-2 ${isCollapsed ? 'space-y-2' : 'space-y-2'}`}>
+        <nav className={`flex-1 p-2 ${isCollapsed ? 'space-y-2' : 'space-y-1'} overflow-y-auto main-sidebar-nav`}>
           {sidebarItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+            const isActive = item.href && (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href)));
             const Icon = item.icon;
+            const isCollapsible = item.isCollapsible && item.children;
+            const isExpanded = isCollapsible && (item.title === 'Organization Setup' ? isOrgSetupExpanded : expandedMenu === item.title);
+            
+            if (isCollapsible) {
+              if (isCollapsed) {
+                // When collapsed, show just the icon
+                return (
+                  <button
+                    key={item.title}
+                    onClick={() => {
+                      setIsCollapsed(false);
+                      // Small delay to ensure sidebar expands first, then open menu
+                      setTimeout(() => toggleMenu(item.title), 100);
+                    }}
+                    className={`
+                      w-full flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 group
+                      ${isOrgSetupActive 
+                        ? 'bg-primary/10 text-primary shadow-sm' 
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground hover:shadow-sm'
+                      }
+                    `}
+                    title={item.title}
+                  >
+                    <Icon className={`w-5 h-5 flex-shrink-0 ${isOrgSetupActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} />
+                  </button>
+                );
+              }
+              
+              // When expanded, show full menu item with chevron
+              return (
+                <div key={item.title}>
+                  <button
+                    onClick={() => toggleMenu(item.title)}
+                    className={`
+                      w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group
+                      ${isOrgSetupActive 
+                        ? 'bg-primary/10 text-primary shadow-sm border-l-4 border-primary font-medium' 
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground hover:shadow-sm'
+                      }
+                    `}
+                  >
+                    <Icon className={`w-5 h-5 flex-shrink-0 ${isOrgSetupActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} />
+                    <div className="flex flex-col flex-1">
+                      <span className="text-sm font-medium leading-tight">{item.title}</span>
+                    </div>
+                  </button>
+                </div>
+              );
+            }
+            
+            if (!item.href) return null;
             
             return (
               <Link key={item.href} href={item.href}>
@@ -217,8 +364,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
                   <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-primary' : item.isAdmin ? 'text-accent-foreground' : 'text-muted-foreground group-hover:text-foreground'}`} />
                   {!isCollapsed && (
                     <div className="flex flex-col">
-                      <span className="text-xs font-normal leading-snug">{item.title}</span>
-                      {/* Compact mode hides descriptions to reduce vertical space */}
+                      <span className="text-sm font-medium leading-tight">{item.title}</span>
                       {item.isAdmin && (
                         <span className="text-[10px] text-accent-foreground font-normal leading-snug">Admin Only</span>
                       )}
@@ -268,6 +414,51 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
         </div>
       </div>
 
+      {/* Secondary Side Panel for Organization Setup */}
+      {isOrgSetupExpanded && !isCollapsed && userData?.role === 'ORG_ADMIN' && (
+        <div className="w-64 bg-card border-r border-border shadow-sm transition-all duration-300 ease-in-out flex flex-col">
+          <div className="border-b border-border p-2 flex items-center justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExpandedMenu(null)}
+              className="p-1.5 hover:bg-muted rounded-lg transition-colors"
+              title="Collapse sidebar"
+            >
+              <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+            </Button>
+          </div>
+          <nav className="flex-1 p-2 overflow-y-auto">
+            {organizationSetupItems.map((subItem) => {
+              const isSubActive = subItem.href && (pathname === subItem.href || pathname.startsWith(subItem.href));
+              const SubIcon = subItem.icon;
+              
+              return (
+                <Link key={subItem.href} href={subItem.href || '#'}>
+                    <div className={`
+                    flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group
+                    ${isSubActive 
+                      ? 'bg-primary/10 text-primary shadow-sm border-l-4 border-primary font-medium' 
+                      : subItem.isAdmin 
+                        ? 'bg-accent/10 text-accent-foreground border-l-4 border-accent hover:bg-accent/20'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground hover:shadow-sm'
+                    }
+                  `}>
+                    <SubIcon className={`w-5 h-5 flex-shrink-0 ${isSubActive ? 'text-primary' : subItem.isAdmin ? 'text-accent-foreground' : 'text-muted-foreground group-hover:text-foreground'}`} />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium leading-tight">{subItem.title}</span>
+                      {subItem.isAdmin && (
+                        <span className="text-xs text-accent-foreground font-medium">Admin Only</span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Navigation Bar */}
@@ -275,10 +466,19 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4">
               <h1 className="text-xl font-semibold text-foreground">
-                {sidebarItems.find(item => {
-                  const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-                  return isActive;
-                })?.title || 'Dashboard'}
+                {(() => {
+                  // Check Organization Setup sub-items first
+                  const activeSubItem = organizationSetupItems.find(item => 
+                    item.href && (pathname === item.href || pathname.startsWith(item.href))
+                  );
+                  if (activeSubItem) return activeSubItem.title;
+                  
+                  // Then check main sidebar items
+                  const activeItem = sidebarItems.find(item => 
+                    item.href && (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href)))
+                  );
+                  return activeItem?.title || 'Dashboard';
+                })()}
               </h1>
             </div>
             <div className="flex items-center gap-4">

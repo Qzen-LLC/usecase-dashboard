@@ -496,12 +496,19 @@ export class ContextAggregator {
   }
 
   /**
-   * Load assessment data from database
+   * Load assessment data from database (now built from Answer records)
    */
   private async loadAssessmentData(useCaseId: string) {
-    return await prismaClient.assess.findUnique({
-      where: { useCaseId }
-    });
+    const { buildStepsDataFromAnswers } = await import('@/lib/mappers/answers-to-steps');
+    const stepsData = await buildStepsDataFromAnswers(useCaseId);
+    
+    // Return in the same format as the old Assess table for compatibility
+    return {
+      useCaseId,
+      stepsData,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
   }
 
   /**

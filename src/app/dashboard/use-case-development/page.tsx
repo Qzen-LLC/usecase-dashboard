@@ -115,18 +115,18 @@ export default function UseCaseDevelopmentDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-md h-8 w-8 border-2 border-blue-600 border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-6xl">
+    <div className="container mx-auto p-4 max-w-7xl">
       {/* Header */}
-      <div className="mb-4 bg-muted/50 rounded-md p-4">
+      <div className="mb-6">
         <div className="flex items-center gap-2 mb-1">
-          <Code2 className="w-8 h-8 text-blue-600" />
-          <h1 className="text-2xl font-semibold text-foreground">Use Case Development</h1>
+          <Code2 className="w-5 h-5 text-blue-600" />
+          <h1 className="text-xl font-bold text-foreground">Use Case Development</h1>
         </div>
         <p className="text-xs text-muted-foreground">
           Create and manage prompt templates for your AI use cases
@@ -134,41 +134,41 @@ export default function UseCaseDevelopmentDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-        <Card className="bg-muted/50 rounded-md shadow-none">
-          <CardHeader className="pb-2">
-            <CardDescription>Total Use Cases</CardDescription>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
+        <Card className="rounded-md">
+          <CardHeader className="pb-1.5 px-4 pt-4">
+            <CardDescription className="text-xs">Total Use Cases</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{useCases.length}</div>
+          <CardContent className="px-4 pb-4">
+            <div className="text-xl font-bold">{useCases.length}</div>
           </CardContent>
         </Card>
-        <Card className="bg-muted/50 rounded-md shadow-none">
-          <CardHeader className="pb-2">
-            <CardDescription>In Development</CardDescription>
+        <Card className="rounded-md">
+          <CardHeader className="pb-1.5 px-4 pt-4">
+            <CardDescription className="text-xs">In Development</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="px-4 pb-4">
+            <div className="text-xl font-bold">
               {useCases.filter(uc => uc.stage === 'in-progress').length}
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-muted/50 rounded-md shadow-none">
-          <CardHeader className="pb-2">
-            <CardDescription>Ready for Pilot</CardDescription>
+        <Card className="rounded-md">
+          <CardHeader className="pb-1.5 px-4 pt-4">
+            <CardDescription className="text-xs">Ready for Pilot</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="px-4 pb-4">
+            <div className="text-xl font-bold">
               {useCases.filter(uc => uc.stage === 'pilot').length}
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-muted/50 rounded-md shadow-none">
-          <CardHeader className="pb-2">
-            <CardDescription>Total Prompts</CardDescription>
+        <Card className="rounded-md">
+          <CardHeader className="pb-1.5 px-4 pt-4">
+            <CardDescription className="text-xs">Total Prompts</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
+          <CardContent className="px-4 pb-4">
+            <div className="text-xl font-bold">0</div>
           </CardContent>
         </Card>
       </div>
@@ -176,21 +176,21 @@ export default function UseCaseDevelopmentDashboard() {
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-3 mb-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
           <Input
             type="text"
             placeholder="Search use cases..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-9 h-9 text-sm rounded-md"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 flex-wrap">
           <Button
             variant={selectedStage === 'all' ? 'default' : 'outline'}
             onClick={() => setSelectedStage('all')}
             size="sm"
-            className={selectedStage === 'all' ? 'bg-neutral-700 text-white hover:bg-neutral-800 dark:bg-neutral-600 dark:hover:bg-neutral-700' : 'bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700'}
+            className={`text-xs h-8 px-3 rounded-md ${selectedStage === 'all' ? 'bg-neutral-700 text-white hover:bg-neutral-800 dark:bg-neutral-600 dark:hover:bg-neutral-700' : 'bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700'}`}
           >
             All Stages
           </Button>
@@ -200,7 +200,7 @@ export default function UseCaseDevelopmentDashboard() {
               variant={selectedStage === stage ? 'default' : 'outline'}
               onClick={() => setSelectedStage(stage)}
               size="sm"
-              className={selectedStage === stage ? 'bg-neutral-700 text-white hover:bg-neutral-800 dark:bg-neutral-600 dark:hover:bg-neutral-700' : 'bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700'}
+              className={`text-xs h-8 px-3 rounded-md ${selectedStage === stage ? 'bg-neutral-700 text-white hover:bg-neutral-800 dark:bg-neutral-600 dark:hover:bg-neutral-700' : 'bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700'}`}
             >
               {stage.split('-').map(word => 
                 word.charAt(0).toUpperCase() + word.slice(1)
@@ -212,13 +212,13 @@ export default function UseCaseDevelopmentDashboard() {
 
       {/* Use Cases Grid */}
       {filteredUseCases.length === 0 ? (
-        <Card className="p-12 text-center bg-muted/50 rounded-md shadow-none">
-          <div className="flex flex-col items-center gap-4">
-            <FileText className="w-16 h-16 text-gray-300" />
-            <h3 className="text-lg font-semibold text-gray-600">
+        <Card className="p-8 text-center rounded-md">
+          <div className="flex flex-col items-center gap-3">
+            <FileText className="w-12 h-12 text-gray-300" />
+            <h3 className="text-base font-semibold text-gray-600">
               No use cases in development stages
             </h3>
-            <p className="text-gray-500 max-w-md">
+            <p className="text-xs text-gray-500 max-w-md">
               Use cases will appear here once they reach the Backlog stage or beyond.
               Move your use cases through the pipeline to start developing prompts.
             </p>
@@ -229,35 +229,35 @@ export default function UseCaseDevelopmentDashboard() {
           {filteredUseCases.map((useCase) => (
             <Card 
               key={useCase.id} 
-              className="bg-muted/50 rounded-md hover:shadow-none transition-shadow cursor-pointer group"
+              className="hover:shadow-lg transition-shadow cursor-pointer group rounded-md"
               onClick={() => handleUseCaseClick(useCase.id)}
             >
-              <CardHeader>
-                <div className="flex justify-between items-start mb-2">
-                  <Badge className={stageBadgeColors[useCase.stage] || 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'}>
+              <CardHeader className="px-4 pt-4 pb-3">
+                <div className="flex justify-between items-start mb-1.5">
+                  <Badge className={`text-xs px-2 py-0.5 rounded ${stageBadgeColors[useCase.stage] || 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'}`}>
                     {useCase.stage?.split('-').map(word => 
                       word.charAt(0).toUpperCase() + word.slice(1)
                     ).join(' ')}
                   </Badge>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                 </div>
-                <CardTitle className="text-lg line-clamp-2 text-foreground">
+                <CardTitle className="text-base line-clamp-2 text-foreground">
                   {useCase.title}
                 </CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">
+                <CardDescription className="text-xs text-muted-foreground">
                   {useCase.businessFunction}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+              <CardContent className="px-4 pb-4">
+                <div className="space-y-2.5">
                   {/* Prompt Stats */}
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <FileText className="w-4 h-4" />
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1.5 text-gray-600">
+                      <FileText className="w-3.5 h-3.5" />
                       <span>{useCase.promptTemplates?.length || 0} Prompts</span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <GitBranch className="w-4 h-4" />
+                    <div className="flex items-center gap-1.5 text-gray-600">
+                      <GitBranch className="w-3.5 h-3.5" />
                       <span>0 Versions</span>
                     </div>
                   </div>
@@ -272,11 +272,11 @@ export default function UseCaseDevelopmentDashboard() {
 
                   {/* Action Button */}
                   <Button 
-                    className="w-full mt-4 !bg-muted !text-foreground !border !border-border hover:!bg-muted/90"
+                    className="w-full mt-3 bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700 rounded-md text-xs h-8"
                     variant="outline"
                     size="sm"
                   >
-                    <Code2 className="w-4 h-4 mr-2" />
+                    <Code2 className="w-3.5 h-3.5 mr-1.5" />
                     Manage Prompts
                   </Button>
                 </div>
@@ -287,13 +287,13 @@ export default function UseCaseDevelopmentDashboard() {
       )}
 
       {/* Quick Actions */}
-      <div className="fixed bottom-6 right-6">
+      <div className="fixed bottom-4 right-4">
         <Button
           size="lg"
-          className="rounded-full shadow-lg !bg-muted !text-foreground !border !border-border hover:!bg-muted/90"
+          className="rounded-md shadow-lg bg-neutral-100 text-foreground border border-neutral-300 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-800 text-sm h-10 px-4"
           onClick={() => router.push('/new-usecase')}
         >
-          <Plus className="w-5 h-5 mr-2" />
+          <Plus className="w-4 h-4 mr-1.5" />
           New Use Case
         </Button>
       </div>

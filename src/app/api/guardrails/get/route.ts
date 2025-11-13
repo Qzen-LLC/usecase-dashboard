@@ -39,13 +39,26 @@ export const GET = withAuth(async (request: Request, { auth }) => {
     const baseConfig = ((): any => {
       const cfg = guardrail.configuration as any;
       if (cfg && typeof cfg === 'object' && !Array.isArray(cfg)) return cfg;
+      // Handle JSON string
+      if (typeof cfg === 'string' && cfg.trim().length > 0) {
+        try {
+          return JSON.parse(cfg);
+        } catch {
+          return {};
+        }
+      }
       try {
         return JSON.parse(JSON.stringify(cfg ?? {}));
       } catch {
         return {};
       }
     })();
+    
+    // If configuration is empty but we have rules, reconstruct it
     const configWithDbIds = { ...(baseConfig as Record<string, any>) };
+    const hasConfigContent = configWithDbIds && 
+      Object.keys(configWithDbIds).length > 0 && 
+      (configWithDbIds.guardrails || configWithDbIds.rules || configWithDbIds.metadata);
     
     // If we have rules in the database, update the configuration with their IDs and status
     if (guardrail.rules && guardrail.rules.length > 0) {
@@ -55,31 +68,65 @@ export const GET = withAuth(async (request: Request, { auth }) => {
         rulesMap.set(dbRule.rule, dbRule);
       });
       
-      // Update configuration rules with database IDs and status
-      if (configWithDbIds?.guardrails?.rules) {
-        Object.keys(configWithDbIds.guardrails.rules).forEach(category => {
-          if (Array.isArray(configWithDbIds.guardrails.rules[category])) {
-            configWithDbIds.guardrails.rules[category] = configWithDbIds.guardrails.rules[category].map((rule: any) => {
-              const dbRule = rulesMap.get(rule.rule);
-              if (dbRule) {
-                return {
-                  ...rule,
-                  id: dbRule.id, // Use the actual database ID
-                  status: dbRule.status,
-                  isCustom: dbRule.isCustom,
-                  isEdited: dbRule.isEdited,
-                  approvedBy: dbRule.approvedBy,
-                  approvedAt: dbRule.approvedAt,
-                  rejectedBy: dbRule.rejectedBy,
-                  rejectedAt: dbRule.rejectedAt,
-                  rejectionReason: dbRule.rejectionReason
-                };
-              }
-              return rule;
-            });
-          }
-        });
+      // Initialize guardrails structure if missing
+      if (!configWithDbIds.guardrails) {
+        configWithDbIds.guardrails = {};
       }
+      if (!configWithDbIds.guardrails.rules) {
+        configWithDbIds.guardrails.rules = {};
+      }
+      
+      // Group rules by category/type
+      guardrail.rules.forEach((dbRule: any) => {
+        const category = dbRule.type || 'general';
+        if (!configWithDbIds.guardrails.rules[category]) {
+          configWithDbIds.guardrails.rules[category] = [];
+        }
+        
+        // Check if rule already exists in config
+        const existingRule = configWithDbIds.guardrails.rules[category].find((r: any) => r.rule === dbRule.rule);
+        if (existingRule) {
+          // Update existing rule with DB data
+          Object.assign(existingRule, {
+            id: dbRule.id,
+            status: dbRule.status,
+            isCustom: dbRule.isCustom,
+            isEdited: dbRule.isEdited,
+            approvedBy: dbRule.approvedBy,
+            approvedAt: dbRule.approvedAt,
+            rejectedBy: dbRule.rejectedBy,
+            rejectedAt: dbRule.rejectedAt,
+            rejectionReason: dbRule.rejectionReason
+          });
+        } else {
+          // Add new rule from database
+          configWithDbIds.guardrails.rules[category].push({
+            id: dbRule.id,
+            rule: dbRule.rule,
+            type: dbRule.type,
+            severity: dbRule.severity,
+            description: dbRule.description,
+            status: dbRule.status,
+            isCustom: dbRule.isCustom,
+            isEdited: dbRule.isEdited
+          });
+        }
+      });
+      
+      // Add metadata if missing
+      if (!configWithDbIds.metadata) {
+        configWithDbIds.metadata = {
+          version: '1.0',
+          createdAt: guardrail.createdAt,
+          updatedAt: guardrail.updatedAt
+        };
+      }
+    }
+    
+    // Ensure we have a valid structure even if config was empty
+    if (!hasConfigContent && guardrail.rules && guardrail.rules.length > 0) {
+      // We've reconstructed from rules above, so configWithDbIds should now have content
+      console.log(`✅ Reconstructed guardrails config from ${guardrail.rules.length} rules`);
     }
     
     // Return the guardrail configuration with the correct structure

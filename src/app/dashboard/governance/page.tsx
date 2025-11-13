@@ -7,7 +7,7 @@
 // - Proper contrast and readability in both light and dark themes
 // - Framework-specific lock management for exclusive editing
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import { Loader2, Shield, Users, Building, RefreshCw, AlertTriangle, Lock } from
 import Link from 'next/link';
 import { calculateRiskScores, getRiskLevel, type StepsData } from '@/lib/risk-calculations';
 import { type GovernanceFramework } from '@/hooks/useGovernanceLock';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface UseCase {
   useCaseId: string;
@@ -57,6 +58,12 @@ export default function GovernancePage() {
   // Lock management state
   const [selectedUseCase, setSelectedUseCase] = useState<UseCase | null>(null);
   const [selectedFramework, setSelectedFramework] = useState<GovernanceFramework | null>(null);
+  const [lockConflict, setLockConflict] = useState<{
+    acquiredBy: string;
+    expiresAt?: string | null;
+    framework: GovernanceFramework;
+    useCaseName: string;
+  } | null>(null);
 
   // Check for dark mode
   useEffect(() => {
@@ -106,7 +113,9 @@ export default function GovernancePage() {
         setRefreshing(true);
       }
 
-      const response = await fetch('/api/governance-data');
+      const response = await fetch('/api/governance-data', {
+        cache: 'no-store'
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch governance data');
       }
@@ -131,7 +140,7 @@ export default function GovernancePage() {
 
         if (hasEuAiAct) {
           promises.push(
-            fetch(`/api/eu-ai-act/progress/${useCaseId}`)
+            fetch(`/api/eu-ai-act/progress/${useCaseId}`, { cache: 'no-store' })
               .then(res => res.json())
               .then(data => { progressData[useCaseId].euAiAct = data; })
               .catch(err => console.error(`Error fetching EU AI Act progress for ${useCaseId}:`, err))
@@ -140,7 +149,7 @@ export default function GovernancePage() {
 
         if (hasIso42001) {
           promises.push(
-            fetch(`/api/iso-42001/progress/${useCaseId}`)
+            fetch(`/api/iso-42001/progress/${useCaseId}`, { cache: 'no-store' })
               .then(res => res.json())
               .then(data => { progressData[useCaseId].iso42001 = data; })
               .catch(err => console.error(`Error fetching ISO 42001 progress for ${useCaseId}:`, err))
@@ -149,7 +158,7 @@ export default function GovernancePage() {
 
         if (hasUaeAi) {
           promises.push(
-            fetch(`/api/uae-ai/progress/${useCaseId}`)
+            fetch(`/api/uae-ai/progress/${useCaseId}`, { cache: 'no-store' })
               .then(res => res.json())
               .then(data => { progressData[useCaseId].uaeAi = data; })
               .catch(err => console.error(`Error fetching UAE AI progress for ${useCaseId}:`, err))
@@ -158,7 +167,7 @@ export default function GovernancePage() {
 
         if (hasIso27001) {
           promises.push(
-            fetch(`/api/iso-27001/progress/${useCaseId}`)
+            fetch(`/api/iso-27001/progress/${useCaseId}`, { cache: 'no-store' })
               .then(res => res.json())
               .then(data => { progressData[useCaseId].iso27001 = data; })
               .catch(err => console.error(`Error fetching ISO 27001 progress for ${useCaseId}:`, err))
@@ -186,9 +195,34 @@ export default function GovernancePage() {
     if (!inFlight.current) fetchAllData(true);
   };
 
+  const formatTimeRemaining = (expiresAt?: string | null) => {
+    if (!expiresAt) return null;
+    const diffMs = new Date(expiresAt).getTime() - Date.now();
+    if (Number.isNaN(diffMs)) return null;
+    if (diffMs <= 0) return 'less than a minute';
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    if (minutes > 0) {
+      return `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
+    }
+    return `${seconds}s`;
+  };
+
+  const conflictTimeRemaining = useMemo(
+    () => (lockConflict?.expiresAt ? formatTimeRemaining(lockConflict.expiresAt) : null),
+    [lockConflict?.expiresAt]
+  );
+
   const handleStartAssessment = async (useCase: UseCase, framework: GovernanceFramework) => {
     setSelectedUseCase(useCase);
     setSelectedFramework(framework);
+    setError(null);
+    setLockConflict(null);
     
     // Automatically acquire lock without showing modal
     try {
@@ -201,7 +235,8 @@ export default function GovernancePage() {
           useCaseId: useCase.useCaseId,
           lockType: 'EXCLUSIVE',
           scope: framework
-        })
+        }),
+        cache: 'no-store'
       });
       
       const data = await response.json();
@@ -209,8 +244,12 @@ export default function GovernancePage() {
       if (!response.ok) {
         if (response.status === 409) {
           console.log(`❌ Lock already held by another user: ${data.lockDetails?.acquiredBy}`);
-          // Show error message for lock conflict
-          setError(`This framework is currently being edited by ${data.lockDetails?.acquiredBy}. Please try again later.`);
+          setLockConflict({
+            acquiredBy: data.lockDetails?.acquiredBy || 'another user',
+            expiresAt: data.lockDetails?.expiresAt ?? null,
+            framework,
+            useCaseName: useCase.useCaseName,
+          });
           return;
         }
         throw new Error(data.error || 'Failed to acquire lock');
@@ -297,7 +336,34 @@ export default function GovernancePage() {
   }
 
   return (
-    <div className="bg-background min-h-full">
+    <>
+      <Dialog
+        open={Boolean(lockConflict)}
+        onOpenChange={(open) => {
+          if (!open) setLockConflict(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assessment in Progress</DialogTitle>
+            <DialogDescription>
+              {(lockConflict?.useCaseName || 'This assessment')} is currently being edited by {lockConflict?.acquiredBy}.
+            </DialogDescription>
+          </DialogHeader>
+          {conflictTimeRemaining && (
+            <p className="text-sm text-muted-foreground">
+              Lock expires in {conflictTimeRemaining}
+            </p>
+          )}
+          <DialogFooter className="sm:justify-end">
+            <Button variant="outline" onClick={() => { setLockConflict(null); handleRefresh(); }}>
+              Refresh Status
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="bg-background min-h-full">
       <div className="px-6 py-6">
         {/* Header */}
         <div className="mb-6">
@@ -494,7 +560,7 @@ export default function GovernancePage() {
                           })()}%` }}></div>
                         </div>
                         <div className="flex justify-between items-center">
-                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${assessmentProgress[item.useCaseId]?.iso42001?.status === 'completed' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' : 'bg-yellow-100 dark:text-yellow-900/20 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700'}`}>
+                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 h-5 font-medium ${assessmentProgress[item.useCaseId]?.iso42001?.status === 'completed' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' : 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700'}`}>
                             {assessmentProgress[item.useCaseId]?.iso42001?.status === 'completed' ? 'Completed' : 'In Progress'}
                           </Badge>
                           <Button 
@@ -596,6 +662,7 @@ export default function GovernancePage() {
         </div>
       </div>
 
-    </div>
+      </div>
+    </>
   );
 }

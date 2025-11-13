@@ -3,7 +3,8 @@ import { withAuth } from '@/lib/auth-gateway';
 
 import { prismaClient } from '@/utils/db';
 
-import { getRiskLevel } from '@/lib/risk-calculations';
+import { calculateRiskScores, getRiskLevel, getRiskCategoryScores, type StepsData } from '@/lib/risk-calculations';
+import { buildStepsDataFromAnswers } from '@/lib/mappers/answers-to-steps';
 
 export const GET = withAuth(async (request, { auth }) => {
   try {
@@ -36,7 +37,12 @@ export const GET = withAuth(async (request, { auth }) => {
         include: {
           Approval: true,
           finopsData: true,
-          answers: true,
+          answers: {
+            include: {
+              question: true,
+              questionTemplate: true,
+            }
+          },
         },
         orderBy: { updatedAt: 'desc' }
       });
@@ -46,7 +52,12 @@ export const GET = withAuth(async (request, { auth }) => {
         include: {
           Approval: true,
           finopsData: true,
-          answers: true,
+          answers: {
+            include: {
+              question: true,
+              questionTemplate: true,
+            }
+          },
         },
         orderBy: { updatedAt: 'desc' }
       });
@@ -72,47 +83,32 @@ export const GET = withAuth(async (request, { auth }) => {
     let totalRiskScore = 0;
     let assessedUseCases = 0;
     
-    // Helper from probability/impact labels to numeric
-    const levelToScore = (level: string) => {
-      const val = String(level || '').toLowerCase();
-      if (val.includes('high')) return 8;
-      if (val.includes('medium')) return 5;
-      if (val.includes('low')) return 2;
-      return 0;
-    };
+    // Calculate risk scores for each use case using Q/A Answer records
+    for (const uc of useCases) {
+      let riskScore = 0;
+      let riskLevel: 'Low' | 'Medium' | 'High' | 'Critical' = 'Low';
+      let categoryScores = {} as Record<string, number>;
 
-    // Calculate risk scores per use case from template/question answers (RISK type encodes labels with pro:/imp:)
-    useCases.forEach((uc: any) => {
-      const answers = Array.isArray(uc.answers) ? uc.answers : [];
-      let probLabel: string | null = null;
-      let impLabel: string | null = null;
+      // Build StepsData from Answer rows
+      const stepsData = await buildStepsDataFromAnswers(uc.id) as StepsData;
+      const riskResult = calculateRiskScores(stepsData);
+      riskScore = riskResult.score;
+      riskLevel = getRiskLevel(riskScore);
+      categoryScores = getRiskCategoryScores(stepsData);
 
-      for (const ans of answers) {
-        const val = ans?.value as any;
-        if (!val) continue;
-        if (val.labels && Array.isArray(val.labels)) {
-          const p = val.labels.find((l: string) => typeof l === 'string' && l.startsWith('pro:'));
-          const i = val.labels.find((l: string) => typeof l === 'string' && l.startsWith('imp:'));
-          if (p) probLabel = p.replace(/^pro:/, '');
-          if (i) impLabel = i.replace(/^imp:/, '');
+      // Update distributions
+      assessedUseCases++;
+      totalRiskScore += riskScore;
+      riskDistribution[riskLevel]++;
+
+      // Update category distributions
+      Object.entries(categoryScores).forEach(([category, score]) => {
+        const level = getRiskLevel(score as number);
+        if (riskCategories[category as keyof typeof riskCategories]) {
+          riskCategories[category as keyof typeof riskCategories][level]++;
         }
-      }
-
-      if (probLabel || impLabel) {
-        const pScore = levelToScore(probLabel || '');
-        const iScore = levelToScore(impLabel || '');
-        const riskScore = Math.round(((pScore + iScore) || 0) / (probLabel && impLabel ? 2 : 1));
-        const riskLevel = getRiskLevel(riskScore);
-
-        assessedUseCases++;
-        totalRiskScore += riskScore;
-        riskDistribution[riskLevel]++;
-
-        // Approximate category distributions: map probability/impact into operational bucket
-        const level = getRiskLevel(riskScore);
-        riskCategories.operational[level]++;
-      }
-    });
+      });
+    }
     
     // Calculate average risk score
     const averageRiskScore = assessedUseCases > 0 ? totalRiskScore / assessedUseCases : 0;

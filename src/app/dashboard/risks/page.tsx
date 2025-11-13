@@ -1,11 +1,12 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  AlertTriangle, 
-  Shield, 
-  RefreshCw, 
-  ChevronDown, 
+import Link from 'next/link';
+import {
+  AlertTriangle,
+  Shield,
+  RefreshCw,
+  ChevronDown,
   ChevronUp,
   ExternalLink,
   Search,
@@ -17,8 +18,6 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUserData } from '@/contexts/UserContext';
-import { calculateRiskScores } from '@/lib/risk-calculations';
-import { buildStepsDataFromQnA } from '@/lib/steps-from-qna';
 import { ChartRadarDots } from '@/components/ui/radar-chart';
 
 interface Risk {
@@ -109,114 +108,7 @@ export default function RiskManagementPage() {
   const [selectedOrgId, setSelectedOrgId] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedUseCase, setExpandedUseCase] = useState<string | null>(null);
-  const [riskCalcs, setRiskCalcs] = useState<Record<string, any>>({});
-
-  // Build minimal StepsData from template/question answers to mirror Assess radar
-  const buildStepsDataFromAnswers = (answers: any[]): any => {
-    const steps: any = {
-      dataReadiness: {},
-      riskAssessment: { dataProtection: {}, operatingJurisdictions: {} },
-      technicalFeasibility: {},
-      businessFeasibility: {},
-      ethicalImpact: {},
-      vendorAssessment: {}
-    };
-
-    const setIfMatch = (src: any, key: string, value: string, patterns: string[]) => {
-      if (patterns.some(p => value.toLowerCase().includes(p))) src[key] = value;
-    };
-
-    const norm = (s: any) => String(s || '').trim();
-
-    (answers || []).forEach((ans: any) => {
-      const q = ans.question || ans.questionTemplate;
-      if (!q) return;
-      const stage = String(q.stage || '').toUpperCase();
-      const type = q.type;
-      const qText = norm(q.text).toLowerCase();
-      const val = ans.value || {};
-      const labels: string[] = Array.isArray(val.labels) ? val.labels : (val.text ? [val.text] : []);
-
-      if (stage === 'DATA_READINESS') {
-        labels.forEach(raw => {
-          const label = norm(raw);
-          // data types
-          if (!steps.dataReadiness.dataTypes) steps.dataReadiness.dataTypes = [];
-          if (/record|biometric|child|financial|health|pii|personal/i.test(label)) steps.dataReadiness.dataTypes.push(label);
-          // cross-border
-          if (/cross\s*-?border|cross border|international transfer/i.test(label) || qText.includes('cross-border')) {
-            steps.dataReadiness.crossBorderTransfer = true;
-          }
-          // volume
-          setIfMatch(steps.dataReadiness, 'dataVolume', label, ['record', 'volume', 'gb', 'tb', 'mb']);
-          // update frequency
-          setIfMatch(steps.dataReadiness, 'dataUpdate', label, ['real-time', 'realtime', 'batch', 'daily', 'weekly', 'hourly']);
-          // retention
-          setIfMatch(steps.dataReadiness, 'dataRetention', label, ['year', 'month', 'retention']);
-        });
-      }
-
-      if (stage === 'RISK_ASSESSMENT') {
-        labels.forEach(raw => {
-          const label = norm(raw);
-          // jurisdictions
-          if (/eu\b|europe|us\b|usa|uae|gcc|apac|emea|apj|gdpr|uk|india|singapore|canada/i.test(label) || qText.includes('jurisdiction')) {
-            const region = 'General';
-            if (!steps.riskAssessment.operatingJurisdictions[region]) steps.riskAssessment.operatingJurisdictions[region] = [];
-            steps.riskAssessment.operatingJurisdictions[region].push(label);
-          }
-          // reporting and tolerance
-          setIfMatch(steps.riskAssessment, 'complianceReporting', label, ['minimal', 'basic', 'enhanced', 'comprehensive', 'reporting']);
-          setIfMatch(steps.riskAssessment, 'riskTolerance', label, ['low', 'medium', 'high']);
-          // specific regulations
-          if (/gdpr|hipaa|finra|pci/i.test(label)) {
-            if (!steps.riskAssessment.dataProtection) steps.riskAssessment.dataProtection = {};
-            steps.riskAssessment.dataProtection.jurisdictions = steps.riskAssessment.dataProtection.jurisdictions || [];
-            (steps.riskAssessment.dataProtection.jurisdictions as any[]).push(label);
-          }
-        });
-      }
-
-      if (stage === 'TECHNICAL_FEASIBILITY') {
-        labels.forEach(raw => {
-          const label = norm(raw);
-          setIfMatch(steps.technicalFeasibility, 'authentication', label, ['basic', 'oauth', 'none', 'mfa', 'sso']);
-          setIfMatch(steps.technicalFeasibility, 'encryption', label, ['encryption', 'none', 'aes', 'tls', 'at rest', 'in transit']);
-          setIfMatch(steps.technicalFeasibility, 'accessControl', label, ['public', 'private', 'role', 'rbac']);
-          setIfMatch(steps.technicalFeasibility, 'incidentResponse', label, ['incident', 'ir plan', 'none']);
-          setIfMatch(steps.technicalFeasibility, 'apiSecurity', label, ['api']);
-        });
-      }
-
-      if (stage === 'BUSINESS_FEASIBILITY') {
-        labels.forEach(raw => {
-          const label = norm(raw);
-          setIfMatch(steps.businessFeasibility, 'businessCriticality', label, ['mission critical', 'business critical', 'critical']);
-          setIfMatch(steps.businessFeasibility, 'sla', label, ['99.999', '99.99', '99.9', 'sla']);
-          setIfMatch(steps.businessFeasibility, 'disasterRecovery', label, ['dr', 'disaster', 'none', 'rpo', 'rto']);
-          setIfMatch(steps.businessFeasibility, 'changeManagement', label, ['change', 'ad-hoc', 'structured', 'itil']);
-        });
-      }
-
-      if (stage === 'ETHICAL_IMPACT') {
-        labels.forEach(raw => {
-          const label = norm(raw);
-          setIfMatch(steps.ethicalImpact, 'biasDetection', label, ['bias', 'none']);
-          setIfMatch(steps.ethicalImpact, 'humanOversight', label, ['oversight', 'none', 'human-in-the-loop']);
-          setIfMatch(steps.ethicalImpact, 'transparencyLevel', label, ['transparency', 'low', 'medium', 'high']);
-          setIfMatch(steps.ethicalImpact, 'appealProcess', label, ['appeal', 'none']);
-        });
-      }
-
-      // Vendor assessment
-      if (/vendor|third[-\s]?party/i.test(qText)) {
-        const count = labels.map(l => parseInt(l, 10)).find(n => !isNaN(n));
-        if (typeof count === 'number') steps.vendorAssessment.vendorCount = count;
-      }
-    });
-
-    return steps;
-  };
+  const [useCaseRisks, setUseCaseRisks] = useState<Record<string, any>>({});
 
   useEffect(() => {
     fetchData();
@@ -265,6 +157,20 @@ export default function RiskManagementPage() {
       const data: UseCasesWithRisksResponse = await response.json();
       setUseCases(data.useCases);
       setOrganizations(data.organizations || []);
+      // Fetch risk metrics (score + radar) for each use case using Q/A answers
+      const riskPairs = await Promise.all(
+        (data.useCases || []).map(async (uc) => {
+          try {
+            const r = await fetch(`/api/risk-metrics/${uc.id}`).then(res => res.ok ? res.json() : null);
+            return [uc.id, r?.risk || null] as const;
+          } catch {
+            return [uc.id, null] as const;
+          }
+        })
+      );
+      const riskMap: Record<string, any> = {};
+      for (const [id, risk] of riskPairs) riskMap[id] = risk;
+      setUseCaseRisks(riskMap);
       
       // Set initial organization filter for QZEN_ADMIN
       if (data.userRole === 'QZEN_ADMIN' && !selectedOrgId && data.organizations.length > 0) {
@@ -281,6 +187,141 @@ export default function RiskManagementPage() {
   const toggleUseCaseExpansion = (useCaseId: string) => {
     setExpandedUseCase(expandedUseCase === useCaseId ? null : useCaseId);
   };
+
+  // Log risk calculation details when a use case is expanded
+  useEffect(() => {
+    if (!expandedUseCase || !useCaseRisks[expandedUseCase]) return;
+    
+    const riskCalc = useCaseRisks[expandedUseCase];
+    const useCase = useCases.find(uc => uc.id === expandedUseCase);
+    
+    if (!riskCalc || !riskCalc.chartData) return;
+    
+    console.group(`🔍 Risk Calculation Breakdown - ${useCase?.title || expandedUseCase}`);
+    
+    // Radar Chart Values (Category Scores)
+    console.log('\n📊 RADAR CHART VALUES (Category Scores 0-10):');
+    const weights = {
+      dataPrivacy: 0.25,
+      security: 0.20,
+      regulatory: 0.30,
+      ethical: 0.10,
+      operational: 0.10,
+      reputational: 0.05
+    };
+    
+    const categoryMap: Record<string, { score: number; weight: number }> = {};
+    
+    riskCalc.chartData.forEach((item: { month: string; desktop: number }) => {
+      const category = item.month;
+      const score = item.desktop;
+      let weight = 0;
+      
+      if (category === 'Data Privacy') {
+        weight = weights.dataPrivacy;
+        categoryMap.dataPrivacy = { score, weight };
+      } else if (category === 'Security') {
+        weight = weights.security;
+        categoryMap.security = { score, weight };
+      } else if (category === 'Regulatory') {
+        weight = weights.regulatory;
+        categoryMap.regulatory = { score, weight };
+      } else if (category === 'Ethical') {
+        weight = weights.ethical;
+        categoryMap.ethical = { score, weight };
+      } else if (category === 'Operational') {
+        weight = weights.operational;
+        categoryMap.operational = { score, weight };
+      } else if (category === 'Reputational') {
+        weight = weights.reputational;
+        categoryMap.reputational = { score, weight };
+      }
+      
+      console.log(`  ${category}: ${score}/10`);
+    });
+    
+    // Overall Score Calculation
+    console.log('\n🧮 OVERALL RISK SCORE CALCULATION:');
+    console.log('Formula: Weighted Average of Category Scores');
+    console.log('\nWeights:');
+    console.log(`  Data Privacy: ${weights.dataPrivacy} (25%)`);
+    console.log(`  Security: ${weights.security} (20%)`);
+    console.log(`  Regulatory: ${weights.regulatory} (30%)`);
+    console.log(`  Ethical: ${weights.ethical} (10%)`);
+    console.log(`  Operational: ${weights.operational} (10%)`);
+    console.log(`  Reputational: ${weights.reputational} (5%)`);
+    
+    console.log('\nStep-by-step calculation:');
+    let weightedSum = 0;
+    let calculationSteps: string[] = [];
+    
+    if (categoryMap.dataPrivacy) {
+      const contribution = categoryMap.dataPrivacy.score * categoryMap.dataPrivacy.weight;
+      weightedSum += contribution;
+      calculationSteps.push(`  Data Privacy: ${categoryMap.dataPrivacy.score} × ${categoryMap.dataPrivacy.weight} = ${contribution.toFixed(2)}`);
+    }
+    if (categoryMap.security) {
+      const contribution = categoryMap.security.score * categoryMap.security.weight;
+      weightedSum += contribution;
+      calculationSteps.push(`  Security: ${categoryMap.security.score} × ${categoryMap.security.weight} = ${contribution.toFixed(2)}`);
+    }
+    if (categoryMap.regulatory) {
+      const contribution = categoryMap.regulatory.score * categoryMap.regulatory.weight;
+      weightedSum += contribution;
+      calculationSteps.push(`  Regulatory: ${categoryMap.regulatory.score} × ${categoryMap.regulatory.weight} = ${contribution.toFixed(2)}`);
+    }
+    if (categoryMap.ethical) {
+      const contribution = categoryMap.ethical.score * categoryMap.ethical.weight;
+      weightedSum += contribution;
+      calculationSteps.push(`  Ethical: ${categoryMap.ethical.score} × ${categoryMap.ethical.weight} = ${contribution.toFixed(2)}`);
+    }
+    if (categoryMap.operational) {
+      const contribution = categoryMap.operational.score * categoryMap.operational.weight;
+      weightedSum += contribution;
+      calculationSteps.push(`  Operational: ${categoryMap.operational.score} × ${categoryMap.operational.weight} = ${contribution.toFixed(2)}`);
+    }
+    if (categoryMap.reputational) {
+      const contribution = categoryMap.reputational.score * categoryMap.reputational.weight;
+      weightedSum += contribution;
+      calculationSteps.push(`  Reputational: ${categoryMap.reputational.score} × ${categoryMap.reputational.weight} = ${contribution.toFixed(2)}`);
+    }
+    
+    calculationSteps.forEach(step => console.log(step));
+    
+    const finalScore = parseFloat(weightedSum.toFixed(1));
+    console.log(`\n  Sum: ${weightedSum.toFixed(4)}`);
+    console.log(`  Final Score (rounded to 1 decimal): ${finalScore}`);
+    
+    // Risk Tier Determination
+    console.log('\n🎯 RISK TIER DETERMINATION:');
+    console.log('Thresholds:');
+    console.log('  Critical: ≥ 8.0');
+    console.log('  High: ≥ 6.0 and < 8.0');
+    console.log('  Medium: ≥ 4.0 and < 6.0');
+    console.log('  Low: < 4.0');
+    
+    let tier = '';
+    if (finalScore >= 8) {
+      tier = 'Critical';
+    } else if (finalScore >= 6) {
+      tier = 'High';
+    } else if (finalScore >= 4) {
+      tier = 'Medium';
+    } else {
+      tier = 'Low';
+    }
+    
+    console.log(`\n  Score: ${finalScore}`);
+    console.log(`  Tier: ${tier}`);
+    
+    // Summary
+    console.log('\n📋 SUMMARY:');
+    console.log(`  Overall Risk Score: ${finalScore}/10`);
+    console.log(`  Risk Tier: ${tier}`);
+    console.log(`  Radar Chart Points: ${riskCalc.chartData.length} categories`);
+    
+    console.groupEnd();
+  }, [expandedUseCase, useCaseRisks, useCases]);
 
   // Filter use cases based on search term
   const filteredUseCases = useCases.filter(uc => {
@@ -371,6 +412,229 @@ export default function RiskManagementPage() {
         </Card>
       </div>
 
+      {/* Executive Dashboard - Heat Map & Status Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Risk Heatmap */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5" />
+              Risk Heatmap
+            </CardTitle>
+            <CardDescription>Severity vs. Likelihood Matrix</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              // Calculate risk distribution for heatmap
+              const allRisks = useCases.flatMap(uc => uc.risks);
+              const heatmapData = [
+                { severity: 'Critical', likelihood: 'High', risks: [] as Risk[] },
+                { severity: 'Critical', likelihood: 'Medium', risks: [] as Risk[] },
+                { severity: 'Critical', likelihood: 'Low', risks: [] as Risk[] },
+                { severity: 'High', likelihood: 'High', risks: [] as Risk[] },
+                { severity: 'High', likelihood: 'Medium', risks: [] as Risk[] },
+                { severity: 'High', likelihood: 'Low', risks: [] as Risk[] },
+                { severity: 'Medium', likelihood: 'High', risks: [] as Risk[] },
+                { severity: 'Medium', likelihood: 'Medium', risks: [] as Risk[] },
+                { severity: 'Medium', likelihood: 'Low', risks: [] as Risk[] },
+                { severity: 'Low', likelihood: 'High', risks: [] as Risk[] },
+                { severity: 'Low', likelihood: 'Medium', risks: [] as Risk[] },
+                { severity: 'Low', likelihood: 'Low', risks: [] as Risk[] },
+              ];
+
+              allRisks.forEach(risk => {
+                const cell = heatmapData.find(
+                  d => d.severity === risk.riskLevel && d.likelihood === risk.likelihood
+                );
+                if (cell) cell.risks.push(risk);
+              });
+
+              const getCellColor = (count: number, severity: string) => {
+                if (count === 0) return 'bg-gray-100 dark:bg-gray-800';
+                if (severity === 'Critical') return count > 2 ? 'bg-red-600' : count > 1 ? 'bg-red-500' : 'bg-red-400';
+                if (severity === 'High') return count > 2 ? 'bg-orange-600' : count > 1 ? 'bg-orange-500' : 'bg-orange-400';
+                if (severity === 'Medium') return count > 2 ? 'bg-yellow-600' : count > 1 ? 'bg-yellow-500' : 'bg-yellow-400';
+                return count > 2 ? 'bg-green-600' : count > 1 ? 'bg-green-500' : 'bg-green-400';
+              };
+
+              return (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-4 gap-2 text-xs font-medium text-center">
+                    <div></div>
+                    <div className="text-muted-foreground">Low</div>
+                    <div className="text-muted-foreground">Medium</div>
+                    <div className="text-muted-foreground">High</div>
+                  </div>
+                  {['Critical', 'High', 'Medium', 'Low'].map(severity => (
+                    <div key={severity} className="grid grid-cols-4 gap-2">
+                      <div className="flex items-center text-xs font-medium text-muted-foreground">{severity}</div>
+                      {['Low', 'Medium', 'High'].map(likelihood => {
+                        const cell = heatmapData.find(d => d.severity === severity && d.likelihood === likelihood);
+                        const count = cell?.risks.length || 0;
+                        return (
+                          <div
+                            key={likelihood}
+                            className={`${getCellColor(count, severity)} rounded-md h-16 flex items-center justify-center text-white font-bold text-lg transition-all hover:scale-105 cursor-pointer`}
+                            title={`${severity} Severity / ${likelihood} Likelihood: ${count} risks`}
+                          >
+                            {count}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                  <div className="text-xs text-muted-foreground pt-2 border-t">
+                    <div className="flex justify-center gap-4">
+                      <span>Darker = More Risks</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+
+        {/* Risk Status & Category Breakdown */}
+        <div className="space-y-6">
+          {/* Status Breakdown */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Risk Status</CardTitle>
+              <CardDescription>Distribution by workflow status</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const allRisks = useCases.flatMap(uc => uc.risks);
+                const openCount = allRisks.filter(r => r.status === 'OPEN').length;
+                const inProgressCount = allRisks.filter(r => r.status === 'IN_PROGRESS').length;
+                const mitigatedCount = allRisks.filter(r => r.status === 'MITIGATED').length;
+                const closedCount = allRisks.filter(r => r.status === 'CLOSED').length;
+                const total = allRisks.length || 1;
+
+                return (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                          <span className="text-sm">Open</span>
+                        </div>
+                        <span className="text-sm font-bold">{openCount}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-red-500 h-2 rounded-full transition-all"
+                          style={{ width: `${(openCount / total) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                          <span className="text-sm">In Progress</span>
+                        </div>
+                        <span className="text-sm font-bold">{inProgressCount}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-yellow-500 h-2 rounded-full transition-all"
+                          style={{ width: `${(inProgressCount / total) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                          <span className="text-sm">Mitigated</span>
+                        </div>
+                        <span className="text-sm font-bold">{mitigatedCount}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-green-500 h-2 rounded-full transition-all"
+                          style={{ width: `${(mitigatedCount / total) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                          <span className="text-sm">Closed</span>
+                        </div>
+                        <span className="text-sm font-bold">{closedCount}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-gray-500 h-2 rounded-full transition-all"
+                          style={{ width: `${(closedCount / total) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          {/* Category Breakdown */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Risk Categories</CardTitle>
+              <CardDescription>Distribution by risk type</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const allRisks = useCases.flatMap(uc => uc.risks);
+                const categories = ['technical', 'data', 'operational', 'regulatory', 'ethical', 'business'];
+                const categoryLabels: Record<string, string> = {
+                  'technical': 'Technical',
+                  'data': 'Data Privacy',
+                  'operational': 'Operational',
+                  'regulatory': 'Regulatory',
+                  'ethical': 'Ethical',
+                  'business': 'Business'
+                };
+                const categoryCounts = categories.map(cat => ({
+                  category: cat,
+                  label: categoryLabels[cat],
+                  count: allRisks.filter(r => r.category === cat).length
+                })).filter(c => c.count > 0);
+
+                const total = allRisks.length || 1;
+
+                return (
+                  <div className="space-y-3">
+                    {categoryCounts.map(({ category, label, count }) => (
+                      <div key={category} className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{label}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                            <div
+                              className="bg-blue-500 h-2 rounded-full transition-all"
+                              style={{ width: `${(count / total) * 100}%` }}
+                            ></div>
+                          </div>
+                          <span className="font-bold w-8 text-right">{count}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {categoryCounts.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">No risks found</p>
+                    )}
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
       {/* Filters */}
       <Card className="mb-6">
         <CardContent className="pt-6">
@@ -452,8 +716,7 @@ export default function RiskManagementPage() {
             ).length;
             const isExpanded = expandedUseCase === useCase.id;
 
-            // Use the same QnA-driven calculation as Approvals
-            const riskCalc = riskCalcs[useCase.id] || null;
+            const riskCalc = useCaseRisks[useCase.id] || null;
 
             return (
               <Card key={useCase.id} className="overflow-hidden">
@@ -513,6 +776,35 @@ export default function RiskManagementPage() {
                           </div>
                         )}
                       </div>
+                      {riskCount === 0 && useCase.assessData?.stepsData && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            try {
+                              const response = await fetch(`/api/risks/${useCase.id}/auto-create`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ stepsData: useCase.assessData.stepsData })
+                              });
+                              if (response.ok) {
+                                alert('✅ Risks created successfully! Click "Manage Risks" to view them.');
+                                fetchData(); // Refresh the data
+                              } else {
+                                const error = await response.text();
+                                alert(`❌ Failed to create risks: ${error}`);
+                              }
+                            } catch (error) {
+                              alert(`❌ Error: ${error}`);
+                            }
+                          }}
+                          className="mr-2 bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          <Shield className="w-4 h-4 mr-2" />
+                          Generate Risks
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -629,11 +921,6 @@ export default function RiskManagementPage() {
                                   <p className="text-sm text-muted-foreground">
                                     {risk.description}
                                   </p>
-                                  {risk.mitigationStrategy && (
-                                    <div className="mt-2 p-2 bg-muted rounded text-sm">
-                                      <strong>Mitigation:</strong> {risk.mitigationStrategy}
-                                    </div>
-                                  )}
                                 </div>
                               </div>
                             </CardContent>

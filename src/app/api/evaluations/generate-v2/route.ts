@@ -41,12 +41,48 @@ export const POST = withAuth(async (request: Request, { auth }) => {
     console.log('🚀 Starting LLM-powered evaluation generation...');
     console.log(`   Use Case: ${useCaseId}`);
     console.log(`   Guardrails ID received: ${guardrailsId}`);
+    console.log(`   Guardrails ID type: ${typeof guardrailsId}`);
+    console.log(`   Guardrails ID truthy: ${!!guardrailsId}`);
     console.log(`   Strategy: ${generationStrategy}, Intensity: ${testIntensity}`);
     console.log(`   Mode: ${useOrchestrator ? 'Multi-Agent Orchestrator' : 'Direct LLM Engine'}`);
 
     // Step 1: Build comprehensive context
     const contextAggregator = new EvaluationContextAggregator();
-    const context = await contextAggregator.buildEvaluationContext(useCaseId, guardrailsId);
+    
+    // Add detailed error handling for guardrails
+    let context;
+    try {
+      context = await contextAggregator.buildEvaluationContext(useCaseId, guardrailsId);
+    } catch (contextError) {
+      console.error('❌ Error building evaluation context:', contextError);
+      console.error('   Error message:', contextError instanceof Error ? contextError.message : String(contextError));
+      console.error('   Use Case ID:', useCaseId);
+      console.error('   Guardrails ID:', guardrailsId);
+      
+      // If it's a guardrails error, provide more details
+      if (contextError instanceof Error && contextError.message.includes('guardrails')) {
+        // Try to fetch guardrails directly to see what's available
+        try {
+          const guardrailsCheck = await prismaClient.guardrail.findMany({
+            where: { useCaseId },
+            select: { id: true, status: true, createdAt: true },
+            orderBy: { createdAt: 'desc' },
+            take: 5
+          });
+          console.error('   Available guardrails for this use case:', guardrailsCheck);
+          
+          if (guardrailsCheck.length > 0) {
+            console.error('   Latest guardrail ID:', guardrailsCheck[0].id);
+            console.error('   Requested guardrail ID:', guardrailsId);
+            console.error('   IDs match:', guardrailsCheck[0].id === guardrailsId);
+          }
+        } catch (checkError) {
+          console.error('   Could not check guardrails:', checkError);
+        }
+      }
+      
+      throw contextError;
+    }
     
     console.log(`📊 Context built: ${context.guardrails.totalRules} guardrails, ${context.risks.identified.length} risks`);
 
@@ -121,13 +157,24 @@ export const POST = withAuth(async (request: Request, { auth }) => {
     });
 
   } catch (error) {
-    console.error('Error generating LLM-powered evaluations:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    console.error('Error details:', JSON.stringify(error, null, 2));
+    console.error('❌ Error generating LLM-powered evaluations:', error);
+    console.error('   Error type:', error instanceof Error ? error.constructor.name : typeof error);
+    console.error('   Error message:', error instanceof Error ? error.message : String(error));
+    console.error('   Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // Try to stringify error for more details
+    try {
+      const errorDetails = JSON.stringify(error, Object.getOwnPropertyNames(error), 2);
+      console.error('   Error details (JSON):', errorDetails);
+    } catch (stringifyError) {
+      console.error('   Could not stringify error:', stringifyError);
+    }
     
     // Check for specific error types
     if (error instanceof Error) {
-      if (error.message.includes('OPENAI_API_KEY')) {
+      const errorMessage = error.message.toLowerCase();
+      
+      if (errorMessage.includes('openai_api_key') || errorMessage.includes('api key')) {
         return NextResponse.json({
           success: false,
           error: 'LLM_CONFIGURATION_ERROR',
@@ -137,7 +184,7 @@ export const POST = withAuth(async (request: Request, { auth }) => {
         }, { status: 503 });
       }
       
-      if (error.message.includes('timeout')) {
+      if (errorMessage.includes('timeout')) {
         return NextResponse.json({
           success: false,
           error: 'GENERATION_TIMEOUT',
@@ -146,12 +193,18 @@ export const POST = withAuth(async (request: Request, { auth }) => {
         }, { status: 504 });
       }
       
-      if (error.message.includes('guardrails')) {
+      if (errorMessage.includes('guardrails') || errorMessage.includes('no guardrails')) {
+        console.error('   🔍 Guardrails error detected, returning detailed error');
         return NextResponse.json({
           success: false,
           error: 'GUARDRAILS_REQUIRED',
           message: 'Guardrails must be generated first before creating evaluations',
-          details: error.message
+          details: error.message,
+          debug: {
+            useCaseId,
+            guardrailsId,
+            errorType: error.constructor.name
+          }
         }, { status: 400 });
       }
     }
@@ -160,7 +213,12 @@ export const POST = withAuth(async (request: Request, { auth }) => {
       success: false,
       error: 'GENERATION_FAILED',
       message: 'Failed to generate evaluation configuration',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
+      debug: {
+        useCaseId,
+        guardrailsId,
+        errorType: error instanceof Error ? error.constructor.name : typeof error
+      }
     }, { status: 500 });
   }
 }, { requireUser: true });

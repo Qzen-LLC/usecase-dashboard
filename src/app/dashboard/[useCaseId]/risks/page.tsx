@@ -112,10 +112,10 @@ export default function RiskManagementPage() {
       const risksData = await risksResponse.json();
       setRisks(risksData);
 
-      // Auto-create risks from configured templates/questions if none exist
-      if (risksData.length === 0) {
-        await autoCreateRisksFromConfigured();
-      }
+      // Note: Auto-creation removed - users should manually click "Generate Risks" button
+      // if (risksData.length === 0 && useCaseData.assessData?.stepsData) {
+      //   await autoCreateRisks(useCaseData.assessData.stepsData);
+      // }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -125,18 +125,27 @@ export default function RiskManagementPage() {
 
   const autoCreateRisks = async (stepsData: StepsData) => {
     try {
+      setCreating(true);
       const response = await fetch(`/api/risks/${useCaseId}/auto-create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stepsData })
       });
-      
+
       if (response.ok) {
         const newRisks = await response.json();
         setRisks(newRisks);
+        console.log(`✅ Successfully created ${newRisks.length} risks with recommendations`);
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Error auto-creating risks:', errorText);
+        alert(`Failed to create risks: ${errorText}`);
       }
     } catch (error) {
-      console.error('Error auto-creating risks:', error);
+      console.error('❌ Error auto-creating risks:', error);
+      alert(`Error creating risks: ${error}`);
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -274,6 +283,27 @@ export default function RiskManagementPage() {
             <p className="text-gray-600">
               AIUC-{useCase?.aiucId} - {useCase?.title}
             </p>
+          </div>
+          <div className="flex gap-2">
+            {useCase?.assessData?.stepsData && risks.length === 0 && (
+              <Button
+                onClick={() => autoCreateRisks(useCase.assessData.stepsData)}
+                className="bg-blue-600 hover:bg-blue-700"
+                disabled={creating}
+              >
+                {creating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating Risks...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Generate Risks from Assessment
+                  </>
+                )}
+              </Button>
+            )}
           </div>
           <div className="flex gap-3">
             
@@ -481,18 +511,6 @@ export default function RiskManagementPage() {
                       </div>
                     </div>
 
-                    {risk.mitigationPlan && (
-                      <div>
-                        <h4 className="font-medium mb-1">Mitigation Plan</h4>
-                        <p className="text-gray-600">{risk.mitigationPlan}</p>
-                        {risk.mitigationStatus && (
-                          <Badge variant="outline" className="mt-2">
-                            Mitigation: {risk.mitigationStatus.replace('_', ' ')}
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                       <div>
                         <span className="text-gray-500">Created by:</span>{' '}
@@ -549,6 +567,30 @@ export default function RiskManagementPage() {
                           >
                             <X className="h-4 w-4 mr-2" />
                             Close Risk
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={async () => {
+                              if (confirm(`Are you sure you want to delete "${risk.title}"? This action cannot be undone.`)) {
+                                try {
+                                  const response = await fetch(`/api/risks/${useCaseId}/${risk.id}`, {
+                                    method: 'DELETE'
+                                  });
+                                  if (response.ok) {
+                                    alert('Risk deleted successfully');
+                                    fetchData();
+                                  } else {
+                                    alert('Failed to delete risk');
+                                  }
+                                } catch (error) {
+                                  console.error('Error deleting risk:', error);
+                                  alert('Error deleting risk');
+                                }
+                              }
+                            }}
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Delete
                           </Button>
                         </>
                       )}

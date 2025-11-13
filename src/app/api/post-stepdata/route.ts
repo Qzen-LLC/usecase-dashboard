@@ -44,40 +44,17 @@ export const POST = withAuth(async (req: Request, { auth }: { auth: any }) => {
             }
         }
 
-        const now = new Date();
-        const result = await prismaClient.assess.upsert({
-            where: {
-                useCaseId,
-            },
-            update: {
-                stepsData: {
-                    ...assessData,
-                    metadata: {
-                        ...assessData.metadata,
-                        status: assessData.status || "in_progress",
-                        completedAt: assessData.status === "completed" ? now.toISOString() : null,
-                        lastUpdated: now.toISOString()
-                    }
-                },
-                updatedAt: now,
-            },
-            create: {
-                useCaseId,
-                stepsData: {
-                    ...assessData,
-                    metadata: {
-                        ...assessData.metadata,
-                        status: assessData.status || "in_progress",
-                        completedAt: assessData.status === "completed" ? now.toISOString() : null,
-                        lastUpdated: now.toISOString(),
-                        createdAt: now.toISOString()
-                    }
-                },
-                updatedAt: now,
-                createdAt: now,
-            },
-        });
-        console.log('[CRUD_LOG] Assess data upserted:', { useCaseId, stepsDataKeys: Object.keys(assessData), updatedAt: now, authoredBy: userRecord.id });
+        // Note: assessData is now stored as Answers in the Q&A model
+        // The stepsData structure is built from Answers using buildStepsDataFromAnswers
+        // This endpoint is kept for backward compatibility but data is now stored in Answer model
+        console.log('[CRUD_LOG] Assessment data received (stored as Answers):', { useCaseId, stepsDataKeys: Object.keys(assessData), authoredBy: userRecord.id });
+        
+        // Return success - actual data is stored via Answer model endpoints
+        const result = {
+            useCaseId,
+            stepsData: assessData,
+            updatedAt: new Date(),
+        };
 
         return NextResponse.json({ success: true, data: result });
     } catch (error) {

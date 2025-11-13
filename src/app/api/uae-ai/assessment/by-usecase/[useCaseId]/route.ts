@@ -5,7 +5,7 @@ import { prismaClient } from '@/utils/db';
 
 export const GET = withAuth(async (
   request: Request,
-  context: { params: { useCaseId: string }, auth: any }
+  context: { params: Promise<{ useCaseId: string }>, auth: any }
 ) => {
   try {
     // auth context is provided by withAuth wrapper
