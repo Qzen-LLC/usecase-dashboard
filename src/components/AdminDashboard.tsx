@@ -69,7 +69,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateOrg, setShowCreateOrg] = useState(false);
-  const [activeSection, setActiveSection] = useState<"organizations" | "questions">("organizations");
+  const [activeSection, setActiveSection] = useState<"organizations" | "questions" | "models">("organizations");
   const [newOrgName, setNewOrgName] = useState("");
   const [newOrgDomain, setNewOrgDomain] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
@@ -170,6 +170,10 @@ export default function AdminDashboard() {
 
   const handleNavigateToOrgQuestions = (orgId: string) => {
     router.push(`/dashboard/configure-questions?orgId=${orgId}`);
+  };
+
+  const handleNavigateToOrgModels = (orgId: string) => {
+    router.push(`/dashboard/configure-models?orgId=${orgId}`);
   };
 
   const handleCreateOrganization = async () => {
@@ -423,6 +427,16 @@ export default function AdminDashboard() {
             >
               Question Management
             </button>
+            <button
+              onClick={() => setActiveSection("models")}
+              className={`pb-3 px-1 font-medium text-sm transition-colors ${
+                activeSection === "models"
+                  ? "text-green-800 dark:text-green-600 border-b-2 border-green-800 dark:border-green-600 -mb-[1px]"
+                  : "text-gray-600 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-400"
+              }`}
+            >
+              Model Management
+            </button>
           </div>
         </div>
 
@@ -604,6 +618,60 @@ export default function AdminDashboard() {
                             <DropdownMenuItem
                               key={org.id}
                               onClick={() => handleNavigateToOrgQuestions(org.id)}
+                              className="cursor-pointer"
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-medium">{org.name}</span>
+                                <span className="text-sm text-muted-foreground">
+                                  {org.users.length} user{org.users.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                            </DropdownMenuItem>
+                          ))
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+          </div>
+        )}
+
+        {/* Question Management Section */}
+        {activeSection === "models" && (
+          <div>
+            <Card className="mb-6 rounded">
+              <CardHeader className="pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 mb-1">
+                      <HelpCircle className="w-5 h-5 text-primary" />
+                      Model Management
+                    </CardTitle>
+                    <CardDescription>
+                      Configure organization-specific AI models
+                    </CardDescription>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="justify-start sm:justify-center">
+                          <FileText className="w-4 h-4 mr-2" />
+                          Organization Models
+                          <ChevronDown className="w-4 h-4 ml-2" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-64">
+                        {organizations.length === 0 ? (
+                          <DropdownMenuItem disabled>
+                            <span className="text-muted-foreground">No organizations available</span>
+                          </DropdownMenuItem>
+                        ) : (
+                          organizations.map((org) => (
+                            <DropdownMenuItem
+                              key={org.id}
+                              onClick={() => handleNavigateToOrgModels(org.id)}
                               className="cursor-pointer"
                             >
                               <div className="flex flex-col">

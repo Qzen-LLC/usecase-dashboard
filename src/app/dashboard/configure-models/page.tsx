@@ -1,0 +1,217 @@
+'use client'
+
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import { Trash2, Edit3, Plus, Building2 } from 'lucide-react'
+import { useUserData } from '@/contexts/UserContext'
+
+type Organization = { id: string; name: string }
+type AiModel = { id: string; organizationId: string; modelName: string; apiKey: string }
+
+export default function ConfigureModelsPage() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const initialOrgId = searchParams.get('orgId') || ''
+
+  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [selectedOrgId, setSelectedOrgId] = useState<string>(initialOrgId)
+  const [models, setModels] = useState<AiModel[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Form state
+  const [formOpen, setFormOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [modelName, setModelName] = useState('')
+  const [apiKey, setApiKey] = useState('')
+  const { userData } = useUserData()
+
+  useEffect(() => {
+    const loadOrgs = async () => {
+      try {
+        const res = await fetch('/api/admin/organizations')
+        const data = await res.json()
+        if (res.ok) setOrganizations(data.organizations || [])
+      } catch {}
+    }
+    loadOrgs()
+  }, [])
+
+  // For ORG_ADMINs, default to their organization automatically when not provided via URL
+  useEffect(() => {
+    if (!selectedOrgId && userData?.organizationId) {
+      setSelectedOrgId(userData.organizationId)
+    }
+  }, [selectedOrgId, userData?.organizationId])
+
+  useEffect(() => {
+    if (!selectedOrgId) return
+    const loadModels = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await fetch(`/api/models?organizationId=${encodeURIComponent(selectedOrgId)}`)
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to load models')
+        setModels(data.models || [])
+      } catch (e: any) {
+        setError(e.message || 'Failed to load models')
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadModels()
+  }, [selectedOrgId])
+
+  const selectedOrg = useMemo(() => organizations.find(o => o.id === selectedOrgId), [organizations, selectedOrgId])
+
+  const resetForm = () => {
+    setEditingId(null)
+    setModelName('')
+    setApiKey('')
+  }
+
+  const openCreate = () => {
+    resetForm()
+    setFormOpen(true)
+  }
+
+  const openEdit = (model: AiModel) => {
+    setEditingId(model.id)
+    setModelName(model.modelName)
+    setApiKey(model.apiKey)
+    setFormOpen(true)
+  }
+
+  const submitForm = async () => {
+    if (!selectedOrgId || !modelName.trim() || !apiKey.trim()) return
+    try {
+      const res = await fetch(editingId ? `/api/models/${editingId}` : '/api/models', {
+        method: editingId ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          editingId
+            ? { modelName: modelName.trim(), apiKey: apiKey.trim() }
+            : { organizationId: selectedOrgId, modelName: modelName.trim(), apiKey: apiKey.trim() }
+        ),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Failed to save model')
+      // Refresh list
+      const listRes = await fetch(`/api/models?organizationId=${encodeURIComponent(selectedOrgId)}`)
+      const listData = await listRes.json()
+      setModels(listData.models || [])
+      setFormOpen(false)
+      resetForm()
+    } catch (e: any) {
+      alert(e.message || 'Error saving model')
+    }
+  }
+
+  const deleteModel = async (id: string) => {
+    if (!confirm('Delete this AI Model?')) return
+    try {
+      const res = await fetch(`/api/models/${id}`, { method: 'DELETE' })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Failed to delete model')
+      setModels(prev => prev.filter(m => m.id !== id))
+    } catch (e: any) {
+      alert(e.message || 'Error deleting model')
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-5xl mx-auto p-6 space-y-6">
+        <Card className="border border-border">
+          <div className="p-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground leading-tight">Configure AI Models</h1>
+              <p className="text-muted-foreground text-sm mt-1">Manage organization-specific model names and API keys</p>
+              {selectedOrgId && (
+                <div className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
+                  <Building2 className="w-4 h-4" />
+                  <span>Organization: {selectedOrg?.name || selectedOrgId}</span>
+                </div>
+              )}
+            </div>
+            <div className="flex items-end gap-3">
+              <Button onClick={openCreate} disabled={!selectedOrgId} className="whitespace-nowrap">
+                <Plus className="w-4 h-4 mr-2" /> New Model
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="border border-border">
+          <div className="p-6">
+            {!selectedOrgId ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Building2 className="w-4 h-4" />
+                <span>No organization selected. If you are a QZEN_ADMIN, navigate here via Admin → Configure Models for an organization. ORG_ADMINs will automatically manage their own organization.</span>
+              </div>
+            ) : loading ? (
+              <div className="text-muted-foreground">Loading models…</div>
+            ) : error ? (
+              <div className="text-destructive">{error}</div>
+            ) : models.length === 0 ? (
+              <div className="text-muted-foreground">No models found for {selectedOrg?.name || selectedOrgId}.</div>
+            ) : (
+              <div className="space-y-3">
+                {models.map((m) => (
+                  <div key={m.id} className="flex items-center justify-between p-3 border rounded-md">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-foreground truncate">{m.modelName}</div>
+                      <div className="text-xs text-muted-foreground truncate">{m.apiKey}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={() => openEdit(m)}>
+                        <Edit3 className="w-4 h-4 mr-2" /> Edit
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-destructive border-destructive hover:bg-destructive/10" onClick={() => deleteModel(m.id)}>
+                        <Trash2 className="w-4 h-4 mr-2" /> Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {formOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <Card className="w-full max-w-md border border-border">
+              <div className="p-6 space-y-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground">{editingId ? 'Edit Model' : 'New Model'}</h2>
+                  <p className="text-xs text-muted-foreground mt-1">For {selectedOrg?.name}</p>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="modelName" className="text-sm">Model Name</Label>
+                    <Input id="modelName" value={modelName} onChange={(e) => setModelName(e.target.value)} placeholder="e.g. gpt-4o" />
+                  </div>
+                  <div>
+                    <Label htmlFor="apiKey" className="text-sm">API Key</Label>
+                    <Input id="apiKey" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="Enter provider API key" />
+                  </div>
+                </div>
+                <Separator className="my-2" />
+                <div className="flex items-center justify-end gap-2">
+                  <Button variant="outline" onClick={() => { setFormOpen(false); resetForm(); }}>Cancel</Button>
+                  <Button onClick={submitForm} disabled={!modelName.trim() || !apiKey.trim()}>{editingId ? 'Save' : 'Create'}</Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

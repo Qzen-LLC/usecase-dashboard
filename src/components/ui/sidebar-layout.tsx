@@ -130,6 +130,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
         // Check if current path matches any Organization Setup sub-item
         const orgSetupPaths = [
           '/dashboard/configure-questions',
+          '/dashboard/configure-models',
           '/dashboard/governance-setup',
           '/dashboard/training',
           '/dashboard/oversight',
@@ -173,6 +174,12 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
           isAdmin: true
         }]
       : []),
+    {
+      title: 'Configure Models',
+      href: '/dashboard/configure-models',
+      icon: Code2,
+      description: 'Model Management'
+    },
     {
       title: 'Governance Setup',
       href: '/dashboard/governance-setup',
