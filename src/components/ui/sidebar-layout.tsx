@@ -339,7 +339,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
                     `}
                   >
                     <Icon className={`w-5 h-5 flex-shrink-0 ${isOrgSetupActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} />
-                    <div className="flex flex-col flex-1">
+                    <div className="flex flex-col">
                       <span className="text-sm font-medium leading-tight">{item.title}</span>
                     </div>
                   </button>
