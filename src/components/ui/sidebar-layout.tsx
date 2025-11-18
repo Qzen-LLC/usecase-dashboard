@@ -277,24 +277,33 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
               </Button>
             </div>
           ) : (
-            <div className="flex items-center gap-2.5 p-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md bg-card">
-                <Image src="https://vgwacd4qotpurdv6.public.blob.vercel-storage.com/logo/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
+            <div className="flex flex-col gap-2 p-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md bg-card">
+                  <Image src="https://vgwacd4qotpurdv6.public.blob.vercel-storage.com/logo/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-base font-semibold text-foreground leading-tight">QUBE</span>
+                  <span className="text-[10px] text-muted-foreground leading-tight">AI Platform</span>
+                </div>
+                <div className="flex-1 flex justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleSidebar}
+                    className="p-1 hover:bg-muted rounded-lg transition-colors"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground" />
+                  </Button>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <span className="text-base font-semibold text-foreground leading-tight">QUBE</span>
-                <span className="text-[10px] text-muted-foreground leading-tight">AI Platform</span>
-              </div>
-              <div className="flex-1 flex justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleSidebar}
-                  className="p-1 hover:bg-muted rounded-lg transition-colors"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground" />
-                </Button>
-              </div>
+              {(userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && userData?.organization?.name && (
+                <div className="px-2.5">
+                  <span className="text-[10px] text-muted-foreground leading-tight font-medium truncate block">
+                    {userData.organization.name}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -472,30 +481,44 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
         <header className="bg-card border-b border-border shadow-sm">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4">
-              <h1 className="text-xl font-semibold text-foreground">
-                {(() => {
-                  // Check Organization Setup sub-items first
-                  const activeSubItem = organizationSetupItems.find(item => 
-                    item.href && (pathname === item.href || pathname.startsWith(item.href))
-                  );
-                  if (activeSubItem) return activeSubItem.title;
-                  
-                  // Then check main sidebar items
-                  const activeItem = sidebarItems.find(item => 
-                    item.href && (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href)))
-                  );
-                  return activeItem?.title || 'Dashboard';
-                })()}
-              </h1>
+              <div className="flex flex-col">
+                <h1 className="text-xl font-semibold text-foreground">
+                  {(() => {
+                    // Check Organization Setup sub-items first
+                    const activeSubItem = organizationSetupItems.find(item => 
+                      item.href && (pathname === item.href || pathname.startsWith(item.href))
+                    );
+                    if (activeSubItem) return activeSubItem.title;
+                    
+                    // Then check main sidebar items
+                    const activeItem = sidebarItems.find(item => 
+                      item.href && (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href)))
+                    );
+                    return activeItem?.title || 'Dashboard';
+                  })()}
+                </h1>
+                {(userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && userData?.organization?.name && (
+                  <span className="text-xs text-muted-foreground font-normal">
+                    {userData.organization.name}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <ThemeToggle />
               {isSignedIn ? (
                 <div className="flex items-center gap-2">
                   <UserButton afterSignOutUrl="/" />
-                  <span className="text-sm text-muted-foreground font-medium">
-                    {user?.fullName || user?.emailAddresses?.[0]?.emailAddress || 'User'}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-sm text-muted-foreground font-medium">
+                      {user?.fullName || user?.emailAddresses?.[0]?.emailAddress || 'User'}
+                    </span>
+                    {(userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && userData?.organization?.name && (
+                      <span className="text-xs text-muted-foreground">
+                        {userData.organization.name}
+                      </span>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
