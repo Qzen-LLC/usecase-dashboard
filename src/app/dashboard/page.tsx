@@ -1177,32 +1177,38 @@ const Dashboard = () => {
 
         {/* Sheet Modal for Use Case Actions */}
         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-          <SheetContent side="right" className="flex flex-col h-full">
+          <SheetContent side="right" className="flex flex-col !p-0 !gap-0 overflow-hidden max-h-screen">
             {modalUseCase && (
-              <>
-                <SheetHeader className="flex-shrink-0">
+              <div className="flex flex-col h-full min-h-0">
+                <SheetHeader className="flex-shrink-0 border-b p-4">
                   <SheetTitle>{modalUseCase.title}</SheetTitle>
-                  <SheetDescription>{stripHtmlTags(modalUseCase.description)}</SheetDescription>
                 </SheetHeader>
-                <div className="flex-1 overflow-y-auto flex flex-col gap-3 p-4">
-                  <div className="text-xs text-muted-foreground mb-3">ID: {formatAiucId(modalUseCase.aiucId, modalUseCase.id)}</div>
-                  <div className="flex items-center gap-4 mb-3">
-                    <div className="flex items-center gap-1 text-xs text-primary">{modalUseCase.scores.operational}</div>
-                    <div className="flex items-center gap-1 text-xs text-primary">{modalUseCase.scores.productivity}</div>
-                    <div className="flex items-center gap-1 text-xs text-success">{modalUseCase.scores.revenue}</div>
-                    <div className="flex items-center gap-1 text-xs text-primary font-bold">{getOverallScore(modalUseCase.scores)}</div>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
-                    {modalUseCase.creator.type === 'user' ? (
-                      <User className="w-4 h-4" />
-                    ) : (
-                      <Building2 className="w-4 h-4" />
+                <div className="flex-1 min-h-0 overflow-y-auto p-4">
+                  <div className="flex flex-col gap-3">
+                    {modalUseCase.description && (
+                      <div className="text-sm text-muted-foreground mb-2">
+                        <SheetDescription>{stripHtmlTags(modalUseCase.description)}</SheetDescription>
+                      </div>
                     )}
-                    Created by: {modalUseCase.creator.name}
+                    <div className="text-xs text-muted-foreground">ID: {formatAiucId(modalUseCase.aiucId, modalUseCase.id)}</div>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1 text-xs text-primary">{modalUseCase.scores.operational}</div>
+                      <div className="flex items-center gap-1 text-xs text-primary">{modalUseCase.scores.productivity}</div>
+                      <div className="flex items-center gap-1 text-xs text-success">{modalUseCase.scores.revenue}</div>
+                      <div className="flex items-center gap-1 text-xs text-primary font-bold">{getOverallScore(modalUseCase.scores)}</div>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      {modalUseCase.creator.type === 'user' ? (
+                        <User className="w-4 h-4" />
+                      ) : (
+                        <Building2 className="w-4 h-4" />
+                      )}
+                      Created by: {modalUseCase.creator.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Updated {modalUseCase.lastUpdated}</div>
                   </div>
-                  <div className="text-xs text-muted-foreground mb-3">Updated {modalUseCase.lastUpdated}</div>
                 </div>
-                <SheetFooter className="flex-shrink-0 border-t pt-4 mt-auto flex flex-wrap gap-2 justify-start sm:justify-end">
+                <SheetFooter className="flex-shrink-0 sticky bottom-0 z-10 bg-background border-t pt-4 pb-4 px-4 flex flex-wrap gap-2 justify-start sm:justify-end">
                   <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                     <Button size="sm" variant="outline" onClick={() => { handleView(modalUseCase.id); setIsSheetOpen(false); }}>
                       <Eye className="w-4 h-4 mr-2" /> View
@@ -1236,7 +1242,7 @@ const Dashboard = () => {
                     </SheetClose>
                   </div>
                 </SheetFooter>
-              </>
+              </div>
             )}
           </SheetContent>
         </Sheet>
