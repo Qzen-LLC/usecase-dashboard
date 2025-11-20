@@ -1162,18 +1162,29 @@ export default function ConfigureQuestionsPage() {
         {/* Header */}
         <div className="bg-card rounded-xl shadow-sm border border-border p-5">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground leading-tight">
-                Configure Questions
-              </h1>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Manage assessment questions for your organization
-              </p>
-              {userData.role === 'QZEN_ADMIN' && organizationId && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Managing questions for organization: {organizationId}
+            <div className="flex items-start gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.back()}
+                className="flex-shrink-0 mt-1 hover:bg-muted"
+                aria-label="Go back"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-semibold text-foreground leading-tight">
+                  Configure Questions
+                </h1>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Manage assessment questions for your organization
                 </p>
-              )}
+                {userData.role === 'QZEN_ADMIN' && organizationId && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Managing questions for organization: {organizationId}
+                  </p>
+                )}
+              </div>
             </div>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>

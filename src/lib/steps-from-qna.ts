@@ -73,6 +73,13 @@ export function buildStepsDataFromQnA(items: QnAItem[]): StepsData {
         setIfMatch(steps.technicalFeasibility, 'accessControl', label, ['public', 'private', 'role', 'rbac']);
         setIfMatch(steps.technicalFeasibility, 'incidentResponse', label, ['incident', 'ir plan', 'none']);
         setIfMatch(steps.technicalFeasibility, 'apiSecurity', label, ['api']);
+        // Extract Model Type for GenAI detection
+        if (/model\s*type|generative|llm|large language|multi-modal/i.test(qText)) {
+          (steps.technicalFeasibility as any).modelTypes = (steps.technicalFeasibility as any).modelTypes || [];
+          if (!(steps.technicalFeasibility as any).modelTypes.includes(label)) {
+            (steps.technicalFeasibility as any).modelTypes.push(label);
+          }
+        }
       }
     }
 

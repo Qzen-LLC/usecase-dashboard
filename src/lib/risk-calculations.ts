@@ -621,8 +621,29 @@ const calculateReputationRisk = (stepsData: StepsData): RiskScore => {
 };
 
 export const calculateRiskScores = (stepsData: StepsData): RiskCalculationResult => {
-  // Regulatory and data-focused weights
-  const weights = {
+  // Check if Gen AI use case
+  const modelTypes = stepsData?.technicalFeasibility?.modelTypes || [];
+  const isGenAI = Array.isArray(modelTypes) && (
+    modelTypes.some((type: string) => 
+      typeof type === 'string' && (
+        type.includes("Generative AI") ||
+        type.includes("Large Language Model") ||
+        type.includes("LLM") ||
+        type.includes("Multi-modal")
+      )
+    )
+  );
+
+  // Regulatory and data-focused weights (adjusted for Gen AI if applicable)
+  const weights = isGenAI ? {
+    dataPrivacy: 0.20,
+    security: 0.15,
+    regulatory: 0.25,
+    ethical: 0.10,
+    operational: 0.10,
+    reputational: 0.05,
+    genAI: 0.15
+  } : {
     dataPrivacy: 0.25,
     security: 0.20,
     regulatory: 0.30,
@@ -647,7 +668,7 @@ export const calculateRiskScores = (stepsData: StepsData): RiskCalculationResult
     { month: "Reputational", desktop: reputationRisk.score }
   ];
   
-  // Calculate weighted average
+  // Calculate weighted average (GenAI uses adjusted weights but no separate GenAI score yet)
   const weightedScore = 
     dataPrivacyRisk.score * weights.dataPrivacy + 
     securityRisk.score * weights.security + 
@@ -672,8 +693,12 @@ export const calculateRiskScores = (stepsData: StepsData): RiskCalculationResult
     chartData,
     score: parseFloat(weightedScore.toFixed(1)),
     riskTier,
-    formula: `(0.25×${dataPrivacyRisk.score} + 0.20×${securityRisk.score} + 0.30×${regulatoryRisk.score} + 0.10×${ethicalRisk.score} + 0.10×${operationalRisk.score} + 0.05×${reputationRisk.score})`,
-    calculation: `(0.25×Privacy + 0.20×Security + 0.30×Regulatory + 0.10×Ethical + 0.10×Operational + 0.05×Reputational)`,
+    formula: isGenAI ? 
+      `(0.20×${dataPrivacyRisk.score} + 0.15×${securityRisk.score} + 0.25×${regulatoryRisk.score} + 0.10×${ethicalRisk.score} + 0.10×${operationalRisk.score} + 0.05×${reputationRisk.score})` :
+      `(0.25×${dataPrivacyRisk.score} + 0.20×${securityRisk.score} + 0.30×${regulatoryRisk.score} + 0.10×${ethicalRisk.score} + 0.10×${operationalRisk.score} + 0.05×${reputationRisk.score})`,
+    calculation: isGenAI ? 
+      `(0.20×Privacy + 0.15×Security + 0.25×Regulatory + 0.10×Ethical + 0.10×Operational + 0.05×Reputational)` :
+      `(0.25×Privacy + 0.20×Security + 0.30×Regulatory + 0.10×Ethical + 0.10×Operational + 0.05×Reputational)`,
     regulatoryWarnings: regulatoryRisk.regulatoryWarnings || [],
     dataPrivacyInfo: dataPrivacyRisk.infoMessages,
     securityInfo: securityRisk.infoMessages,

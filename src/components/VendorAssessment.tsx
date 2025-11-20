@@ -177,7 +177,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
     console.log('[VendorAssessment] Loaded vendors:', data);
     if (data && data.length > 0) {
       console.log('[VendorAssessment] First vendor approval data:', data[0].approvals);
-      console.log('[VendorAssessment] All vendor IDs:', data.map(v => v.id));
+      console.log('[VendorAssessment] All vendor IDs:', data.map((v: Vendor) => v.id));
     }
     
     setVendors(data || []);
@@ -481,55 +481,57 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
         </div>
 
         {/* Basic Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Vendor Name</label>
-            <input
-              type="text"
-              value={currentVendor.name}
-              onChange={(e) => setCurrentVendor(prev => prev ? { ...prev, name: e.target.value } : null)}
-              disabled={!isEditing}
-              className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-card text-foreground"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Category</label>
-            <select
-              value={currentVendor.category}
-              onChange={(e) => setCurrentVendor(prev => prev ? { ...prev, category: e.target.value } : null)}
-              disabled={!isEditing}
-              className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-card text-foreground"
-            >
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
+        <div className="bg-muted/50 p-4 rounded-lg border border-border mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Vendor Name</label>
+              <input
+                type="text"
+                value={currentVendor.name}
+                onChange={(e) => setCurrentVendor(prev => prev ? { ...prev, name: e.target.value } : null)}
+                disabled={!isEditing}
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-ring disabled:bg-muted bg-card text-foreground"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Category</label>
+              <select
+                value={currentVendor.category}
+                onChange={(e) => setCurrentVendor(prev => prev ? { ...prev, category: e.target.value } : null)}
+                disabled={!isEditing}
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-ring disabled:bg-muted bg-card text-foreground"
+              >
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Website</label>
-            <input
-              type="url"
-              value={currentVendor.website}
-              onChange={(e) => {
-                console.log('[VendorAssessment] Website input changed:', e.target.value);
-                setCurrentVendor(prev => prev ? { ...prev, website: e.target.value } : null);
-              }}
-              disabled={!isEditing}
-              className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-card text-foreground"
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Website</label>
+              <input
+                type="url"
+                value={currentVendor.website}
+                onChange={(e) => {
+                  console.log('[VendorAssessment] Website input changed:', e.target.value);
+                  setCurrentVendor(prev => prev ? { ...prev, website: e.target.value } : null);
+                }}
+                disabled={!isEditing}
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-ring disabled:bg-muted bg-card text-foreground"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Assessment Date</label>
-            <input
-              type="date"
-              value={currentVendor.assessmentDate}
-              onChange={(e) => setCurrentVendor(prev => prev ? { ...prev, assessmentDate: e.target.value } : null)}
-              disabled={!isEditing}
-              className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-card text-foreground"
-            />
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Assessment Date</label>
+              <input
+                type="date"
+                value={currentVendor.assessmentDate}
+                onChange={(e) => setCurrentVendor(prev => prev ? { ...prev, assessmentDate: e.target.value } : null)}
+                disabled={!isEditing}
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-ring disabled:bg-muted bg-card text-foreground"
+              />
+            </div>
           </div>
         </div>
 
@@ -557,7 +559,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
           </div>
 
           {/* Tab Content */}
-          <div className="bg-muted rounded-lg p-6">
+          <div className="bg-muted/50 rounded-lg p-6 border border-border">
             {Object.entries(assessmentCriteria).map(([category, subcriteria], index) => (
               <div key={category} className={activeTab === index ? 'block' : 'hidden'}>
                 <h4 className="text-lg font-semibold text-foreground mb-4">{category}</h4>
@@ -580,7 +582,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
                               value={score}
                               onChange={(e) => updateScore(category, subcategory, e.target.value)}
                               disabled={!isEditing}
-                              className="w-20 px-2 py-1 border border-border rounded text-sm focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-card text-foreground"
+                              className="w-20 px-2 py-1 border border-border rounded text-sm focus:ring-2 focus:ring-ring focus:border-ring disabled:bg-muted bg-card text-foreground"
                             >
                               <option value="0">0</option>
                               <option value="1">1</option>
@@ -596,7 +598,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
                           onChange={(e) => updateComment(category, subcategory, e.target.value)}
                           disabled={!isEditing}
                           placeholder="Add your assessment notes..."
-                          className="w-full px-3 py-2 border border-border rounded text-sm focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-card text-foreground"
+                          className="w-full px-3 py-2 border border-border rounded text-sm focus:ring-2 focus:ring-ring focus:border-ring disabled:bg-muted bg-card text-foreground"
                           rows={2}
                         />
                       </div>
@@ -612,12 +614,9 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
         <div className="mt-8 space-y-6">
           <h3 className="text-xl font-semibold text-foreground border-b border-border pb-2">Approval Workflow</h3>
           
-          {/* Debug: Log current vendor approval data */}
-          {console.log('[VendorAssessment] Rendering approval workflow for vendor:', currentVendor?.id, 'Approvals:', currentVendor?.approvals)}
-          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {Object.entries(currentVendor.approvals).map(([area, approval]) => (
-              <div key={area} className="bg-muted rounded-lg p-4">
+              <div key={area} className="bg-muted/50 rounded-lg p-4 border border-border">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-medium text-foreground">{area}</h4>
                   <Select
@@ -653,7 +652,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
                           onChange={(e) => updateApprovalField(area, 'approvedBy', e.target.value)}
                           disabled={!isEditing}
                           placeholder="Enter approver name"
-                          className="w-full px-2 py-1 text-sm border border-border rounded focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-card text-foreground"
+                          className="w-full px-2 py-1 text-sm border border-border rounded focus:ring-2 focus:ring-ring focus:border-ring disabled:bg-muted bg-card text-foreground"
                         />
                       </div>
                     <div>
@@ -663,7 +662,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
                         value={approval.approvedDate ? approval.approvedDate.split('T')[0] : ''}
                         onChange={(e) => updateApprovalField(area, 'approvedDate', e.target.value)}
                         disabled={!isEditing}
-                        className="w-full px-2 py-1 text-sm border border-border rounded focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-background text-foreground"
+                        className="w-full px-2 py-1 text-sm border border-border rounded focus:ring-2 focus:ring-ring focus:border-ring disabled:bg-muted bg-card text-foreground"
                       />
                     </div>
                   </div>
@@ -676,7 +675,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
                       onChange={(e) => updateApprovalField(area, 'comments', e.target.value)}
                       disabled={!isEditing}
                       placeholder="Add approval comments..."
-                      className="w-full px-2 py-1 text-sm border border-border rounded focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted bg-card text-foreground"
+                      className="w-full px-2 py-1 text-sm border border-border rounded focus:ring-2 focus:ring-ring focus:border-ring disabled:bg-muted bg-card text-foreground"
                       rows={2}
                     />
                 </div>
@@ -685,7 +684,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
           </div>
           
           {/* Approval Status Summary */}
-          <div className="bg-muted border border-border rounded-lg p-4">
+          <div className="bg-muted/50 border border-border rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-medium text-foreground mb-1">Overall Approval Status</h4>
@@ -716,20 +715,19 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
   const renderVendorList = () => (
     // Vendor Assessment List Component - Dark Mode Enabled
     <div className="bg-card rounded-2xl shadow-sm border border-border">
-      <div className="p-6 border-b border-border">
+      <div className="bg-muted/50 p-4 rounded-t-2xl border-b border-border">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-foreground">Vendor Assessment List</h2>
           <div className="flex gap-2">
             <button
               onClick={addVendor}
-              className="flex items-center gap-2 bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700 px-4 py-2 rounded-lg transition-colors text-sm"
+              className="flex items-center gap-2 bg-card text-foreground border border-border hover:bg-muted px-4 py-2 rounded-lg transition-colors text-sm"
             >
               <Plus size={14} />
               Add Vendor
             </button>
             <button
               onClick={() => setViewMode('dashboard')}
-              className="flex items-center gap-2 bg-white text-foreground border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-white dark:border-neutral-600 dark:hover:bg-neutral-700 px-4 py-2 rounded-lg transition-colors text-sm"
+              className="flex items-center gap-2 bg-card text-foreground border border-border hover:bg-muted px-4 py-2 rounded-lg transition-colors text-sm"
             >
               <BarChart3 size={14} />
               Dashboard
@@ -747,7 +745,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
                 placeholder="Search vendors..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 border border-border rounded-lg focus:ring-2 focus:ring-neutral-400 focus:border-neutral-400 bg-card text-foreground placeholder:text-muted-foreground text-sm"
+                className="w-full pl-9 pr-3 py-2.5 border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-ring bg-card text-foreground placeholder:text-muted-foreground text-sm"
               />
             </div>
           </div>
@@ -755,7 +753,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="w-full px-3 py-2.5 border border-border rounded-lg focus:ring-2 focus:ring-neutral-400 focus:border-neutral-400 bg-card text-foreground text-sm"
+              className="w-full px-3 py-2.5 border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-ring bg-card text-foreground text-sm"
             >
               <option value="all">All Categories</option>
               {categories.map(cat => (
@@ -768,7 +766,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
 
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-muted/40">
+          <thead className="bg-muted/50">
             <tr>
               <th className="px-6 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Vendor</th>
               <th className="px-6 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Category</th>
@@ -845,7 +843,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
       </div>
 
       {filteredVendors.length === 0 && (
-        <div className="text-center py-16">
+        <div className="text-center py-16 bg-muted/50">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <Users className="h-8 w-8 text-muted-foreground" />
           </div>
@@ -853,7 +851,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
           <p className="text-muted-foreground mb-6 max-w-md mx-auto">Get started by adding a new vendor to assess.</p>
           <button
             onClick={addVendor}
-            className="flex items-center gap-2 mx-auto bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-primary-foreground px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-200 font-medium"
+            className="flex items-center gap-2 mx-auto bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-200 font-medium"
           >
             <Plus size={16} />
             Add your first vendor
@@ -865,7 +863,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
 
   const renderDashboard = () => (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-foreground">Assessment Dashboard</h2>
         <div className="flex gap-3">
           <button
@@ -877,7 +875,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
           </button>
           <button
             onClick={() => setViewMode('list')}
-            className="flex items-center gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground px-6 py-2.5 rounded-xl hover:shadow-lg transition-all duration-200 font-medium"
+            className="flex items-center gap-2 bg-card text-foreground border border-border hover:bg-muted px-6 py-2.5 rounded-xl hover:shadow-lg transition-all duration-200 font-medium"
           >
             <Users size={16} />
             View All Vendors
@@ -887,7 +885,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-card p-6 rounded-2xl shadow-sm border border-border hover:shadow-md transition-shadow duration-200">
+        <div className="bg-muted/50 p-6 rounded-2xl shadow-sm border border-border hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Vendors</p>
@@ -899,7 +897,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
           </div>
         </div>
 
-        <div className="bg-card p-6 rounded-2xl shadow-sm border border-border hover:shadow-md transition-shadow duration-200">
+        <div className="bg-muted/50 p-6 rounded-2xl shadow-sm border border-border hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Approved</p>
@@ -915,7 +913,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
           </div>
         </div>
 
-        <div className="bg-card p-6 rounded-2xl shadow-sm border border-border hover:shadow-md transition-shadow duration-200">
+        <div className="bg-muted/50 p-6 rounded-2xl shadow-sm border border-border hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">In Assessment</p>
@@ -929,7 +927,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
           </div>
         </div>
 
-        <div className="bg-card p-6 rounded-2xl shadow-sm border border-border hover:shadow-md transition-shadow duration-200">
+        <div className="bg-muted/50 p-6 rounded-2xl shadow-sm border border-border hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Average Score</p>
@@ -956,7 +954,7 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
             if (approvedVendors.length === 0) return null;
             return (
               <div key={category} className="mb-4">
-                <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl border border-border">
                   <span className="font-medium text-foreground">{category}</span>
                   <span className="text-sm text-success font-semibold">{approvedVendors.length} approved</span>
                 </div>
@@ -1010,18 +1008,6 @@ const VendorAssessment: React.FC<VendorAssessmentProps> = ({ user: _user }) => {
 
   return (
     <div className="space-y-6 fade-in">
-      {/* Page Header */}
-      <div className="bg-card rounded-2xl shadow-sm border border-border p-6">
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground leading-tight">
-              Vendor Assessment
-            </h1>
-            <p className="text-muted-foreground mt-2 text-sm">Evaluate and manage AI vendor partnerships</p>
-          </div>
-        </div>
-      </div>
-
       {viewMode === 'list' && renderVendorList()}
       {viewMode === 'form' && renderVendorForm()}
       {viewMode === 'dashboard' && renderDashboard()}

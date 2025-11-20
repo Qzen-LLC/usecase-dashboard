@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { Trash2, Edit3, Plus, Building2 } from 'lucide-react'
+import { Trash2, Edit3, Plus, Building2, ChevronLeft } from 'lucide-react'
 import { useUserData } from '@/contexts/UserContext'
 
 type Organization = { id: string; name: string }
@@ -148,15 +148,26 @@ export default function ConfigureModelsPage() {
       <div className="max-w-5xl mx-auto p-6 space-y-6">
         <Card className="border border-border">
           <div className="p-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground leading-tight">Configure AI Models</h1>
-              <p className="text-muted-foreground text-sm mt-1">Manage organization-specific model names and API keys</p>
-              {selectedOrgId && (
-                <div className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
-                  <Building2 className="w-4 h-4" />
-                  <span>Organization: {selectedOrg?.name || selectedOrgId}</span>
-                </div>
-              )}
+            <div className="flex items-start gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.back()}
+                className="flex-shrink-0 mt-1 hover:bg-muted"
+                aria-label="Go back"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-semibold text-foreground leading-tight">Configure AI Models</h1>
+                <p className="text-muted-foreground text-sm mt-1">Manage organization-specific model names and API keys</p>
+                {selectedOrgId && (
+                  <div className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
+                    <Building2 className="w-4 h-4" />
+                    <span>Organization: {selectedOrg?.name || selectedOrgId}</span>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-end gap-3">
               <Button onClick={openCreate} disabled={!selectedOrgId} className="whitespace-nowrap">

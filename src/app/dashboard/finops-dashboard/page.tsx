@@ -315,8 +315,6 @@ const FinOpsDashboardPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-foreground">FinOps Dashboard</h1>
-            <p className="text-xs text-muted-foreground mt-1">Financial operations overview and analytics</p>
           </div>
         </div>
 

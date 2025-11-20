@@ -103,7 +103,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
   const [dataReady, setDataReady] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
   const pathname = usePathname();
-  const { user, isLoaded: userLoaded } = useUserClient();
+  const { user, isLoaded: userLoaded } = useUserClient<any>();
   const { isSignedIn } = useAuthClient();
   const { userData } = useUserData();
 
@@ -261,9 +261,9 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
       {/* Sidebar */}
       <div className={`${isCollapsed ? 'w-16' : 'w-56'} bg-card border-r border-border shadow-sm transition-all duration-300 ease-in-out flex flex-col font-brandSans`}>
         {/* Logo and Brand */}
-        <div className="border-b border-border">
+        <div className="border-b border-border h-[60px] flex items-center">
           {isCollapsed ? (
-            <div className="flex flex-col items-center p-4 gap-3">
+            <div className="flex flex-col items-center justify-center gap-2 p-2 w-full h-full">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md bg-white">
                 <Image src="https://vgwacd4qotpurdv6.public.blob.vercel-storage.com/logo/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
               </div>
@@ -271,13 +271,13 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
                 variant="ghost"
                 size="sm"
                 onClick={toggleSidebar}
-                className="p-1.5 hover:bg-muted rounded-lg transition-colors"
+                className="p-1 hover:bg-muted rounded-lg transition-colors"
               >
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </Button>
             </div>
           ) : (
-            <div className="flex flex-col gap-2 p-3">
+            <div className="flex flex-col justify-center gap-1 px-3 py-2 w-full h-full">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md bg-card">
                   <Image src="https://vgwacd4qotpurdv6.public.blob.vercel-storage.com/logo/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
@@ -478,11 +478,11 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Navigation Bar */}
-        <header className="bg-card border-b border-border shadow-sm">
-          <div className="flex items-center justify-between px-6 py-4">
+        <header className="bg-card border-b border-border shadow-sm h-[60px] flex items-center">
+          <div className="flex items-center justify-between px-6 w-full">
             <div className="flex items-center gap-4">
               <div className="flex flex-col">
-                <h1 className="text-xl font-semibold text-foreground">
+                <h1 className="text-lg font-semibold text-foreground">
                   {(() => {
                     // Check Organization Setup sub-items first
                     const activeSubItem = organizationSetupItems.find(item => 
@@ -511,7 +511,7 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
                   <UserButton afterSignOutUrl="/" />
                   <div className="flex flex-col">
                     <span className="text-sm text-muted-foreground font-medium">
-                      {user?.fullName || user?.emailAddresses?.[0]?.emailAddress || 'User'}
+                      {(user as any)?.fullName || (user as any)?.emailAddresses?.[0]?.emailAddress || 'User'}
                     </span>
                     {(userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && userData?.organization?.name && (
                       <span className="text-xs text-muted-foreground">

@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { ChartRadarDots } from '@/components/ui/radar-chart';
 import { ApprovalsRiskSummary } from '@/components/ui/approvals-risk-summary';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
+import { calculateRiskScores } from '@/lib/risk-calculations';
 
 // Import the risk calculation functions from ApprovalsPage
 const calculateDataPrivacyRisk = (stepsData: any) => {
@@ -448,7 +449,8 @@ const ReadOnlyApprovalsDashboard: React.FC<ReadOnlyApprovalsDashboardProps> = ({
 
   useEffect(() => {
     if (useCaseData?.assessData?.stepsData) {
-      const result = RiskCalculation(useCaseData.assessData.stepsData);
+      // Use the unified risk calculation from the library to ensure consistency
+      const result = calculateRiskScores(useCaseData.assessData.stepsData);
       setChartData(result.chartData);
       setRiskResult(result);
     }
