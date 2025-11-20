@@ -31,16 +31,25 @@ export default function ConfigureModelsPage() {
   const [apiKey, setApiKey] = useState('')
   const { userData } = useUserData()
 
+  // Only load all organizations for QZEN_ADMIN
   useEffect(() => {
-    const loadOrgs = async () => {
-      try {
-        const res = await fetch('/api/admin/organizations')
-        const data = await res.json()
-        if (res.ok) setOrganizations(data.organizations || [])
-      } catch {}
+    if (userData?.role === 'QZEN_ADMIN') {
+      const loadOrgs = async () => {
+        try {
+          const res = await fetch('/api/admin/organizations')
+          const data = await res.json()
+          if (res.ok) setOrganizations(data.organizations || [])
+        } catch {}
+      }
+      loadOrgs()
+    } else if (userData?.organization) {
+      // For ORG_ADMIN, use their organization from userData
+      setOrganizations([{
+        id: userData.organization.id,
+        name: userData.organization.name
+      }])
     }
-    loadOrgs()
-  }, [])
+  }, [userData])
 
   // For ORG_ADMINs, default to their organization automatically when not provided via URL
   useEffect(() => {
@@ -68,7 +77,16 @@ export default function ConfigureModelsPage() {
     loadModels()
   }, [selectedOrgId])
 
-  const selectedOrg = useMemo(() => organizations.find(o => o.id === selectedOrgId), [organizations, selectedOrgId])
+  const selectedOrg = useMemo(() => {
+    // If we have userData with organization, prefer that for ORG_ADMIN
+    if (userData?.organization && userData.organization.id === selectedOrgId) {
+      return {
+        id: userData.organization.id,
+        name: userData.organization.name
+      }
+    }
+    return organizations.find(o => o.id === selectedOrgId)
+  }, [organizations, selectedOrgId, userData])
 
   const resetForm = () => {
     setEditingId(null)

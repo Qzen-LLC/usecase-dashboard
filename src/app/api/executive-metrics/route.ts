@@ -32,11 +32,16 @@ export const GET = withAuth(async (_req: Request, { auth }) => {
     const dbStart = Date.now();
 
 
-    const [totalUseCases, stageDistribution, avgScores, complexityAvg, confidenceAvg] =
+    const [totalUseCases, stageDistribution, priorityDistribution, avgScores, complexityAvg, confidenceAvg] =
       await Promise.all([
         prismaClient.useCase.count({ where: baseWhere }),
         prismaClient.useCase.groupBy({
           by: ['stage'],
+          where: baseWhere,
+          _count: { _all: true }
+        }),
+        prismaClient.useCase.groupBy({
+          by: ['priority'],
           where: baseWhere,
           _count: { _all: true }
         }),
@@ -74,6 +79,7 @@ export const GET = withAuth(async (_req: Request, { auth }) => {
         operationalImpactScore: true,
         productivityImpactScore: true,
         revenueImpactScore: true,
+        priority: true,
         finopsData: true,
         Approval: true
       }
@@ -190,6 +196,7 @@ approvalFields.forEach((field) => {
       portfolio: {
         totalUseCases,
         stageDistribution: Object.fromEntries(stageDistribution.map(s => [s.stage, s._count._all])),
+        priorityDistribution: Object.fromEntries(priorityDistribution.map(p => [p.priority || 'medium', p._count._all])),
         impactScores: {
           operational: {
             average: avgScores._avg.operationalImpactScore || 0,

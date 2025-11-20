@@ -47,6 +47,7 @@ import {
   GripVertical,
   ChevronLeft,
   ChevronRight,
+  ArrowLeft,
 } from "lucide-react";
 import {
   DndContext,
@@ -1082,10 +1083,23 @@ export default function ConfigureQuestionTemplatesPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
+        {/* Back Button */}
+        <div className="mb-2">
+          <Button
+            variant="outline"
+            size="default"
+            onClick={() => router.push('/admin')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
+        </div>
+        
         {/* Header */}
         <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-            <div>
+            <div className="flex-1">
               <h1 className="text-4xl font-bold text-foreground leading-tight">
                 Configure Question Templates
               </h1>

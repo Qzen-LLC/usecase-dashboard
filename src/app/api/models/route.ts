@@ -1,31 +1,81 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/utils/db";
+import { withAuth } from '@/lib/auth-gateway';
+import { prismaClient } from "@/utils/db";
 
-export async function GET(req: NextRequest) {
+export const GET = withAuth(async (req, { auth }) => {
   try {
+    if (!auth.userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const organizationId = searchParams.get("organizationId");
+    
     if (!organizationId) {
       return NextResponse.json({ error: "organizationId is required" }, { status: 400 });
     }
-    const models = await prisma.aiModel.findMany({
+
+    // Get user record to check permissions
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId: auth.userId },
+    });
+
+    if (!userRecord) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Check permissions: QZEN_ADMIN can access any org, ORG_ADMIN can only access their own
+    if (userRecord.role === 'QZEN_ADMIN') {
+      // QZEN_ADMIN can access any organization's models
+    } else if (userRecord.role === 'ORG_ADMIN' && userRecord.organizationId === organizationId) {
+      // ORG_ADMIN can only access their own organization's models
+    } else {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    }
+
+    const models = await prismaClient.aiModel.findMany({
       where: { organizationId },
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json({ models });
   } catch (error: any) {
+    console.error('Error fetching models:', error);
     return NextResponse.json({ error: error.message || "Failed to fetch models" }, { status: 500 });
   }
-}
+}, { requireUser: true });
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req, { auth }) => {
   try {
+    if (!auth.userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { organizationId, modelName, apiKey } = body || {};
+    
     if (!organizationId || !modelName || !apiKey) {
       return NextResponse.json({ error: "organizationId, modelName, apiKey are required" }, { status: 400 });
     }
-    const created = await prisma.aiModel.create({
+
+    // Get user record to check permissions
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId: auth.userId },
+    });
+
+    if (!userRecord) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Check permissions: QZEN_ADMIN can create for any org, ORG_ADMIN can only create for their own
+    if (userRecord.role === 'QZEN_ADMIN') {
+      // QZEN_ADMIN can create models for any organization
+    } else if (userRecord.role === 'ORG_ADMIN' && userRecord.organizationId === organizationId) {
+      // ORG_ADMIN can only create models for their own organization
+    } else {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    }
+
+    const created = await prismaClient.aiModel.create({
       data: {
         organizationId,
         modelName: String(modelName).trim(),
@@ -34,11 +84,12 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json({ model: created }, { status: 201 });
   } catch (error: any) {
+    console.error('Error creating model:', error);
     if (error?.code === 'P2002') {
       return NextResponse.json({ error: "A model with this name already exists for this organization" }, { status: 409 });
     }
     return NextResponse.json({ error: error.message || "Failed to create model" }, { status: 500 });
   }
-}
+}, { requireUser: true });
 
 

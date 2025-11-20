@@ -297,7 +297,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/20 border-t-primary mx-auto mb-4"></div>
           <p className="text-foreground font-medium">Loading admin dashboard...</p>
         </div>
       </div>
@@ -336,18 +336,6 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header Section */}
-        <div className="mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground tracking-tight">
-              QUBE Admin Dashboard
-            </h1>
-            <p className="text-muted-foreground mt-1.5 text-sm">
-              Manage organizations and platform-wide settings
-            </p>
-          </div>
-        </div>
-
         {/* Statistics Cards - Smaller size */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
           <Card className="hover:shadow-md transition-shadow rounded border-l-4 border-l-blue-500">
@@ -446,7 +434,6 @@ export default function AdminDashboard() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <div>
                 <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-primary" />
                   Organizations
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -584,7 +571,6 @@ export default function AdminDashboard() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
                     <CardTitle className="flex items-center gap-2 mb-1">
-                      <HelpCircle className="w-5 h-5 text-primary" />
                       Question Management
                     </CardTitle>
                     <CardDescription>
@@ -646,7 +632,6 @@ export default function AdminDashboard() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
                     <CardTitle className="flex items-center gap-2 mb-1">
-                      <HelpCircle className="w-5 h-5 text-primary" />
                       Model Management
                     </CardTitle>
                     <CardDescription>

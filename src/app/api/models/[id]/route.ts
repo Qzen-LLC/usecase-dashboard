@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/utils/db";
+import { withAuth } from '@/lib/auth-gateway';
+import { prismaClient } from "@/utils/db";
 
-export async function PUT(_req: NextRequest, { params }: { params: { id: string } }) {
+export const PUT = withAuth(async (req, { auth, params }: { params: Promise<{ id: string }> }) => {
   try {
-    const body = await _req.json();
+    const { id } = await params;
+    const body = await req.json();
     const { modelName, apiKey } = body || {};
     const data: any = {};
     if (typeof modelName === "string") data.modelName = modelName.trim();
@@ -11,7 +13,35 @@ export async function PUT(_req: NextRequest, { params }: { params: { id: string 
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });
     }
-    const updated = await prisma.aiModel.update({ where: { id: (await params).id }, data });
+
+    // Get user record to check permissions
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId: auth.userId! },
+    });
+
+    if (!userRecord) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Get the model to check organization
+    const model = await prismaClient.aiModel.findUnique({
+      where: { id },
+    });
+
+    if (!model) {
+      return NextResponse.json({ error: 'Model not found' }, { status: 404 });
+    }
+
+    // Check permissions: QZEN_ADMIN can update any org's models, ORG_ADMIN can only update their own
+    if (userRecord.role === 'QZEN_ADMIN') {
+      // QZEN_ADMIN can update models for any organization
+    } else if (userRecord.role === 'ORG_ADMIN' && userRecord.organizationId === model.organizationId) {
+      // ORG_ADMIN can only update models for their own organization
+    } else {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    }
+
+    const updated = await prismaClient.aiModel.update({ where: { id }, data });
     return NextResponse.json({ model: updated });
   } catch (error: any) {
     if (error?.code === 'P2002') {
@@ -19,15 +49,44 @@ export async function PUT(_req: NextRequest, { params }: { params: { id: string 
     }
     return NextResponse.json({ error: error.message || "Failed to update model" }, { status: 500 });
   }
-}
+}, { requireUser: true });
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export const DELETE = withAuth(async (req, { auth, params }: { params: Promise<{ id: string }> }) => {
   try {
-    await prisma.aiModel.delete({ where: { id: (await params).id } });
+    const { id } = await params;
+
+    // Get user record to check permissions
+    const userRecord = await prismaClient.user.findUnique({
+      where: { clerkId: auth.userId! },
+    });
+
+    if (!userRecord) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Get the model to check organization
+    const model = await prismaClient.aiModel.findUnique({
+      where: { id },
+    });
+
+    if (!model) {
+      return NextResponse.json({ error: 'Model not found' }, { status: 404 });
+    }
+
+    // Check permissions: QZEN_ADMIN can delete any org's models, ORG_ADMIN can only delete their own
+    if (userRecord.role === 'QZEN_ADMIN') {
+      // QZEN_ADMIN can delete models for any organization
+    } else if (userRecord.role === 'ORG_ADMIN' && userRecord.organizationId === model.organizationId) {
+      // ORG_ADMIN can only delete models for their own organization
+    } else {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    }
+
+    await prismaClient.aiModel.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to delete model" }, { status: 500 });
   }
-}
+}, { requireUser: true });
 
 

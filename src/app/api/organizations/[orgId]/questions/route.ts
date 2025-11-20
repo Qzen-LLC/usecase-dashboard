@@ -6,7 +6,7 @@ import { QuestionType, Stage } from '@/generated/prisma';
 // GET /api/organizations/[orgId]/questions - Get all questions for a specific organization
 export async function GET(
   request: NextRequest,
-  { params }: { params: { orgId: string } }
+  { params }: { params: Promise<{ orgId: string }> }
 ) {
   try {
     const user = await currentUser();
@@ -22,7 +22,12 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { orgId } = params;
+    const { orgId } = await params;
+
+    // Validate orgId
+    if (!orgId) {
+      return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
+    }
 
     // Check if organization exists
     const organization = await prismaClient.organization.findUnique({
@@ -67,7 +72,7 @@ export async function GET(
 // POST /api/organizations/[orgId]/questions - Create a new question for a specific organization
 export async function POST(
   request: NextRequest,
-  { params }: { params: { orgId: string } }
+  { params }: { params: Promise<{ orgId: string }> }
 ) {
   try {
     const user = await currentUser();
@@ -83,7 +88,12 @@ export async function POST(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { orgId } = params;
+    const { orgId } = await params;
+
+    // Validate orgId
+    if (!orgId) {
+      return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
+    }
 
     // Check if organization exists
     const organization = await prismaClient.organization.findUnique({

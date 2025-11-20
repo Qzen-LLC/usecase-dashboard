@@ -1,13 +1,141 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useExecutiveMetrics } from '@/hooks/useExecutiveMetrics';
 import { Card } from '@/components/ui/card';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip as ChartTooltip,
+  Legend,
+} from 'chart.js';
 import { TrendingUp, DollarSign, Shield, Target, AlertTriangle, CheckCircle, Clock, Zap, Users, Building2, PieChart, Activity, ArrowUpRight, ArrowDownRight, Minus, RefreshCw, Download, Eye, Filter } from 'lucide-react';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  ChartTooltip,
+  Legend
+);
+
+interface UseCase {
+  id: string;
+  title: string;
+  implementationComplexity: number;
+  confidenceLevel: number;
+}
 
 const ExecutiveDashboard = () => {
   const { data: metrics, isLoading: loading, error, refetch } = useExecutiveMetrics();
   const [animatedValues, setAnimatedValues] = useState<{[key: string]: number}>({});
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark') ||
+        document.body.classList.contains('dark') ||
+        (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+    return false;
+  });
+
+  // Plugin to ensure Chart.js uses correct text colors
+  const forceTextColorPlugin = useMemo(() => ({
+    id: 'forceTextColor',
+    beforeLayout: (chart: any) => {
+      const textColor = isDarkMode ? '#ffffff' : '#000000';
+      
+      // Force update scale options before layout
+      if (chart.scales.y) {
+        chart.scales.y.options.ticks.color = textColor;
+      }
+      if (chart.scales.x) {
+        chart.scales.x.options.ticks.color = textColor;
+      }
+    },
+    beforeUpdate: (chart: any) => {
+      const textColor = isDarkMode ? '#ffffff' : '#000000';
+      
+      // Force update scale options before chart updates
+      if (chart.scales.y) {
+        chart.scales.y.options.ticks.color = textColor;
+      }
+      if (chart.scales.x) {
+        chart.scales.x.options.ticks.color = textColor;
+      }
+    }
+  }), [isDarkMode]);
+
+  const [useCasesByRisk, setUseCasesByRisk] = useState<{
+    High: UseCase[];
+    Medium: UseCase[];
+    Low: UseCase[];
+  }>({ High: [], Medium: [], Low: [] });
+
+  // Detect dark mode and update Chart.js defaults
+  useEffect(() => {
+    const checkDarkMode = () => {
+      if (typeof window !== 'undefined') {
+        const isDark = document.documentElement.classList.contains('dark') ||
+          document.body.classList.contains('dark') ||
+          (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        setIsDarkMode(isDark);
+        // Update Chart.js global defaults comprehensively
+        const textColor = isDark ? '#ffffff' : '#000000';
+        ChartJS.defaults.color = textColor;
+        ChartJS.defaults.scales.linear.ticks.color = textColor;
+        ChartJS.defaults.scales.category.ticks.color = textColor;
+      }
+    };
+    
+    // Set initial state immediately
+    if (typeof window !== 'undefined') {
+      const initialDark = document.documentElement.classList.contains('dark') ||
+        document.body.classList.contains('dark') ||
+        (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      setIsDarkMode(initialDark);
+      // Set initial Chart.js defaults comprehensively
+      const initialTextColor = initialDark ? '#ffffff' : '#000000';
+      ChartJS.defaults.color = initialTextColor;
+      ChartJS.defaults.scales.linear.ticks.color = initialTextColor;
+      ChartJS.defaults.scales.category.ticks.color = initialTextColor;
+    }
+    
+    // Watch for theme changes
+    const observer = new MutationObserver(checkDarkMode);
+    if (typeof window !== 'undefined') {
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+      observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+      
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      if (mediaQuery.addEventListener) {
+        mediaQuery.addEventListener('change', checkDarkMode);
+      } else {
+        mediaQuery.addListener(checkDarkMode);
+      }
+      
+      return () => {
+        observer.disconnect();
+        if (mediaQuery.removeEventListener) {
+          mediaQuery.removeEventListener('change', checkDarkMode);
+        } else {
+          mediaQuery.removeListener(checkDarkMode);
+        }
+      };
+    }
+  }, []);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -37,6 +165,52 @@ const ExecutiveDashboard = () => {
     
     animate();
   };
+
+  // Fetch use cases and group by risk
+  useEffect(() => {
+    const fetchUseCases = async () => {
+      try {
+        const response = await fetch('/api/read-usecases');
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        const useCases = Array.isArray(data.useCases) ? data.useCases : [];
+        
+        const grouped: { High: UseCase[]; Medium: UseCase[]; Low: UseCase[] } = {
+          High: [],
+          Medium: [],
+          Low: []
+        };
+        
+        useCases.forEach((uc: any) => {
+          const complexity = uc.implementationComplexity || 0;
+          const confidence = uc.confidenceLevel || 0;
+          
+          let riskLevel: 'High' | 'Medium' | 'Low';
+          if (complexity >= 7 && confidence <= 40) {
+            riskLevel = 'High';
+          } else if (complexity >= 4 || confidence <= 60) {
+            riskLevel = 'Medium';
+          } else {
+            riskLevel = 'Low';
+          }
+          
+          grouped[riskLevel].push({
+            id: uc.id,
+            title: uc.title || 'Untitled Use Case',
+            implementationComplexity: complexity,
+            confidenceLevel: confidence
+          });
+        });
+        
+        setUseCasesByRisk(grouped);
+      } catch (err) {
+        console.error('Error fetching use cases for tooltips:', err);
+      }
+    };
+    
+    fetchUseCases();
+  }, []);
 
   // Animate values when metrics load
   useEffect(() => {
@@ -75,11 +249,9 @@ const ExecutiveDashboard = () => {
   const generateCSVContent = (metrics: any) => {
     const rows = [];
     
-    // Header
     rows.push(['Executive Dashboard Report', new Date().toLocaleDateString()]);
     rows.push([]);
     
-    // Portfolio Metrics
     rows.push(['PORTFOLIO METRICS']);
     rows.push(['Metric', 'Value']);
     rows.push(['Total Use Cases', metrics.portfolio?.totalUseCases || 0]);
@@ -88,7 +260,6 @@ const ExecutiveDashboard = () => {
     rows.push(['Average Confidence', `${Math.round(metrics.portfolio?.confidenceAnalysis?.average || 0)}%`]);
     rows.push([]);
     
-    // Stage Distribution
     if (metrics.portfolio?.stageDistribution) {
       rows.push(['STAGE DISTRIBUTION']);
       rows.push(['Stage', 'Count']);
@@ -98,7 +269,6 @@ const ExecutiveDashboard = () => {
       rows.push([]);
     }
     
-    // Priority Distribution
     if (metrics.portfolio?.priorityDistribution) {
       rows.push(['PRIORITY DISTRIBUTION']);
       rows.push(['Priority', 'Count']);
@@ -108,7 +278,6 @@ const ExecutiveDashboard = () => {
       rows.push([]);
     }
     
-    // Financial Metrics
     if (metrics.financial) {
       rows.push(['FINANCIAL METRICS']);
       rows.push(['Metric', 'Value']);
@@ -119,7 +288,6 @@ const ExecutiveDashboard = () => {
       rows.push([]);
     }
     
-    // Risk Assessment
     if (metrics.risk) {
       rows.push(['RISK ASSESSMENT']);
       rows.push(['Risk Level', 'Count']);
@@ -132,7 +300,6 @@ const ExecutiveDashboard = () => {
       rows.push([]);
     }
     
-    // Strategic Insights
     if (metrics.strategic) {
       rows.push(['STRATEGIC INSIGHTS']);
       
@@ -153,7 +320,6 @@ const ExecutiveDashboard = () => {
       }
     }
     
-    // Convert to CSV string
     return rows.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
   };
 
@@ -215,6 +381,7 @@ const ExecutiveDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        
         {/* Action Buttons */}
         <div className="mb-6 flex justify-end">
           <div className="flex items-center gap-2">
@@ -237,7 +404,8 @@ const ExecutiveDashboard = () => {
 
         {/* Clean KPI Cards */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Total Use Cases Card */}
+
+          {/* Total Use Cases */}
           <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
             <div className="p-4">
               <div className="space-y-1">
@@ -253,7 +421,7 @@ const ExecutiveDashboard = () => {
             </div>
           </Card>
 
-          {/* Portfolio Score Card */}
+          {/* Portfolio Score */}
           <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
             <div className="p-4">
               <div className="space-y-1">
@@ -271,7 +439,7 @@ const ExecutiveDashboard = () => {
             </div>
           </Card>
 
-          {/* Complexity Card */}
+          {/* Complexity */}
           <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
             <div className="p-4">
               <div className="space-y-1">
@@ -287,7 +455,7 @@ const ExecutiveDashboard = () => {
             </div>
           </Card>
 
-          {/* Confidence Card */}
+          {/* Confidence */}
           <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
             <div className="p-4">
               <div className="space-y-1">
@@ -304,6 +472,7 @@ const ExecutiveDashboard = () => {
               </div>
             </div>
           </Card>
+
         </section>
 
         {/* Portfolio Health Section */}
@@ -314,69 +483,311 @@ const ExecutiveDashboard = () => {
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Stage Distribution */}
-            {Object.keys(metrics.portfolio.stageDistribution ?? {}).length > 0 && (
-              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-4">
-                  <div className="mb-3">
-                    <h3 className="text-base font-semibold text-foreground">Stage Distribution</h3>
-                  </div>
-                  <div className="space-y-2">
-                    {Object.entries(metrics.portfolio.stageDistribution || {}).map(([stage, count], index) => (
-                      <div key={stage} className="flex items-center justify-between p-2 bg-muted/50 rounded-md hover:bg-muted transition-colors duration-150">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${
-                            index === 0 ? 'bg-primary' :
-                            index === 1 ? 'bg-success' :
-                            index === 2 ? 'bg-warning' :
-                            index === 3 ? 'bg-secondary' : 'bg-muted-foreground'
-                          }`}></div>
-                          <span className="text-xs font-medium text-foreground capitalize">
-                            {stage.replace('-', ' ')}
-                          </span>
-                        </div>
-                        <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs font-medium rounded">
-                          {count}
-                        </span>
+            {(() => {
+              const hasStageData = Object.keys(metrics.portfolio.stageDistribution ?? {}).length > 0;
+              if (!hasStageData) {
+                return (
+                  <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+                    <div className="p-4">
+                      <div className="mb-4">
+                        <h3 className="text-base font-semibold text-foreground">Stage Distribution</h3>
+                        <p className="text-xs text-muted-foreground mt-1">Use cases by development stage</p>
                       </div>
-                    ))}
+                      <div className="h-72 flex items-center justify-center">
+                        <p className="text-sm text-muted-foreground">No stage data available</p>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              }
+              
+              const stageData = Object.entries(metrics.portfolio.stageDistribution || {}).sort((a, b) => (b[1] as number) - (a[1] as number));
+              
+              // Color palette that works with both light and dark themes
+              const getComputedColor = (index: number) => {
+                if (isDarkMode) {
+                  // Brighter colors for dark mode
+                  const darkPalette = [
+                    'rgb(96, 165, 250)',   // Light Blue
+                    'rgb(74, 222, 128)',   // Light Green
+                    'rgb(251, 146, 60)',  // Orange
+                    'rgb(196, 181, 253)',  // Light Purple
+                    'rgb(244, 114, 182)',  // Light Pink
+                    'rgb(125, 211, 252)',  // Light Sky Blue
+                    'rgb(250, 204, 21)',  // Bright Yellow
+                    'rgb(248, 113, 113)',  // Light Red
+                  ];
+                  return darkPalette[index % darkPalette.length];
+                } else {
+                  // Standard colors for light mode
+                  const lightPalette = [
+                    'rgb(59, 130, 246)',   // Blue
+                    'rgb(34, 197, 94)',   // Green
+                    'rgb(251, 146, 60)',  // Orange
+                    'rgb(168, 85, 247)',  // Purple
+                    'rgb(236, 72, 153)',  // Pink
+                    'rgb(14, 165, 233)',  // Sky Blue
+                    'rgb(234, 179, 8)',   // Yellow
+                    'rgb(239, 68, 68)',   // Red
+                  ];
+                  return lightPalette[index % lightPalette.length];
+                }
+              };
+              
+              const chartData = {
+                labels: stageData.map(([stage]) => {
+                  return stage
+                    .split('-')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                    .join(' ');
+                }),
+                datasets: [{
+                  label: 'Use Cases',
+                  data: stageData.map(([, count]) => count as number),
+                  backgroundColor: stageData.map((_, index) => getComputedColor(index)),
+                  borderRadius: 6,
+                  borderSkipped: false,
+                  maxBarThickness: 50,
+                }]
+              };
+
+              const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                  duration: 0
+                },
+                plugins: {
+                  legend: {
+                    display: false,
+                    labels: {
+                      color: isDarkMode ? '#fff' : '#000'
+                    }
+                  },
+                  tooltip: {
+                    backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+                    titleColor: isDarkMode ? '#fff' : '#000',
+                    bodyColor: isDarkMode ? '#fff' : '#000',
+                    borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: true,
+                    cornerRadius: 6,
+                    callbacks: {
+                      label: function(context: any) {
+                        return `${context.parsed.y} use case${context.parsed.y !== 1 ? 's' : ''}`;
+                      }
+                    }
+                  }
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      color: isDarkMode ? '#ffffff' : '#000000',
+                      font: {
+                        size: 12,
+                        weight: 'bold' as const,
+                        family: 'system-ui, -apple-system, sans-serif'
+                      },
+                      stepSize: 1,
+                      precision: 0,
+                      padding: 8,
+                      callback: function(value: any) {
+                        return value;
+                      }
+                    },
+                    grid: {
+                      color: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+                      drawBorder: false,
+                    }
+                  },
+                  x: {
+                    ticks: {
+                      color: isDarkMode ? '#ffffff' : '#000000',
+                      font: {
+                        size: 11,
+                        weight: 'bold' as const,
+                        family: 'system-ui, -apple-system, sans-serif'
+                      },
+                      maxRotation: 45,
+                      minRotation: 0,
+                      padding: 6
+                    },
+                    grid: {
+                      display: false,
+                      drawBorder: false,
+                    }
+                  }
+                }
+              };
+
+              return (
+                <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+                  <div className="p-4">
+                    <div className="mb-4">
+                      <h3 className="text-base font-semibold text-foreground">Stage Distribution</h3>
+                      <p className="text-xs text-muted-foreground mt-1">Use cases by development stage</p>
+                    </div>
+                    <div className="h-72 chart-container" style={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
+                      <Bar 
+                        key={`stage-${isDarkMode}`} 
+                        data={chartData} 
+                        options={chartOptions}
+                        plugins={[forceTextColorPlugin]}
+                        redraw={true}
+                      />
+                    </div>
                   </div>
-                </div>
-              </Card>
-            )}
+                </Card>
+              );
+            })()}
 
             {/* Priority Distribution */}
-            {Object.keys(metrics.portfolio.priorityDistribution ?? {}).length > 0 && (
-              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-4">
-                  <div className="mb-3">
-                    <h3 className="text-base font-semibold text-foreground">Priority Distribution</h3>
-                  </div>
-                  <div className="space-y-2">
-                    {Object.entries(metrics.portfolio.priorityDistribution || {}).map(([priority, count], index) => (
-                      <div key={priority} className="flex items-center justify-between p-2 bg-muted/50 rounded-md hover:bg-muted transition-colors duration-150">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${
-                            priority.toLowerCase() === 'high' ? 'bg-destructive' :
-                            priority.toLowerCase() === 'medium' ? 'bg-warning' :
-                            priority.toLowerCase() === 'low' ? 'bg-success' : 'bg-muted-foreground'
-                          }`}></div>
-                          <span className="text-xs font-medium text-foreground capitalize">
-                            {priority}
-                          </span>
-                        </div>
-                        <span className={`px-2 py-0.5 text-xs font-medium rounded ${
-                          priority.toLowerCase() === 'high' ? 'bg-destructive text-destructive-foreground' :
-                          priority.toLowerCase() === 'medium' ? 'bg-warning text-warning-foreground' :
-                          priority.toLowerCase() === 'low' ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'
-                        }`}>
-                          {count}
-                        </span>
+            {(() => {
+              const priorityDist = metrics.portfolio.priorityDistribution ?? {};
+              const hasPriorityData = Object.keys(priorityDist).length > 0 && 
+                Object.values(priorityDist).some((count: any) => count > 0);
+              if (!hasPriorityData) {
+                return (
+                  <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+                    <div className="p-4">
+                      <div className="mb-4">
+                        <h3 className="text-base font-semibold text-foreground">Priority Distribution</h3>
+                        <p className="text-xs text-muted-foreground mt-1">Use cases by priority level</p>
                       </div>
-                    ))}
+                      <div className="h-72 flex items-center justify-center">
+                        <p className="text-sm text-muted-foreground">No priority data available</p>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              }
+              
+              const priorityData = Object.entries(priorityDist).filter(([, count]) => (count as number) > 0).sort((a, b) => {
+                const priorityOrder: Record<string, number> = { high: 3, medium: 2, low: 1 };
+                const aPriority = priorityOrder[a[0].toLowerCase()] || 0;
+                const bPriority = priorityOrder[b[0].toLowerCase()] || 0;
+                return bPriority - aPriority;
+              });
+
+              // Priority-specific colors
+              const getPriorityColor = (priority: string) => {
+                const priorityLower = priority.toLowerCase();
+                if (isDarkMode) {
+                  if (priorityLower === 'high') return 'rgb(248, 113, 113)'; // Light Red
+                  if (priorityLower === 'medium') return 'rgb(250, 204, 21)'; // Bright Yellow
+                  if (priorityLower === 'low') return 'rgb(74, 222, 128)'; // Light Green
+                  return 'rgb(156, 163, 175)'; // Gray
+                } else {
+                  if (priorityLower === 'high') return 'rgb(239, 68, 68)'; // Red
+                  if (priorityLower === 'medium') return 'rgb(234, 179, 8)'; // Yellow
+                  if (priorityLower === 'low') return 'rgb(34, 197, 94)'; // Green
+                  return 'rgb(107, 114, 128)'; // Gray
+                }
+              };
+              
+              const chartData = {
+                labels: priorityData.map(([priority]) => priority.charAt(0).toUpperCase() + priority.slice(1).toLowerCase()),
+                datasets: [{
+                  label: 'Use Cases',
+                  data: priorityData.map(([, count]) => count as number),
+                  backgroundColor: priorityData.map(([priority]) => getPriorityColor(priority)),
+                  borderRadius: 6,
+                  borderSkipped: false,
+                  maxBarThickness: 50,
+                }]
+              };
+
+              const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                  duration: 0
+                },
+                plugins: {
+                  legend: {
+                    display: false,
+                    labels: {
+                      color: isDarkMode ? '#fff' : '#000'
+                    }
+                  },
+                  tooltip: {
+                    backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+                    titleColor: isDarkMode ? '#fff' : '#000',
+                    bodyColor: isDarkMode ? '#fff' : '#000',
+                    borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: true,
+                    cornerRadius: 6,
+                    callbacks: {
+                      label: function(context: any) {
+                        return `${context.parsed.y} use case${context.parsed.y !== 1 ? 's' : ''}`;
+                      }
+                    }
+                  }
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      color: isDarkMode ? '#ffffff' : '#000000',
+                      font: {
+                        size: 12,
+                        weight: 'bold' as const,
+                        family: 'system-ui, -apple-system, sans-serif'
+                      },
+                      stepSize: 1,
+                      precision: 0,
+                      padding: 8,
+                      callback: function(value: any) {
+                        return value;
+                      }
+                    },
+                    grid: {
+                      color: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+                      drawBorder: false,
+                    }
+                  },
+                  x: {
+                    ticks: {
+                      color: isDarkMode ? '#ffffff' : '#000000',
+                      font: {
+                        size: 11,
+                        weight: 'bold' as const,
+                        family: 'system-ui, -apple-system, sans-serif'
+                      },
+                      padding: 6
+                    },
+                    grid: {
+                      display: false,
+                      drawBorder: false,
+                    }
+                  }
+                }
+              };
+
+              return (
+                <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
+                  <div className="p-4">
+                    <div className="mb-4">
+                      <h3 className="text-base font-semibold text-foreground">Priority Distribution</h3>
+                      <p className="text-xs text-muted-foreground mt-1">Use cases by priority level</p>
+                    </div>
+                    <div className="h-72 chart-container" style={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
+                      <Bar 
+                        key={`priority-${isDarkMode}`} 
+                        data={chartData} 
+                        options={chartOptions}
+                        plugins={[forceTextColorPlugin]}
+                        redraw={true}
+                      />
+                    </div>
                   </div>
-                </div>
-              </Card>
-            )}
+                </Card>
+              );
+            })()}
           </div>
         </section>
 
@@ -466,52 +877,118 @@ const ExecutiveDashboard = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* High Risk */}
-              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-4">
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">High Risk Use Cases</p>
-                    <p className="text-2xl font-bold text-foreground">
-                      {metrics.risk.riskDistribution?.High ?? 0}
-                    </p>
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-1.5 h-1.5 bg-destructive rounded-full"></div>
-                      <span className="text-xs text-muted-foreground">Critical</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 cursor-pointer">
+                    <div className="p-4">
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground">High Risk Use Cases</p>
+                        <p className="text-2xl font-bold text-foreground">
+                          {metrics.risk.riskDistribution?.High ?? 0}
+                        </p>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-1.5 h-1.5 bg-destructive rounded-full"></div>
+                          <span className="text-xs text-muted-foreground">Critical</span>
+                        </div>
+                      </div>
                     </div>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent 
+                  side="top" 
+                  hideArrow
+                  className="max-w-xs bg-card text-foreground border border-border shadow-lg p-3"
+                >
+                  <div className="space-y-2">
+                    <p className="font-semibold text-sm">High Risk Use Cases:</p>
+                    {useCasesByRisk.High.length > 0 ? (
+                      <ul className="space-y-1.5 max-h-60 overflow-y-auto pr-2">
+                        {useCasesByRisk.High.map((uc) => (
+                          <li key={uc.id} className="text-xs text-foreground">• {uc.title}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No high risk use cases</p>
+                    )}
                   </div>
-                </div>
-              </Card>
+                </TooltipContent>
+              </Tooltip>
 
               {/* Medium Risk */}
-              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-4">
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">Medium Risk Use Cases</p>
-                    <p className="text-2xl font-bold text-foreground">
-                      {metrics.risk.riskDistribution?.Medium ?? 0}
-                    </p>
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-1.5 h-1.5 bg-warning rounded-full"></div>
-                      <span className="text-xs text-muted-foreground">Monitor</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 cursor-pointer">
+                    <div className="p-4">
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground">Medium Risk Use Cases</p>
+                        <p className="text-2xl font-bold text-foreground">
+                          {metrics.risk.riskDistribution?.Medium ?? 0}
+                        </p>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-1.5 h-1.5 bg-warning rounded-full"></div>
+                          <span className="text-xs text-muted-foreground">Monitor</span>
+                        </div>
+                      </div>
                     </div>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent 
+                  side="top" 
+                  hideArrow
+                  className="max-w-xs bg-card text-foreground border border-border shadow-lg p-3"
+                >
+                  <div className="space-y-2">
+                    <p className="font-semibold text-sm">Medium Risk Use Cases:</p>
+                    {useCasesByRisk.Medium.length > 0 ? (
+                      <ul className="space-y-1.5 max-h-60 overflow-y-auto pr-2">
+                        {useCasesByRisk.Medium.map((uc) => (
+                          <li key={uc.id} className="text-xs text-foreground">• {uc.title}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No medium risk use cases</p>
+                    )}
                   </div>
-                </div>
-              </Card>
+                </TooltipContent>
+              </Tooltip>
 
               {/* Low Risk */}
-              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-4">
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">Low Risk Use Cases</p>
-                    <p className="text-2xl font-bold text-foreground">
-                      {metrics.risk.riskDistribution?.Low ?? 0}
-                    </p>
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-1.5 h-1.5 bg-success rounded-full"></div>
-                      <span className="text-xs text-muted-foreground">Safe</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 cursor-pointer">
+                    <div className="p-4">
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground">Low Risk Use Cases</p>
+                        <p className="text-2xl font-bold text-foreground">
+                          {metrics.risk.riskDistribution?.Low ?? 0}
+                        </p>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-1.5 h-1.5 bg-success rounded-full"></div>
+                          <span className="text-xs text-muted-foreground">Safe</span>
+                        </div>
+                      </div>
                     </div>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent 
+                  side="top" 
+                  hideArrow
+                  className="max-w-xs bg-card text-foreground border border-border shadow-lg p-3"
+                >
+                  <div className="space-y-2">
+                    <p className="font-semibold text-sm">Low Risk Use Cases:</p>
+                    {useCasesByRisk.Low.length > 0 ? (
+                      <ul className="space-y-1.5 max-h-60 overflow-y-auto pr-2">
+                        {useCasesByRisk.Low.map((uc) => (
+                          <li key={uc.id} className="text-xs text-foreground">• {uc.title}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No low risk use cases</p>
+                    )}
                   </div>
-                </div>
-              </Card>
+                </TooltipContent>
+              </Tooltip>
 
               {/* Total Assessed */}
               <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
