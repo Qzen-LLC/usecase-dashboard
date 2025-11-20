@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useExecutiveMetrics } from '@/hooks/useExecutiveMetrics';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Card } from '@/components/ui/card';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Bar } from 'react-chartjs-2';
@@ -34,16 +35,9 @@ interface UseCase {
 
 const ExecutiveDashboard = () => {
   const { data: metrics, isLoading: loading, error, refetch } = useExecutiveMetrics();
+  const { isDark: isDarkMode, mounted: themeMounted } = useTheme();
   const [animatedValues, setAnimatedValues] = useState<{[key: string]: number}>({});
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return document.documentElement.classList.contains('dark') ||
-        document.body.classList.contains('dark') ||
-        (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    }
-    return false;
-  });
 
   // Plugin to ensure Chart.js uses correct text colors
   const forceTextColorPlugin = useMemo(() => ({
@@ -78,64 +72,15 @@ const ExecutiveDashboard = () => {
     Low: UseCase[];
   }>({ High: [], Medium: [], Low: [] });
 
-  // Detect dark mode and update Chart.js defaults
+  // Update Chart.js defaults when theme changes (based on app theme, not browser)
   useEffect(() => {
-    const checkDarkMode = () => {
-      if (typeof window !== 'undefined') {
-        const isDark = document.documentElement.classList.contains('dark') ||
-          document.body.classList.contains('dark') ||
-          (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        setIsDarkMode(isDark);
-        // Update Chart.js global defaults comprehensively
-        const textColor = isDark ? '#ffffff' : '#000000';
-        ChartJS.defaults.color = textColor;
-        ChartJS.defaults.scales.linear.ticks.color = textColor;
-        ChartJS.defaults.scales.category.ticks.color = textColor;
-      }
-    };
+    if (!themeMounted) return;
     
-    // Set initial state immediately
-    if (typeof window !== 'undefined') {
-      const initialDark = document.documentElement.classList.contains('dark') ||
-        document.body.classList.contains('dark') ||
-        (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-      setIsDarkMode(initialDark);
-      // Set initial Chart.js defaults comprehensively
-      const initialTextColor = initialDark ? '#ffffff' : '#000000';
-      ChartJS.defaults.color = initialTextColor;
-      ChartJS.defaults.scales.linear.ticks.color = initialTextColor;
-      ChartJS.defaults.scales.category.ticks.color = initialTextColor;
-    }
-    
-    // Watch for theme changes
-    const observer = new MutationObserver(checkDarkMode);
-    if (typeof window !== 'undefined') {
-      observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['class']
-      });
-      observer.observe(document.body, {
-        attributes: true,
-        attributeFilter: ['class']
-      });
-      
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      if (mediaQuery.addEventListener) {
-        mediaQuery.addEventListener('change', checkDarkMode);
-      } else {
-        mediaQuery.addListener(checkDarkMode);
-      }
-      
-      return () => {
-        observer.disconnect();
-        if (mediaQuery.removeEventListener) {
-          mediaQuery.removeEventListener('change', checkDarkMode);
-        } else {
-          mediaQuery.removeListener(checkDarkMode);
-        }
-      };
-    }
-  }, []);
+    const textColor = isDarkMode ? '#ffffff' : '#000000';
+    ChartJS.defaults.color = textColor;
+    ChartJS.defaults.scales.linear.ticks.color = textColor;
+    ChartJS.defaults.scales.category.ticks.color = textColor;
+  }, [isDarkMode, themeMounted]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
