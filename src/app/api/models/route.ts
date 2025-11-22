@@ -51,10 +51,10 @@ export const POST = withAuth(async (req, { auth }) => {
     }
 
     const body = await req.json();
-    const { organizationId, modelName, apiKey } = body || {};
+    const { organizationId, providerName, modelName, apiKey } = body || {};
     
-    if (!organizationId || !modelName || !apiKey) {
-      return NextResponse.json({ error: "organizationId, modelName, apiKey are required" }, { status: 400 });
+    if (!organizationId || !providerName || !modelName || !apiKey) {
+      return NextResponse.json({ error: "organizationId, providerName, modelName, apiKey are required" }, { status: 400 });
     }
 
     // Get user record to check permissions
@@ -78,6 +78,7 @@ export const POST = withAuth(async (req, { auth }) => {
     const created = await prismaClient.aiModel.create({
       data: {
         organizationId,
+        providerName: String(providerName).trim(),
         modelName: String(modelName).trim(),
         apiKey: String(apiKey).trim(),
       },

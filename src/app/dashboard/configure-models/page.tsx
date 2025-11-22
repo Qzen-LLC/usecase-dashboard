@@ -7,11 +7,39 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Trash2, Edit3, Plus, Building2, ChevronLeft } from 'lucide-react'
 import { useUserData } from '@/contexts/UserContext'
 
 type Organization = { id: string; name: string }
-type AiModel = { id: string; organizationId: string; modelName: string; apiKey: string }
+type AiModel = { id: string; organizationId: string; modelName: string; apiKey: string; providerName: string }
+
+// Predefined model options organized by provider
+const MODEL_OPTIONS = [
+  { provider: 'OPENAI', model: 'gpt-4-turbo-preview' },
+  { provider: 'OPENAI', model: 'gpt-4' },
+  { provider: 'OPENAI', model: 'gpt-4-32k' },
+  { provider: 'OPENAI', model: 'gpt-3.5-turbo' },
+  { provider: 'OPENAI', model: 'gpt-3.5-turbo-16k' },
+  { provider: 'ANTHROPIC', model: 'claude-3-opus-20240229' },
+  { provider: 'ANTHROPIC', model: 'claude-3-sonnet-20240229' },
+  { provider: 'ANTHROPIC', model: 'claude-3-haiku-20240307' },
+  { provider: 'ANTHROPIC', model: 'claude-2.1' },
+]
+
+// Get unique providers
+const PROVIDERS = Array.from(new Set(MODEL_OPTIONS.map(opt => opt.provider)))
+
+// Get models for a specific provider
+const getModelsForProvider = (provider: string) => {
+  return MODEL_OPTIONS.filter(opt => opt.provider === provider)
+}
 
 export default function ConfigureModelsPage() {
   const searchParams = useSearchParams()
@@ -27,7 +55,8 @@ export default function ConfigureModelsPage() {
   // Form state
   const [formOpen, setFormOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [modelName, setModelName] = useState('')
+  const [selectedProvider, setSelectedProvider] = useState('')
+  const [selectedModel, setSelectedModel] = useState('')
   const [apiKey, setApiKey] = useState('')
   const { userData } = useUserData()
 
@@ -90,7 +119,8 @@ export default function ConfigureModelsPage() {
 
   const resetForm = () => {
     setEditingId(null)
-    setModelName('')
+    setSelectedProvider('')
+    setSelectedModel('')
     setApiKey('')
   }
 
@@ -101,21 +131,23 @@ export default function ConfigureModelsPage() {
 
   const openEdit = (model: AiModel) => {
     setEditingId(model.id)
-    setModelName(model.modelName)
+    setSelectedProvider(model.providerName)
+    setSelectedModel(model.modelName)
     setApiKey(model.apiKey)
     setFormOpen(true)
   }
 
   const submitForm = async () => {
-    if (!selectedOrgId || !modelName.trim() || !apiKey.trim()) return
+    if (!selectedOrgId || !selectedProvider || !selectedModel || !apiKey.trim()) return
+    
     try {
       const res = await fetch(editingId ? `/api/models/${editingId}` : '/api/models', {
         method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(
           editingId
-            ? { modelName: modelName.trim(), apiKey: apiKey.trim() }
-            : { organizationId: selectedOrgId, modelName: modelName.trim(), apiKey: apiKey.trim() }
+            ? { providerName: selectedProvider, modelName: selectedModel, apiKey: apiKey.trim() }
+            : { organizationId: selectedOrgId, providerName: selectedProvider, modelName: selectedModel, apiKey: apiKey.trim() }
         ),
       })
       const data = await res.json().catch(() => ({}))
@@ -130,6 +162,17 @@ export default function ConfigureModelsPage() {
       alert(e.message || 'Error saving model')
     }
   }
+
+  // When provider changes, reset model selection
+  const handleProviderChange = (provider: string) => {
+    setSelectedProvider(provider)
+    setSelectedModel('')
+  }
+
+  // Get available models for selected provider
+  const availableModels = useMemo(() => {
+    return selectedProvider ? getModelsForProvider(selectedProvider) : []
+  }, [selectedProvider])
 
   const deleteModel = async (id: string) => {
     if (!confirm('Delete this AI Model?')) return
@@ -195,7 +238,8 @@ export default function ConfigureModelsPage() {
                 {models.map((m) => (
                   <div key={m.id} className="flex items-center justify-between p-3 border rounded-md">
                     <div className="min-w-0">
-                      <div className="text-sm font-medium text-foreground truncate">{m.modelName}</div>
+                      {/* <div className="text-xs text-muted-foreground truncate">{m.providerName}</div>   */}
+                      <div className="text-sm font-medium text-foreground truncate">{m.providerName} - {m.modelName}</div>
                       <div className="text-xs text-muted-foreground truncate">{m.apiKey}</div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -223,8 +267,38 @@ export default function ConfigureModelsPage() {
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <Label htmlFor="modelName" className="text-sm">Model Name</Label>
-                    <Input id="modelName" value={modelName} onChange={(e) => setModelName(e.target.value)} placeholder="e.g. gpt-4o" />
+                    <Label htmlFor="providerSelect" className="text-sm">Provider</Label>
+                    <Select value={selectedProvider} onValueChange={handleProviderChange}>
+                      <SelectTrigger id="providerSelect">
+                        <SelectValue placeholder="Select a provider" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PROVIDERS.map((provider) => (
+                          <SelectItem key={provider} value={provider}>
+                            {provider}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="modelSelect" className="text-sm">Model</Label>
+                    <Select 
+                      value={selectedModel} 
+                      onValueChange={setSelectedModel}
+                      disabled={!selectedProvider}
+                    >
+                      <SelectTrigger id="modelSelect">
+                        <SelectValue placeholder={selectedProvider ? "Select a model" : "Select a provider first"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableModels.map((option) => (
+                          <SelectItem key={option.model} value={option.model}>
+                            {option.model}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label htmlFor="apiKey" className="text-sm">API Key</Label>
@@ -234,7 +308,7 @@ export default function ConfigureModelsPage() {
                 <Separator className="my-2" />
                 <div className="flex items-center justify-end gap-2">
                   <Button variant="outline" onClick={() => { setFormOpen(false); resetForm(); }}>Cancel</Button>
-                  <Button onClick={submitForm} disabled={!modelName.trim() || !apiKey.trim()}>{editingId ? 'Save' : 'Create'}</Button>
+                  <Button onClick={submitForm} disabled={!selectedProvider || !selectedModel || !apiKey.trim()}>{editingId ? 'Save' : 'Create'}</Button>
                 </div>
               </div>
             </Card>

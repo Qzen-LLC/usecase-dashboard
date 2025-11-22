@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from "@/utils/db";
 
-export const PUT = withAuth(async (req, { auth, params }: { params: Promise<{ id: string }> }) => {
+export const PUT = withAuth(async (req, { auth, params }: { auth: any, params: Promise<{ id: string }> }) => {
   try {
     const { id } = await params;
     const body = await req.json();
-    const { modelName, apiKey } = body || {};
+    const { providerName, modelName, apiKey } = body || {};
     const data: any = {};
+    if (typeof providerName === "string") data.providerName = providerName.trim();
     if (typeof modelName === "string") data.modelName = modelName.trim();
     if (typeof apiKey === "string") data.apiKey = apiKey.trim();
     if (Object.keys(data).length === 0) {
@@ -51,7 +52,7 @@ export const PUT = withAuth(async (req, { auth, params }: { params: Promise<{ id
   }
 }, { requireUser: true });
 
-export const DELETE = withAuth(async (req, { auth, params }: { params: Promise<{ id: string }> }) => {
+export const DELETE = withAuth(async (req, { auth, params }: { auth: any, params: Promise<{ id: string }> }) => {
   try {
     const { id } = await params;
 

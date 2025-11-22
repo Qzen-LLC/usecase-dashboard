@@ -5,17 +5,17 @@ import { prismaClient } from '@/utils/db';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 
-// Initialize OpenAI client (will be configured with API key from env or database)
-const getOpenAIClient = (apiKey?: string) => {
+// Initialize OpenAI client
+const getOpenAIClient = (apiKey: string) => {
   return new OpenAI({
-    apiKey: apiKey || process.env.OPENAI_API_KEY || '',
+    apiKey: apiKey,
   });
 };
 
 // Initialize Anthropic client
-const getAnthropicClient = (apiKey?: string) => {
+const getAnthropicClient = (apiKey: string) => {
   return new Anthropic({
-    apiKey: apiKey || process.env.ANTHROPIC_API_KEY || '',
+    apiKey: apiKey,
   });
 };
 
@@ -40,38 +40,90 @@ export const POST = withAuth(async (
       content,
       settings,
       service,
+      providerName, // Accept providerName as alias for service (for backward compatibility)
       type,
       variables,
     } = body;
 
-    // Get API configuration for the organization
-    let apiKey: string | undefined;
-    // Prefer per-user API configuration
-    const apiConfig = await prismaClient.lLMApiConfiguration.findFirst({
-      where: {
-        userId: userRecord.id,
-        service: service,
-        isActive: true,
-      },
-    });
-    
-    if (apiConfig) {
-      // Note: implement encryption/decryption in production if needed
-      apiKey = apiConfig.apiKey;
+    // Use service or providerName (providerName takes precedence if both are provided)
+    const serviceName = providerName || service;
+
+    // Validate required fields
+    if (!serviceName) {
+      return NextResponse.json(
+        { error: 'Service is required. Please provide a service (OPENAI, ANTHROPIC, etc.) via "service" or "providerName" field.' },
+        { status: 400 }
+      );
     }
 
-    // Use environment variables as fallback
-    if (!apiKey) {
-      if (service === 'OPENAI') {
-        apiKey = process.env.OPENAI_API_KEY;
-      } else if (service === 'ANTHROPIC') {
-        apiKey = process.env.ANTHROPIC_API_KEY;
+    // Determine organizationId:
+    // - For QZEN_ADMIN: Get from prompt template (can test any organization's prompts)
+    // - For ORG_ADMIN: Use their organizationId or prompt's organizationId if it matches
+    let organizationId: string | null = null;
+
+    if (userRecord.role === 'QZEN_ADMIN') {
+      // QZEN_ADMIN can test prompts from any organization
+      // Get organizationId from the prompt template if promptId is provided
+      if (promptId) {
+        const promptTemplate = await prismaClient.promptTemplate.findUnique({
+          where: { id: promptId },
+          select: { organizationId: true },
+        });
+        organizationId = promptTemplate?.organizationId || null;
       }
+      
+      if (!organizationId) {
+        return NextResponse.json(
+          { error: 'Could not determine organization. Please provide a valid promptId or ensure the prompt has an organizationId.' },
+          { status: 400 }
+        );
+      }
+    } else {
+      // ORG_ADMIN uses their own organizationId
+      organizationId = userRecord.organizationId;
+      
+      if (!organizationId) {
+        return NextResponse.json(
+          { error: 'User organization not found. Please ensure you are associated with an organization.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Get API key from backend (AiModel table) based on organization, provider, and model
+    let apiKey: string | undefined;
+
+    // Determine the model name that will be used (with defaults matching the API calls below)
+    let modelName: string;
+    if (settings.model) {
+      modelName = settings.model;
+    } else {
+      // Use the same defaults as in the API calls
+      if (serviceName === 'OPENAI' || serviceName === 'AZURE') {
+        modelName = 'gpt-4-turbo-preview';
+      } else if (serviceName === 'ANTHROPIC') {
+        modelName = 'claude-3-opus-20240229';
+      } else {
+        modelName = '';
+      }
+    }
+
+    // Find the model configuration in the database
+    const modelConfig = await prismaClient.aiModel.findFirst({
+      where: {
+        organizationId: organizationId,
+        providerName: serviceName,
+        modelName: modelName,
+      },
+    });
+
+    if (modelConfig) {
+      apiKey = modelConfig.apiKey;
     }
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: `No API key configured for ${service}. Please configure an API key in your environment variables or organization settings.` },
+        { error: `No API key configured for ${serviceName} model ${modelName} in organization ${organizationId}. Please configure an API key in the Configure Models page.` },
         { status: 400 }
       );
     }
@@ -84,7 +136,7 @@ export const POST = withAuth(async (
     let cost = 0;
 
     try {
-      if (service === 'OPENAI' || service === 'AZURE') {
+      if (serviceName === 'OPENAI' || serviceName === 'AZURE') {
         const openai = getOpenAIClient(apiKey);
         
         // For GPT-3.5/4 models, always use chat completions endpoint
@@ -148,7 +200,7 @@ export const POST = withAuth(async (
           tokensUsed = completion.usage?.total_tokens || 0;
           cost = tokensUsed * 0.000002;
         }
-      } else if (service === 'ANTHROPIC') {
+      } else if (serviceName === 'ANTHROPIC') {
         const anthropic = getAnthropicClient(apiKey);
         
         const message = await anthropic.messages.create({
@@ -186,7 +238,7 @@ export const POST = withAuth(async (
         }
       } else {
         return NextResponse.json(
-          { error: `Service ${service} is not yet implemented` },
+          { error: `Service ${serviceName} is not yet implemented` },
           { status: 400 }
         );
       }
@@ -234,7 +286,7 @@ export const POST = withAuth(async (
                 latencyMs,
                 status: 'SUCCESS',
                 userId: userRecord.id,
-                service: service,
+                service: serviceName,
                 model: settings.model || 'unknown',
                 promptTemplateId: promptId,
                 settings: settings || {},
@@ -295,7 +347,7 @@ export const POST = withAuth(async (
               status: 'ERROR',
               error: error.message,
               userId: userRecord.id,
-              service: service,
+              service: serviceName,
               model: settings?.model || 'unknown',
               promptTemplateId: promptId,
               settings: settings || {},

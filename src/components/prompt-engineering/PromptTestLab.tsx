@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useUserData } from '@/contexts/UserContext';
 import { 
   PlayCircle,
   Loader2,
@@ -63,72 +64,108 @@ interface TestResult {
   timestamp: string;
 }
 
-const PROVIDER_MODELS = {
-  OPENAI: [
-    { value: 'gpt-4-turbo-preview', label: 'GPT-4 Turbo', costPer1k: { input: 0.01, output: 0.03 } },
-    { value: 'gpt-4', label: 'GPT-4', costPer1k: { input: 0.03, output: 0.06 } },
-    { value: 'gpt-4-32k', label: 'GPT-4 32K', costPer1k: { input: 0.06, output: 0.12 } },
-    { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo', costPer1k: { input: 0.0005, output: 0.0015 } },
-    { value: 'gpt-3.5-turbo-16k', label: 'GPT-3.5 Turbo 16K', costPer1k: { input: 0.001, output: 0.002 } },
-  ],
-  ANTHROPIC: [
-    { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus', costPer1k: { input: 0.015, output: 0.075 } },
-    { value: 'claude-3-sonnet-20240229', label: 'Claude 3 Sonnet', costPer1k: { input: 0.003, output: 0.015 } },
-    { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku', costPer1k: { input: 0.00025, output: 0.00125 } },
-    { value: 'claude-2.1', label: 'Claude 2.1', costPer1k: { input: 0.008, output: 0.024 } },
-  ],
-  AZURE: [
-    { value: 'gpt-4-turbo', label: 'Azure GPT-4 Turbo', costPer1k: { input: 0.01, output: 0.03 } },
-    { value: 'gpt-35-turbo', label: 'Azure GPT-3.5 Turbo', costPer1k: { input: 0.0005, output: 0.0015 } },
-  ],
-  GEMINI: [
-    { value: 'gemini-pro', label: 'Gemini Pro', costPer1k: { input: 0.00025, output: 0.0005 } },
-    { value: 'gemini-pro-vision', label: 'Gemini Pro Vision', costPer1k: { input: 0.00025, output: 0.0005 } },
-  ]
-};
+interface ProviderModel {
+  value: string;
+  label: string;
+  costPer1k: { input: number; output: number };
+}
 
-const DEFAULT_CONFIGS: TestConfiguration[] = [
-  {
-    id: 'config-1',
-    provider: 'OPENAI',
-    model: 'gpt-4-turbo-preview',
-    temperature: 0.7,
-    maxTokens: 2000,
-    topP: 1.0,
-    frequencyPenalty: 0,
-    presencePenalty: 0,
-    enabled: true
-  },
-  {
-    id: 'config-2',
-    provider: 'OPENAI',
-    model: 'gpt-3.5-turbo',
-    temperature: 0.7,
-    maxTokens: 2000,
-    topP: 1.0,
-    frequencyPenalty: 0,
-    presencePenalty: 0,
-    enabled: true
-  },
-  {
-    id: 'config-3',
-    provider: 'ANTHROPIC',
-    model: 'claude-3-sonnet-20240229',
-    temperature: 0.7,
-    maxTokens: 2000,
-    topP: 1.0,
-    frequencyPenalty: 0,
-    presencePenalty: 0,
-    enabled: false
-  }
-];
+type ProviderModels = Record<string, ProviderModel[]>;
 
 export default function PromptTestLab({ prompt, onClose, onSaveResults }: PromptTestLabProps) {
+  const { userData } = useUserData();
   const [variables, setVariables] = useState<Record<string, string>>({});
-  const [configurations, setConfigurations] = useState<TestConfiguration[]>(DEFAULT_CONFIGS);
+  const [providerModels, setProviderModels] = useState<ProviderModels>({});
+  const [configurations, setConfigurations] = useState<TestConfiguration[]>([]);
   const [results, setResults] = useState<TestResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [activeTab, setActiveTab] = useState('setup');
+  const [modelsLoading, setModelsLoading] = useState(true);
+
+  // Fetch AI models from API
+  React.useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        setModelsLoading(true);
+        const organizationId = userData?.organizationId || prompt?.organizationId;
+        
+        if (!organizationId) {
+          console.log('[PromptTestLab] No organizationId available');
+          setProviderModels({});
+          setModelsLoading(false);
+          return;
+        }
+
+        const res = await fetch(`/api/models?organizationId=${encodeURIComponent(organizationId)}`, {
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include'
+        });
+
+        if (!res.ok) {
+          console.error('[PromptTestLab] Failed to fetch models:', res.status);
+          setProviderModels({});
+          setModelsLoading(false);
+          return;
+        }
+
+        const data = await res.json();
+        const models = data.models || [];
+
+        // Transform models into PROVIDER_MODELS format
+        const grouped: ProviderModels = {};
+        models.forEach((model: { providerName: string; modelName: string }) => {
+          const provider = model.providerName.toUpperCase();
+          if (!grouped[provider]) {
+            grouped[provider] = [];
+          }
+          // Default cost estimates (can be enhanced later with actual pricing data)
+          const defaultCosts: Record<string, { input: number; output: number }> = {
+            'OPENAI': { input: 0.01, output: 0.03 },
+            'ANTHROPIC': { input: 0.003, output: 0.015 },
+            'AZURE': { input: 0.01, output: 0.03 },
+            'GEMINI': { input: 0.00025, output: 0.0005 },
+          };
+          const costPer1k = defaultCosts[provider] || { input: 0.01, output: 0.03 };
+          
+          grouped[provider].push({
+            value: model.modelName,
+            label: model.modelName,
+            costPer1k
+          });
+        });
+
+        setProviderModels(grouped);
+
+        // Initialize configurations with first available models
+        const initialConfigs: TestConfiguration[] = [];
+        const providers = Object.keys(grouped);
+        providers.slice(0, 3).forEach((provider, index) => {
+          const models = grouped[provider];
+          if (models.length > 0) {
+            initialConfigs.push({
+              id: `config-${index + 1}`,
+              provider: provider,
+              model: models[0].value,
+              temperature: 0.7,
+              maxTokens: 2000,
+              topP: 1.0,
+              frequencyPenalty: 0,
+              presencePenalty: 0,
+              enabled: index < 2
+            });
+          }
+        });
+        setConfigurations(initialConfigs.length > 0 ? initialConfigs : []);
+      } catch (error) {
+        console.error('[PromptTestLab] Error fetching models:', error);
+        setProviderModels({});
+      } finally {
+        setModelsLoading(false);
+      }
+    };
+
+    fetchModels();
+  }, [userData?.organizationId, prompt?.organizationId]);
 
   // Load previously saved executions for this prompt
   React.useEffect(() => {
@@ -176,7 +213,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
         } else {
           console.log('[PromptTestLab] No executions array in response');
         }
-      } catch (error) {
+      } catch (error) {                    
         console.error('[PromptTestLab] Error loading existing runs:', error);
       }
     };
@@ -202,10 +239,15 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
   };
 
   const addConfiguration = () => {
+    // Get first available provider and model
+    const providers = Object.keys(providerModels);
+    const firstProvider = providers[0] || 'OPENAI';
+    const firstModel = providerModels[firstProvider]?.[0]?.value || 'gpt-3.5-turbo';
+    
     const newConfig: TestConfiguration = {
       id: `config-${Date.now()}`,
-      provider: 'OPENAI',
-      model: 'gpt-3.5-turbo',
+      provider: firstProvider,
+      model: firstModel,
       temperature: 0.7,
       maxTokens: 2000,
       topP: 1.0,
@@ -300,7 +342,8 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
               frequencyPenalty: config.frequencyPenalty,
               presencePenalty: config.presencePenalty,
             },
-            service: config.provider,
+            providerName: config.provider,
+            modelName: config.model,
             type: prompt.type,
             variables: variables,
           }),
@@ -316,7 +359,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
           const totalTokens = data.tokensUsed ?? (inputTokens + outputTokens);
 
           // Calculate cost based on model pricing
-          const modelInfo = PROVIDER_MODELS[config.provider as keyof typeof PROVIDER_MODELS]
+          const modelInfo = providerModels[config.provider]
             ?.find(m => m.value === config.model);
           
           const cost = modelInfo 
@@ -342,14 +385,31 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
             i === index ? result : r
           ));
         } else {
-          throw new Error(data.error || 'Test failed');
+          // Extract detailed error message from API response
+          const errorMessage = data.error || 'Test failed';
+          const errorDetails = data.details;
+          let fullErrorMessage = errorMessage;
+          
+          if (errorDetails) {
+            if (errorDetails.suggestion) {
+              fullErrorMessage = `${errorMessage}\n\n${errorDetails.suggestion}`;
+            }
+            if (errorDetails.model && errorDetails.provider) {
+              fullErrorMessage = `${fullErrorMessage}\n\nModel: ${errorDetails.model}, Provider: ${errorDetails.provider}`;
+            }
+          }
+          
+          throw new Error(fullErrorMessage);
         }
       } catch (error: any) {
+        // Extract error message, handling both Error objects and strings
+        const errorMessage = error.message || error.toString() || 'Unknown error occurred';
+        
         setResults(prev => prev.map((r, i) => 
           i === index ? { 
             ...r, 
             status: 'error' as const, 
-            error: error.message 
+            error: errorMessage
           } : r
         ));
       }
@@ -449,14 +509,26 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                   <CardHeader>
                     <div className="flex justify-between items-center">
                       <CardTitle className="text-lg text-foreground">Test Configurations</CardTitle>
-                      <Button size="sm" onClick={addConfiguration}>
+                      <Button size="sm" onClick={addConfiguration} disabled={modelsLoading || Object.keys(providerModels).length === 0}>
                         <Plus className="w-4 h-4 mr-2" />
                         Add Configuration
                       </Button>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {configurations.map((config) => (
+                    {modelsLoading ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                        <p>Loading available models...</p>
+                      </div>
+                    ) : Object.keys(providerModels).length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <AlertCircle className="w-6 h-6 mx-auto mb-2" />
+                        <p>No AI models configured for your organization.</p>
+                        <p className="text-sm mt-2">Please configure models in the Admin Dashboard.</p>
+                      </div>
+                    ) : (
+                      configurations.map((config) => (
                       <Card key={config.id} className={`bg-card border border-border ${!config.enabled ? 'opacity-50' : ''}`}>
                         <CardContent className="pt-6">
                           <div className="flex items-center justify-between mb-4">
@@ -487,7 +559,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                                 onValueChange={(provider) => {
                                   updateConfiguration(config.id, { 
                                     provider,
-                                    model: PROVIDER_MODELS[provider as keyof typeof PROVIDER_MODELS]?.[0]?.value || ''
+                                    model: providerModels[provider]?.[0]?.value || ''
                                   });
                                 }}
                               >
@@ -495,7 +567,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {Object.keys(PROVIDER_MODELS).map(provider => (
+                                  {Object.keys(providerModels).map(provider => (
                                     <SelectItem key={provider} value={provider}>
                                       {provider}
                                     </SelectItem>
@@ -516,7 +588,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {PROVIDER_MODELS[config.provider as keyof typeof PROVIDER_MODELS]?.map(model => (
+                                  {providerModels[config.provider]?.map(model => (
                                     <SelectItem key={model.value} value={model.value}>
                                       {model.label}
                                     </SelectItem>
@@ -583,7 +655,8 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
+                      ))
+                    )}
                   </CardContent>
                 </Card>
 
@@ -592,7 +665,7 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                   <Button
                     size="lg"
                     onClick={runTests}
-                    disabled={isRunning || configurations.filter(c => c.enabled).length === 0}
+                    disabled={isRunning || modelsLoading || configurations.filter(c => c.enabled).length === 0 || Object.keys(providerModels).length === 0}
                   >
                     {isRunning ? (
                       <>
@@ -661,8 +734,11 @@ export default function PromptTestLab({ prompt, onClose, onSaveResults }: Prompt
                           </div>
                         )}
                         {result.status === 'error' && (
-                          <div className="text-red-600 text-sm">
-                            Error: {result.error}
+                          <div className="text-red-600 text-sm space-y-1">
+                            <div className="font-semibold">Error:</div>
+                            <div className="whitespace-pre-wrap bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+                              {result.error}
+                            </div>
                           </div>
                         )}
                       </CardContent>
