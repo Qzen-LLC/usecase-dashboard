@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { EnhancedButton } from '@/components/ui/enhanced-button'
 import { EnhancedInput } from '@/components/ui/enhanced-input'
-import { EnhancedModal } from '@/components/ui/enhanced-modal'
+import { EnhancedModal, EnhancedModalContent } from '@/components/ui/enhanced-modal'
 import { EnhancedBadge } from '@/components/ui/enhanced-badge'
 import { 
   Users, 
@@ -658,12 +658,15 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
 
       {/* Invite Member Modal */}
       <EnhancedModal
-        isOpen={showInviteModal}
-        onClose={() => setShowInviteModal(false)}
-        title="Invite Team Member"
-        variant="info"
+        open={showInviteModal}
+        onOpenChange={(open) => setShowInviteModal(open)}
       >
-        <div className="space-y-4">
+        <EnhancedModalContent
+          title="Invite Team Member"
+          variant="info"
+          onClose={() => setShowInviteModal(false)}
+        >
+          <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-2">Email Address</label>
             <EnhancedInput
@@ -702,16 +705,20 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
             </EnhancedButton>
           </div>
         </div>
+        </EnhancedModalContent>
       </EnhancedModal>
 
       {/* Member Management Modal */}
       <EnhancedModal
-        isOpen={showMemberModal}
-        onClose={() => setShowMemberModal(false)}
-        title={`Manage ${selectedMember?.name}`}
-        variant="info"
+        open={showMemberModal}
+        onOpenChange={(open) => setShowMemberModal(open)}
       >
-        {selectedMember && (
+        <EnhancedModalContent
+          title={`Manage ${selectedMember?.name}`}
+          variant="info"
+          onClose={() => setShowMemberModal(false)}
+        >
+          {selectedMember && (
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">Role</label>
@@ -774,6 +781,7 @@ export const TeamManagement: React.FC<TeamManagementProps> = ({
             </div>
           </div>
         )}
+        </EnhancedModalContent>
       </EnhancedModal>
     </div>
   )

@@ -13,6 +13,7 @@ export interface FinancialInsight {
 
 export interface FinancialAnalysis {
   useCaseId: string;
+  useCaseTitle?: string;
   insights: FinancialInsight[];
   summary: string;
   riskScore: number;
@@ -57,6 +58,7 @@ export class FinancialAIAgent {
 
       return {
         useCaseId,
+        useCaseTitle: useCase.title,
         insights,
         summary: this.generateSummary(insights, riskScore, opportunityScore),
         riskScore,

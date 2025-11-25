@@ -88,7 +88,7 @@ export default function TrainingPage() {
     );
   }
 
-  if (!userData?.organizationId) {
+  if (!userData?.organizationId || !user) {
     return (
       <div className="container mx-auto p-6">
         <Card>

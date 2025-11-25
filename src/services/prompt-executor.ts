@@ -166,8 +166,8 @@ export const promptExecutor = new PromptExecutor();
 export default PromptExecutor;
 
 // Convenience functions for common use cases
-export async function analyzeContract(contractContent: string) {
-  return promptExecutor.analyzeContract(contractContent);
+export async function analyzeContract(contractContent: string, options: Partial<ExecutePromptOptions> = {}) {
+  return promptExecutor.analyzeContract(contractContent, options);
 }
 
 export async function executePrompt(

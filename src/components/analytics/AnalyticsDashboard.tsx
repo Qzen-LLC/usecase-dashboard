@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { EnhancedButton } from '@/components/ui/enhanced-button'
 import { EnhancedBadge } from '@/components/ui/enhanced-badge'
-import { EnhancedModal } from '@/components/ui/enhanced-modal'
+import { EnhancedModal, EnhancedModalContent } from '@/components/ui/enhanced-modal'
 import { 
   BarChart3, 
   PieChart, 
@@ -585,13 +585,16 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
       {/* Report Modal */}
       <EnhancedModal
-        isOpen={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        title="Analytics Report"
-        variant="info"
-        size="large"
+        open={showReportModal}
+        onOpenChange={(open) => setShowReportModal(open)}
       >
-        {generatedReport && (
+        <EnhancedModalContent
+          title="Analytics Report"
+          variant="info"
+          size="lg"
+          onClose={() => setShowReportModal(false)}
+        >
+          {generatedReport && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
@@ -643,6 +646,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             </div>
           </div>
         )}
+        </EnhancedModalContent>
       </EnhancedModal>
     </div>
   )

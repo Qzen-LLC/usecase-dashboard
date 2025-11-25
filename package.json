@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "dev:log": "cross-env NODE_OPTIONS=\"--require ./otel.js\" next dev",
+    "tunnel": "ngrok http 3000 --domain=potlike-margo-risibly.ngrok-free.dev",
+    "dev:tunnel": "concurrently \"npm run dev\" \"npm run tunnel\" --names \"DEV,TUNNEL\" --prefix-colors \"blue,green\"",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
@@ -119,6 +121,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/react-window": "^1.8.8",
     "@types/uuid": "^10.0.0",
+    "concurrently": "^9.2.1",
     "cross-env": "^7.0.3",
     "dotenv": "^17.2.3",
     "eslint": "^9.39.1",

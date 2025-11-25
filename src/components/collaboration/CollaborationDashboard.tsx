@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { EnhancedButton } from '@/components/ui/enhanced-button'
 import { EnhancedBadge } from '@/components/ui/enhanced-badge'
-import { EnhancedModal } from '@/components/ui/enhanced-modal'
+import { EnhancedModal, EnhancedModalContent } from '@/components/ui/enhanced-modal'
 import { 
   Users, 
   MessageCircle, 
@@ -512,63 +512,71 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = ({
 
       {/* Modals */}
       <EnhancedModal
-        isOpen={showTeamModal}
-        onClose={() => setShowTeamModal(false)}
-        title="Team Management"
-        variant="info"
-        size="large"
+        open={showTeamModal}
+        onOpenChange={(open) => setShowTeamModal(open)}
       >
-        <TeamManagement
-          organizationId={organizationId}
-          currentUserId={currentUserId}
-          onMemberUpdate={(member) => {
-            console.log('Member updated:', member)
-            setShowTeamModal(false)
-          }}
-          onMemberRemove={(memberId) => {
-            console.log('Member removed:', memberId)
-          }}
-          onInviteSent={(invitation) => {
-            console.log('Invitation sent:', invitation)
-          }}
-        />
+        <EnhancedModalContent
+          title="Team Management"
+          variant="info"
+          size="lg"
+          onClose={() => setShowTeamModal(false)}
+        >
+          <TeamManagement
+            organizationId={organizationId}
+            currentUserId={currentUserId}
+            onMemberUpdate={(member) => {
+              console.log('Member updated:', member)
+              setShowTeamModal(false)
+            }}
+            onMemberRemove={(memberId) => {
+              console.log('Member removed:', memberId)
+            }}
+            onInviteSent={(invitation) => {
+              console.log('Invitation sent:', invitation)
+            }}
+          />
+        </EnhancedModalContent>
       </EnhancedModal>
 
       <EnhancedModal
-        isOpen={showCommentsModal}
-        onClose={() => setShowCommentsModal(false)}
-        title="Comments & Discussions"
-        variant="info"
-        size="large"
+        open={showCommentsModal}
+        onOpenChange={(open) => setShowCommentsModal(open)}
       >
-        {resourceId ? (
-          <RealTimeComments
-            resourceId={resourceId}
-            resourceType={resourceType}
-            currentUserId={currentUserId}
-            onCommentAdd={(comment) => {
-              console.log('Comment added:', comment)
-            }}
-            onCommentUpdate={(comment) => {
-              console.log('Comment updated:', comment)
-            }}
-            onCommentDelete={(commentId) => {
-              console.log('Comment deleted:', commentId)
-            }}
-            onReactionToggle={(commentId, reaction, userId) => {
-              console.log('Reaction toggled:', { commentId, reaction, userId })
-            }}
-            onMentionUser={(userId) => {
-              console.log('User mentioned:', userId)
-            }}
-          />
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-medium mb-2">No Resource Selected</h3>
-            <p>Select a use case, assessment, or document to view comments.</p>
-          </div>
-        )}
+        <EnhancedModalContent
+          title="Comments & Discussions"
+          variant="info"
+          size="lg"
+          onClose={() => setShowCommentsModal(false)}
+        >
+          {resourceId ? (
+            <RealTimeComments
+              resourceId={resourceId}
+              resourceType={resourceType}
+              currentUserId={currentUserId}
+              onCommentAdd={(comment) => {
+                console.log('Comment added:', comment)
+              }}
+              onCommentUpdate={(comment) => {
+                console.log('Comment updated:', comment)
+              }}
+              onCommentDelete={(commentId) => {
+                console.log('Comment deleted:', commentId)
+              }}
+              onReactionToggle={(commentId, reaction, userId) => {
+                console.log('Reaction toggled:', { commentId, reaction, userId })
+              }}
+              onMentionUser={(userId) => {
+                console.log('User mentioned:', userId)
+              }}
+            />
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-medium mb-2">No Resource Selected</h3>
+              <p>Select a use case, assessment, or document to view comments.</p>
+            </div>
+          )}
+        </EnhancedModalContent>
       </EnhancedModal>
     </div>
   )

@@ -103,8 +103,8 @@ const FinOpsDashboardPage = () => {
     // Apply sorting if a filter column is selected
     if (filterColumn !== 'none') {
       result = [...result].sort((a, b) => {
-        const aValue = a[filterColumn];
-        const bValue = b[filterColumn];
+        const aValue = a[filterColumn] ?? 0;
+        const bValue = b[filterColumn] ?? 0;
         
         if (sortDirection === 'asc') {
           return aValue - bValue;

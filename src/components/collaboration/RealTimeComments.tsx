@@ -23,6 +23,7 @@ import {
   Paperclip,
   Smile,
   Image,
+  ExternalLink,
   FileText
 } from 'lucide-react'
 
@@ -100,7 +101,7 @@ export const RealTimeComments: React.FC<RealTimeCommentsProps> = ({
   const [showMentions, setShowMentions] = useState(false)
   const [mentionQuery, setMentionQuery] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const typingTimeoutRef = useRef<NodeJS.Timeout>()
+  const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   // Mock data - replace with actual API calls
   useEffect(() => {

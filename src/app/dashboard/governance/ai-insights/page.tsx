@@ -344,7 +344,7 @@ export default function GovernanceAIInsightsPage({ useCaseId }: AIInsightsProps)
                 <Card 
                   key={index} 
                   className={`cursor-pointer transition-all hover:shadow-md ${
-                    selectedInsight?.id === insight.id ? 'ring-2 ring-blue-500' : ''
+                    selectedInsight === insight ? 'ring-2 ring-blue-500' : ''
                   }`}
                   onClick={() => setSelectedInsight(insight)}
                 >

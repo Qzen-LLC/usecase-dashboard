@@ -252,7 +252,7 @@ export default function AIInsightsPage({ useCaseId }: AIInsightsProps) {
                   <span>Confidence: {insight.confidence}%</span>
                 </div>
                 <div className="mt-2">
-                  <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getPriorityColor(insight.priority)}`}>
+                  <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getPriorityColor(insight.impact)}`}>
                     {insight.priority}
                   </span>
                 </div>
@@ -324,8 +324,8 @@ export default function AIInsightsPage({ useCaseId }: AIInsightsProps) {
                     </div>
                     <div>
                       <span className="text-sm font-medium text-muted-foreground dark:text-gray-400">Impact:</span>
-                      <div className={`inline-block px-2 py-1 rounded text-xs font-medium ml-2 ${getPriorityColor(selectedInsight.priority)}`}>
-                        {selectedInsight.priority}
+                      <div className={`inline-block px-2 py-1 rounded text-xs font-medium ml-2 ${getPriorityColor(selectedInsight.impact)}`}>
+                        {selectedInsight.impact}
                       </div>
                     </div>
                     <div>

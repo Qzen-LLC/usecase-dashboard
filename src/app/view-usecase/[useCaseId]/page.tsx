@@ -39,6 +39,23 @@ interface UseCaseDetails {
     lastName?: string;
     email: string;
   };
+  answers?: Array<{
+    id: string;
+    value: string;
+    rawValue?: any;
+    question?: {
+      id: string;
+      text: string;
+      type: string;
+      stage?: string;
+    };
+    questionTemplate?: {
+      id: string;
+      text: string;
+      type: string;
+      stage?: string;
+    };
+  }>;
   assessData?: {
     stepsData: {
       technicalFeasibility?: Record<string, unknown>;

@@ -71,9 +71,13 @@ const EntryCollector: React.FC<EntryCollectorProps> = ({
     }]
   );
 
+  // Category (part of GoldenEntry, not EntryMetadata)
+  const [category, setCategory] = useState<EntryCategory>(
+    initialData?.category || 'functional'
+  );
+
   // Metadata
   const [metadata, setMetadata] = useState<Partial<EntryMetadata>>({
-    category: initialData?.category || 'functional',
     source: initialData?.metadata?.source || 'manual',
     difficulty: initialData?.metadata?.difficulty || 'medium',
     priority: initialData?.metadata?.priority || 'medium',
@@ -199,7 +203,7 @@ const EntryCollector: React.FC<EntryCollectorProps> = ({
     try {
       const entry = {
         datasetId,
-        category: metadata.category,
+        category,
         input: {
           ...input,
           conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined
@@ -426,8 +430,8 @@ const EntryCollector: React.FC<EntryCollectorProps> = ({
               <div>
                 <Label>Category</Label>
                 <Select
-                  value={metadata.category as string}
-                  onValueChange={(value) => setMetadata({ ...metadata, category: value as EntryCategory })}
+                  value={category}
+                  onValueChange={(value) => setCategory(value as EntryCategory)}
                 >
                   <SelectTrigger>
                     <SelectValue />

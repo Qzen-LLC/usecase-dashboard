@@ -19,12 +19,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUserData } from '@/contexts/UserContext';
 import { ChartRadarDots } from '@/components/ui/radar-chart';
+import { type StepsData } from '@/lib/risk-calculations';
 
 interface Risk {
   id: string;
   category: string;
   riskLevel: 'Low' | 'Medium' | 'High' | 'Critical';
-  status: 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
+  likelihood?: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'MITIGATED' | 'ACCEPTED' | 'CLOSED';
   riskScore: number;
   description: string;
   mitigationStrategy?: string;
@@ -50,6 +52,11 @@ interface UseCase {
     email: string;
   };
   risks: Risk[];
+  assessData?: {
+    stepsData: StepsData;
+    updatedAt: string | Date;
+    createdAt: string | Date;
+  };
 }
 
 interface UseCasesWithRisksResponse {
@@ -114,37 +121,6 @@ export default function RiskManagementPage() {
     fetchData();
   }, [selectedOrgId]);
 
-  // After loading use cases, fetch QnA exactly like Approvals and compute risk
-  useEffect(() => {
-    const computeRiskForUseCases = async () => {
-      if (!useCases || useCases.length === 0) return;
-
-      const entries = await Promise.all(useCases.map(async (uc) => {
-        try {
-          const res = await fetch(`/api/risk-score/${uc.id}`, { 
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-          });
-          if (!res.ok) {
-            console.error(`Failed to fetch risk score for ${uc.id}:`, res.status, res.statusText);
-            return [uc.id, null] as const;
-          }
-          const calc = await res.json();
-          return [uc.id, calc] as const;
-        } catch (error) {
-          console.error(`Error fetching risk score for ${uc.id}:`, error);
-          return [uc.id, null] as const;
-        }
-      }));
-
-      const map: Record<string, any> = {};
-      for (const [id, calc] of entries) map[id] = calc;
-      setUseCaseRisks(map);
-    };
-
-    computeRiskForUseCases();
-  }, [useCases]);
-
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -166,17 +142,62 @@ export default function RiskManagementPage() {
       const data: UseCasesWithRisksResponse = await response.json();
       setUseCases(data.useCases);
       setOrganizations(data.organizations || []);
+      
       // Fetch risk metrics (score + radar) for each use case using Q/A answers
-      const riskPairs = await Promise.all(
-        (data.useCases || []).map(async (uc) => {
+      // Helper function to fetch with retry logic for 401 errors
+      const fetchWithRetry = async (url: string, retries = 1): Promise<Response | null> => {
+        for (let attempt = 0; attempt <= retries; attempt++) {
           try {
-            const r = await fetch(`/api/risk-metrics/${uc.id}`).then(res => res.ok ? res.json() : null);
-            return [uc.id, r?.risk || null] as const;
-          } catch {
-            return [uc.id, null] as const;
+            const res = await fetch(url, { 
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include'
+            });
+            
+            // If 401 and we have retries left, wait and retry
+            if (res.status === 401 && attempt < retries) {
+              // Wait with exponential backoff: 1s, 2s
+              await new Promise(resolve => setTimeout(resolve, (attempt + 1) * 1000));
+              continue;
+            }
+            
+            return res;
+          } catch (error) {
+            // If last attempt, return null
+            if (attempt === retries) {
+              return null;
+            }
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, (attempt + 1) * 1000));
           }
-        })
-      );
+        }
+        return null;
+      };
+      
+      // Process sequentially with delay to avoid auth issues
+      const riskPairs: Array<[string, any]> = [];
+      for (let i = 0; i < (data.useCases || []).length; i++) {
+        const uc = data.useCases[i];
+        // Add a small delay between requests (except for the first one)
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        try {
+          const res = await fetchWithRetry(`/api/risk-metrics/${uc.id}`, 1);
+          if (!res || !res.ok) {
+            // Only log if it's not a 401 (401s are handled silently after retry)
+            if (res && res.status !== 401) {
+              console.error(`Failed to fetch risk metrics for ${uc.id}:`, res.status, res.statusText);
+            }
+            riskPairs.push([uc.id, null]);
+            continue;
+          }
+          const r = await res.json();
+          riskPairs.push([uc.id, r?.risk || null]);
+        } catch (error) {
+          console.error(`Error fetching risk metrics for ${uc.id}:`, error);
+          riskPairs.push([uc.id, null]);
+        }
+      }
       const riskMap: Record<string, any> = {};
       for (const [id, risk] of riskPairs) riskMap[id] = risk;
       setUseCaseRisks(riskMap);
@@ -349,9 +370,38 @@ export default function RiskManagementPage() {
   const openRisks = useCases.reduce((sum, uc) => 
     sum + uc.risks.filter(r => r.status === 'OPEN').length, 0
   );
-  const highRiskCount = useCases.reduce((sum, uc) => 
-    sum + uc.risks.filter(r => r.riskLevel === 'High' || r.riskLevel === 'Critical').length, 0
-  );
+  
+  // Calculate risks by severity (only risks with both severity and likelihood)
+  const criticalSeverityCount = useCases.reduce((sum, uc) => {
+    return sum + uc.risks.filter(r => {
+      if (!r.riskLevel || !r.likelihood) return false;
+      return r.riskLevel.trim().toLowerCase() === 'critical';
+    }).length;
+  }, 0);
+  
+  const highSeverityCount = useCases.reduce((sum, uc) => {
+    return sum + uc.risks.filter(r => {
+      if (!r.riskLevel || !r.likelihood) return false;
+      return r.riskLevel.trim().toLowerCase() === 'high';
+    }).length;
+  }, 0);
+  
+  // Calculate risks by likelihood (only risks with both severity and likelihood)
+  const highLikelihoodCount = useCases.reduce((sum, uc) => {
+    return sum + uc.risks.filter(r => {
+      if (!r.riskLevel || !r.likelihood) return false;
+      return r.likelihood.toLowerCase().trim() === 'high';
+    }).length;
+  }, 0);
+  
+  const criticalHighLikelihoodCount = useCases.reduce((sum, uc) => {
+    return sum + uc.risks.filter(r => {
+      if (!r.riskLevel || !r.likelihood) return false;
+      const severity = r.riskLevel.trim().toLowerCase();
+      const likelihood = r.likelihood.toLowerCase().trim();
+      return (severity === 'critical' || severity === 'high') && likelihood === 'high';
+    }).length;
+  }, 0);
 
   if (loading) {
     return (
@@ -393,7 +443,7 @@ export default function RiskManagementPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
         <Card className="bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-700 rounded-md">
           <CardHeader className="pb-1.5 px-4 pt-4">
             <CardTitle className="text-xs font-medium text-muted-foreground">Total Use Cases</CardTitle>
@@ -412,10 +462,26 @@ export default function RiskManagementPage() {
         </Card>
         <Card className="bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-700 rounded-md">
           <CardHeader className="pb-1.5 px-4 pt-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">High Priority Risks</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">Critical Severity</CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="text-xl font-bold text-destructive">{highRiskCount}</div>
+            <div className="text-xl font-bold text-red-600 dark:text-red-500">{criticalSeverityCount}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-700 rounded-md">
+          <CardHeader className="pb-1.5 px-4 pt-4">
+            <CardTitle className="text-xs font-medium text-muted-foreground">High Severity</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="text-xl font-bold text-orange-600 dark:text-orange-500">{highSeverityCount}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-700 rounded-md">
+          <CardHeader className="pb-1.5 px-4 pt-4">
+            <CardTitle className="text-xs font-medium text-muted-foreground">High Likelihood</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="text-xl font-bold text-yellow-600 dark:text-yellow-500">{highLikelihoodCount}</div>
           </CardContent>
         </Card>
       </div>
@@ -450,19 +516,78 @@ export default function RiskManagementPage() {
                 { severity: 'Low', likelihood: 'Low', risks: [] as Risk[] },
               ];
 
+              // Helper function to normalize likelihood values
+              const normalizeLikelihood = (likelihood: string | undefined | null): string | null => {
+                if (!likelihood) return null;
+                const normalized = likelihood.trim();
+                // Handle case variations: 'high', 'High', 'HIGH' -> 'High'
+                const lower = normalized.toLowerCase();
+                if (lower === 'high') return 'High';
+                if (lower === 'medium') return 'Medium';
+                if (lower === 'low') return 'Low';
+                return normalized; // Return as-is if doesn't match
+              };
+
+              // Helper function to normalize severity values
+              const normalizeSeverity = (severity: string | undefined | null): string | null => {
+                if (!severity) return null;
+                const normalized = severity.trim();
+                // Handle case variations
+                const lower = normalized.toLowerCase();
+                if (lower === 'critical') return 'Critical';
+                if (lower === 'high') return 'High';
+                if (lower === 'medium') return 'Medium';
+                if (lower === 'low') return 'Low';
+                return normalized; // Return as-is if doesn't match
+              };
+
               allRisks.forEach(risk => {
-                const cell = heatmapData.find(
-                  d => d.severity === risk.riskLevel && d.likelihood === risk.likelihood
-                );
-                if (cell) cell.risks.push(risk);
+                const normalizedSeverity = normalizeSeverity(risk.riskLevel);
+                const normalizedLikelihood = normalizeLikelihood(risk.likelihood);
+                
+                // Only process risks that have both severity and likelihood
+                if (normalizedSeverity && normalizedLikelihood) {
+                  const cell = heatmapData.find(
+                    d => d.severity === normalizedSeverity && d.likelihood === normalizedLikelihood
+                  );
+                  if (cell) {
+                    cell.risks.push(risk);
+                  }
+                }
               });
 
+              // Calculate max count for better color scaling
+              const maxCount = Math.max(...heatmapData.map(d => d.risks.length), 1);
+              
               const getCellColor = (count: number, severity: string) => {
-                if (count === 0) return 'bg-gray-100 dark:bg-gray-800';
-                if (severity === 'Critical') return count > 2 ? 'bg-red-600' : count > 1 ? 'bg-red-500' : 'bg-red-400';
-                if (severity === 'High') return count > 2 ? 'bg-orange-600' : count > 1 ? 'bg-orange-500' : 'bg-orange-400';
-                if (severity === 'Medium') return count > 2 ? 'bg-yellow-600' : count > 1 ? 'bg-yellow-500' : 'bg-yellow-400';
-                return count > 2 ? 'bg-green-600' : count > 1 ? 'bg-green-500' : 'bg-green-400';
+                if (count === 0) return { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-500 dark:text-gray-400' };
+                
+                // Calculate intensity based on percentage of max count
+                const intensity = maxCount > 0 ? count / maxCount : 0;
+                
+                if (severity === 'Critical') {
+                  if (intensity >= 0.7) return { bg: 'bg-red-700 dark:bg-red-800', text: 'text-white' };
+                  if (intensity >= 0.4) return { bg: 'bg-red-600 dark:bg-red-700', text: 'text-white' };
+                  if (intensity >= 0.2) return { bg: 'bg-red-500 dark:bg-red-600', text: 'text-white' };
+                  return { bg: 'bg-red-400 dark:bg-red-500', text: 'text-white' };
+                }
+                if (severity === 'High') {
+                  if (intensity >= 0.7) return { bg: 'bg-orange-700 dark:bg-orange-800', text: 'text-white' };
+                  if (intensity >= 0.4) return { bg: 'bg-orange-600 dark:bg-orange-700', text: 'text-white' };
+                  if (intensity >= 0.2) return { bg: 'bg-orange-500 dark:bg-orange-600', text: 'text-white' };
+                  return { bg: 'bg-orange-400 dark:bg-orange-500', text: 'text-white' };
+                }
+                if (severity === 'Medium') {
+                  if (intensity >= 0.7) return { bg: 'bg-yellow-600 dark:bg-yellow-700', text: 'text-white' };
+                  if (intensity >= 0.4) return { bg: 'bg-yellow-500 dark:bg-yellow-600', text: 'text-white' };
+                  if (intensity >= 0.2) return { bg: 'bg-yellow-400 dark:bg-yellow-500', text: 'text-white' };
+                  return { bg: 'bg-yellow-300 dark:bg-yellow-400', text: 'text-gray-800 dark:text-gray-900' };
+                }
+                // Low severity
+                if (intensity >= 0.7) return { bg: 'bg-green-600 dark:bg-green-700', text: 'text-white' };
+                if (intensity >= 0.4) return { bg: 'bg-green-500 dark:bg-green-600', text: 'text-white' };
+                if (intensity >= 0.2) return { bg: 'bg-green-400 dark:bg-green-500', text: 'text-white' };
+                return { bg: 'bg-green-300 dark:bg-green-400', text: 'text-gray-800 dark:text-gray-900' };
               };
 
               return (
@@ -479,10 +604,11 @@ export default function RiskManagementPage() {
                       {['Low', 'Medium', 'High'].map(likelihood => {
                         const cell = heatmapData.find(d => d.severity === severity && d.likelihood === likelihood);
                         const count = cell?.risks.length || 0;
+                        const colors = getCellColor(count, severity);
                         return (
                           <div
                             key={likelihood}
-                            className={`${getCellColor(count, severity)} rounded h-12 flex items-center justify-center text-white font-bold text-sm transition-all hover:scale-105 cursor-pointer`}
+                            className={`${colors.bg} ${colors.text} rounded h-12 flex items-center justify-center font-bold text-sm transition-all hover:scale-105 cursor-pointer`}
                             title={`${severity} Severity / ${likelihood} Likelihood: ${count} risks`}
                           >
                             {count}
@@ -792,7 +918,7 @@ export default function RiskManagementPage() {
                               const response = await fetch(`/api/risks/${useCase.id}/auto-create`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ stepsData: useCase.assessData.stepsData })
+                                body: JSON.stringify({ stepsData: useCase.assessData!.stepsData })
                               });
                               if (response.ok) {
                                 alert('✅ Risks created successfully! Click "Manage Risks" to view them.');

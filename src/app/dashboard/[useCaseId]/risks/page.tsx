@@ -67,7 +67,11 @@ interface UseCaseData {
   id: string;
   title: string;
   aiucId: number;
-  // assessData removed from dependency
+  assessData?: {
+    stepsData: StepsData;
+    updatedAt: string | Date;
+    createdAt: string | Date;
+  };
 }
 
 export default function RiskManagementPage() {
@@ -287,7 +291,7 @@ export default function RiskManagementPage() {
           <div className="flex gap-2">
             {useCase?.assessData?.stepsData && risks.length === 0 && (
               <Button
-                onClick={() => autoCreateRisks(useCase.assessData.stepsData)}
+                onClick={() => autoCreateRisks(useCase.assessData!.stepsData)}
                 className="bg-blue-600 hover:bg-blue-700"
                 disabled={creating}
               >
