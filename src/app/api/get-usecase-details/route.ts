@@ -53,6 +53,7 @@ export const GET = withAuth(async (req: Request, { auth }) => {
         id: true,
         title: true,
         aiucId: true,
+        organizationId: true,
         problemStatement: true,
         proposedAISolution: true,
         primaryStakeholders: true,
