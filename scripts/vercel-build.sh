@@ -10,6 +10,6 @@ npx prisma generate
 
 # Build Next.js app
 echo "Building Next.js application..."
-npm run build
+pnpm run build
 
 echo "Build completed successfully!"
