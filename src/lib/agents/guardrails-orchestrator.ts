@@ -670,7 +670,7 @@ export class GuardrailsOrchestrator {
       risks.push({
         type: 'cascading_failure',
         description: 'Multiple high-risk areas with high-importance dependencies',
-        likelihood: 'medium',
+        likelihood: 'Medium',
         impact: 'severe',
         mitigation: 'Implement circuit breakers and fallback mechanisms'
       });

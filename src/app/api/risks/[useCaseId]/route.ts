@@ -60,6 +60,14 @@ export const POST = withAuth(async (
 
     const data = await request.json();
 
+    // Validate required fields
+    if (!data.riskLevel || !data.likelihood) {
+      return NextResponse.json(
+        { error: 'riskLevel and likelihood are required fields' },
+        { status: 400 }
+      );
+    }
+
     // Set risk score based on level if not provided
     const riskScoreMap: { [key: string]: number } = {
       'Low': 2,

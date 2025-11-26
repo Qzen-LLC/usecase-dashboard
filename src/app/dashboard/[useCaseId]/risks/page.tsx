@@ -686,12 +686,20 @@ export default function RiskManagementPage() {
                   </div>
                   <div>
                     <label className="text-sm font-medium">Likelihood <span className="text-red-500">*</span></label>
-                    <Input
+                    <Select
                       value={formData.likelihood || ''}
-                      onChange={(e) => setFormData({...formData, likelihood: e.target.value})}
-                      placeholder="Describe likelihood"
+                      onValueChange={(value) => setFormData({...formData, likelihood: value})}
                       required
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select likelihood" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Low">Low</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="High">High</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <div className="flex justify-end gap-3 pt-4">
