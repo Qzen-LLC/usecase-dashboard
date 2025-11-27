@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from "@/utils/db";
+import { decryptApiKey, encryptApiKey } from "@/lib/security/api-key-encryption";
 
 export const PUT = withAuth(async (req, { auth, params }: { auth: any, params: Promise<{ id: string }> }) => {
   try {
@@ -10,7 +11,7 @@ export const PUT = withAuth(async (req, { auth, params }: { auth: any, params: P
     const data: any = {};
     if (typeof providerName === "string") data.providerName = providerName.trim();
     if (typeof modelName === "string") data.modelName = modelName.trim();
-    if (typeof apiKey === "string") data.apiKey = apiKey.trim();
+    if (typeof apiKey === "string") data.apiKey = encryptApiKey(apiKey.trim());
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });
     }
@@ -43,7 +44,14 @@ export const PUT = withAuth(async (req, { auth, params }: { auth: any, params: P
     }
 
     const updated = await prismaClient.aiModel.update({ where: { id }, data });
-    return NextResponse.json({ model: updated });
+    
+    // Decrypt the API key before returning (for UI display)
+    const decryptedModel = {
+      ...updated,
+      apiKey: decryptApiKey(updated.apiKey),
+    };
+
+    return NextResponse.json({ model: decryptedModel });
   } catch (error: any) {
     if (error?.code === 'P2002') {
       return NextResponse.json({ error: "A model with this name already exists for this organization" }, { status: 409 });

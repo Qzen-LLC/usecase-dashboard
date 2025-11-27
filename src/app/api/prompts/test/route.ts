@@ -4,6 +4,7 @@ import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from '@/utils/db';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
+import { decryptApiKey } from '@/lib/security/api-key-encryption';
 
 // Initialize OpenAI client
 const getOpenAIClient = (apiKey: string) => {
@@ -118,7 +119,15 @@ export const POST = withAuth(async (
     });
 
     if (modelConfig) {
-      apiKey = modelConfig.apiKey;
+      try {
+        apiKey = decryptApiKey(modelConfig.apiKey);
+      } catch (error) {
+        console.error('Failed to decrypt API key:', error);
+        return NextResponse.json(
+          { error: 'Failed to decrypt stored API key. Please verify the encryption key configuration.' },
+          { status: 500 }
+        );
+      }
     }
 
     if (!apiKey) {
