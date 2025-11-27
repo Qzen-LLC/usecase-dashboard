@@ -14,6 +14,9 @@ import RoadmapPosition from "@/components/RoadmapPosition";
 import DataReadiness from "@/components/DataReadiness";
 import FinancialDashboard from './financial-dashboard/page';
 import ApprovalsPage from '@/components/ApprovalsPage';
+import AIRiskIntelligence from '@/components/AIRiskIntelligence';
+import SecurityAssessment from '@/components/SecurityAssessment';
+import IncidentLearning from '@/components/IncidentLearning';
 import GuardrailsGenerator from '@/components/guardrails/GuardrailsGenerator';
 import EvaluationGenerator from '@/components/evaluations/EvaluationGenerator';
 import GoldenDatasetDashboard from '@/components/golden/GoldenDatasetDashboard';
@@ -24,6 +27,9 @@ import ReadOnlyRiskAssessment from '@/components/ReadOnlyRiskAssessment';
 import ReadOnlyDataReadiness from '@/components/ReadOnlyDataReadiness';
 import ReadOnlyRoadmapPosition from '@/components/ReadOnlyRoadmapPosition';
 import ReadOnlyBudgetPlanning from '@/components/ReadOnlyBudgetPlanning';
+import ReadOnlyAIRiskIntelligence from '@/components/ReadOnlyAIRiskIntelligence';
+import ReadOnlySecurityAssessment from '@/components/ReadOnlySecurityAssessment';
+import ReadOnlyIncidentLearning from '@/components/ReadOnlyIncidentLearning';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { useStableRender } from '@/hooks/useStableRender';
 import { useLock } from '@/hooks/useLock';
@@ -284,9 +290,12 @@ export default function AssessmentPage() {
     { id: 7, title: "Budget Planning" },
     { id: 8, title: "Financial Dashboard" },
     { id: 9, title: "Approvals" },
-    { id: 10, title: "AI Guardrails" },
-    { id: 11, title: "AI Evaluations" },
-    { id: 12, title: "Golden Dataset" },
+    { id: 10, title: "AI Risk Intelligence" },
+    { id: 11, title: "Security Assessment" },
+    { id: 12, title: "AI Guardrails" },
+    { id: 13, title: "AI Evaluations" },
+    { id: 14, title: "Golden Dataset" },
+    { id: 15, title: "Incident Learning" },
   ], []);
 
   // Memoize default assessment data to prevent unnecessary re-renders
@@ -1072,7 +1081,19 @@ const validateAssessmentData = useMemo(() => (data: any) => {
           </CardHeader>
         ) : currentStep === 10 ? (
           <CardHeader>
+            <CardTitle>AI Risk Intelligence</CardTitle>
+          </CardHeader>
+        ) : currentStep === 11 ? (
+          <CardHeader>
+            <CardTitle>Security Assessment</CardTitle>
+          </CardHeader>
+        ) : currentStep === 12 ? (
+          <CardHeader>
             <CardTitle>AI Guardrails Configuration</CardTitle>
+          </CardHeader>
+        ) : currentStep === 15 ? (
+          <CardHeader>
+            <CardTitle>Incident Learning</CardTitle>
           </CardHeader>
         ) :
           (
@@ -1182,8 +1203,20 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               <ApprovalsPage ref={approvalsPageRef} useCase={useCase} />
             </div>
           ) : currentStep === 10 ? (
+            isReadOnly ? (
+              <ReadOnlyAIRiskIntelligence />
+            ) : (
+              <AIRiskIntelligence />
+            )
+          ) : currentStep === 11 ? (
+            isReadOnly ? (
+              <ReadOnlySecurityAssessment />
+            ) : (
+              <SecurityAssessment />
+            )
+          ) : currentStep === 12 ? (
             <div className={isReadOnly ? 'readonly-mode' : ''}>
-              <GuardrailsGenerator 
+              <GuardrailsGenerator
                 useCaseId={useCaseId}
                 assessmentData={assessmentData}
                 useCase={useCase}  // Pass complete use case object
@@ -1200,20 +1233,26 @@ const validateAssessmentData = useMemo(() => (data: any) => {
                 }}
               />
             </div>
-          ) : currentStep === 11 ? (
+          ) : currentStep === 13 ? (
             <div className={isReadOnly ? 'readonly-mode' : ''}>
-              <EvaluationGenerator 
+              <EvaluationGenerator
                 useCaseId={useCaseId}
                 guardrailsConfig={assessmentData.guardrailsConfig}
                 assessmentData={assessmentData}
               />
             </div>
-          ) : currentStep === 12 ? (
+          ) : currentStep === 14 ? (
             <div className={isReadOnly ? 'readonly-mode' : ''}>
-              <GoldenDatasetDashboard 
+              <GoldenDatasetDashboard
                 useCaseId={useCaseId}
               />
             </div>
+          ) : currentStep === 15 ? (
+            isReadOnly ? (
+              <ReadOnlyIncidentLearning />
+            ) : (
+              <IncidentLearning />
+            )
           ) :
             (
               <div className="text-muted-foreground text-lg font-medium">
@@ -1273,7 +1312,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
 
         {/* Right: Next/Complete Assessment Button */}
         <div className="flex-1 flex justify-end">
-          {currentStep < 12 ? (
+          {currentStep < 15 ? (
             <button
               className={`flex items-center px-4 py-2 rounded-md bg-gray-600 dark:bg-gray-700 text-white hover:bg-gray-700 dark:hover:bg-gray-600 ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
               onClick={handleNext}
@@ -1282,7 +1321,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               Next
               <ChevronRight className="w-4 h-4 ml-2" />
             </button>
-          ) : currentStep === 10 ? (
+          ) : currentStep === 11 ? (
             <button
               className={`px-4 py-2 w-64 rounded-xl shadow-lg font-semibold text-lg transition ${isReadOnly ? 'bg-gray-400 text-gray-200 cursor-not-allowed opacity-50' : 'bg-gradient-to-r from-[#8f4fff] via-[#b84fff] to-[#ff4fa3] text-white hover:shadow-xl'}`}
               onClick={handleCompleteAssessment}
@@ -1290,7 +1329,7 @@ const validateAssessmentData = useMemo(() => (data: any) => {
             >
               Complete Assessment
             </button>
-          ) : currentStep === 12 ? (
+          ) : currentStep === 15 ? (
             <button
               className={`px-4 py-2 rounded-xl shadow-lg font-semibold text-lg transition ${isReadOnly ? 'bg-gray-400 text-gray-200 cursor-not-allowed opacity-50' : 'bg-green-600 hover:bg-green-700 text-white hover:shadow-xl'}`}
               onClick={handleCompleteGoldenDatasetAssessment}
