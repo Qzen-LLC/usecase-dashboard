@@ -253,8 +253,8 @@ function scoreIncidentRelevance(incident: AiidIncident, context: UseCaseContext)
   }
 
   // Recent incidents get a boost (10 points for last 3 years)
-  if (incident.epoch_date_published) {
-    const incidentYear = new Date(incident.epoch_date_published * 1000).getFullYear();
+  if (incident.date) {
+    const incidentYear = new Date(incident.date).getFullYear();
     const currentYear = new Date().getFullYear();
     if (currentYear - incidentYear <= 3) {
       score += 10;
@@ -348,7 +348,9 @@ export async function findRelevantIncidents(
   // Step 3: Search AIID for incidents matching queries
   const allIncidents: AiidIncident[] = [];
   for (const query of searchQueries) {
+    console.log('[Incident Matcher] Searching AIID with query:', query);
     const results = await aiidService.searchIncidents(query, 20);
+    console.log('[Incident Matcher] Found ${results.length} incidents for query:', query);
     allIncidents.push(...results);
   }
 

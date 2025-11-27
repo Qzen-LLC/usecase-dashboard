@@ -33,7 +33,8 @@ export default function AIRiskIntelligence() {
     setRecommendationsError(null);
 
     try {
-      const response = await fetch(`/api/risks/${useCaseId}/recommendations`);
+      // Fetch risks from IBM, MIT, OWASP only (Step 12: AI Risk Intelligence)
+      const response = await fetch(`/api/risks/${useCaseId}/recommendations?source=risks`);
 
       if (!response.ok) {
         const errorData = await response.json();

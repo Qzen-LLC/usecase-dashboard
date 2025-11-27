@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Shield, Search, Download, X, Filter } from 'lucide-react';
-import { getAllRisksFromSource } from '@/lib/integrations/risk-recommender';
+import { mitreAtlasService } from '@/lib/integrations/mitre-atlas.service';
 import type { MitreTechniqueData } from '@/lib/integrations/types';
 import { useToast } from '@/hooks/use-toast';
 import { SecurityTechniqueCard } from './SecurityTechniqueCard';
@@ -28,7 +28,7 @@ export function ManualMitreBrowser({ open, onClose, useCaseId }: ManualMitreBrow
 
   // Get all MITRE techniques
   const allTechniques = useMemo(
-    () => getAllRisksFromSource('mitre') as MitreTechniqueData[],
+    () => mitreAtlasService.getAllTechniques(),
     []
   );
 

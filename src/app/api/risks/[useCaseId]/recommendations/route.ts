@@ -8,11 +8,27 @@ import { buildStepsDataFromAnswers } from '@/lib/mappers/answers-to-steps';
 /**
  * GET /api/risks/[useCaseId]/recommendations
  * Get AI-powered risk recommendations based on use case assessment
+ * Query params:
+ *   - source=risks (default): IBM, MIT, OWASP for Step 12 (AI Risk Intelligence)
+ *   - source=security: MITRE ATLAS for Step 11 (Security Assessment)
+ *   - source=incidents: AIID for Step 15 (Incident Learning)
  */
 export const GET = withAuth(
   async (request: Request, { params, auth }: { params: Promise<{ useCaseId: string }>; auth: any }) => {
     try {
       const { useCaseId } = await params;
+
+      // Determine which source to use
+      const url = new URL(request.url);
+      const source = url.searchParams.get('source') || 'risks'; // Default to risks (IBM, MIT, OWASP)
+
+      // Validate source parameter
+      if (!['risks', 'security', 'incidents'].includes(source)) {
+        return NextResponse.json(
+          { error: 'Invalid source parameter. Must be: risks, security, or incidents' },
+          { status: 400 }
+        );
+      }
 
       // Fetch use case to verify it exists
       const useCase = await prismaClient.useCase.findUnique({
@@ -36,13 +52,18 @@ export const GET = withAuth(
         );
       }
 
-      console.log('[Recommendations API] Generating recommendations for use case:', useCaseId);
+      console.log('[Recommendations API] Generating recommendations for use case:', useCaseId, {
+        source,
+      });
 
       // Get recommendations from external sources using the constructed stepsData
-      const recommendations = await recommendRisksFromExternalSources({
-        useCaseId,
-        assessmentData: stepsData,
-      });
+      const recommendations = await recommendRisksFromExternalSources(
+        {
+          useCaseId,
+          assessmentData: stepsData,
+        },
+        source
+      );
 
       console.log('[Recommendations API] Generated:', {
         ibmCount: recommendations.ibm.length,

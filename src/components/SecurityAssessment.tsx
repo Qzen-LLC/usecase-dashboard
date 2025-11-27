@@ -33,7 +33,8 @@ export default function SecurityAssessment() {
     setRecommendationsError(null);
 
     try {
-      const response = await fetch(`/api/risks/${useCaseId}/recommendations`);
+      // Fetch MITRE ATLAS techniques only (Step 11: Security Assessment)
+      const response = await fetch(`/api/risks/${useCaseId}/recommendations?source=security`);
 
       if (!response.ok) {
         const errorData = await response.json();

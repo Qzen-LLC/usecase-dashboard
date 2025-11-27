@@ -27,9 +27,8 @@ export function IncidentCard({ incident, rank }: IncidentCardProps) {
     return `Low (${severity}/5)`;
   };
 
-  const formatDate = (dateString?: string, epoch?: number) => {
+  const formatDate = (dateString?: string) => {
     if (dateString) return new Date(dateString).toLocaleDateString();
-    if (epoch) return new Date(epoch * 1000).toLocaleDateString();
     return 'Unknown date';
   };
 
@@ -57,7 +56,7 @@ export function IncidentCard({ incident, rank }: IncidentCardProps) {
 
               {incident.date && (
                 <Badge variant="outline" className="text-xs">
-                  {formatDate(incident.date, incident.epoch_date_published)}
+                  {formatDate(incident.date)}
                 </Badge>
               )}
             </div>

@@ -16,46 +16,36 @@ import type {
 const AIID_GRAPHQL_ENDPOINT = 'https://incidentdatabase.ai/api/graphql';
 
 /**
- * GraphQL query to fetch incidents with full details
+ * GraphQL query to fetch incidents with minimal fields
+ * Note: Removed 'text' and 'plain_text' fields from reports to reduce payload size
  */
 const INCIDENTS_QUERY = `
-  query GetIncidents($limit: Int, $skip: Int, $filter: IncidentFilterType) {
-    incidents(limit: $limit, skip: $skip, filter: $filter) {
+  query GetIncidents {
+    incidents {
       incident_id
       title
       description
       date
-      epoch_date_published
-      editor_notes
-      editor_dissimilar_incidents
-      editor_similar_incidents
 
       reports {
         report_number
         title
         url
         date_published
-        date_downloaded
         authors
-        submitters
-        text
-        plain_text
-        language
-        tags
-        epoch_date_published
       }
 
-      Alleged_deployer_of_AI_system {
+      AllegedDeployerOfAISystem {
         entity_id
         name
       }
 
-      Alleged_developer_of_AI_system {
+      AllegedDeveloperOfAISystem {
         entity_id
         name
       }
 
-      Alleged_harmed_or_nearly_harmed_parties {
+      AllegedHarmedOrNearlyHarmedParties {
         entity_id
         name
       }
@@ -134,24 +124,44 @@ async function executeGraphQLQuery<T>(
   variables?: Record<string, any>
 ): Promise<T> {
   try {
+    const requestBody = {
+      query,
+      variables,
+    };
+
+    console.log('[AIID Service] GraphQL Request:', {
+      endpoint: AIID_GRAPHQL_ENDPOINT,
+      queryPreview: query.substring(0, 200) + '...',
+      variables,
+    });
+
     const response = await fetch(AIID_GRAPHQL_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        query,
-        variables,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
+    console.log('[AIID Service] GraphQL Response Status:', response.status, response.statusText);
+
+    // Read response body regardless of status
+    const result = await response.json();
+
+    console.log('[AIID Service] GraphQL Response Body:', JSON.stringify(result, null, 2));
+
     if (!response.ok) {
+      console.error('[AIID Service] GraphQL request failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        errors: result.errors,
+        body: result,
+      });
       throw new Error(`GraphQL request failed: ${response.status} ${response.statusText}`);
     }
 
-    const result = await response.json();
-
     if (result.errors) {
+      console.error('[AIID Service] GraphQL errors:', result.errors);
       throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
     }
 
@@ -215,27 +225,16 @@ function transformToAiidIncident(rawIncident: any, classifications?: AiidClassif
     title: rawIncident.title || 'Untitled Incident',
     description: rawIncident.description || '',
     date: rawIncident.date,
-    epoch_date_published: rawIncident.epoch_date_published,
-    editorNotes: rawIncident.editor_notes,
-    editorDissimilarIncidents: rawIncident.editor_dissimilar_incidents || [],
-    editorSimilarIncidents: rawIncident.editor_similar_incidents || [],
     reports: (rawIncident.reports || []).map((r: any) => ({
       report_number: r.report_number,
       title: r.title,
       url: r.url,
       date_published: r.date_published,
-      date_downloaded: r.date_downloaded,
       authors: r.authors || [],
-      submitters: r.submitters || [],
-      text: r.text,
-      plain_text: r.plain_text,
-      language: r.language,
-      tags: r.tags || [],
-      epoch_date_published: r.epoch_date_published,
     })),
-    deployers: rawIncident.Alleged_deployer_of_AI_system || [],
-    developers: rawIncident.Alleged_developer_of_AI_system || [],
-    harmedParties: rawIncident.Alleged_harmed_or_nearly_harmed_parties || [],
+    deployers: rawIncident.AllegedDeployerOfAISystem || [],
+    developers: rawIncident.AllegedDeveloperOfAISystem || [],
+    harmedParties: rawIncident.AllegedHarmedOrNearlyHarmedParties || [],
     classifications: classifications || [],
   };
 
@@ -299,14 +298,20 @@ export class AiidService {
    */
   async getIncidents(limit: number = 50, skip: number = 0): Promise<AiidIncident[]> {
     try {
-      const data = await executeGraphQLQuery<{ incidents: any[] }>(INCIDENTS_QUERY, {
-        limit,
-        skip,
-      });
+      console.log('[AIID Service] getIncidents called - fetching all incidents');
 
-      // Fetch classifications for each incident
+      const data = await executeGraphQLQuery<{ incidents: any[] }>(INCIDENTS_QUERY);
+
+      console.log(`[AIID Service] GraphQL returned ${data?.incidents?.length || 0} incidents`);
+
+      // Apply client-side pagination
+      const paginatedIncidents = data.incidents.slice(skip, skip + limit);
+
+      console.log(`[AIID Service] After pagination (skip: ${skip}, limit: ${limit}): ${paginatedIncidents.length} incidents`);
+
+      // Fetch classifications for each incident (limited to paginated set)
       const incidentsWithClassifications = await Promise.all(
-        data.incidents.map(async (incident) => {
+        paginatedIncidents.map(async (incident) => {
           const classifications = await this.getClassifications(incident.incident_id);
           return transformToAiidIncident(incident, classifications);
         })
@@ -364,9 +369,13 @@ export class AiidService {
    */
   async searchIncidents(keyword: string, limit: number = 20): Promise<AiidIncident[]> {
     try {
+      console.log('[AIID Service] searchIncidents called with:', { keyword, limit });
+
       // For now, fetch recent incidents and filter client-side
       // AIID GraphQL API may have limited search capabilities
+      console.log('[AIID Service] Fetching 100 incidents from AIID...');
       const incidents = await this.getIncidents(100, 0);
+      console.log('[AIID Service] Fetched ${incidents.length} incidents, filtering by keyword:', keyword);
 
       const filtered = incidents.filter(
         (incident) =>
@@ -375,6 +384,7 @@ export class AiidService {
           incident.reports.some((r) => r.title.toLowerCase().includes(keyword.toLowerCase()))
       );
 
+      console.log('[AIID Service] Filtered to ${filtered.length} incidents matching keyword:', keyword);
       return filtered.slice(0, limit);
     } catch (error) {
       console.error('[AIID Service] Failed to search incidents:', error);

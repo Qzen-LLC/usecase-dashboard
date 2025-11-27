@@ -200,9 +200,12 @@ function extractEthicalConcerns(
 
 /**
  * Main recommendation function
+ * @param input - Use case and assessment data
+ * @param source - Which source to fetch: 'risks' (IBM, MIT, OWASP), 'security' (MITRE), 'incidents' (AIID)
  */
 export async function recommendRisksFromExternalSources(
-  input: RiskRecommendationInput
+  input: RiskRecommendationInput,
+  source: 'risks' | 'security' | 'incidents' = 'risks'
 ): Promise<RiskRecommendations> {
   const { assessmentData } = input;
 
@@ -223,55 +226,71 @@ export async function recommendRisksFromExternalSources(
     publicFacing,
     dataTypesCount: dataTypes.length,
     ethicalConcernsCount: ethicalConcerns.length,
+    source,
   });
 
-  // Get recommendations from each source
-  const ibmRecommendations = ibmRiskAtlasService.recommendForUseCase({
-    isGenAI,
-    isAgenticAI,
-    dataTypes,
-    modelTypes: assessmentData.technicalFeasibility?.modelTypes,
-    agentCapabilities: assessmentData.technicalFeasibility?.agentCapabilities,
-  });
+  // Initialize empty arrays for all sources
+  let ibmRecommendations: any[] = [];
+  let mitRecommendations: any[] = [];
+  let owaspRecommendations: any[] = [];
+  let mitreRecommendations: any[] = [];
+  let aiidIncidents: any[] = [];
 
-  const mitRecommendations = mitRiskRepoService.recommendForUseCase({
-    isGenAI,
-    isAgenticAI,
-    dataTypes,
-    ethicalConcerns,
-    useCaseCategory: assessmentData.businessFeasibility?.genAIUseCase,
-  });
+  // Fetch recommendations based on source
+  if (source === 'risks') {
+    // Step 12: AI Risk Intelligence - IBM, MIT, OWASP only
+    console.log('[Risk Recommender] Fetching AI Risk Intelligence (IBM, MIT, OWASP)...');
 
-  // OWASP recommendations (only if GenAI)
-  const owaspRecommendations = isGenAI
-    ? owaspLLMService.assessApplicableRisks({
-        isGenAI,
-        isAgenticAI,
-        hasRAG,
-        hasPlugins,
-        publicFacing,
-        dataTypes,
-      })
-    : [];
+    ibmRecommendations = ibmRiskAtlasService.recommendForUseCase({
+      isGenAI,
+      isAgenticAI,
+      dataTypes,
+      modelTypes: assessmentData.technicalFeasibility?.modelTypes,
+      agentCapabilities: assessmentData.technicalFeasibility?.agentCapabilities,
+    });
 
-  // MITRE ATLAS security techniques
-  const mitreRecommendations = mitreAtlasService.recommendForUseCase({
-    isGenAI,
-    isAgenticAI,
-    hasRAG,
-    hasPlugins,
-    publicFacing,
-    hasTrainingPipeline: Boolean(assessmentData.dataReadiness?.trainingDataTypes?.length),
-    storesModelWeights: Boolean(assessmentData.technicalFeasibility?.deploymentModels),
-    allowsUserQueries: publicFacing || Boolean(assessmentData.businessFeasibility?.userInteractionModes?.length),
-    hasExternalAPIs: hasPlugins,
-  });
+    mitRecommendations = mitRiskRepoService.recommendForUseCase({
+      isGenAI,
+      isAgenticAI,
+      dataTypes,
+      ethicalConcerns,
+      useCaseCategory: assessmentData.businessFeasibility?.genAIUseCase,
+    });
 
-  // AIID incidents - AI Agent-powered incident matching
-  console.log('[Risk Recommender] Fetching AIID incidents via AI Agent...');
-  const aiidMatches = await findRelevantIncidents(input, 10);
-  const aiidIncidents = aiidMatches.map((match) => match.incident);
-  console.log('[Risk Recommender] Found ${aiidIncidents.length} relevant AIID incidents');
+    // OWASP recommendations (only if GenAI)
+    owaspRecommendations = isGenAI
+      ? owaspLLMService.assessApplicableRisks({
+          isGenAI,
+          isAgenticAI,
+          hasRAG,
+          hasPlugins,
+          publicFacing,
+          dataTypes,
+        })
+      : [];
+  } else if (source === 'security') {
+    // Step 11: Security Assessment - MITRE ATLAS only
+    console.log('[Risk Recommender] Fetching Security Assessment (MITRE ATLAS)...');
+
+    mitreRecommendations = mitreAtlasService.recommendForUseCase({
+      isGenAI,
+      isAgenticAI,
+      hasRAG,
+      hasPlugins,
+      publicFacing,
+      hasTrainingPipeline: Boolean(assessmentData.dataReadiness?.trainingDataTypes?.length),
+      storesModelWeights: Boolean(assessmentData.technicalFeasibility?.deploymentModels),
+      allowsUserQueries: publicFacing || Boolean(assessmentData.businessFeasibility?.userInteractionModes?.length),
+      hasExternalAPIs: hasPlugins,
+    });
+  } else if (source === 'incidents') {
+    // Step 15: Incident Learning - AIID only
+    console.log('[Risk Recommender] Fetching Incident Learning (AIID)...');
+
+    const aiidMatches = await findRelevantIncidents(input, 10);
+    aiidIncidents = aiidMatches.map((match) => match.incident);
+    console.log(`[Risk Recommender] Found ${aiidIncidents.length} relevant AIID incidents`);
+  }
 
   // Limit recommendations to reasonable numbers
   const limitedIBM = ibmRecommendations.slice(0, 15);

@@ -29,7 +29,8 @@ export default function IncidentLearning() {
     setIncidentsError(null);
 
     try {
-      const response = await fetch(`/api/risks/${useCaseId}/recommendations`);
+      // Fetch AIID incidents only (Step 15: Incident Learning)
+      const response = await fetch(`/api/risks/${useCaseId}/recommendations?source=incidents`);
 
       if (!response.ok) {
         const errorData = await response.json();

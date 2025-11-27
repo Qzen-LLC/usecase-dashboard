@@ -60,7 +60,6 @@ export interface AiidIncident {
   title: string;
   description: string;
   date?: string;
-  epoch_date_published?: number;
 
   // Reports associated with this incident
   reports: AiidReport[];
@@ -101,7 +100,6 @@ export interface AiidReport {
   plain_text?: string;
   language?: string;
   tags?: string[];
-  epoch_date_published?: number;
 }
 
 // AIID Entity (company, organization, individual)

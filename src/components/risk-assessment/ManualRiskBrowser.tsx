@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Building2, GraduationCap, Shield, Search, Download, X } from 'lucide-react';
-import { getAllRisksFromSource } from '@/lib/integrations/risk-recommender';
+import { ibmRiskAtlasService } from '@/lib/integrations/ibm-risk-atlas.service';
+import { mitRiskRepoService } from '@/lib/integrations/mit-risk-repo.service';
+import { owaspLLMService } from '@/lib/integrations/owasp-llm.service';
 import type { ExternalRisk, OwaspRisk } from '@/lib/integrations/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -25,9 +27,9 @@ export function ManualRiskBrowser({ open, onClose, useCaseId }: ManualRiskBrowse
   const [activeTab, setActiveTab] = useState('ibm');
 
   // Get all risks from each source
-  const ibmRisks = useMemo(() => getAllRisksFromSource('ibm') as ExternalRisk[], []);
-  const mitRisks = useMemo(() => getAllRisksFromSource('mit') as ExternalRisk[], []);
-  const owaspRisks = useMemo(() => getAllRisksFromSource('owasp') as OwaspRisk[], []);
+  const ibmRisks = useMemo(() => ibmRiskAtlasService.getAllRisks(), []);
+  const mitRisks = useMemo(() => mitRiskRepoService.getAllRisks(), []);
+  const owaspRisks = useMemo(() => owaspLLMService.getAllRisks(), []);
 
   // Filter risks based on search query
   const filterRisks = (risks: ExternalRisk[] | OwaspRisk[], query: string) => {
