@@ -8,19 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from '@/components/ui/dropdown-menu';
-import {
   Search,
   Download,
   X,
   Database,
-  ChevronDown,
   Building2,
   GraduationCap,
   Shield,
@@ -396,73 +387,64 @@ export function ManualRiskBrowser({ open, onClose, useCaseId }: ManualRiskBrowse
             </div>
           </DialogHeader>
 
-          {/* Filter Bar */}
-          <div className="flex flex-wrap items-center gap-2 pb-4 border-b">
-            {/* Multi-Select Taxonomy Filter */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8">
-                  <Filter className="h-3 w-3 mr-2" />
-                  Sources {selectedTaxonomies.size > 0 && `(${selectedTaxonomies.size})`}
-                  <ChevronDown className="h-3 w-3 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-64 max-h-80 overflow-y-auto">
-                <DropdownMenuLabel>Filter by Source</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {taxonomyList.map(taxonomy => (
-                  <DropdownMenuCheckboxItem
-                    key={taxonomy.id}
-                    checked={selectedTaxonomies.has(taxonomy.id)}
-                    onCheckedChange={() => toggleTaxonomy(taxonomy.id)}
-                  >
-                    <span className="flex items-center gap-2">
+          {/* Horizontal Filter Bar */}
+          <div className="space-y-3 pb-4 border-b">
+            {/* Source Filters as Horizontal Chips */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                <Filter className="h-3 w-3 inline mr-1" />
+                Sources:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {taxonomyList.map(taxonomy => {
+                  const isSelected = selectedTaxonomies.has(taxonomy.id);
+                  return (
+                    <button
+                      key={taxonomy.id}
+                      onClick={() => toggleTaxonomy(taxonomy.id)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                        isSelected
+                          ? 'bg-purple-600 text-white shadow-md'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                    >
                       {taxonomy.icon}
-                      <span className="flex-1">{taxonomy.name}</span>
-                      <Badge variant="secondary" className="text-xs ml-2">
+                      <span>{taxonomy.name}</span>
+                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${
+                        isSelected
+                          ? 'bg-purple-500 text-white'
+                          : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                      }`}>
                         {taxonomy.count}
-                      </Badge>
-                    </span>
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-            {/* Show selected taxonomies as chips */}
-            {selectedTaxonomies.size > 0 && Array.from(selectedTaxonomies).slice(0, 3).map(taxId => (
-              <Badge
-                key={taxId}
-                variant="secondary"
-                className="cursor-pointer hover:bg-secondary/80"
-                onClick={() => toggleTaxonomy(taxId)}
-              >
-                {TAXONOMY_CONFIG[taxId]?.name?.split(' ')[0] || taxId}
-                <X className="h-3 w-3 ml-1" />
-              </Badge>
-            ))}
-            {selectedTaxonomies.size > 3 && (
-              <Badge variant="secondary">+{selectedTaxonomies.size - 3} more</Badge>
-            )}
+            {/* Status Bar */}
+            <div className="flex items-center gap-2">
+              {/* AI Search indicator */}
+              {aiSearchResults && (
+                <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                  <Zap className="h-3 w-3 mr-1" />
+                  AI Results: {aiSearchResults.length} risks
+                </Badge>
+              )}
 
-            {/* AI Search indicator */}
-            {aiSearchResults && (
-              <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
-                <Zap className="h-3 w-3 mr-1" />
-                AI Results: {aiSearchResults.length} risks
-              </Badge>
-            )}
+              {/* Clear filters */}
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={clearFilters}>
+                  <X className="h-3 w-3 mr-1" />
+                  Clear Filters
+                </Button>
+              )}
 
-            {/* Clear filters */}
-            {hasActiveFilters && (
-              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={clearFilters}>
-                <X className="h-3 w-3 mr-1" />
-                Clear All
-              </Button>
-            )}
-
-            {/* Results count */}
-            <div className="ml-auto text-sm text-muted-foreground">
-              {filteredRisks.length} risk{filteredRisks.length !== 1 ? 's' : ''} found
+              {/* Results count */}
+              <div className="ml-auto text-sm text-muted-foreground">
+                {filteredRisks.length} risk{filteredRisks.length !== 1 ? 's' : ''} found
+              </div>
             </div>
           </div>
 
