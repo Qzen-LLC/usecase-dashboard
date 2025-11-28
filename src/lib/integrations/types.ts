@@ -176,6 +176,20 @@ export interface RiskRecommendationInput {
       trainingDataTypes?: string[];
     };
   };
+  // Rich use case metadata for better AI System Goals inference
+  useCaseMetadata?: {
+    title?: string;
+    problemStatement?: string;
+    proposedAISolution?: string;
+    keyBenefits?: string;
+    successCriteria?: string;
+    currentState?: string;
+    desiredState?: string;
+    keyAssumptions?: string;
+    businessFunction?: string;
+    primaryStakeholders?: string[];
+    operationalImpactScore?: number;
+  };
 }
 
 // Recommendation Result

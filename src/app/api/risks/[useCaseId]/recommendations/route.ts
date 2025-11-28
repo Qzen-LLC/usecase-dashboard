@@ -30,7 +30,7 @@ export const GET = withAuth(
         );
       }
 
-      // Fetch use case to verify it exists
+      // Fetch use case to verify it exists and get rich metadata
       const useCase = await prismaClient.useCase.findUnique({
         where: { id: useCaseId },
       });
@@ -54,13 +54,27 @@ export const GET = withAuth(
 
       console.log('[Recommendations API] Generating recommendations for use case:', useCaseId, {
         source,
+        hasMetadata: !!(useCase.title || useCase.problemStatement || useCase.proposedAISolution),
       });
 
-      // Get recommendations from external sources using the constructed stepsData
+      // Get recommendations from external sources using assessment data + rich metadata
       const recommendations = await recommendRisksFromExternalSources(
         {
           useCaseId,
           assessmentData: stepsData,
+          useCaseMetadata: {
+            title: useCase.title || undefined,
+            problemStatement: useCase.problemStatement || undefined,
+            proposedAISolution: useCase.proposedAISolution || undefined,
+            keyBenefits: useCase.keyBenefits || undefined,
+            successCriteria: useCase.successCriteria || undefined,
+            currentState: useCase.currentState || undefined,
+            desiredState: useCase.desiredState || undefined,
+            keyAssumptions: useCase.keyAssumptions || undefined,
+            businessFunction: useCase.businessFunction || undefined,
+            primaryStakeholders: useCase.primaryStakeholders || undefined,
+            operationalImpactScore: useCase.operationalImpactScore || undefined,
+          },
         },
         source
       );

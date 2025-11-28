@@ -35,6 +35,7 @@ interface UseCaseContext {
   riskAreas: string[]; // Identified risk areas from assessment
   deployment: string; // Deployment model (cloud, on-prem, edge, etc.)
   userFacing: boolean; // Whether the system directly interacts with end users
+  aiSystemGoals: string[]; // GMF-aligned AI System Goals (e.g., "Medical Diagnosis", "Face Recognition")
 }
 
 /**
@@ -48,10 +49,100 @@ interface IncidentMatch {
 }
 
 /**
- * Extract structured context from assessment data
+ * Infer AI System Goals from use case metadata using AI
+ * Aligns with GMF taxonomy's "AI System Goals" ontology
  */
-function extractUseCaseContext(input: RiskRecommendationInput): UseCaseContext {
-  const { assessmentData } = input;
+async function inferAISystemGoals(
+  metadata?: RiskRecommendationInput['useCaseMetadata']
+): Promise<string[]> {
+  // If no metadata provided, return empty
+  if (!metadata) {
+    console.log('[Incident Matcher] No metadata provided, skipping AI System Goals inference');
+    return [];
+  }
+
+  // Build context from available metadata
+  const contextParts: string[] = [];
+  if (metadata.title) contextParts.push(`Title: ${metadata.title}`);
+  if (metadata.problemStatement) contextParts.push(`Problem: ${metadata.problemStatement}`);
+  if (metadata.proposedAISolution) contextParts.push(`Solution: ${metadata.proposedAISolution}`);
+  if (metadata.keyBenefits) contextParts.push(`Benefits: ${metadata.keyBenefits}`);
+  if (metadata.successCriteria) contextParts.push(`Success Criteria: ${metadata.successCriteria}`);
+  if (metadata.desiredState) contextParts.push(`Desired State: ${metadata.desiredState}`);
+
+  if (contextParts.length === 0) {
+    console.log('[Incident Matcher] Metadata provided but no relevant fields, skipping inference');
+    return [];
+  }
+
+  const prompt = `You are an AI safety expert analyzing an AI system deployment to identify its core AI System Goals according to the GMF (Goals, Methods, Failures) taxonomy.
+
+The GMF taxonomy defines AI System Goals as high-level objectives and tasks of AI deployments in the real world.
+
+Examples of AI System Goals:
+- "Face Recognition" - Identifying or verifying individuals from facial images
+- "Medical Diagnosis" - Assisting healthcare providers in diagnosing medical conditions
+- "Content Recommendation" - Suggesting relevant content to users
+- "Autonomous Driving" - Operating vehicles without human intervention
+- "Fraud Detection" - Identifying fraudulent transactions or activities
+- "Language Translation" - Converting text between languages
+- "Image Classification" - Categorizing images into predefined classes
+- "Sentiment Analysis" - Determining emotional tone in text
+- "Predictive Maintenance" - Forecasting equipment failures
+- "Customer Support Automation" - Handling customer inquiries automatically
+
+Use Case Context:
+${contextParts.join('\n')}
+
+Based on this context, identify the PRIMARY AI System Goal and generate 5-6 semantic variations that capture the same core objective.
+
+Return ONLY a JSON array of goal strings, ordered from most specific to more general variations.
+Example: ["Medical diagnosis assistance", "Clinical decision support", "Healthcare diagnostic AI", "Patient diagnosis recommendation", "Medical condition identification", "Disease diagnosis prediction"]`;
+
+  try {
+    const openai = getOpenAIClient();
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an AI safety expert. Return only valid JSON arrays of AI System Goal strings aligned with GMF taxonomy.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 300,
+    });
+
+    const content = response.choices[0]?.message?.content?.trim();
+    if (!content) {
+      throw new Error('No response from OpenAI');
+    }
+
+    const goals = JSON.parse(content);
+    console.log('[Incident Matcher] Inferred AI System Goals:', goals);
+    return Array.isArray(goals) ? goals : [];
+  } catch (error) {
+    console.error('[Incident Matcher] Failed to infer AI System Goals:', error);
+
+    // Fallback: Use title or solution as single goal if available
+    const fallbackGoals: string[] = [];
+    if (metadata.title) fallbackGoals.push(metadata.title);
+    else if (metadata.proposedAISolution) fallbackGoals.push(metadata.proposedAISolution);
+
+    console.log('[Incident Matcher] Using fallback goals:', fallbackGoals);
+    return fallbackGoals.slice(0, 3);
+  }
+}
+
+/**
+ * Extract structured context from assessment data and metadata
+ */
+async function extractUseCaseContext(input: RiskRecommendationInput): Promise<UseCaseContext> {
+  const { assessmentData, useCaseMetadata } = input;
 
   // Extract AI type
   const aiType: string[] = [];
@@ -119,21 +210,69 @@ function extractUseCaseContext(input: RiskRecommendationInput): UseCaseContext {
     riskAreas.push(...assessmentData.ethicalImpact.ethicalConsiderations.potentialHarmAreas);
   }
 
-  // Infer sector from use case or context (basic heuristics)
+  // Infer sector from metadata and use case (enhanced heuristics)
   const sector: string[] = [];
-  const useCaseLower = useCase.toLowerCase();
-  if (useCaseLower.includes('health') || useCaseLower.includes('medical')) {
-    sector.push('Healthcare');
+
+  // First try businessFunction from metadata (most reliable)
+  if (useCaseMetadata?.businessFunction) {
+    const bizFunc = useCaseMetadata.businessFunction.toLowerCase();
+    if (bizFunc.includes('health') || bizFunc.includes('medical') || bizFunc.includes('clinical')) {
+      sector.push('Healthcare');
+    }
+    if (bizFunc.includes('finance') || bizFunc.includes('banking') || bizFunc.includes('insurance')) {
+      sector.push('Finance');
+    }
+    if (bizFunc.includes('retail') || bizFunc.includes('commerce') || bizFunc.includes('sales')) {
+      sector.push('E-commerce', 'Retail');
+    }
+    if (bizFunc.includes('education') || bizFunc.includes('learning') || bizFunc.includes('academic')) {
+      sector.push('Education');
+    }
+    if (bizFunc.includes('transport') || bizFunc.includes('logistics') || bizFunc.includes('mobility')) {
+      sector.push('Transportation');
+    }
+    if (bizFunc.includes('manufacturing') || bizFunc.includes('industrial')) {
+      sector.push('Manufacturing');
+    }
+    if (bizFunc.includes('legal') || bizFunc.includes('law')) {
+      sector.push('Legal');
+    }
+    if (bizFunc.includes('government') || bizFunc.includes('public sector')) {
+      sector.push('Government');
+    }
   }
-  if (useCaseLower.includes('finance') || useCaseLower.includes('banking')) {
-    sector.push('Finance');
+
+  // Fall back to use case and problem statement analysis
+  if (sector.length === 0) {
+    const textToAnalyze = [
+      useCase,
+      useCaseMetadata?.title || '',
+      useCaseMetadata?.problemStatement || '',
+      useCaseMetadata?.proposedAISolution || '',
+    ].join(' ').toLowerCase();
+
+    if (textToAnalyze.includes('health') || textToAnalyze.includes('medical') || textToAnalyze.includes('patient')) {
+      sector.push('Healthcare');
+    }
+    if (textToAnalyze.includes('finance') || textToAnalyze.includes('banking') || textToAnalyze.includes('payment')) {
+      sector.push('Finance');
+    }
+    if (textToAnalyze.includes('retail') || textToAnalyze.includes('commerce') || textToAnalyze.includes('shopping')) {
+      sector.push('E-commerce', 'Retail');
+    }
+    if (textToAnalyze.includes('education') || textToAnalyze.includes('learning') || textToAnalyze.includes('student')) {
+      sector.push('Education');
+    }
+    if (textToAnalyze.includes('transport') || textToAnalyze.includes('vehicle') || textToAnalyze.includes('driving')) {
+      sector.push('Transportation');
+    }
+    if (textToAnalyze.includes('manufacturing') || textToAnalyze.includes('factory') || textToAnalyze.includes('production')) {
+      sector.push('Manufacturing');
+    }
   }
-  if (useCaseLower.includes('retail') || useCaseLower.includes('commerce')) {
-    sector.push('E-commerce', 'Retail');
-  }
-  if (useCaseLower.includes('education') || useCaseLower.includes('learning')) {
-    sector.push('Education');
-  }
+
+  // Infer AI System Goals from metadata (GMF-aligned)
+  const aiSystemGoals = await inferAISystemGoals(useCaseMetadata);
 
   return {
     aiType: [...new Set(aiType)],
@@ -144,6 +283,7 @@ function extractUseCaseContext(input: RiskRecommendationInput): UseCaseContext {
     riskAreas: [...new Set(riskAreas)],
     deployment,
     userFacing,
+    aiSystemGoals,
   };
 }
 
@@ -154,6 +294,7 @@ async function generateSearchQueries(context: UseCaseContext): Promise<string[]>
   const prompt = `You are an AI safety expert analyzing a new AI system to find relevant real-world AI failures and incidents.
 
 Use Case Context:
+- AI System Goals: ${context.aiSystemGoals.join(', ') || 'Not specified'}
 - AI Type: ${context.aiType.join(', ') || 'Not specified'}
 - Technology: ${context.technology.join(', ') || 'Not specified'}
 - Primary Use Case: ${context.useCase}
@@ -164,14 +305,16 @@ Use Case Context:
 - User-Facing: ${context.userFacing ? 'Yes' : 'No'}
 
 Generate 5-7 search queries to find the most relevant AI incidents and failures from a database of 800+ incidents. Focus on:
-1. Similar AI technologies and use cases
-2. Same or related industries/sectors
-3. Common failure modes and risks
-4. Similar deployment scenarios
-5. User-facing vs internal systems
+1. AI System Goals and similar objectives (MOST IMPORTANT - align with GMF taxonomy)
+2. Similar AI technologies and use cases
+3. Same or related industries/sectors
+4. Common failure modes and risks
+5. Similar deployment scenarios
+
+IMPORTANT: If AI System Goals are provided, prioritize creating queries around those goals and their variations.
 
 Return ONLY a JSON array of search query strings, no additional text.
-Example: ["LLM hallucination healthcare", "chatbot misinformation", "AI bias hiring"]`;
+Example: ["Medical diagnosis AI failure", "Clinical decision support errors", "Healthcare AI misdiagnosis", "AI diagnostic accuracy issues"]`;
 
   try {
     const openai = getOpenAIClient();
@@ -332,9 +475,10 @@ export async function findRelevantIncidents(
 ): Promise<IncidentMatch[]> {
   console.log('[Incident Matcher] Starting AI-powered incident matching...');
 
-  // Step 1: Extract use case context
-  const context = extractUseCaseContext(input);
+  // Step 1: Extract use case context (now with AI System Goals inference)
+  const context = await extractUseCaseContext(input);
   console.log('[Incident Matcher] Use case context:', {
+    aiSystemGoals: context.aiSystemGoals,
     aiType: context.aiType,
     technology: context.technology,
     useCase: context.useCase,

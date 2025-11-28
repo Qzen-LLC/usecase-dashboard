@@ -103,11 +103,16 @@ const INCIDENT_BY_ID_QUERY = `
 
 /**
  * GraphQL query for classifications
+ * Note: AIID API doesn't support filtering classifications by incident_id
+ * We fetch all classifications and filter client-side
  */
 const CLASSIFICATIONS_QUERY = `
-  query GetClassifications($incidentId: Int!) {
-    classifications(filter: { incidents: { incident_id: { EQ: $incidentId } } }) {
+  query GetClassifications {
+    classifications {
       namespace
+      incidents {
+        incident_id
+      }
       attributes {
         short_name
         value_json
@@ -117,59 +122,94 @@ const CLASSIFICATIONS_QUERY = `
 `;
 
 /**
- * Execute GraphQL query against AIID API
+ * Execute GraphQL query against AIID API with retry logic and timeout
  */
 async function executeGraphQLQuery<T>(
   query: string,
-  variables?: Record<string, any>
+  variables?: Record<string, any>,
+  maxRetries: number = 3,
+  timeoutMs: number = 30000
 ): Promise<T> {
-  try {
-    const requestBody = {
-      query,
-      variables,
-    };
+  let lastError: Error | null = null;
 
-    console.log('[AIID Service] GraphQL Request:', {
-      endpoint: AIID_GRAPHQL_ENDPOINT,
-      queryPreview: query.substring(0, 200) + '...',
-      variables,
-    });
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const requestBody = {
+        query,
+        variables,
+      };
 
-    const response = await fetch(AIID_GRAPHQL_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    console.log('[AIID Service] GraphQL Response Status:', response.status, response.statusText);
-
-    // Read response body regardless of status
-    const result = await response.json();
-
-    console.log('[AIID Service] GraphQL Response Body:', JSON.stringify(result, null, 2));
-
-    if (!response.ok) {
-      console.error('[AIID Service] GraphQL request failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        errors: result.errors,
-        body: result,
+      console.log(`[AIID Service] GraphQL Request (attempt ${attempt}/${maxRetries}):`, {
+        endpoint: AIID_GRAPHQL_ENDPOINT,
+        queryPreview: query.substring(0, 200) + '...',
+        variables,
+        timeoutMs,
       });
-      throw new Error(`GraphQL request failed: ${response.status} ${response.statusText}`);
-    }
 
-    if (result.errors) {
-      console.error('[AIID Service] GraphQL errors:', result.errors);
-      throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
-    }
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-    return result.data as T;
-  } catch (error) {
-    console.error('[AIID Service] GraphQL query failed:', error);
-    throw error;
+      try {
+        const response = await fetch(AIID_GRAPHQL_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        console.log('[AIID Service] GraphQL Response Status:', response.status, response.statusText);
+
+        // Read response body regardless of status
+        const result = await response.json();
+
+        console.log('[AIID Service] GraphQL Response Body:', JSON.stringify(result, null, 2));
+
+        if (!response.ok) {
+          console.error('[AIID Service] GraphQL request failed:', {
+            status: response.status,
+            statusText: response.statusText,
+            errors: result.errors,
+            body: result,
+          });
+          throw new Error(`GraphQL request failed: ${response.status} ${response.statusText}`);
+        }
+
+        if (result.errors) {
+          console.error('[AIID Service] GraphQL errors:', result.errors);
+          throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
+        }
+
+        // Success - return data
+        console.log(`[AIID Service] GraphQL request succeeded on attempt ${attempt}`);
+        return result.data as T;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    } catch (error) {
+      lastError = error as Error;
+
+      console.error(`[AIID Service] GraphQL query failed (attempt ${attempt}/${maxRetries}):`, {
+        error: error instanceof Error ? error.message : String(error),
+        code: (error as any)?.code,
+      });
+
+      // If this is not the last attempt, wait with exponential backoff
+      if (attempt < maxRetries) {
+        const delayMs = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Max 10s delay
+        console.log(`[AIID Service] Retrying in ${delayMs}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
   }
+
+  // All retries failed
+  console.error(`[AIID Service] All ${maxRetries} attempts failed. Last error:`, lastError);
+  throw new Error(`AIID GraphQL API failed after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
 }
 
 /**
@@ -293,27 +333,58 @@ function transformToAiidIncident(rawIncident: any, classifications?: AiidClassif
  * AIID Service Class
  */
 export class AiidService {
+  // Cache for classifications to avoid repeated API calls
+  private classificationsCache: Map<number, AiidClassification[]> = new Map();
+  private allClassificationsFetched: boolean = false;
+  private allClassifications: any[] = [];
+
+  // Cache for incidents to avoid repeated API calls
+  private allIncidentsFetched: boolean = false;
+  private allIncidents: any[] = [];
+  private incidentsCache: Map<number, AiidIncident> = new Map();
+
   /**
-   * Fetch all incidents with pagination
+   * Fetch all incidents with pagination and caching
    */
   async getIncidents(limit: number = 50, skip: number = 0): Promise<AiidIncident[]> {
     try {
-      console.log('[AIID Service] getIncidents called - fetching all incidents');
+      // Fetch all incidents once if not already fetched
+      if (!this.allIncidentsFetched) {
+        console.log('[AIID Service] Fetching all incidents from AIID (first time, may take 30-60s)...');
 
-      const data = await executeGraphQLQuery<{ incidents: any[] }>(INCIDENTS_QUERY);
+        const data = await executeGraphQLQuery<{ incidents: any[] }>(INCIDENTS_QUERY);
 
-      console.log(`[AIID Service] GraphQL returned ${data?.incidents?.length || 0} incidents`);
+        console.log(`[AIID Service] GraphQL returned ${data?.incidents?.length || 0} incidents`);
+        this.allIncidents = data.incidents || [];
+        this.allIncidentsFetched = true;
+
+        // Fetch all classifications at the same time (optimization)
+        console.log('[AIID Service] Fetching all classifications...');
+        await this.prefetchAllClassifications();
+      } else {
+        console.log(`[AIID Service] Using cached incidents (${this.allIncidents.length} total)`);
+      }
 
       // Apply client-side pagination
-      const paginatedIncidents = data.incidents.slice(skip, skip + limit);
+      const paginatedIncidents = this.allIncidents.slice(skip, skip + limit);
 
       console.log(`[AIID Service] After pagination (skip: ${skip}, limit: ${limit}): ${paginatedIncidents.length} incidents`);
 
       // Fetch classifications for each incident (limited to paginated set)
       const incidentsWithClassifications = await Promise.all(
         paginatedIncidents.map(async (incident) => {
+          // Check if we already have this incident cached with classifications
+          if (this.incidentsCache.has(incident.incident_id)) {
+            return this.incidentsCache.get(incident.incident_id)!;
+          }
+
           const classifications = await this.getClassifications(incident.incident_id);
-          return transformToAiidIncident(incident, classifications);
+          const transformed = transformToAiidIncident(incident, classifications);
+
+          // Cache the transformed incident
+          this.incidentsCache.set(incident.incident_id, transformed);
+
+          return transformed;
         })
       );
 
@@ -321,6 +392,18 @@ export class AiidService {
     } catch (error) {
       console.error('[AIID Service] Failed to fetch incidents:', error);
       return [];
+    }
+  }
+
+  /**
+   * Prefetch all classifications to optimize subsequent calls
+   */
+  private async prefetchAllClassifications(): Promise<void> {
+    if (!this.allClassificationsFetched) {
+      const data = await executeGraphQLQuery<{ classifications: any[] }>(CLASSIFICATIONS_QUERY);
+      this.allClassifications = data.classifications || [];
+      this.allClassificationsFetched = true;
+      console.log(`[AIID Service] Prefetched ${this.allClassifications.length} total classifications`);
     }
   }
 
@@ -347,17 +430,37 @@ export class AiidService {
 
   /**
    * Fetch classifications for an incident
+   * Uses caching to avoid repeated API calls
    */
   async getClassifications(incidentId: number): Promise<AiidClassification[]> {
     try {
-      const data = await executeGraphQLQuery<{ classifications: any[] }>(CLASSIFICATIONS_QUERY, {
-        incidentId,
-      });
+      // Check cache first
+      if (this.classificationsCache.has(incidentId)) {
+        return this.classificationsCache.get(incidentId)!;
+      }
 
-      return (data.classifications || []).map((c) => ({
+      // Fetch all classifications once if not already fetched
+      if (!this.allClassificationsFetched) {
+        console.log('[AIID Service] Fetching all classifications (first time)...');
+        const data = await executeGraphQLQuery<{ classifications: any[] }>(CLASSIFICATIONS_QUERY);
+        this.allClassifications = data.classifications || [];
+        this.allClassificationsFetched = true;
+        console.log(`[AIID Service] Fetched ${this.allClassifications.length} total classifications`);
+      }
+
+      // Filter classifications for this specific incident
+      const incidentClassifications = this.allClassifications.filter((c) =>
+        c.incidents?.some((inc: any) => inc.incident_id === incidentId)
+      );
+
+      // Parse and cache
+      const parsed = incidentClassifications.map((c) => ({
         namespace: c.namespace,
         attributes: parseClassificationAttributes(c.attributes),
       }));
+
+      this.classificationsCache.set(incidentId, parsed);
+      return parsed;
     } catch (error) {
       console.error(`[AIID Service] Failed to fetch classifications for incident ${incidentId}:`, error);
       return [];
@@ -365,26 +468,43 @@ export class AiidService {
   }
 
   /**
-   * Search incidents by keyword
+   * Search incidents by keyword with GMF classification matching
+   * Enhanced to search technology, sector, failure cause, and harm type fields
    */
   async searchIncidents(keyword: string, limit: number = 20): Promise<AiidIncident[]> {
     try {
       console.log('[AIID Service] searchIncidents called with:', { keyword, limit });
 
-      // For now, fetch recent incidents and filter client-side
-      // AIID GraphQL API may have limited search capabilities
-      console.log('[AIID Service] Fetching 100 incidents from AIID...');
-      const incidents = await this.getIncidents(100, 0);
-      console.log('[AIID Service] Fetched ${incidents.length} incidents, filtering by keyword:', keyword);
+      // Fetch more incidents to cover larger database (500 of 800+)
+      console.log('[AIID Service] Fetching 500 incidents from AIID...');
+      const incidents = await this.getIncidents(500, 0);
+      console.log(`[AIID Service] Fetched ${incidents.length} incidents, filtering by keyword:`, keyword);
 
-      const filtered = incidents.filter(
-        (incident) =>
-          incident.title.toLowerCase().includes(keyword.toLowerCase()) ||
-          incident.description.toLowerCase().includes(keyword.toLowerCase()) ||
-          incident.reports.some((r) => r.title.toLowerCase().includes(keyword.toLowerCase()))
-      );
+      const keywordLower = keyword.toLowerCase();
 
-      console.log('[AIID Service] Filtered to ${filtered.length} incidents matching keyword:', keyword);
+      // Enhanced search: check title, description, reports, AND GMF classification fields
+      const filtered = incidents.filter((incident) => {
+        // Search basic fields
+        if (incident.title.toLowerCase().includes(keywordLower)) return true;
+        if (incident.description.toLowerCase().includes(keywordLower)) return true;
+        if (incident.reports.some((r) => r.title.toLowerCase().includes(keywordLower))) return true;
+
+        // Search GMF technology classifications
+        if (incident.technology?.some((t) => t.toLowerCase().includes(keywordLower))) return true;
+
+        // Search sector classifications
+        if (incident.sector?.some((s) => s.toLowerCase().includes(keywordLower))) return true;
+
+        // Search failure cause classifications
+        if (incident.failureCause?.some((f) => f.toLowerCase().includes(keywordLower))) return true;
+
+        // Search harm type classifications
+        if (incident.harmType?.some((h) => h.toLowerCase().includes(keywordLower))) return true;
+
+        return false;
+      });
+
+      console.log(`[AIID Service] Filtered to ${filtered.length} incidents matching keyword:`, keyword);
       return filtered.slice(0, limit);
     } catch (error) {
       console.error('[AIID Service] Failed to search incidents:', error);
