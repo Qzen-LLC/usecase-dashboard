@@ -1,13 +1,50 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Lightbulb, Building2, GraduationCap, Shield, BookOpen, Zap } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import {
+  Sparkles,
+  Lightbulb,
+  Building2,
+  GraduationCap,
+  Shield,
+  BookOpen,
+  Zap,
+  CheckCircle2,
+  FileText,
+  Target,
+  FlaskConical,
+  Database,
+  AlertTriangle,
+  Scale,
+  Globe
+} from 'lucide-react';
 import { RiskRecommendationsPanel } from './risk-assessment/RiskRecommendationsPanel';
 import { ManualRiskBrowser } from './risk-assessment/ManualRiskBrowser';
 import type { RiskRecommendations } from '@/lib/integrations/types';
+
+// QUBE AI Risk Data Statistics
+const QUBE_RISK_STATS = {
+  totalRisks: 1206,
+  totalMitigations: 254,
+  totalControls: 17,
+  totalEvaluations: 24,
+  taxonomies: [
+    { id: 'qube-legacy-mit', name: 'MIT AI Risk Repository', risks: 604, color: 'purple' },
+    { id: 'ai-risk-taxonomy', name: 'AIR 2024', risks: 314, color: 'indigo' },
+    { id: 'ibm-risk-atlas', name: 'IBM AI Risk Atlas', risks: 99, color: 'blue' },
+    { id: 'qube-legacy-ibm', name: 'IBM (Extended)', risks: 89, color: 'sky' },
+    { id: 'credo-ucf', name: 'Credo UCF', risks: 49, color: 'violet' },
+    { id: 'nist-ai-rmf', name: 'NIST AI RMF', risks: 12, color: 'cyan' },
+    { id: 'ailuminate-v1.0', name: 'AILuminate', risks: 12, color: 'amber' },
+    { id: 'owasp-llm-2.0', name: 'OWASP Top 10 LLMs', risks: 10, color: 'red' },
+    { id: 'ibm-granite-guardian', name: 'Granite Guardian', risks: 13, color: 'emerald' },
+    { id: 'shieldgemma-taxonomy', name: 'ShieldGemma', risks: 4, color: 'teal' },
+  ],
+};
 
 export default function AIRiskIntelligence() {
   const params = useParams();
@@ -22,7 +59,7 @@ export default function AIRiskIntelligence() {
   // Manual Browser state
   const [showManualBrowser, setShowManualBrowser] = useState(false);
 
-  // Fetch AI-powered recommendations
+  // Fetch AI-powered recommendations using QUBE AI Risk Data LLM-based identification
   const fetchRecommendations = async () => {
     if (!useCaseId) {
       setRecommendationsError('Use case ID not found');
@@ -33,8 +70,10 @@ export default function AIRiskIntelligence() {
     setRecommendationsError(null);
 
     try {
-      // Fetch risks from IBM, MIT, OWASP only (Step 12: AI Risk Intelligence)
-      const response = await fetch(`/api/risks/${useCaseId}/recommendations?source=risks`);
+      // Use QUBE AI Risk Data LLM-based risk identification (default: source=atlas)
+      // This uses OpenAI to semantically match risks from 1200+ entries across 10 taxonomies
+      // and returns enriched data with mitigations, controls, and evaluations
+      const response = await fetch(`/api/risks/${useCaseId}/recommendations?source=atlas`);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -65,8 +104,32 @@ export default function AIRiskIntelligence() {
               AI-Powered Risk Intelligence
             </h2>
             <p className="text-muted-foreground mt-1">
-              Enhance your risk management with AI-curated recommendations from industry-leading databases
+              Powered by <span className="font-semibold text-purple-600">QUBE AI Risk Data</span> - comprehensive AI governance data from industry-leading sources
             </p>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="flex flex-wrap gap-4 mt-4">
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-sm">
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+            <span className="text-sm font-medium">{QUBE_RISK_STATS.totalRisks}+ Risks</span>
+          </div>
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-sm">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <span className="text-sm font-medium">{QUBE_RISK_STATS.totalMitigations} Mitigations</span>
+          </div>
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-sm">
+            <Shield className="h-4 w-4 text-blue-500" />
+            <span className="text-sm font-medium">{QUBE_RISK_STATS.totalControls} Controls</span>
+          </div>
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-sm">
+            <FlaskConical className="h-4 w-4 text-purple-500" />
+            <span className="text-sm font-medium">{QUBE_RISK_STATS.totalEvaluations} Evaluations</span>
+          </div>
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-sm">
+            <Database className="h-4 w-4 text-indigo-500" />
+            <span className="text-sm font-medium">{QUBE_RISK_STATS.taxonomies.length} Taxonomies</span>
           </div>
         </div>
       </div>
@@ -85,7 +148,7 @@ export default function AIRiskIntelligence() {
                   AI-Powered Recommendations
                 </CardTitle>
                 <p className="text-xs text-muted-foreground">
-                  Let AI analyze your assessment and recommend relevant risks
+                  Get intelligent risk recommendations with mitigations & evaluations
                 </p>
               </div>
             </div>
@@ -95,15 +158,15 @@ export default function AIRiskIntelligence() {
             <div className="space-y-3 text-sm text-muted-foreground">
               <div className="flex gap-2">
                 <span className="text-purple-600 font-semibold">•</span>
-                <p>AI analyzes your completed assessment answers</p>
+                <p>Analyzes your assessment across 10 taxonomies</p>
               </div>
               <div className="flex gap-2">
                 <span className="text-purple-600 font-semibold">•</span>
-                <p>Intelligently matches risks from IBM, MIT, and OWASP</p>
+                <p>Matches risks from IBM, NIST, MIT, OWASP, Credo & more</p>
               </div>
               <div className="flex gap-2">
                 <span className="text-purple-600 font-semibold">•</span>
-                <p>Get curated, relevant recommendations quickly</p>
+                <p className="text-green-600 font-medium">NEW: Includes mitigations, controls & evaluations</p>
               </div>
             </div>
 
@@ -146,7 +209,7 @@ export default function AIRiskIntelligence() {
                   Browse All Risk Databases
                 </CardTitle>
                 <p className="text-xs text-muted-foreground">
-                  Manually explore and select from all available risks
+                  Manually explore {QUBE_RISK_STATS.totalRisks}+ risks from all sources
                 </p>
               </div>
             </div>
@@ -156,15 +219,15 @@ export default function AIRiskIntelligence() {
             <div className="space-y-3 text-sm text-muted-foreground">
               <div className="flex gap-2">
                 <span className="text-blue-600 font-semibold">•</span>
-                <p>Browse all 113 IBM Risk Atlas entries</p>
+                <p>Browse 1200+ risks across 10 AI governance taxonomies</p>
               </div>
               <div className="flex gap-2">
                 <span className="text-blue-600 font-semibold">•</span>
-                <p>Explore 611 MIT AI Risk Repository items</p>
+                <p>Search with AI-powered semantic matching</p>
               </div>
               <div className="flex gap-2">
                 <span className="text-blue-600 font-semibold">•</span>
-                <p>Review all 10 OWASP Top 10 for LLMs vulnerabilities</p>
+                <p>Filter by source: MIT, IBM, NIST, OWASP, Credo & more</p>
               </div>
             </div>
 
@@ -181,94 +244,233 @@ export default function AIRiskIntelligence() {
         </Card>
       </div>
 
-      {/* Risk Sources Overview */}
-      <Card className="border-gray-200 dark:border-gray-800 shadow-md">
-        <CardHeader>
+      {/* What's Included - NEW Section */}
+      <Card className="border-emerald-200 dark:border-emerald-800 shadow-md">
+        <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/10 dark:to-teal-950/10">
           <CardTitle className="text-xl font-semibold flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-purple-600" />
-            Available Risk Intelligence Sources
+            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            What's Included with QUBE AI Risk Data
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-2 space-y-6">
-          {/* Risk Sources Grid */}
-          <div className="grid md:grid-cols-3 gap-4">
-            {/* IBM Risk Atlas */}
-            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-3">
-                <Building2 className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold text-blue-900 dark:text-blue-200">IBM Risk Atlas</h3>
+        <CardContent className="pt-4">
+          <div className="grid md:grid-cols-4 gap-4">
+            {/* Risks */}
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <h3 className="font-semibold text-red-900 dark:text-red-200">Risks</h3>
               </div>
-              <p className="text-sm text-muted-foreground mb-2">
-                113 curated AI risks covering agentic AI, data privacy, generative AI, and security threats
-              </p>
-              <div className="flex flex-wrap gap-1 mt-3">
-                <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">Agentic AI</span>
-                <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">Data Privacy</span>
-                <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">GenAI</span>
-              </div>
+              <p className="text-3xl font-bold text-red-600 mb-1">{QUBE_RISK_STATS.totalRisks}+</p>
+              <p className="text-xs text-muted-foreground">From 10 taxonomies including IBM, NIST, MIT, OWASP, Credo, AILuminate</p>
             </div>
 
-            {/* MIT Risk Repository */}
-            <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-3">
-                <GraduationCap className="h-5 w-5 text-purple-600" />
-                <h3 className="font-semibold text-purple-900 dark:text-purple-200">MIT AI Risk Repository</h3>
+            {/* Mitigations */}
+            <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <h3 className="font-semibold text-green-900 dark:text-green-200">Mitigations</h3>
               </div>
-              <p className="text-sm text-muted-foreground mb-2">
-                611 comprehensive risks including societal harm, misinformation, privacy, discrimination, and hallucination
-              </p>
-              <div className="flex flex-wrap gap-1 mt-3">
-                <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">Societal Impact</span>
-                <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">Ethics</span>
-                <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">Multi-Agent</span>
-              </div>
+              <p className="text-3xl font-bold text-green-600 mb-1">{QUBE_RISK_STATS.totalMitigations}</p>
+              <p className="text-xs text-muted-foreground">Actions from NIST AI RMF (212) and Credo UCF (42)</p>
             </div>
 
-            {/* OWASP Top 10 */}
-            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-4 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-3">
-                <Shield className="h-5 w-5 text-red-600" />
-                <h3 className="font-semibold text-red-900 dark:text-red-200">OWASP Top 10 for LLMs</h3>
+            {/* Controls */}
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="h-5 w-5 text-blue-600" />
+                <h3 className="font-semibold text-blue-900 dark:text-blue-200">Controls</h3>
               </div>
-              <p className="text-sm text-muted-foreground mb-2">
-                10 critical security vulnerabilities specific to Large Language Models and GenAI applications (2025)
-              </p>
-              <div className="flex flex-wrap gap-1 mt-3">
-                <span className="text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 px-2 py-1 rounded">Prompt Injection</span>
-                <span className="text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 px-2 py-1 rounded">Data Leakage</span>
-                <span className="text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 px-2 py-1 rounded">LLM Security</span>
+              <p className="text-3xl font-bold text-blue-600 mb-1">{QUBE_RISK_STATS.totalControls}</p>
+              <p className="text-xs text-muted-foreground">Detection controls from Granite Guardian & ShieldGemma</p>
+            </div>
+
+            {/* Evaluations */}
+            <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <FlaskConical className="h-5 w-5 text-purple-600" />
+                <h3 className="font-semibold text-purple-900 dark:text-purple-200">Evaluations</h3>
               </div>
+              <p className="text-3xl font-bold text-purple-600 mb-1">{QUBE_RISK_STATS.totalEvaluations}</p>
+              <p className="text-xs text-muted-foreground">Benchmarks: TruthfulQA, BBQ, BOLD, AttaQ & more</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Coming Soon Features (Optional) */}
-      <Card className="border-dashed border-2 border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/20">
-        <CardContent className="pt-6">
-          <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-            <svg className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Coming Soon: Phase 2 Enhancements
-          </h3>
-          <div className="grid md:grid-cols-2 gap-3 text-sm text-muted-foreground">
-            <div className="flex items-start gap-2">
-              <div className="h-2 w-2 rounded-full bg-purple-400 mt-1.5"></div>
-              <p><strong>MITRE ATLAS Integration:</strong> Adversarial tactics and techniques for AI systems</p>
+      {/* Risk Taxonomies Overview */}
+      <Card className="border-gray-200 dark:border-gray-800 shadow-md">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold flex items-center gap-2">
+            <Database className="h-5 w-5 text-indigo-600" />
+            Available Risk Taxonomies (10 Sources)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-2 space-y-6">
+          {/* Primary Sources - First Row */}
+          <div className="grid md:grid-cols-3 gap-4">
+            {/* IBM Risk Atlas */}
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-blue-600" />
+                  <h3 className="font-semibold text-blue-900 dark:text-blue-200">IBM AI Risk Atlas</h3>
+                </div>
+                <Badge variant="secondary" className="bg-blue-100 text-blue-700">99 risks</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Curated AI risks covering agentic AI, data privacy, generative AI, and security
+              </p>
+              <div className="flex flex-wrap gap-1 mt-3">
+                <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">Agentic AI</span>
+                <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">GenAI</span>
+                <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">Privacy</span>
+              </div>
             </div>
-            <div className="flex items-start gap-2">
-              <div className="h-2 w-2 rounded-full bg-purple-400 mt-1.5"></div>
-              <p><strong>AI Incident Database (AIID):</strong> Real-world AI incidents and lessons learned</p>
+
+            {/* AIR 2024 */}
+            <div className="bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-indigo-600" />
+                  <h3 className="font-semibold text-indigo-900 dark:text-indigo-200">AIR 2024 Taxonomy</h3>
+                </div>
+                <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">314 risks</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Comprehensive taxonomy from government and company AI policies worldwide
+              </p>
+              <div className="flex flex-wrap gap-1 mt-3">
+                <span className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded">Policy</span>
+                <span className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded">Government</span>
+                <span className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded">Comprehensive</span>
+              </div>
             </div>
-            <div className="flex items-start gap-2">
-              <div className="h-2 w-2 rounded-full bg-purple-400 mt-1.5"></div>
-              <p><strong>Risk Comparison:</strong> Identify conflicts and dependencies between risks</p>
+
+            {/* NIST AI RMF */}
+            <div className="bg-cyan-50 dark:bg-cyan-950/20 border border-cyan-200 dark:border-cyan-800 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Scale className="h-5 w-5 text-cyan-600" />
+                  <h3 className="font-semibold text-cyan-900 dark:text-cyan-200">NIST AI RMF</h3>
+                </div>
+                <Badge variant="secondary" className="bg-cyan-100 text-cyan-700">12 risks + 212 actions</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground mb-2">
+                U.S. government framework for AI risk management with comprehensive mitigations
+              </p>
+              <div className="flex flex-wrap gap-1 mt-3">
+                <span className="text-xs bg-cyan-100 dark:bg-cyan-900 text-cyan-700 dark:text-cyan-300 px-2 py-1 rounded">Governance</span>
+                <span className="text-xs bg-cyan-100 dark:bg-cyan-900 text-cyan-700 dark:text-cyan-300 px-2 py-1 rounded">Compliance</span>
+                <span className="text-xs bg-cyan-100 dark:bg-cyan-900 text-cyan-700 dark:text-cyan-300 px-2 py-1 rounded">Actions</span>
+              </div>
             </div>
-            <div className="flex items-start gap-2">
-              <div className="h-2 w-2 rounded-full bg-purple-400 mt-1.5"></div>
-              <p><strong>Automated Mitigation:</strong> AI-suggested mitigation strategies for imported risks</p>
+          </div>
+
+          {/* Secondary Sources - Third Row */}
+          <div className="grid md:grid-cols-4 gap-4">
+            {/* MIT */}
+            <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-2 mb-2">
+                <GraduationCap className="h-4 w-4 text-purple-600" />
+                <h3 className="font-semibold text-sm text-purple-900 dark:text-purple-200">MIT AI Risk Repository</h3>
+              </div>
+              <Badge variant="secondary" className="bg-purple-100 text-purple-700 mb-2">33 risks</Badge>
+              <p className="text-xs text-muted-foreground">Domain & causal risk classifications</p>
             </div>
+
+            {/* Credo UCF */}
+            <div className="bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-800 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-2 mb-2">
+                <Target className="h-4 w-4 text-violet-600" />
+                <h3 className="font-semibold text-sm text-violet-900 dark:text-violet-200">Credo UCF</h3>
+              </div>
+              <Badge variant="secondary" className="bg-violet-100 text-violet-700 mb-2">49 risks + 42 actions</Badge>
+              <p className="text-xs text-muted-foreground">Unified control framework</p>
+            </div>
+
+            {/* OWASP */}
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="h-4 w-4 text-red-600" />
+                <h3 className="font-semibold text-sm text-red-900 dark:text-red-200">OWASP Top 10 LLMs</h3>
+              </div>
+              <Badge variant="secondary" className="bg-red-100 text-red-700 mb-2">10 risks</Badge>
+              <p className="text-xs text-muted-foreground">Critical LLM security vulnerabilities</p>
+            </div>
+
+            {/* AILuminate */}
+            <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-2 mb-2">
+                <Globe className="h-4 w-4 text-amber-600" />
+                <h3 className="font-semibold text-sm text-amber-900 dark:text-amber-200">AILuminate</h3>
+              </div>
+              <Badge variant="secondary" className="bg-amber-100 text-amber-700 mb-2">12 risks</Badge>
+              <p className="text-xs text-muted-foreground">MLCommons safety benchmark</p>
+            </div>
+          </div>
+
+          {/* Detection Controls - Fourth Row */}
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Granite Guardian */}
+            <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-emerald-600" />
+                  <h3 className="font-semibold text-emerald-900 dark:text-emerald-200">IBM Granite Guardian</h3>
+                </div>
+                <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">13 controls</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Detection controls: Harm, Bias, Jailbreak, Groundedness, Relevance, Profanity & more
+              </p>
+            </div>
+
+            {/* ShieldGemma */}
+            <div className="bg-teal-50 dark:bg-teal-950/20 border border-teal-200 dark:border-teal-800 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-teal-600" />
+                  <h3 className="font-semibold text-teal-900 dark:text-teal-200">Google ShieldGemma</h3>
+                </div>
+                <Badge variant="secondary" className="bg-teal-100 text-teal-700">4 controls</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Content safety: Sexually Explicit, Dangerous, Hate Speech, Harassment detection
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Evaluations & Benchmarks */}
+      <Card className="border-purple-200 dark:border-purple-800 shadow-md">
+        <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/10 dark:to-pink-950/10">
+          <CardTitle className="text-xl font-semibold flex items-center gap-2">
+            <FlaskConical className="h-5 w-5 text-purple-600" />
+            Included Evaluations & Benchmarks ({QUBE_RISK_STATS.totalEvaluations})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="grid md:grid-cols-4 gap-3">
+            {[
+              { name: 'TruthfulQA', desc: 'Truthfulness', color: 'purple' },
+              { name: 'BBQ', desc: 'Bias detection', color: 'blue' },
+              { name: 'BOLD', desc: 'Bias in generation', color: 'indigo' },
+              { name: 'Discrim_eval', desc: 'Discrimination', color: 'violet' },
+              { name: 'AttaQ', desc: 'Harmlessness', color: 'red' },
+              { name: 'ProvoQ', desc: 'Stigma sensitivity', color: 'pink' },
+              { name: 'CrowS-Pairs', desc: 'Stereotypes', color: 'orange' },
+              { name: 'AILuminate', desc: 'Safety benchmark', color: 'amber' },
+              { name: 'FM Transparency', desc: 'Model transparency', color: 'cyan' },
+              { name: 'ALERT', desc: 'Red-teaming', color: 'emerald' },
+              { name: 'SALAD-Bench', desc: 'Safety evaluation', color: 'green' },
+              { name: 'ToxiGen', desc: 'Toxicity detection', color: 'rose' },
+            ].map((eval_item) => (
+              <div key={eval_item.name} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-center">
+                <p className="font-medium text-sm">{eval_item.name}</p>
+                <p className="text-xs text-muted-foreground">{eval_item.desc}</p>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>

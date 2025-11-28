@@ -1,17 +1,40 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Building2, GraduationCap, Shield, Search, Download, X } from 'lucide-react';
-import { ibmRiskAtlasService } from '@/lib/integrations/ibm-risk-atlas.service';
-import { mitRiskRepoService } from '@/lib/integrations/mit-risk-repo.service';
-import { owaspLLMService } from '@/lib/integrations/owasp-llm.service';
-import type { ExternalRisk, OwaspRisk } from '@/lib/integrations/types';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
+import {
+  Search,
+  Download,
+  X,
+  Database,
+  ChevronDown,
+  Building2,
+  GraduationCap,
+  Shield,
+  Sparkles,
+  FileText,
+  Scale,
+  AlertTriangle,
+  Filter,
+  ExternalLink,
+  Loader2,
+  Zap,
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { RiskDetailPanel } from './RiskDetailPanel';
 
 interface ManualRiskBrowserProps {
   open: boolean;
@@ -19,56 +42,224 @@ interface ManualRiskBrowserProps {
   useCaseId: string;
 }
 
+// QUBE AI Risk Data taxonomy configuration
+const TAXONOMY_CONFIG: Record<string, { name: string; icon: React.ReactNode; color: string }> = {
+  'qube-legacy-mit': { name: 'MIT AI Risk Repository', icon: <GraduationCap className="h-4 w-4" />, color: 'purple' },
+  'ai-risk-taxonomy': { name: 'AIR 2024', icon: <FileText className="h-4 w-4" />, color: 'indigo' },
+  'ibm-risk-atlas': { name: 'IBM AI Risk Atlas', icon: <Building2 className="h-4 w-4" />, color: 'blue' },
+  'qube-legacy-ibm': { name: 'IBM (Extended)', icon: <Building2 className="h-4 w-4" />, color: 'sky' },
+  'credo-ai-ucf': { name: 'Credo UCF', icon: <Scale className="h-4 w-4" />, color: 'violet' },
+  'nist-ai-rmf': { name: 'NIST AI RMF', icon: <Shield className="h-4 w-4" />, color: 'cyan' },
+  'ailuminate-v1.0': { name: 'AILuminate', icon: <Sparkles className="h-4 w-4" />, color: 'amber' },
+  'owasp-llm-top-10-2025': { name: 'OWASP Top 10 LLMs', icon: <AlertTriangle className="h-4 w-4" />, color: 'red' },
+  'ibm-granite-guardian': { name: 'Granite Guardian', icon: <Shield className="h-4 w-4" />, color: 'emerald' },
+  'shieldgemma-taxonomy': { name: 'ShieldGemma', icon: <Shield className="h-4 w-4" />, color: 'teal' },
+};
+
+interface AtlasRisk {
+  id: string;
+  name: string;
+  description: string;
+  isDefinedByTaxonomy: string;
+  tags?: string[];
+  dateCreated?: string;
+}
+
 export function ManualRiskBrowser({ open, onClose, useCaseId }: ManualRiskBrowserProps) {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRisks, setSelectedRisks] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
-  const [activeTab, setActiveTab] = useState('ibm');
+  const [allRisks, setAllRisks] = useState<AtlasRisk[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Get all risks from each source
-  const ibmRisks = useMemo(() => ibmRiskAtlasService.getAllRisks(), []);
-  const mitRisks = useMemo(() => mitRiskRepoService.getAllRisks(), []);
-  const owaspRisks = useMemo(() => owaspLLMService.getAllRisks(), []);
+  // Multi-select taxonomy filter
+  const [selectedTaxonomies, setSelectedTaxonomies] = useState<Set<string>>(new Set());
 
-  // Filter risks based on search query
-  const filterRisks = (risks: ExternalRisk[] | OwaspRisk[], query: string) => {
-    if (!query.trim()) return risks;
+  // AI Search state
+  const [isAISearching, setIsAISearching] = useState(false);
+  const [aiSearchResults, setAiSearchResults] = useState<AtlasRisk[] | null>(null);
+  const [relevanceScores, setRelevanceScores] = useState<Record<string, number>>({});
+  const [aiSearchQuery, setAiSearchQuery] = useState('');
 
-    const lowerQuery = query.toLowerCase();
-    return risks.filter(risk => {
-      if ('Summary' in risk) {
-        // ExternalRisk (IBM/MIT)
-        return (
-          risk.Summary?.toLowerCase().includes(lowerQuery) ||
-          risk.Description?.toLowerCase().includes(lowerQuery) ||
-          risk.RiskCategory?.toLowerCase().includes(lowerQuery)
-        );
+  // Risk Detail Panel state
+  const [selectedRiskForDetails, setSelectedRiskForDetails] = useState<string | null>(null);
+  const [showDetailPanel, setShowDetailPanel] = useState(false);
+
+  // Fetch risks from QUBE AI Risk Data API
+  useEffect(() => {
+    if (open) {
+      fetchRisks();
+    }
+  }, [open]);
+
+  const fetchRisks = async () => {
+    setLoading(true);
+    try {
+      // Fetch all risks from QUBE AI Risk Data
+      const response = await fetch('/api/atlas-nexus/risks?limit=5000');
+
+      if (response.ok) {
+        const data = await response.json();
+        setAllRisks(data.risks || []);
       } else {
-        // OwaspRisk
-        return (
-          risk.title?.toLowerCase().includes(lowerQuery) ||
-          risk.description?.toLowerCase().includes(lowerQuery) ||
-          risk.id?.toLowerCase().includes(lowerQuery)
-        );
+        console.error('Failed to fetch risks');
       }
-    });
+    } catch (error) {
+      console.error('Error fetching risks:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filteredIBMRisks = useMemo(() => filterRisks(ibmRisks, searchQuery), [ibmRisks, searchQuery]);
-  const filteredMITRisks = useMemo(() => filterRisks(mitRisks, searchQuery), [mitRisks, searchQuery]);
-  const filteredOWASPRisks = useMemo(() => filterRisks(owaspRisks, searchQuery), [owaspRisks, searchQuery]);
+  // Group risks by taxonomy
+  const risksByTaxonomy = useMemo(() => {
+    const grouped: Record<string, AtlasRisk[]> = {};
+    allRisks.forEach(risk => {
+      const taxonomy = risk.isDefinedByTaxonomy || 'unknown';
+      if (!grouped[taxonomy]) {
+        grouped[taxonomy] = [];
+      }
+      grouped[taxonomy].push(risk);
+    });
+    return grouped;
+  }, [allRisks]);
+
+  // Get taxonomy list with counts
+  const taxonomyList = useMemo(() => {
+    return Object.entries(risksByTaxonomy)
+      .map(([taxonomy, risks]) => ({
+        id: taxonomy,
+        name: TAXONOMY_CONFIG[taxonomy]?.name || taxonomy,
+        count: risks.length,
+        icon: TAXONOMY_CONFIG[taxonomy]?.icon || <Database className="h-4 w-4" />,
+        color: TAXONOMY_CONFIG[taxonomy]?.color || 'gray',
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [risksByTaxonomy]);
+
+  // Filter risks based on search query and selected taxonomies
+  const filteredRisks = useMemo(() => {
+    // If AI search results are active, use those
+    if (aiSearchResults) {
+      return aiSearchResults;
+    }
+
+    let risks = allRisks;
+
+    // Apply multi-taxonomy filter
+    if (selectedTaxonomies.size > 0) {
+      risks = risks.filter(risk => selectedTaxonomies.has(risk.isDefinedByTaxonomy));
+    }
+
+    // Apply keyword search
+    if (searchQuery.trim()) {
+      const lowerQuery = searchQuery.toLowerCase();
+      risks = risks.filter(risk =>
+        risk.name?.toLowerCase().includes(lowerQuery) ||
+        risk.description?.toLowerCase().includes(lowerQuery) ||
+        risk.tags?.some(tag => tag.toLowerCase().includes(lowerQuery))
+      );
+    }
+
+    return risks;
+  }, [allRisks, selectedTaxonomies, searchQuery, aiSearchResults]);
+
+  // Toggle taxonomy selection
+  const toggleTaxonomy = (taxonomyId: string) => {
+    const newSelection = new Set(selectedTaxonomies);
+    if (newSelection.has(taxonomyId)) {
+      newSelection.delete(taxonomyId);
+    } else {
+      newSelection.add(taxonomyId);
+    }
+    setSelectedTaxonomies(newSelection);
+    // Clear AI search when changing filters
+    setAiSearchResults(null);
+    setRelevanceScores({});
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSelectedTaxonomies(new Set());
+    setSearchQuery('');
+    setAiSearchResults(null);
+    setRelevanceScores({});
+    setAiSearchQuery('');
+  };
+
+  // AI Semantic Search
+  const handleAISearch = async () => {
+    if (!searchQuery.trim()) {
+      toast({
+        title: 'Enter a search query',
+        description: 'Please enter a search term to use AI search',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsAISearching(true);
+    setAiSearchQuery(searchQuery);
+
+    try {
+      const response = await fetch('/api/atlas-nexus/risks/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: searchQuery,
+          taxonomies: selectedTaxonomies.size > 0 ? Array.from(selectedTaxonomies) : undefined,
+          limit: 30,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('AI search failed');
+      }
+
+      const data = await response.json();
+      setAiSearchResults(data.risks);
+      setRelevanceScores(data.relevanceScores || {});
+
+      toast({
+        title: 'AI Search Complete',
+        description: `Found ${data.risks.length} semantically relevant risks`,
+      });
+    } catch (error) {
+      console.error('AI search error:', error);
+      toast({
+        title: 'AI Search Failed',
+        description: 'Could not perform semantic search. Using keyword search instead.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsAISearching(false);
+    }
+  };
 
   // Toggle risk selection
-  const toggleRiskSelection = (source: string, id: string) => {
-    const key = `${source}:${id}`;
+  const toggleRiskSelection = (riskId: string) => {
     const newSelection = new Set(selectedRisks);
-    if (newSelection.has(key)) {
-      newSelection.delete(key);
+    if (newSelection.has(riskId)) {
+      newSelection.delete(riskId);
     } else {
-      newSelection.add(key);
+      newSelection.add(riskId);
     }
     setSelectedRisks(newSelection);
+  };
+
+  // View risk details
+  const handleViewDetails = (riskId: string) => {
+    // Only open detail panel for Atlas risks (not MITRE or AIID)
+    if (!riskId.startsWith('mitre-') && !riskId.startsWith('aiid-')) {
+      setSelectedRiskForDetails(riskId);
+      setShowDetailPanel(true);
+    } else {
+      toast({
+        title: 'Details not available',
+        description: 'Detailed view is only available for QUBE AI Risk Data entries',
+      });
+    }
   };
 
   // Import selected risks
@@ -85,10 +276,32 @@ export function ManualRiskBrowser({ open, onClose, useCaseId }: ManualRiskBrowse
     setImporting(true);
 
     try {
-      // Transform selected risks into API format
-      const risksToImport = Array.from(selectedRisks).map(key => {
-        const [source, sourceId] = key.split(':');
-        return { source, sourceId };
+      // Get selected risk details
+      const selectedRiskDetails = allRisks.filter(r => selectedRisks.has(r.id));
+
+      // Transform to import format with proper source detection
+      const risksToImport = selectedRiskDetails.map(risk => {
+        let source: string;
+        let sourceId: string;
+
+        if (risk.id.startsWith('mitre-')) {
+          source = 'mitre';
+          sourceId = risk.id.replace('mitre-', '');
+        } else if (risk.id.startsWith('aiid-')) {
+          source = 'aiid';
+          sourceId = risk.id.replace('aiid-', '');
+        } else {
+          source = 'atlas';
+          sourceId = risk.id;
+        }
+
+        return {
+          source,
+          sourceId,
+          name: risk.name,
+          description: risk.description,
+          taxonomy: risk.isDefinedByTaxonomy,
+        };
       });
 
       const response = await fetch(`/api/risks/${useCaseId}/recommendations`, {
@@ -109,7 +322,6 @@ export function ManualRiskBrowser({ open, onClose, useCaseId }: ManualRiskBrowse
         description: `Successfully imported ${result.imported} risk(s) to your use case`,
       });
 
-      // Clear selection and close
       setSelectedRisks(new Set());
       onClose();
     } catch (error) {
@@ -124,223 +336,289 @@ export function ManualRiskBrowser({ open, onClose, useCaseId }: ManualRiskBrowse
     }
   };
 
+  const hasActiveFilters = selectedTaxonomies.size > 0 || aiSearchResults !== null;
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-2xl font-bold">Browse All Risk Databases</DialogTitle>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            Manually explore and select risks from IBM Risk Atlas (113), MIT AI Risk Repository (611), and OWASP Top 10 for LLMs (10)
-          </p>
+    <>
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-2xl font-bold">Browse QUBE AI Risk Data</DialogTitle>
+              <Button variant="ghost" size="icon" onClick={onClose}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Explore and select risks from {allRisks.length}+ entries across {taxonomyList.length} sources
+            </p>
 
-          {/* Search Bar */}
-          <div className="relative mt-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search risks by title, description, or category..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </DialogHeader>
+            {/* Search Bar with AI Search */}
+            <div className="flex gap-2 mt-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search risks by title, description, or tags..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    // Clear AI results when typing new query
+                    if (aiSearchResults && e.target.value !== aiSearchQuery) {
+                      setAiSearchResults(null);
+                      setRelevanceScores({});
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchQuery.trim()) {
+                      handleAISearch();
+                    }
+                  }}
+                  className="pl-10"
+                />
+              </div>
+              <Button
+                onClick={handleAISearch}
+                disabled={!searchQuery.trim() || isAISearching}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+              >
+                {isAISearching ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-4 w-4 mr-2" />
+                    AI Search
+                  </>
+                )}
+              </Button>
+            </div>
+          </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="ibm" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              IBM ({filteredIBMRisks.length})
-            </TabsTrigger>
-            <TabsTrigger value="mit" className="flex items-center gap-2">
-              <GraduationCap className="h-4 w-4" />
-              MIT ({filteredMITRisks.length})
-            </TabsTrigger>
-            <TabsTrigger value="owasp" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              OWASP ({filteredOWASPRisks.length})
-            </TabsTrigger>
-          </TabsList>
+          {/* Filter Bar */}
+          <div className="flex flex-wrap items-center gap-2 pb-4 border-b">
+            {/* Multi-Select Taxonomy Filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8">
+                  <Filter className="h-3 w-3 mr-2" />
+                  Sources {selectedTaxonomies.size > 0 && `(${selectedTaxonomies.size})`}
+                  <ChevronDown className="h-3 w-3 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-64 max-h-80 overflow-y-auto">
+                <DropdownMenuLabel>Filter by Source</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {taxonomyList.map(taxonomy => (
+                  <DropdownMenuCheckboxItem
+                    key={taxonomy.id}
+                    checked={selectedTaxonomies.has(taxonomy.id)}
+                    onCheckedChange={() => toggleTaxonomy(taxonomy.id)}
+                  >
+                    <span className="flex items-center gap-2">
+                      {taxonomy.icon}
+                      <span className="flex-1">{taxonomy.name}</span>
+                      <Badge variant="secondary" className="text-xs ml-2">
+                        {taxonomy.count}
+                      </Badge>
+                    </span>
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          {/* IBM Risks */}
-          <TabsContent value="ibm" className="flex-1 overflow-y-auto mt-4 space-y-3">
-            {filteredIBMRisks.map((risk) => (
-              <RiskCard
-                key={risk.Id}
-                source="ibm"
-                risk={risk}
-                selected={selectedRisks.has(`ibm:${risk.Id}`)}
-                onToggle={() => toggleRiskSelection('ibm', String(risk.Id))}
-              />
+            {/* Show selected taxonomies as chips */}
+            {selectedTaxonomies.size > 0 && Array.from(selectedTaxonomies).slice(0, 3).map(taxId => (
+              <Badge
+                key={taxId}
+                variant="secondary"
+                className="cursor-pointer hover:bg-secondary/80"
+                onClick={() => toggleTaxonomy(taxId)}
+              >
+                {TAXONOMY_CONFIG[taxId]?.name?.split(' ')[0] || taxId}
+                <X className="h-3 w-3 ml-1" />
+              </Badge>
             ))}
-            {filteredIBMRisks.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                No IBM risks found matching your search
+            {selectedTaxonomies.size > 3 && (
+              <Badge variant="secondary">+{selectedTaxonomies.size - 3} more</Badge>
+            )}
+
+            {/* AI Search indicator */}
+            {aiSearchResults && (
+              <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                <Zap className="h-3 w-3 mr-1" />
+                AI Results: {aiSearchResults.length} risks
+              </Badge>
+            )}
+
+            {/* Clear filters */}
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={clearFilters}>
+                <X className="h-3 w-3 mr-1" />
+                Clear All
+              </Button>
+            )}
+
+            {/* Results count */}
+            <div className="ml-auto text-sm text-muted-foreground">
+              {filteredRisks.length} risk{filteredRisks.length !== 1 ? 's' : ''} found
+            </div>
+          </div>
+
+          {/* Risk List */}
+          <ScrollArea className="flex-1 mt-4">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+                <span className="ml-3 text-muted-foreground">Loading risks...</span>
+              </div>
+            ) : filteredRisks.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No risks found matching your criteria</p>
+                {hasActiveFilters && (
+                  <Button variant="link" onClick={clearFilters} className="mt-2">
+                    Clear filters
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3 pr-4">
+                {filteredRisks.map((risk) => (
+                  <RiskCard
+                    key={risk.id}
+                    risk={risk}
+                    selected={selectedRisks.has(risk.id)}
+                    onToggle={() => toggleRiskSelection(risk.id)}
+                    onViewDetails={() => handleViewDetails(risk.id)}
+                    taxonomyConfig={TAXONOMY_CONFIG[risk.isDefinedByTaxonomy]}
+                    relevanceScore={relevanceScores[risk.id]}
+                  />
+                ))}
               </div>
             )}
-          </TabsContent>
+          </ScrollArea>
 
-          {/* MIT Risks */}
-          <TabsContent value="mit" className="flex-1 overflow-y-auto mt-4 space-y-3">
-            {filteredMITRisks.map((risk) => (
-              <RiskCard
-                key={risk.Id}
-                source="mit"
-                risk={risk}
-                selected={selectedRisks.has(`mit:${risk.Id}`)}
-                onToggle={() => toggleRiskSelection('mit', String(risk.Id))}
-              />
-            ))}
-            {filteredMITRisks.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                No MIT risks found matching your search
-              </div>
-            )}
-          </TabsContent>
-
-          {/* OWASP Risks */}
-          <TabsContent value="owasp" className="flex-1 overflow-y-auto mt-4 space-y-3">
-            {filteredOWASPRisks.map((risk) => (
-              <OwaspRiskCard
-                key={risk.id}
-                risk={risk}
-                selected={selectedRisks.has(`owasp:${risk.id}`)}
-                onToggle={() => toggleRiskSelection('owasp', risk.id)}
-              />
-            ))}
-            {filteredOWASPRisks.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                No OWASP risks found matching your search
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-
-        {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-4 border-t">
-          <div className="text-sm text-muted-foreground">
-            {selectedRisks.size} risk(s) selected for import
+          {/* Footer Actions */}
+          <div className="flex items-center justify-between pt-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              {selectedRisks.size} risk(s) selected for import
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleImport}
+                disabled={selectedRisks.size === 0 || importing}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+              >
+                {importing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Import Selected Risks
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleImport}
-              disabled={selectedRisks.size === 0 || importing}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
-            >
-              {importing ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                  Importing...
-                </>
-              ) : (
-                <>
-                  <Download className="mr-2 h-4 w-4" />
-                  Import Selected Risks
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {/* Risk Detail Panel */}
+      <RiskDetailPanel
+        riskId={selectedRiskForDetails}
+        open={showDetailPanel}
+        onClose={() => {
+          setShowDetailPanel(false);
+          setSelectedRiskForDetails(null);
+        }}
+      />
+    </>
   );
 }
 
-// Risk Card for IBM/MIT
+// Enhanced Risk Card Component
 function RiskCard({
-  source,
   risk,
   selected,
   onToggle,
+  onViewDetails,
+  taxonomyConfig,
+  relevanceScore,
 }: {
-  source: string;
-  risk: ExternalRisk;
+  risk: AtlasRisk;
   selected: boolean;
   onToggle: () => void;
+  onViewDetails: () => void;
+  taxonomyConfig?: { name: string; icon: React.ReactNode; color: string };
+  relevanceScore?: number;
 }) {
-  const sourceColor = source === 'ibm' ? 'blue' : 'purple';
-  const bgColor = source === 'ibm'
-    ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
-    : 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800';
+  const color = taxonomyConfig?.color || 'gray';
+  const taxonomyName = taxonomyConfig?.name || risk.isDefinedByTaxonomy;
+  const isAtlasRisk = !risk.id.startsWith('mitre-') && !risk.id.startsWith('aiid-');
 
   return (
     <div
-      className={`border rounded-lg p-4 cursor-pointer transition-all ${
-        selected ? 'ring-2 ring-purple-500 shadow-lg' : 'hover:shadow-md'
-      } ${bgColor}`}
-      onClick={onToggle}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <input
-              type="checkbox"
-              checked={selected}
-              onChange={onToggle}
-              className="h-4 w-4"
-              onClick={(e) => e.stopPropagation()}
-            />
-            <span className="text-xs text-muted-foreground">ID: {risk.Id}</span>
-            <Badge variant="outline" className={`text-xs bg-${sourceColor}-100 dark:bg-${sourceColor}-900`}>
-              {risk.RiskCategory}
-            </Badge>
-          </div>
-          <h4 className="font-semibold text-foreground mb-2">{risk.Summary}</h4>
-          <p className="text-sm text-muted-foreground line-clamp-2">{risk.Description}</p>
-          <div className="flex items-center gap-3 mt-3 text-xs">
-            <Badge variant="secondary">{risk.RiskSeverity}</Badge>
-            <Badge variant="secondary">{risk.Likelihood}</Badge>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// OWASP Risk Card
-function OwaspRiskCard({
-  risk,
-  selected,
-  onToggle,
-}: {
-  risk: OwaspRisk;
-  selected: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <div
-      className={`border bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800 rounded-lg p-4 cursor-pointer transition-all ${
-        selected ? 'ring-2 ring-purple-500 shadow-lg' : 'hover:shadow-md'
+      className={`border rounded-lg p-4 cursor-pointer transition-all relative ${
+        selected ? 'ring-2 ring-purple-500 shadow-lg bg-purple-50 dark:bg-purple-950/30' : 'hover:shadow-md bg-white dark:bg-gray-900'
       }`}
       onClick={onToggle}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <input
-              type="checkbox"
-              checked={selected}
-              onChange={onToggle}
-              className="h-4 w-4"
-              onClick={(e) => e.stopPropagation()}
-            />
-            <span className="text-xs text-muted-foreground">{risk.id}</span>
-            <Badge variant="outline" className="text-xs bg-red-100 dark:bg-red-900">
-              Rank #{risk.rank}
+      {/* Relevance Score Badge */}
+      {relevanceScore !== undefined && (
+        <Badge
+          className="absolute top-2 right-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white"
+        >
+          {Math.round(relevanceScore * 100)}% match
+        </Badge>
+      )}
+
+      <div className="flex items-start gap-3">
+        <Checkbox
+          checked={selected}
+          onCheckedChange={() => onToggle()}
+          onClick={(e) => e.stopPropagation()}
+          className="mt-1"
+        />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <Badge
+              variant="outline"
+              className={`text-xs bg-${color}-100 dark:bg-${color}-900/30 text-${color}-700 dark:text-${color}-300 border-${color}-300 dark:border-${color}-700`}
+            >
+              {taxonomyName}
             </Badge>
+            {risk.tags?.slice(0, 2).map(tag => (
+              <Badge key={tag} variant="secondary" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
           </div>
-          <h4 className="font-semibold text-foreground mb-2">{risk.title}</h4>
+          <h4 className="font-semibold text-foreground mb-2 pr-20">{risk.name}</h4>
           <p className="text-sm text-muted-foreground line-clamp-2">{risk.description}</p>
-          <div className="flex items-center gap-3 mt-3 text-xs">
-            <Badge variant="destructive">{risk.severity}</Badge>
-          </div>
+
+          {/* View Details button - only for Atlas risks */}
+          {isAtlasRisk && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-2 h-7 text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewDetails();
+              }}
+            >
+              <ExternalLink className="h-3 w-3 mr-1" />
+              View Details & Related Items
+            </Button>
+          )}
         </div>
       </div>
     </div>

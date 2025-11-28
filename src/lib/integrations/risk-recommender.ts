@@ -1,7 +1,13 @@
 /**
  * Risk Recommendation Engine
- * Orchestrates IBM, MIT, OWASP, MITRE, and AIID services
+ * Orchestrates IBM, MIT, OWASP, MITRE, AIID, and QUBE AI Risk Data services
  * to provide intelligent risk recommendations based on use case assessment
+ *
+ * QUBE AI Risk Data integration provides:
+ * - 1170+ risks from 13 taxonomies (including merged legacy IBM and MIT data)
+ * - 254 mitigations/actions (NIST AI RMF, Credo UCF)
+ * - 17 risk controls (Granite Guardian, ShieldGemma)
+ * - 24 evaluations/benchmarks
  */
 
 import type {
@@ -17,6 +23,8 @@ import { mitRiskRepoService } from './mit-risk-repo.service';
 import { owaspLLMService } from './owasp-llm.service';
 import { mitreAtlasService } from './mitre-atlas.service';
 import { aiidService } from './aiid.service';
+import { getAtlasNexusService } from '../ai-atlas-nexus';
+import type { AtlasRiskRecommendation, Action, RiskControl, Evaluation } from '../ai-atlas-nexus/types';
 
 // Lazy import AI agent to avoid bundling OpenAI on client side
 async function findRelevantIncidents(
@@ -366,4 +374,207 @@ export async function getAllRisksFromSource(
     default:
       return [];
   }
+}
+
+// ==================== AI ATLAS NEXUS INTEGRATION ====================
+
+/**
+ * Extended recommendations with QUBE AI Risk Data
+ * Includes mitigations, evaluations, and controls alongside risks
+ */
+export interface AtlasNexusRecommendations {
+  risks: AtlasRiskRecommendation[];
+  mitigations: Action[];
+  controls: RiskControl[];
+  evaluations: Evaluation[];
+  statistics: {
+    totalRisks: number;
+    totalMitigations: number;
+    totalControls: number;
+    totalEvaluations: number;
+    risksByTaxonomy: Record<string, number>;
+  };
+  analysis: {
+    isGenAI: boolean;
+    isAgenticAI: boolean;
+    hasRAG: boolean;
+    hasPlugins: boolean;
+    publicFacing: boolean;
+    dataTypes: string[];
+    matchedTaxonomies: string[];
+  };
+}
+
+/**
+ * Get comprehensive recommendations from QUBE AI Risk Data
+ * Includes risks + mitigations + evaluations + controls
+ */
+export function getAtlasNexusRecommendations(
+  input: RiskRecommendationInput
+): AtlasNexusRecommendations {
+  const { assessmentData } = input;
+
+  // Analyze use case characteristics
+  const isGenAI = detectGenAI(assessmentData);
+  const isAgenticAI = detectAgenticAI(assessmentData);
+  const hasRAG = detectRAG(assessmentData);
+  const hasPlugins = detectPlugins(assessmentData);
+  const publicFacing = detectPublicFacing(assessmentData);
+  const dataTypes = extractDataTypes(assessmentData);
+  const ethicalConcerns = extractEthicalConcerns(assessmentData);
+
+  console.log('[QUBE AI Risk Data] Generating comprehensive recommendations...');
+
+  const atlasService = getAtlasNexusService();
+
+  // Get risk recommendations with relevance scoring
+  const riskRecommendations = atlasService.recommendRisksForUseCase({
+    isGenAI,
+    isAgenticAI,
+    hasRAG,
+    hasPlugins,
+    publicFacing,
+    dataTypes,
+    keywords: ethicalConcerns,
+  });
+
+  // Collect unique mitigations, controls, and evaluations from all recommended risks
+  const mitigationsMap = new Map<string, Action>();
+  const controlsMap = new Map<string, RiskControl>();
+  const evaluationsMap = new Map<string, Evaluation>();
+  const matchedTaxonomies = new Set<string>();
+  const risksByTaxonomy: Record<string, number> = {};
+
+  for (const rec of riskRecommendations) {
+    // Track taxonomies
+    matchedTaxonomies.add(rec.risk.isDefinedByTaxonomy);
+    risksByTaxonomy[rec.risk.isDefinedByTaxonomy] =
+      (risksByTaxonomy[rec.risk.isDefinedByTaxonomy] || 0) + 1;
+
+    // Collect mitigations
+    for (const action of rec.mitigations) {
+      if (!mitigationsMap.has(action.id)) {
+        mitigationsMap.set(action.id, action);
+      }
+    }
+
+    // Collect controls
+    for (const control of rec.controls) {
+      if (!controlsMap.has(control.id)) {
+        controlsMap.set(control.id, control);
+      }
+    }
+
+    // Collect evaluations
+    for (const evaluation of rec.evaluations) {
+      if (!evaluationsMap.has(evaluation.id)) {
+        evaluationsMap.set(evaluation.id, evaluation);
+      }
+    }
+  }
+
+  const mitigations = Array.from(mitigationsMap.values());
+  const controls = Array.from(controlsMap.values());
+  const evaluations = Array.from(evaluationsMap.values());
+
+  console.log(
+    `[QUBE AI Risk Data] Found: ${riskRecommendations.length} risks, ${mitigations.length} mitigations, ${controls.length} controls, ${evaluations.length} evaluations`
+  );
+
+  return {
+    risks: riskRecommendations,
+    mitigations,
+    controls,
+    evaluations,
+    statistics: {
+      totalRisks: riskRecommendations.length,
+      totalMitigations: mitigations.length,
+      totalControls: controls.length,
+      totalEvaluations: evaluations.length,
+      risksByTaxonomy,
+    },
+    analysis: {
+      isGenAI,
+      isAgenticAI,
+      hasRAG,
+      hasPlugins,
+      publicFacing,
+      dataTypes,
+      matchedTaxonomies: Array.from(matchedTaxonomies),
+    },
+  };
+}
+
+/**
+ * Get QUBE AI Risk Data statistics
+ */
+export function getAtlasNexusStatistics() {
+  const atlasService = getAtlasNexusService();
+  return atlasService.getStatistics();
+}
+
+/**
+ * Get all taxonomies from QUBE AI Risk Data
+ */
+export function getAtlasNexusTaxonomies() {
+  const atlasService = getAtlasNexusService();
+  return atlasService.getAllTaxonomies();
+}
+
+/**
+ * Get all risks from QUBE AI Risk Data with optional filtering
+ */
+export function getAtlasNexusRisks(filter?: {
+  taxonomy?: string;
+  riskGroup?: string;
+  tag?: string;
+  search?: string;
+}) {
+  const atlasService = getAtlasNexusService();
+  return atlasService.getAllRisks(filter);
+}
+
+/**
+ * Get all mitigations/actions from QUBE AI Risk Data
+ */
+export function getAtlasNexusMitigations(filter?: {
+  taxonomy?: string;
+  relatedRisk?: string;
+  search?: string;
+}) {
+  const atlasService = getAtlasNexusService();
+  return atlasService.getAllActions(filter);
+}
+
+/**
+ * Get all risk controls from QUBE AI Risk Data
+ */
+export function getAtlasNexusControls(filter?: {
+  taxonomy?: string;
+  detectsRisk?: string;
+  search?: string;
+}) {
+  const atlasService = getAtlasNexusService();
+  return atlasService.getAllControls(filter);
+}
+
+/**
+ * Get all evaluations/benchmarks from QUBE AI Risk Data
+ */
+export function getAtlasNexusEvaluations(filter?: {
+  assessesRisk?: string;
+  search?: string;
+}) {
+  const atlasService = getAtlasNexusService();
+  return atlasService.getAllEvaluations(filter);
+}
+
+/**
+ * Get a specific risk with enriched data (mitigations, evaluations, controls)
+ */
+export function getEnrichedAtlasRisk(riskId: string) {
+  const atlasService = getAtlasNexusService();
+  const risk = atlasService.getRiskById(riskId);
+  if (!risk) return undefined;
+  return atlasService.getEnrichedRisk(risk);
 }

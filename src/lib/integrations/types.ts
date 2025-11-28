@@ -205,5 +205,66 @@ export interface RiskRecommendations {
     isAgenticAI: boolean;
     primaryUseCase?: string;
     riskCategories: string[];
+    // Atlas Nexus LLM-based analysis
+    matchedTaxonomies?: string[];
+    totalRisksAnalyzed?: number;
+    llmConfidence?: number;
+    totalMitigations?: number;
+    totalControls?: number;
+    totalEvaluations?: number;
   };
+  // Atlas Nexus enriched data (when source=atlas)
+  atlas?: {
+    risks: AtlasEnrichedRisk[];
+    mitigations: AtlasAction[];
+    controls: AtlasRiskControl[];
+    evaluations: AtlasEvaluation[];
+  };
+}
+
+// Atlas Nexus Risk (from LLM-based identification)
+export interface AtlasEnrichedRisk {
+  id: string;
+  name: string;
+  description: string;
+  isDefinedByTaxonomy: string;
+  taxonomyName?: string;
+  riskGroupName?: string;
+  tag?: string;
+  severity?: 'Critical' | 'High' | 'Medium' | 'Low';
+  likelihood?: 'Almost certain' | 'Likely' | 'Possible' | 'Unlikely' | 'Rare';
+  relatedActions?: string[];
+  relatedEvaluations?: string[];
+  relatedControls?: string[];
+}
+
+// Atlas Nexus Action/Mitigation
+export interface AtlasAction {
+  id: string;
+  name: string;
+  description: string;
+  isDefinedByTaxonomy: string;
+  hasRelatedRisk?: string[];
+  hasAiActorTask?: string[];
+  aiLifecyclePhase?: string[];
+}
+
+// Atlas Nexus Risk Control
+export interface AtlasRiskControl {
+  id: string;
+  name: string;
+  description: string;
+  isDefinedByTaxonomy: string;
+  tag?: string;
+  detectsRisk?: string[];
+}
+
+// Atlas Nexus Evaluation
+export interface AtlasEvaluation {
+  id: string;
+  name: string;
+  description?: string;
+  url?: string;
+  assessesRisk?: string[];
+  hasLicense?: string;
 }

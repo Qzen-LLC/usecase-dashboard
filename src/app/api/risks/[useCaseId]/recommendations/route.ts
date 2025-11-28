@@ -4,12 +4,14 @@ import { prismaClient } from '@/utils/db';
 import { recommendRisksFromExternalSources, getExternalRisk } from '@/lib/integrations/risk-recommender';
 import type { ExternalRisk, OwaspRisk, MitreTechniqueData } from '@/lib/integrations/types';
 import { buildStepsDataFromAnswers } from '@/lib/mappers/answers-to-steps';
+import { getRiskIdentificationEngine } from '@/lib/ai-atlas-nexus';
 
 /**
  * GET /api/risks/[useCaseId]/recommendations
  * Get AI-powered risk recommendations based on use case assessment
  * Query params:
- *   - source=risks (default): IBM, MIT, OWASP for Step 12 (AI Risk Intelligence)
+ *   - source=atlas (default): QUBE AI Risk Data with LLM-based risk identification + mitigations + controls + evaluations
+ *   - source=risks: Legacy IBM, MIT, OWASP for Step 12 (AI Risk Intelligence)
  *   - source=security: MITRE ATLAS for Step 11 (Security Assessment)
  *   - source=incidents: AIID for Step 15 (Incident Learning)
  */
@@ -20,12 +22,12 @@ export const GET = withAuth(
 
       // Determine which source to use
       const url = new URL(request.url);
-      const source = url.searchParams.get('source') || 'risks'; // Default to risks (IBM, MIT, OWASP)
+      const source = url.searchParams.get('source') || 'atlas'; // Default to atlas (LLM-based)
 
       // Validate source parameter
-      if (!['risks', 'security', 'incidents'].includes(source)) {
+      if (!['atlas', 'risks', 'security', 'incidents'].includes(source)) {
         return NextResponse.json(
-          { error: 'Invalid source parameter. Must be: risks, security, or incidents' },
+          { error: 'Invalid source parameter. Must be: atlas, risks, security, or incidents' },
           { status: 400 }
         );
       }
@@ -42,7 +44,84 @@ export const GET = withAuth(
       // Build stepsData from Answer records (same approach as /api/get-usecase-details)
       const stepsData = await buildStepsDataFromAnswers(useCaseId);
 
-      // Validate that we have assessment data
+      console.log('[Recommendations API] Generating recommendations for use case:', useCaseId, {
+        source,
+        hasMetadata: !!(useCase.title || useCase.problemStatement || useCase.proposedAISolution),
+      });
+
+      // QUBE AI Risk Data - LLM-based risk identification
+      if (source === 'atlas') {
+        console.log('[Recommendations API] Using QUBE AI Risk Data LLM-based identification...');
+
+        const engine = getRiskIdentificationEngine();
+
+        const result = await engine.identifyRisks({
+          useCaseTitle: useCase.title || 'Untitled Use Case',
+          useCaseDescription: useCase.problemStatement || useCase.proposedAISolution || '',
+          problemStatement: useCase.problemStatement || undefined,
+          proposedAISolution: useCase.proposedAISolution || undefined,
+          assessmentData: stepsData || undefined,
+        });
+
+        console.log('[Recommendations API] QUBE AI Risk Data results:', {
+          risksCount: result.identifiedRisks.length,
+          mitigationsCount: result.mitigations.length,
+          controlsCount: result.controls.length,
+          evaluationsCount: result.evaluations.length,
+          isGenAI: result.analysis.isGenAI,
+          isAgenticAI: result.analysis.isAgenticAI,
+        });
+
+        // Return in a format compatible with the frontend
+        return NextResponse.json({
+          // Atlas Nexus data
+          atlas: {
+            risks: result.identifiedRisks,
+            mitigations: result.mitigations,
+            controls: result.controls,
+            evaluations: result.evaluations,
+          },
+          // Legacy format compatibility
+          ibm: result.identifiedRisks.map((r) => ({
+            Id: r.id,
+            Summary: r.name,
+            Description: r.description,
+            RiskCategory: r.riskGroupName || 'General',
+            RiskSeverity: r.severity || 'Medium',
+            Likelihood: r.likelihood || 'Possible',
+            source: 'atlas',
+            metadata: {
+              taxonomy: r.isDefinedByTaxonomy,
+              tag: r.tag,
+              mitigationsCount: r.relatedActions?.length || 0,
+              evaluationsCount: r.relatedEvaluations?.length || 0,
+              controlsCount: r.relatedControls?.length || 0,
+            },
+          })),
+          mit: [],
+          owasp: [],
+          mitre: [],
+          aiid: [],
+          totalRecommendations: result.identifiedRisks.length,
+          analysis: {
+            isGenAI: result.analysis.isGenAI,
+            isAgenticAI: result.analysis.isAgenticAI,
+            primaryUseCase: result.analysis.useCaseType,
+            riskCategories: Array.from(
+              new Set(result.identifiedRisks.map((r) => r.riskGroupName).filter(Boolean))
+            ),
+            // New analysis data
+            matchedTaxonomies: result.analysis.matchedTaxonomies,
+            totalRisksAnalyzed: result.analysis.totalRisksAnalyzed,
+            llmConfidence: result.analysis.llmConfidence,
+            totalMitigations: result.mitigations.length,
+            totalControls: result.controls.length,
+            totalEvaluations: result.evaluations.length,
+          },
+        });
+      }
+
+      // Validate that we have assessment data for legacy sources
       if (!stepsData || Object.keys(stepsData).length === 0) {
         return NextResponse.json(
           {
@@ -52,12 +131,7 @@ export const GET = withAuth(
         );
       }
 
-      console.log('[Recommendations API] Generating recommendations for use case:', useCaseId, {
-        source,
-        hasMetadata: !!(useCase.title || useCase.problemStatement || useCase.proposedAISolution),
-      });
-
-      // Get recommendations from external sources using assessment data + rich metadata
+      // Legacy: Get recommendations from external sources using assessment data + rich metadata
       const recommendations = await recommendRisksFromExternalSources(
         {
           useCaseId,
@@ -76,7 +150,7 @@ export const GET = withAuth(
             operationalImpactScore: useCase.operationalImpactScore || undefined,
           },
         },
-        source
+        source as 'risks' | 'security' | 'incidents'
       );
 
       console.log('[Recommendations API] Generated:', {
@@ -144,18 +218,62 @@ export const POST = withAuth(
       for (const riskData of selectedRisks) {
         const { source, sourceId } = riskData;
 
-        // Get full risk details from the appropriate service
-        const riskDetails = getExternalRisk(source, sourceId);
-
-        if (!riskDetails) {
-          console.warn(`[Recommendations API] Risk not found: ${source}:${sourceId}`);
-          continue;
-        }
-
         // Map external risk to internal risk model
         let mappedRisk;
 
-        if (source === 'owasp') {
+        // Handle Atlas Nexus risks (LLM-identified)
+        if (source === 'atlas') {
+          // For Atlas risks, we use the risk ID to look up from our local data
+          const { getAtlasNexusService } = await import('@/lib/ai-atlas-nexus');
+          const atlasService = getAtlasNexusService();
+          const atlasRisk = atlasService.getRiskById(sourceId);
+
+          if (!atlasRisk) {
+            console.warn(`[Recommendations API] Atlas risk not found: ${sourceId}`);
+            continue;
+          }
+
+          // Get related mitigations for the risk
+          const relatedActions = atlasService.getActionsForRisk(sourceId);
+          const mitigationPlan =
+            relatedActions.length > 0
+              ? relatedActions
+                  .slice(0, 5)
+                  .map((a) => `• ${a.name}: ${a.description}`)
+                  .join('\n\n')
+              : 'Refer to QUBE AI Risk Data for mitigation strategies';
+
+          mappedRisk = {
+            useCaseId,
+            title: atlasRisk.name,
+            description: atlasRisk.description,
+            category: mapAtlasTaxonomyToCategory(atlasRisk.isDefinedByTaxonomy),
+            riskLevel: 'Medium', // Default for Atlas risks
+            riskScore: 5,
+            likelihood: 'Possible',
+            impact: `Risk from ${atlasRisk.isDefinedByTaxonomy} taxonomy`,
+            mitigationPlan,
+            sourceType: 'atlas',
+            sourceId: atlasRisk.id,
+            sourceMetadata: {
+              taxonomy: atlasRisk.isDefinedByTaxonomy,
+              tag: atlasRisk.tag,
+              relatedActionsCount: relatedActions.length,
+            },
+            createdBy: userRecord.id,
+            createdByName: `${userRecord.firstName || ''} ${userRecord.lastName || ''}`.trim() || 'Unknown',
+            createdByEmail: userRecord.email,
+          };
+        } else {
+          // Get full risk details from the appropriate service for legacy sources
+          const riskDetails = getExternalRisk(source, sourceId);
+
+          if (!riskDetails) {
+            console.warn(`[Recommendations API] Risk not found: ${source}:${sourceId}`);
+            continue;
+          }
+
+          if (source === 'owasp') {
           const owaspRisk = riskDetails as OwaspRisk;
           mappedRisk = {
             useCaseId,
@@ -204,6 +322,44 @@ export const POST = withAuth(
             createdByName: `${userRecord.firstName || ''} ${userRecord.lastName || ''}`.trim() || 'Unknown',
             createdByEmail: userRecord.email,
           };
+        } else if (source === 'aiid') {
+          // AIID incident
+          const { aiidService } = await import('@/lib/integrations/aiid.service');
+          const incident = await aiidService.getIncidentById(parseInt(sourceId));
+
+          if (!incident) {
+            console.warn(`[Recommendations API] AIID incident not found: ${sourceId}`);
+            continue;
+          }
+
+          // Calculate harm severity-based risk score
+          const harmSeverityScore = incident.harmSeverity !== undefined ? Math.min(10, incident.harmSeverity * 2) : 5;
+
+          mappedRisk = {
+            useCaseId,
+            title: `AIID #${incident.incidentId}: ${incident.title}`,
+            description: incident.description,
+            category: 'operational', // Real-world incidents are typically operational
+            riskLevel: harmSeverityScore >= 8 ? 'Critical' : harmSeverityScore >= 6 ? 'High' : harmSeverityScore >= 4 ? 'Medium' : 'Low',
+            riskScore: harmSeverityScore,
+            likelihood: 'Possible', // Incidents have already happened, so possible
+            impact: `Real-world AI incident - Harm Severity: ${incident.harmSeverity || 'N/A'}`,
+            mitigationPlan: incident.lessonsLearned || 'Review incident reports for specific mitigation strategies',
+            sourceType: source,
+            sourceId: String(incident.incidentId),
+            sourceMetadata: {
+              harmType: incident.harmType,
+              sector: incident.sector,
+              technology: incident.technology,
+              failureCause: incident.failureCause,
+              reportCount: incident.reports.length,
+              deployers: incident.deployers,
+              developers: incident.developers,
+            },
+            createdBy: userRecord.id,
+            createdByName: `${userRecord.firstName || ''} ${userRecord.lastName || ''}`.trim() || 'Unknown',
+            createdByEmail: userRecord.email,
+          };
         } else {
           // IBM or MIT risk
           const externalRisk = riskDetails as ExternalRisk;
@@ -228,6 +384,7 @@ export const POST = withAuth(
             createdByEmail: userRecord.email,
           };
         }
+        } // Close the outer else block for legacy sources
 
         // Create the risk in database
         const risk = await prismaClient.risk.create({
@@ -331,4 +488,19 @@ function calculateRiskScore(severity: string, likelihood: string): number {
 
   // Calculate average and scale to 0-10
   return Math.min(10, Math.round(((severityScore + likelihoodScore) / 2) * 2));
+}
+
+function mapAtlasTaxonomyToCategory(taxonomy: string): string {
+  const mapping: Record<string, string> = {
+    'ibm-risk-atlas': 'technical',
+    'air-2024': 'ethical',
+    'ailuminate': 'ethical',
+    'nist-ai-rmf': 'regulatory',
+    'credo-ucf': 'regulatory',
+    'owasp-llm': 'technical',
+    'mit-ai-risk': 'technical',
+    'granite-guardian': 'technical',
+    'shieldgemma': 'technical',
+  };
+  return mapping[taxonomy] || 'technical';
 }
