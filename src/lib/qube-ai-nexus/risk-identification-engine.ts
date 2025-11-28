@@ -5,7 +5,7 @@
  */
 
 import OpenAI from 'openai';
-import { getAtlasNexusService } from './atlas-nexus.service';
+import { getAtlasNexusService } from './qube-ai-nexus.service';
 import type {
   Risk,
   Action,

@@ -4,7 +4,7 @@ import { prismaClient } from '@/utils/db';
 import { recommendRisksFromExternalSources, getExternalRisk } from '@/lib/integrations/risk-recommender';
 import type { ExternalRisk, OwaspRisk, MitreTechniqueData } from '@/lib/integrations/types';
 import { buildStepsDataFromAnswers } from '@/lib/mappers/answers-to-steps';
-import { getRiskIdentificationEngine } from '@/lib/ai-atlas-nexus';
+import { getRiskIdentificationEngine } from '@/lib/qube-ai-nexus';
 
 /**
  * GET /api/risks/[useCaseId]/recommendations
@@ -224,7 +224,7 @@ export const POST = withAuth(
         // Handle Atlas Nexus risks (LLM-identified)
         if (source === 'atlas') {
           // For Atlas risks, we use the risk ID to look up from our local data
-          const { getAtlasNexusService } = await import('@/lib/ai-atlas-nexus');
+          const { getAtlasNexusService } = await import('@/lib/qube-ai-nexus');
           const atlasService = getAtlasNexusService();
           const atlasRisk = atlasService.getRiskById(sourceId);
 

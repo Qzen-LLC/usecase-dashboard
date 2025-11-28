@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getAtlasNexusService } from '@/lib/ai-atlas-nexus';
+import { getAtlasNexusService } from '@/lib/qube-ai-nexus';
 
 export async function GET() {
   try {

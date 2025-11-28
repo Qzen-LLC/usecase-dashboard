@@ -96,7 +96,7 @@ export function ManualRiskBrowser({ open, onClose, useCaseId }: ManualRiskBrowse
     setLoading(true);
     try {
       // Fetch all risks from QUBE AI Risk Data
-      const response = await fetch('/api/atlas-nexus/risks?limit=5000');
+      const response = await fetch('/api/qube-ai-nexus/risks?limit=5000');
 
       if (response.ok) {
         const data = await response.json();
@@ -202,7 +202,7 @@ export function ManualRiskBrowser({ open, onClose, useCaseId }: ManualRiskBrowse
     setAiSearchQuery(searchQuery);
 
     try {
-      const response = await fetch('/api/atlas-nexus/risks/search', {
+      const response = await fetch('/api/qube-ai-nexus/risks/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

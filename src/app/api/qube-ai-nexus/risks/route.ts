@@ -11,8 +11,8 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getAtlasNexusService } from '@/lib/ai-atlas-nexus';
-import type { Risk } from '@/lib/ai-atlas-nexus/types';
+import { getAtlasNexusService } from '@/lib/qube-ai-nexus';
+import type { Risk } from '@/lib/qube-ai-nexus/types';
 
 export async function GET(request: Request) {
   try {

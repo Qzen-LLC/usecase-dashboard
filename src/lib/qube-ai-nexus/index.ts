@@ -11,5 +11,5 @@
  */
 
 export * from './types';
-export * from './atlas-nexus.service';
+export * from './qube-ai-nexus.service';
 export * from './risk-identification-engine';

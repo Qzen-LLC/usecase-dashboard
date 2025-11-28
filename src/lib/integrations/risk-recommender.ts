@@ -23,8 +23,8 @@ import { mitRiskRepoService } from './mit-risk-repo.service';
 import { owaspLLMService } from './owasp-llm.service';
 import { mitreAtlasService } from './mitre-atlas.service';
 import { aiidService } from './aiid.service';
-import { getAtlasNexusService } from '../ai-atlas-nexus';
-import type { AtlasRiskRecommendation, Action, RiskControl, Evaluation } from '../ai-atlas-nexus/types';
+import { getAtlasNexusService } from '../qube-ai-nexus';
+import type { AtlasRiskRecommendation, Action, RiskControl, Evaluation } from '../qube-ai-nexus/types';
 
 // Lazy import AI agent to avoid bundling OpenAI on client side
 async function findRelevantIncidents(

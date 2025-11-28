@@ -32,7 +32,7 @@ import type {
 } from './types';
 
 // Path to data files
-const DATA_DIR = path.join(process.cwd(), 'src/lib/ai-atlas-nexus/data');
+const DATA_DIR = path.join(process.cwd(), 'src/lib/qube-ai-nexus/data');
 
 // Cache for loaded data
 let cachedData: {

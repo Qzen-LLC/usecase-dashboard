@@ -84,7 +84,7 @@ export function RiskDetailPanel({ riskId, open, onClose }: RiskDetailPanelProps)
     setError(null);
 
     try {
-      const response = await fetch(`/api/atlas-nexus/risks/${encodeURIComponent(id)}`);
+      const response = await fetch(`/api/qube-ai-nexus/risks/${encodeURIComponent(id)}`);
       if (!response.ok) {
         throw new Error('Failed to fetch risk details');
       }

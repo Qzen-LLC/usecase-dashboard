@@ -9,7 +9,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getRiskIdentificationEngine } from '@/lib/ai-atlas-nexus';
+import { getRiskIdentificationEngine } from '@/lib/qube-ai-nexus';
 
 export async function POST(request: Request) {
   try {
