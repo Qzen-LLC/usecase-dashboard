@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, Plus, Trash2, UserCheck, UserX, Mail, Calendar, Shield, UserPlus, AlertCircle } from 'lucide-react';
+import { Users, Plus, Trash2, UserCheck, UserX, Mail, Calendar, Shield, UserPlus, AlertCircle, Edit } from 'lucide-react';
 import { useUserData } from '@/contexts/UserContext';
 
 interface User {
@@ -27,11 +27,16 @@ export default function OrganizationUserManagement() {
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserFirstName, setNewUserFirstName] = useState('');
   const [newUserLastName, setNewUserLastName] = useState('');
-  const [newUserRole, setNewUserRole] = useState('USER');
+  const [newUserRole, setNewUserRole] = useState('ORG_USER');
   const [addUserLoading, setAddUserLoading] = useState(false);
   const [removeUserLoading, setRemoveUserLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editUserFirstName, setEditUserFirstName] = useState('');
+  const [editUserLastName, setEditUserLastName] = useState('');
+  const [editUserRole, setEditUserRole] = useState('ORG_USER');
+  const [editUserLoading, setEditUserLoading] = useState(false);
   const { userData } = useUserData();
 
   useEffect(() => {
@@ -85,7 +90,7 @@ export default function OrganizationUserManagement() {
         setNewUserEmail('');
         setNewUserFirstName('');
         setNewUserLastName('');
-        setNewUserRole('USER');
+        setNewUserRole('ORG_USER');
         setShowAddUser(false);
         setSuccess('Invitation sent successfully!');
         fetchUsers();
@@ -97,6 +102,50 @@ export default function OrganizationUserManagement() {
       setError('Failed to send invitation');
     } finally {
       setAddUserLoading(false);
+    }
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setEditUserFirstName(user.firstName || '');
+    setEditUserLastName(user.lastName || '');
+    // Map legacy 'USER' role to 'ORG_USER' for consistency
+    setEditUserRole(user.role === 'USER' ? 'ORG_USER' : user.role);
+    setError(null);
+    setSuccess(null);
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editingUser) return;
+
+    setEditUserLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch(`/api/organizations/users/${editingUser.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: editUserFirstName,
+          lastName: editUserLastName,
+          role: editUserRole,
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setSuccess('User updated successfully!');
+        setEditingUser(null);
+        fetchUsers();
+      } else {
+        setError(data.error || 'Failed to update user');
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      setError('Failed to update user');
+    } finally {
+      setEditUserLoading(false);
     }
   };
 
@@ -164,9 +213,9 @@ export default function OrganizationUserManagement() {
 
         {/* Success/Error Messages */}
         {success && (
-          <div className="bg-success/10 border border-success/20 rounded-xl p-4 flex items-center gap-2">
-            <div className="w-2 h-2 bg-success rounded-full"></div>
-            <span className="text-success-foreground font-medium">{success}</span>
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full"></div>
+            <span className="text-green-800 dark:text-green-200 font-medium">{success}</span>
           </div>
         )}
         {error && (
@@ -234,7 +283,7 @@ export default function OrganizationUserManagement() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ORG_ADMIN">Organization Admin</SelectItem>
-                      <SelectItem value="USER">Organization User</SelectItem>
+                      <SelectItem value="ORG_USER">Organization User</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -257,6 +306,97 @@ export default function OrganizationUserManagement() {
                   <Button 
                     variant="outline" 
                     onClick={() => setShowAddUser(false)}
+                    className="flex-1 border-border text-foreground hover:bg-muted px-6 py-3 rounded-xl"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit User Modal */}
+        {editingUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div className="bg-card border rounded-2xl shadow-2xl p-8 max-w-lg w-full mx-4">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <Edit className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Edit User</h2>
+                  <p className="text-muted-foreground">Update user information</p>
+                </div>
+              </div>
+              
+              <div className="space-y-6">
+                <div>
+                  <Label htmlFor="editUserEmail" className="text-sm font-medium text-foreground mb-2 block">Email</Label>
+                  <Input
+                    id="editUserEmail"
+                    type="email"
+                    value={editingUser.email}
+                    disabled
+                    className="w-full px-4 py-3 border border-border rounded-xl bg-muted text-muted-foreground cursor-not-allowed"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="editUserFirstName" className="text-sm font-medium text-foreground mb-2 block">First Name</Label>
+                    <Input
+                      id="editUserFirstName"
+                      value={editUserFirstName}
+                      onChange={(e) => setEditUserFirstName(e.target.value)}
+                      placeholder="First Name"
+                      className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-ring focus:border-primary transition-all duration-200 bg-background text-foreground placeholder:text-muted-foreground"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editUserLastName" className="text-sm font-medium text-foreground mb-2 block">Last Name</Label>
+                    <Input
+                      id="editUserLastName"
+                      value={editUserLastName}
+                      onChange={(e) => setEditUserLastName(e.target.value)}
+                      placeholder="Last Name"
+                      className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-ring focus:border-primary transition-all duration-200 bg-background text-foreground placeholder:text-muted-foreground"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="editUserRole" className="text-sm font-medium text-foreground mb-2 block">Role</Label>
+                  <Select value={editUserRole} onValueChange={setEditUserRole}>
+                    <SelectTrigger className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-ring focus:border-primary transition-all duration-200 bg-background text-foreground">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ORG_ADMIN">Organization Admin</SelectItem>
+                      <SelectItem value="ORG_USER">Organization User</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button 
+                    onClick={handleUpdateUser} 
+                    disabled={editUserLoading}
+                    className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 rounded-xl font-medium"
+                  >
+                    {editUserLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
+                        Updating...
+                      </div>
+                    ) : (
+                      'Update User'
+                    )}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setEditingUser(null)}
                     className="flex-1 border-border text-foreground hover:bg-muted px-6 py-3 rounded-xl"
                   >
                     Cancel
@@ -378,9 +518,11 @@ export default function OrganizationUserManagement() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Button variant="outline" className="px-3 py-1.5 text-xs" onClick={() => handleEditUser(user)}>
+                          <Edit className="w-3 h-3 mr-1" />
                           Edit
                         </Button>
                         <Button variant="outline" className="px-3 py-1.5 text-xs" onClick={() => handleRemoveUser(user.id)}>
+                          <Trash2 className="w-3 h-3 mr-1" />
                           Remove
                         </Button>
                       </div>
