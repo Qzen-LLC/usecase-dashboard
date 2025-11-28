@@ -8,10 +8,17 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Search,
   Download,
   X,
   Database,
+  ChevronDown,
   Building2,
   GraduationCap,
   Shield,
@@ -23,6 +30,7 @@ import {
   ExternalLink,
   Loader2,
   Zap,
+  MoreHorizontal,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { RiskDetailPanel } from './RiskDetailPanel';
@@ -387,64 +395,99 @@ export function ManualRiskBrowser({ open, onClose, useCaseId }: ManualRiskBrowse
             </div>
           </DialogHeader>
 
-          {/* Horizontal Filter Bar */}
-          <div className="space-y-3 pb-4 border-b">
-            {/* Source Filters as Horizontal Chips */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                <Filter className="h-3 w-3 inline mr-1" />
-                Sources:
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {taxonomyList.map(taxonomy => {
-                  const isSelected = selectedTaxonomies.has(taxonomy.id);
-                  return (
-                    <button
+          {/* Horizontal Filter Bar - Single Line with More Dropdown */}
+          <div className="flex items-center gap-2 pb-4 border-b flex-wrap">
+            <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+              <Filter className="h-3 w-3 inline mr-1" />
+              Sources:
+            </span>
+
+            {/* First 5 sources as chips */}
+            {taxonomyList.slice(0, 5).map(taxonomy => {
+              const isSelected = selectedTaxonomies.has(taxonomy.id);
+              return (
+                <button
+                  key={taxonomy.id}
+                  onClick={() => toggleTaxonomy(taxonomy.id)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    isSelected
+                      ? 'bg-purple-600 text-white shadow-md'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {taxonomy.icon}
+                  <span>{taxonomy.name}</span>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${
+                    isSelected
+                      ? 'bg-purple-500 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                  }`}>
+                    {taxonomy.count}
+                  </span>
+                </button>
+              );
+            })}
+
+            {/* More dropdown for remaining sources */}
+            {taxonomyList.length > 5 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    taxonomyList.slice(5).some(t => selectedTaxonomies.has(t.id))
+                      ? 'bg-purple-600 text-white shadow-md'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}>
+                    <MoreHorizontal className="h-3 w-3" />
+                    <span>More</span>
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${
+                      taxonomyList.slice(5).some(t => selectedTaxonomies.has(t.id))
+                        ? 'bg-purple-500 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                    }`}>
+                      {taxonomyList.length - 5}
+                    </span>
+                    <ChevronDown className="h-3 w-3 ml-0.5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-64">
+                  {taxonomyList.slice(5).map(taxonomy => (
+                    <DropdownMenuCheckboxItem
                       key={taxonomy.id}
-                      onClick={() => toggleTaxonomy(taxonomy.id)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                        isSelected
-                          ? 'bg-purple-600 text-white shadow-md'
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                      }`}
+                      checked={selectedTaxonomies.has(taxonomy.id)}
+                      onCheckedChange={() => toggleTaxonomy(taxonomy.id)}
                     >
-                      {taxonomy.icon}
-                      <span>{taxonomy.name}</span>
-                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${
-                        isSelected
-                          ? 'bg-purple-500 text-white'
-                          : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                      }`}>
-                        {taxonomy.count}
+                      <span className="flex items-center gap-2 w-full">
+                        {taxonomy.icon}
+                        <span className="flex-1">{taxonomy.name}</span>
+                        <Badge variant="secondary" className="text-xs">
+                          {taxonomy.count}
+                        </Badge>
                       </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
-            {/* Status Bar */}
-            <div className="flex items-center gap-2">
-              {/* AI Search indicator */}
-              {aiSearchResults && (
-                <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
-                  <Zap className="h-3 w-3 mr-1" />
-                  AI Results: {aiSearchResults.length} risks
-                </Badge>
-              )}
+            {/* AI Search indicator */}
+            {aiSearchResults && (
+              <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                <Zap className="h-3 w-3 mr-1" />
+                AI: {aiSearchResults.length}
+              </Badge>
+            )}
 
-              {/* Clear filters */}
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={clearFilters}>
-                  <X className="h-3 w-3 mr-1" />
-                  Clear Filters
-                </Button>
-              )}
+            {/* Clear filters */}
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={clearFilters}>
+                <X className="h-3 w-3 mr-1" />
+                Clear
+              </Button>
+            )}
 
-              {/* Results count */}
-              <div className="ml-auto text-sm text-muted-foreground">
-                {filteredRisks.length} risk{filteredRisks.length !== 1 ? 's' : ''} found
-              </div>
+            {/* Results count */}
+            <div className="ml-auto text-sm text-muted-foreground">
+              {filteredRisks.length} found
             </div>
           </div>
 
