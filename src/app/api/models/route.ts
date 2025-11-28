@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from '@/lib/auth-gateway';
 import { prismaClient } from "@/utils/db";
+import { decryptApiKey, encryptApiKey } from "@/lib/security/api-key-encryption";
 
 export const GET = withAuth(async (req, { auth }) => {
   try {
@@ -37,7 +38,24 @@ export const GET = withAuth(async (req, { auth }) => {
       where: { organizationId },
       orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json({ models });
+
+    // Decrypt API keys before returning
+    const decryptedModels = models.map(model => {
+      try {
+        return {
+          ...model,
+          apiKey: decryptApiKey(model.apiKey),
+        };
+      } catch (error) {
+        console.error('Failed to decrypt API key for model:', model.id, error);
+        return {
+          ...model,
+          apiKey: '', // Return empty string if decryption fails
+        };
+      }
+    });
+
+    return NextResponse.json({ models: decryptedModels });
   } catch (error: any) {
     console.error('Error fetching models:', error);
     return NextResponse.json({ error: error.message || "Failed to fetch models" }, { status: 500 });
@@ -75,15 +93,25 @@ export const POST = withAuth(async (req, { auth }) => {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
+    // Encrypt the API key before storing
+    const encryptedApiKey = encryptApiKey(String(apiKey).trim());
+
     const created = await prismaClient.aiModel.create({
       data: {
         organizationId,
         providerName: String(providerName).trim(),
         modelName: String(modelName).trim(),
-        apiKey: String(apiKey).trim(),
+        apiKey: encryptedApiKey,
       },
     });
-    return NextResponse.json({ model: created }, { status: 201 });
+
+    // Decrypt the API key before returning (for UI display)
+    const decryptedModel = {
+      ...created,
+      apiKey: decryptApiKey(created.apiKey),
+    };
+
+    return NextResponse.json({ model: decryptedModel }, { status: 201 });
   } catch (error: any) {
     console.error('Error creating model:', error);
     if (error?.code === 'P2002') {
