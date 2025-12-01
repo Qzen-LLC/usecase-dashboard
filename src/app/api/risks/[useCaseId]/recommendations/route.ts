@@ -234,7 +234,7 @@ export const POST = withAuth(
           }
 
           // Get related mitigations for the risk
-          const relatedActions = atlasService.getActionsForRisk(sourceId);
+          const relatedActions = atlasService.getRelatedActions(atlasRisk);
           const mitigationPlan =
             relatedActions.length > 0
               ? relatedActions
