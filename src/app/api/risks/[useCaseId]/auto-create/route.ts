@@ -366,6 +366,8 @@ export const POST = withAuth(async (
           likelihood: riskScore >= 7 ? 'High' :
                      riskScore >= 5 ? 'Medium' : 'Low',
           mitigationPlan: mitigationPlan || undefined,
+          sourceType: 'assessment', // Auto-created from assessment data
+          sourceId: null, // No external source ID for assessment-generated risks
           createdBy: userRecord.id,
           createdByName: `${userRecord.firstName || ''} ${userRecord.lastName || ''}`.trim() || 'Unknown User',
           createdByEmail: userRecord.email,

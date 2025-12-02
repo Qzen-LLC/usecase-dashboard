@@ -36,6 +36,8 @@ export const PUT = withAuth(async (
     if (data.targetDate !== undefined) updateData.targetDate = data.targetDate ? new Date(data.targetDate) : null;
     if (data.actualDate !== undefined) updateData.actualDate = data.actualDate ? new Date(data.actualDate) : null;
     if (data.notes !== undefined) updateData.notes = data.notes;
+    if (data.sourceType !== undefined) updateData.sourceType = data.sourceType;
+    if (data.sourceId !== undefined) updateData.sourceId = data.sourceId;
 
     const risk = await prismaClient.risk.update({
       where: { id: riskId },

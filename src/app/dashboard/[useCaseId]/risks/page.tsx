@@ -64,6 +64,8 @@ interface RiskData {
   updatedAt: string;
   closedAt?: string;
   closureReason?: string;
+  sourceId?: string;
+  sourceType?: string;
 }
 
 interface UseCaseData {
@@ -219,6 +221,16 @@ export default function RiskManagementPage() {
     }
   };
 
+  const getRiskLevelBadgeColor = (level: string) => {
+    switch (level) {
+      case 'Critical': return 'bg-red-600 text-white';
+      case 'High': return 'bg-orange-600 text-white';
+      case 'Medium': return 'bg-yellow-500 text-white';
+      case 'Low': return 'bg-green-600 text-white';
+      default: return 'bg-gray-600 text-white';
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'OPEN': return 'bg-red-100 text-red-800';
@@ -227,6 +239,17 @@ export default function RiskManagementPage() {
       case 'ACCEPTED': return 'bg-purple-100 text-purple-800';
       case 'CLOSED': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'OPEN': return 'bg-red-800 text-red-100';
+      case 'IN_PROGRESS': return 'bg-gray-700 text-gray-100';
+      case 'MITIGATED': return 'bg-green-800 text-green-100';
+      case 'ACCEPTED': return 'bg-purple-800 text-purple-100';
+      case 'CLOSED': return 'bg-gray-600 text-gray-100';
+      default: return 'bg-gray-600 text-gray-100';
     }
   };
 

@@ -43,6 +43,8 @@ export const GET = withAuth(async (request, { auth }) => {
               category: true,
               riskLevel: true,
               status: true,
+              sourceType: true,
+              sourceId: true,
             },
           },
         };

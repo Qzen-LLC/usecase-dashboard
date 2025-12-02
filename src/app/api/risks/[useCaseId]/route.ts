@@ -107,7 +107,9 @@ export const POST = withAuth(async (
           assignedToName: data.assignedToName,
           assignedToEmail: data.assignedToEmail,
           targetDate: data.targetDate ? new Date(data.targetDate) : null,
-          notes: data.notes
+          notes: data.notes,
+          sourceType: data.sourceType || null,
+          sourceId: data.sourceId || null
         }
       });
       console.log('[CRUD_LOG] Risk created:', { id: risk.id, useCaseId: useCaseId, category: data.category, riskLevel: data.riskLevel, status: risk.status, createdAt: risk.createdAt, authoredBy: userRecord.id });
