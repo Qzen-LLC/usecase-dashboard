@@ -693,45 +693,43 @@ model Invitation {
 }
 
 model Risk {
-  id                String                @id @default(uuid())
-  useCaseId         String
-  category          String
-  riskLevel         String
-  riskScore         Float
-  title             String
-  description       String
-  impact            String
-  likelihood        String
-  status            RiskStatus            @default(OPEN)
-  assignedTo        String?
-  assignedToName    String?
-  assignedToEmail   String?
-  mitigationPlan    String?
-  mitigationStatus  String?
-  targetDate        DateTime?
-  actualDate        DateTime?
-  notes             String?
-  createdAt         DateTime              @default(now())
-  createdBy         String
-  createdByName     String
-  createdByEmail    String
-  updatedAt         DateTime              @updatedAt
-  updatedBy         String?
-  updatedByName     String?
-  updatedByEmail    String?
-  closedAt          DateTime?
-  closedBy          String?
-  closedByName      String?
-  closedByEmail     String?
-  closureReason     String?
-  // External risk source tracking
-  sourceType        String?               // 'ibm', 'mit', 'owasp', 'mitre', 'manual'
-  sourceId          String?               // External risk ID (e.g., "46", "561", "LLM01")
-  sourceMetadata    Json?                 // Full source data for reference
-  // Relationships
-  useCase           UseCase               @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
-  mitreTechniques   MitreTechnique[]      @relation("RiskMitreTechniques")
-  relatedIncidents  IncidentRiskMapping[]
+  id               String                @id @default(uuid())
+  useCaseId        String
+  category         String
+  riskLevel        String
+  riskScore        Float
+  title            String
+  description      String
+  impact           String
+  likelihood       String
+  status           RiskStatus            @default(OPEN)
+  assignedTo       String?
+  assignedToName   String?
+  assignedToEmail  String?
+  mitigationPlan   String?
+  mitigationStatus String?
+  targetDate       DateTime?
+  actualDate       DateTime?
+  notes            String?
+  createdAt        DateTime              @default(now())
+  createdBy        String
+  createdByName    String
+  createdByEmail   String
+  updatedAt        DateTime              @updatedAt
+  updatedBy        String?
+  updatedByName    String?
+  updatedByEmail   String?
+  closedAt         DateTime?
+  closedBy         String?
+  closedByName     String?
+  closedByEmail    String?
+  closureReason    String?
+  sourceId         String?
+  sourceMetadata   Json?
+  sourceType       String?
+  relatedIncidents IncidentRiskMapping[]
+  useCase          UseCase               @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+  mitreTechniques  MitreTechnique[]      @relation("RiskMitreTechniques")
 
   @@index([useCaseId])
   @@index([status])
@@ -742,17 +740,17 @@ model Risk {
 }
 
 model MitreTechnique {
-  id            String   @id @default(uuid())
-  techniqueId   String   @unique // T0043, T0048, etc.
-  tactic        String   // 'ML Attack Staging', 'Evade ML Model', etc.
-  technique     String   // Full technique name
-  description   String   @db.Text
-  mitigation    String?  @db.Text
-  detection     String?  @db.Text
-  caseStudies   Json?    // Array of case study references
-  risks         Risk[]   @relation("RiskMitreTechniques")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String   @id @default(uuid())
+  techniqueId String   @unique
+  tactic      String
+  technique   String
+  description String
+  mitigation  String?
+  detection   String?
+  caseStudies Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  risks       Risk[]   @relation("RiskMitreTechniques")
 
   @@index([tactic])
   @@index([techniqueId])
@@ -762,9 +760,9 @@ model IncidentRiskMapping {
   id          String   @id @default(uuid())
   incidentId  String
   riskId      String
-  mappingType String   // 'realized', 'near-miss', 'indicator'
-  confidence  String   @default("medium") // 'high', 'medium', 'low'
-  notes       String?  @db.Text
+  mappingType String
+  confidence  String   @default("medium")
+  notes       String?
   createdAt   DateTime @default(now())
   incident    Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
   risk        Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
@@ -1686,36 +1684,35 @@ model PolicyException {
 }
 
 model Incident {
-  id               String                @id @default(uuid())
-  organizationId   String
-  useCaseId        String?
-  title            String
-  description      String
-  severity         IncidentSeverity
-  status           IncidentStatus        @default(OPEN)
-  category         String?
-  impact           String?
-  rootCause        String?
-  reportedBy       String
-  reportedAt       DateTime              @default(now())
-  assignedTo       String?
-  resolvedBy       String?
-  resolvedAt       DateTime?
-  resolution       String?
-  lessons          String?
-  metadata         Json?
-  // AIID integration fields
-  aiidIncidentId   Int?                  // AI Incident Database incident number
-  aiidMetadata     Json?                 // AIID case details (taxonomy, severity, etc.)
-  caseSummary      String?               @db.Text
-  lessonsLearned   String?               @db.Text
-  preventiveMeasures Json?               // Actions taken to prevent recurrence
-  evidenceUrls     String[]              // Links to AIID reports or other evidence
-  technicalCause   String?               // GMF taxonomy failure cause
-  createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @updatedAt
-  organization     Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  relatedRisks     IncidentRiskMapping[]
+  id                 String                @id @default(uuid())
+  organizationId     String
+  useCaseId          String?
+  title              String
+  description        String
+  severity           IncidentSeverity
+  status             IncidentStatus        @default(OPEN)
+  category           String?
+  impact             String?
+  rootCause          String?
+  reportedBy         String
+  reportedAt         DateTime              @default(now())
+  assignedTo         String?
+  resolvedBy         String?
+  resolvedAt         DateTime?
+  resolution         String?
+  lessons            String?
+  metadata           Json?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  aiidIncidentId     Int?
+  aiidMetadata       Json?
+  caseSummary        String?
+  evidenceUrls       String[]
+  lessonsLearned     String?
+  preventiveMeasures Json?
+  technicalCause     String?
+  organization       Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  relatedRisks       IncidentRiskMapping[]
 
   @@index([organizationId])
   @@index([useCaseId])

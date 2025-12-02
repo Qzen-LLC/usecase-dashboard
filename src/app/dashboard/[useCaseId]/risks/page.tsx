@@ -21,7 +21,10 @@ import {
   User,
   Calendar,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Sparkles,
+  ArrowRight,
+  Info
 } from "lucide-react";
 import { calculateRiskScores, getRiskLevel, type StepsData } from '@/lib/risk-calculations';
 import Link from 'next/link';
@@ -116,40 +119,10 @@ export default function RiskManagementPage() {
       const risksData = await risksResponse.json();
       setRisks(risksData);
 
-      // Note: Auto-creation removed - users should manually click "Generate Risks" button
-      // if (risksData.length === 0 && useCaseData.assessData?.stepsData) {
-      //   await autoCreateRisks(useCaseData.assessData.stepsData);
-      // }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const autoCreateRisks = async (stepsData: StepsData) => {
-    try {
-      setCreating(true);
-      const response = await fetch(`/api/risks/${useCaseId}/auto-create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stepsData })
-      });
-
-      if (response.ok) {
-        const newRisks = await response.json();
-        setRisks(newRisks);
-        console.log(`✅ Successfully created ${newRisks.length} risks with recommendations`);
-      } else {
-        const errorText = await response.text();
-        console.error('❌ Error auto-creating risks:', errorText);
-        alert(`Failed to create risks: ${errorText}`);
-      }
-    } catch (error) {
-      console.error('❌ Error auto-creating risks:', error);
-      alert(`Error creating risks: ${error}`);
-    } finally {
-      setCreating(false);
     }
   };
 
@@ -288,27 +261,6 @@ export default function RiskManagementPage() {
               AIUC-{useCase?.aiucId} - {useCase?.title}
             </p>
           </div>
-          <div className="flex gap-2">
-            {useCase?.assessData?.stepsData && risks.length === 0 && (
-              <Button
-                onClick={() => autoCreateRisks(useCase.assessData!.stepsData)}
-                className="bg-blue-600 hover:bg-blue-700"
-                disabled={creating}
-              >
-                {creating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generating Risks...
-                  </>
-                ) : (
-                  <>
-                    <Shield className="h-4 w-4 mr-2" />
-                    Generate Risks from Assessment
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
           <div className="flex gap-3">
             
             <Button
@@ -372,239 +324,274 @@ export default function RiskManagementPage() {
 
       {/* Risk List */}
       <div className="space-y-4">
-        {risks.map((risk) => (
-          <Card key={risk.id} className="overflow-hidden">
-            <CardHeader 
-              className="cursor-pointer"
-              onClick={() => setExpandedRisk(expandedRisk === risk.id ? null : risk.id)}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    {getRiskIcon(risk.category)}
-                    <CardTitle className="text-lg">{risk.title}</CardTitle>
-                  </div>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <Badge variant="outline" className={getRiskLevelColor(risk.riskLevel)}>
-                      {risk.riskLevel} Risk (Score: {risk.riskScore})
-                    </Badge>
-                    <Badge variant="outline" className={getStatusColor(risk.status)}>
-                      {risk.status.replace('_', ' ')}
-                    </Badge>
-                    <span className="text-sm text-gray-500 capitalize">
-                      {risk.category} Risk
-                    </span>
-                  </div>
+        {risks.length === 0 ? (
+          <Card className="border-2 border-dashed border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+            <CardContent className="pt-8 pb-8">
+              <div className="flex flex-col items-center justify-center text-center space-y-4">
+                <div className="p-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full">
+                  <Sparkles className="h-10 w-10 text-white" />
                 </div>
-                <div className="flex items-center gap-2">
-                  {expandedRisk === risk.id ? 
-                    <ChevronUp className="h-5 w-5 text-gray-400" /> : 
-                    <ChevronDown className="h-5 w-5 text-gray-400" />
-                  }
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                    No Risks Found
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 max-w-md">
+                    To generate risks for this use case, please visit the <strong>AI Risk Intelligence</strong> page in the Assess Dashboard.
+                  </p>
                 </div>
+                <div className="flex items-center gap-2 pt-2">
+                  <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Use AI-powered recommendations to identify risks from industry-leading sources
+                  </p>
+                </div>
+                <Button
+                  onClick={() => router.push(`/dashboard/${useCaseId}/assess?step=10`)}
+                  className="mt-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                  size="lg"
+                >
+                  <Sparkles className="h-5 w-5 mr-2" />
+                  Go to AI Risk Intelligence
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </Button>
               </div>
-            </CardHeader>
-            
-            {expandedRisk === risk.id && (
-              <CardContent className="border-t">
-                {editingRisk === risk.id ? (
-                  // Edit Form
-                  <div className="space-y-4 pt-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium">Status</label>
-                        <Select
-                          value={formData.status || risk.status}
-                          onValueChange={(value) => setFormData({...formData, status: value})}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="OPEN">Open</SelectItem>
-                            <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                            <SelectItem value="MITIGATED">Mitigated</SelectItem>
-                            <SelectItem value="ACCEPTED">Accepted</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Mitigation Status</label>
-                        <Select
-                          value={formData.mitigationStatus || risk.mitigationStatus || ''}
-                          onValueChange={(value) => setFormData({...formData, mitigationStatus: value})}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="planned">Planned</SelectItem>
-                            <SelectItem value="in_progress">In Progress</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Mitigation Plan</label>
-                      <Textarea
-                        value={formData.mitigationPlan || risk.mitigationPlan || ''}
-                        onChange={(e) => setFormData({...formData, mitigationPlan: e.target.value})}
-                        rows={3}
-                        placeholder="Describe the mitigation plan..."
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium">Assigned To</label>
-                        <Input
-                          value={formData.assignedToName || risk.assignedToName || ''}
-                          onChange={(e) => setFormData({...formData, assignedToName: e.target.value})}
-                          placeholder="Name"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Target Date</label>
-                        <Input
-                          type="date"
-                          value={formData.targetDate ? formData.targetDate.split('T')[0] : risk.targetDate ? new Date(risk.targetDate).toISOString().split('T')[0] : ''}
-                          onChange={(e) => setFormData({...formData, targetDate: e.target.value})}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Notes</label>
-                      <Textarea
-                        value={formData.notes || risk.notes || ''}
-                        onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                        rows={2}
-                        placeholder="Additional notes..."
-                      />
-                    </div>
-                    <div className="flex justify-end gap-3">
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setEditingRisk(null);
-                          setFormData({});
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button onClick={() => handleUpdateRisk(risk.id)}>
-                        Save Changes
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  // View Mode
-                  <div className="space-y-4 pt-4">
-                    <div>
-                      <h4 className="font-medium mb-1">Description</h4>
-                      <p className="text-gray-600">{risk.description}</p>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <h4 className="font-medium mb-1">Impact</h4>
-                        <p className="text-gray-600">{risk.impact}</p>
-                      </div>
-                      <div>
-                        <h4 className="font-medium mb-1">Likelihood</h4>
-                        <p className="text-gray-600">{risk.likelihood}</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-500">Created by:</span>{' '}
-                        {risk.createdByName} on {formatDate(risk.createdAt)}
-                      </div>
-                      {risk.assignedToName && (
-                        <div>
-                          <span className="text-gray-500">Assigned to:</span>{' '}
-                          {risk.assignedToName}
-                        </div>
-                      )}
-                      {risk.targetDate && (
-                        <div>
-                          <span className="text-gray-500">Target date:</span>{' '}
-                          {formatDate(risk.targetDate)}
-                        </div>
-                      )}
-                      {risk.closedAt && (
-                        <div>
-                          <span className="text-gray-500">Closed on:</span>{' '}
-                          {formatDate(risk.closedAt)}
-                        </div>
-                      )}
-                    </div>
-
-                    {risk.notes && (
-                      <div>
-                        <h4 className="font-medium mb-1">Notes</h4>
-                        <p className="text-gray-600">{risk.notes}</p>
-                      </div>
-                    )}
-
-                    <div className="flex justify-end gap-3 pt-4 border-t">
-                      {risk.status !== 'CLOSED' && (
-                        <>
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              setEditingRisk(risk.id);
-                              setFormData(risk);
-                            }}
-                          >
-                            <Edit2 className="h-4 w-4 mr-2" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              const reason = prompt('Please provide a reason for closing this risk:');
-                              if (reason) {
-                                handleCloseRisk(risk.id, reason);
-                              }
-                            }}
-                          >
-                            <X className="h-4 w-4 mr-2" />
-                            Close Risk
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            onClick={async () => {
-                              if (confirm(`Are you sure you want to delete "${risk.title}"? This action cannot be undone.`)) {
-                                try {
-                                  const response = await fetch(`/api/risks/${useCaseId}/${risk.id}`, {
-                                    method: 'DELETE'
-                                  });
-                                  if (response.ok) {
-                                    alert('Risk deleted successfully');
-                                    fetchData();
-                                  } else {
-                                    alert('Failed to delete risk');
-                                  }
-                                } catch (error) {
-                                  console.error('Error deleting risk:', error);
-                                  alert('Error deleting risk');
-                                }
-                              }
-                            }}
-                          >
-                            <X className="h-4 w-4 mr-2" />
-                            Delete
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            )}
+            </CardContent>
           </Card>
-        ))}
+        ) : (
+          risks.map((risk) => (
+            <Card key={risk.id} className="overflow-hidden">
+              <CardHeader 
+                className="cursor-pointer"
+                onClick={() => setExpandedRisk(expandedRisk === risk.id ? null : risk.id)}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      {getRiskIcon(risk.category)}
+                      <CardTitle className="text-lg">{risk.title}</CardTitle>
+                    </div>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <Badge variant="outline" className={getRiskLevelColor(risk.riskLevel)}>
+                        {risk.riskLevel} Risk (Score: {risk.riskScore})
+                      </Badge>
+                      <Badge variant="outline" className={getStatusColor(risk.status)}>
+                        {risk.status.replace('_', ' ')}
+                      </Badge>
+                      <span className="text-sm text-gray-500 capitalize">
+                        {risk.category} Risk
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {expandedRisk === risk.id ? 
+                      <ChevronUp className="h-5 w-5 text-gray-400" /> : 
+                      <ChevronDown className="h-5 w-5 text-gray-400" />
+                    }
+                  </div>
+                </div>
+              </CardHeader>
+              
+              {expandedRisk === risk.id && (
+                <CardContent className="border-t">
+                  {editingRisk === risk.id ? (
+                    // Edit Form
+                    <div className="space-y-4 pt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">Status</label>
+                          <Select
+                            value={formData.status || risk.status}
+                            onValueChange={(value) => setFormData({...formData, status: value})}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="OPEN">Open</SelectItem>
+                              <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                              <SelectItem value="MITIGATED">Mitigated</SelectItem>
+                              <SelectItem value="ACCEPTED">Accepted</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Mitigation Status</label>
+                          <Select
+                            value={formData.mitigationStatus || risk.mitigationStatus || ''}
+                            onValueChange={(value) => setFormData({...formData, mitigationStatus: value})}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="planned">Planned</SelectItem>
+                              <SelectItem value="in_progress">In Progress</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Mitigation Plan</label>
+                        <Textarea
+                          value={formData.mitigationPlan || risk.mitigationPlan || ''}
+                          onChange={(e) => setFormData({...formData, mitigationPlan: e.target.value})}
+                          rows={3}
+                          placeholder="Describe the mitigation plan..."
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">Assigned To</label>
+                          <Input
+                            value={formData.assignedToName || risk.assignedToName || ''}
+                            onChange={(e) => setFormData({...formData, assignedToName: e.target.value})}
+                            placeholder="Name"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Target Date</label>
+                          <Input
+                            type="date"
+                            value={formData.targetDate ? formData.targetDate.split('T')[0] : risk.targetDate ? new Date(risk.targetDate).toISOString().split('T')[0] : ''}
+                            onChange={(e) => setFormData({...formData, targetDate: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Notes</label>
+                        <Textarea
+                          value={formData.notes || risk.notes || ''}
+                          onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                          rows={2}
+                          placeholder="Additional notes..."
+                        />
+                      </div>
+                      <div className="flex justify-end gap-3">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setEditingRisk(null);
+                            setFormData({});
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button onClick={() => handleUpdateRisk(risk.id)}>
+                          Save Changes
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    // View Mode
+                    <div className="space-y-4 pt-4">
+                      <div>
+                        <h4 className="font-medium mb-1">Description</h4>
+                        <p className="text-gray-600">{risk.description}</p>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="font-medium mb-1">Impact</h4>
+                          <p className="text-gray-600">{risk.impact}</p>
+                        </div>
+                        <div>
+                          <h4 className="font-medium mb-1">Likelihood</h4>
+                          <p className="text-gray-600">{risk.likelihood}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-500">Created by:</span>{' '}
+                          {risk.createdByName} on {formatDate(risk.createdAt)}
+                        </div>
+                        {risk.assignedToName && (
+                          <div>
+                            <span className="text-gray-500">Assigned to:</span>{' '}
+                            {risk.assignedToName}
+                          </div>
+                        )}
+                        {risk.targetDate && (
+                          <div>
+                            <span className="text-gray-500">Target date:</span>{' '}
+                            {formatDate(risk.targetDate)}
+                          </div>
+                        )}
+                        {risk.closedAt && (
+                          <div>
+                            <span className="text-gray-500">Closed on:</span>{' '}
+                            {formatDate(risk.closedAt)}
+                          </div>
+                        )}
+                      </div>
+
+                      {risk.notes && (
+                        <div>
+                          <h4 className="font-medium mb-1">Notes</h4>
+                          <p className="text-gray-600">{risk.notes}</p>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end gap-3 pt-4 border-t">
+                        {risk.status !== 'CLOSED' && (
+                          <>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setEditingRisk(risk.id);
+                                setFormData(risk);
+                              }}
+                            >
+                              <Edit2 className="h-4 w-4 mr-2" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                const reason = prompt('Please provide a reason for closing this risk:');
+                                if (reason) {
+                                  handleCloseRisk(risk.id, reason);
+                                }
+                              }}
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Close Risk
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              onClick={async () => {
+                                if (confirm(`Are you sure you want to delete "${risk.title}"? This action cannot be undone.`)) {
+                                  try {
+                                    const response = await fetch(`/api/risks/${useCaseId}/${risk.id}`, {
+                                      method: 'DELETE'
+                                    });
+                                    if (response.ok) {
+                                      alert('Risk deleted successfully');
+                                      fetchData();
+                                    } else {
+                                      alert('Failed to delete risk');
+                                    }
+                                  } catch (error) {
+                                    console.error('Error deleting risk:', error);
+                                    alert('Error deleting risk');
+                                  }
+                                }
+                              }}
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Delete
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              )}
+            </Card>
+          ))
+        )}
       </div>
 
       {/* Create Risk Modal */}

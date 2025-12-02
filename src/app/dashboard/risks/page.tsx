@@ -10,7 +10,12 @@ import {
   ChevronUp,
   ExternalLink,
   Search,
-  Building
+  Building,
+  Sparkles,
+  ArrowRight,
+  Info,
+  AlertCircle,
+  FileText
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -883,7 +888,7 @@ export default function RiskManagementPage() {
                     <div className="flex items-center gap-3 flex-shrink-0">
                       <div className="text-right min-w-[100px]">
                         <div className="text-[10px] text-muted-foreground">Overall Risk</div>
-                        {riskCalc ? (
+                        {riskCalc && riskCalc.score > 1.5 ? (
                           <div className="flex items-center justify-end gap-1.5 mt-0.5">
                             <span className="text-lg font-bold text-foreground">{riskCalc.score}</span>
                             <Badge className={`text-[10px] px-1.5 py-0 ${getRiskLevelColor((riskCalc.riskTier || '').charAt(0).toUpperCase() + (riskCalc.riskTier || '').slice(1))}`}>
@@ -891,7 +896,18 @@ export default function RiskManagementPage() {
                             </Badge>
                           </div>
                         ) : (
-                          <div className="text-[10px] text-muted-foreground mt-0.5">Insufficient data</div>
+                          <div className="flex flex-col items-end gap-1 mt-0.5">
+                            <div className="text-[10px] text-muted-foreground">Insufficient data</div>
+                            <Button
+                              onClick={() => router.push(`/dashboard/${useCase.id}/assess`)}
+                              variant="outline"
+                              size="sm"
+                              className="text-[10px] h-6 px-2 border-yellow-300 bg-yellow-50 hover:bg-yellow-100 text-yellow-800 dark:border-yellow-700 dark:bg-yellow-950/20 dark:hover:bg-yellow-950/30 dark:text-yellow-400"
+                            >
+                              <FileText className="w-3 h-3 mr-1" />
+                              Complete Assessment
+                            </Button>
+                          </div>
                         )}
                       </div>
                       <div className="text-right min-w-[70px]">
@@ -908,35 +924,6 @@ export default function RiskManagementPage() {
                           </div>
                         )}
                       </div>
-                      {riskCount === 0 && useCase.assessData?.stepsData && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            try {
-                              const response = await fetch(`/api/risks/${useCase.id}/auto-create`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ stepsData: useCase.assessData!.stepsData })
-                              });
-                              if (response.ok) {
-                                alert('✅ Risks created successfully! Click "Manage Risks" to view them.');
-                                fetchData(); // Refresh the data
-                              } else {
-                                const error = await response.text();
-                                alert(`❌ Failed to create risks: ${error}`);
-                              }
-                            } catch (error) {
-                              alert(`❌ Error: ${error}`);
-                            }
-                          }}
-                          className="mr-1 bg-blue-600 hover:bg-blue-700 text-white text-xs h-7 px-2"
-                        >
-                          <Shield className="w-3 h-3 mr-1" />
-                          Generate
-                        </Button>
-                      )}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -960,6 +947,31 @@ export default function RiskManagementPage() {
 
                 {isExpanded && (
                   <CardContent className="pt-0 px-4 pb-4">
+                    {riskCalc && riskCalc.score <= 1.5 && (
+                      <div className="mb-3 p-3 rounded-md border-2 border-yellow-300 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-700">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <h4 className="text-xs font-semibold text-yellow-900 dark:text-yellow-200 mb-1">
+                              Assessment Incomplete
+                            </h4>
+                            <p className="text-xs text-yellow-800 dark:text-yellow-300 mb-2">
+                              The assessment appears to be incomplete. Please complete the assessment to get accurate risk calculations.
+                            </p>
+                            <Button
+                              onClick={() => router.push(`/dashboard/${useCase.id}/assess`)}
+                              variant="outline"
+                              size="sm"
+                              className="text-xs h-7 px-3 border-yellow-400 bg-yellow-100 hover:bg-yellow-200 text-yellow-900 dark:border-yellow-600 dark:bg-yellow-950/30 dark:hover:bg-yellow-950/40 dark:text-yellow-200"
+                            >
+                              <FileText className="w-3 h-3 mr-1.5" />
+                              Go to Assessment Dashboard
+                              <ArrowRight className="w-3 h-3 ml-1.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     {riskCalc && riskCalc.chartData && riskCalc.chartData.length > 0 && (
                       <div className="mb-3 p-3 rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/50">
                         <div className="mb-2 text-xs font-semibold text-foreground">Risk Radar</div>
@@ -1022,8 +1034,35 @@ export default function RiskManagementPage() {
                       </div>
                     )}
                     {riskCount === 0 ? (
-                      <div className="text-center py-6 text-xs text-muted-foreground">
-                        No risks identified for this use case.
+                      <div className="border-2 border-dashed border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-md p-6">
+                        <div className="flex flex-col items-center justify-center text-center space-y-3">
+                          <div className="p-3 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full">
+                            <Sparkles className="h-6 w-6 text-white" />
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                              No Risks Found
+                            </h4>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 max-w-sm">
+                              Generate risks using AI Risk Intelligence in the Assess Dashboard
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5 pt-1">
+                            <Info className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                            <p className="text-[10px] text-gray-600 dark:text-gray-400">
+                              AI-powered recommendations from industry-leading sources
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() => router.push(`/dashboard/${useCase.id}/assess?step=10`)}
+                            className="mt-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-xs h-7 px-3"
+                            size="sm"
+                          >
+                            <Sparkles className="h-3 w-3 mr-1.5" />
+                            Go to AI Risk Intelligence
+                            <ArrowRight className="h-3 w-3 ml-1.5" />
+                          </Button>
+                        </div>
                       </div>
                     ) : (
                       <div className="space-y-2">

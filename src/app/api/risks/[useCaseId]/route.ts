@@ -21,7 +21,10 @@ export const GET = withAuth(async (
 
     try {
       const risks = await prismaClient.risk.findMany({
-        where: { useCaseId: useCaseId },
+        where: { 
+          useCaseId: useCaseId,
+          sourceType: { not: null } // Only show risks generated from AI Risk Intelligence
+        },
         orderBy: [
           { status: 'asc' },
           { riskScore: 'desc' },

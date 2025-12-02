@@ -61,6 +61,9 @@ export const GET = withAuth(async (request, { auth }) => {
           }
         },
         risks: {
+          where: {
+            sourceType: { not: null } // Only show risks generated from AI Risk Intelligence
+          },
           orderBy: [
             { status: 'asc' },
             { riskScore: 'desc' },
