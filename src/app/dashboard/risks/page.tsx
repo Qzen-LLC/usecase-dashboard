@@ -913,16 +913,6 @@ export default function RiskManagementPage() {
                       <div className="text-right min-w-[70px]">
                         <div className="text-[10px] text-muted-foreground">Risks</div>
                         <div className="text-lg font-bold text-foreground">{riskCount}</div>
-                        {openRiskCount > 0 && (
-                          <div className="text-[10px] text-destructive mt-0.5">
-                            {openRiskCount} open
-                          </div>
-                        )}
-                        {highRiskCount > 0 && (
-                          <div className="text-[10px] text-orange-500 mt-0.5">
-                            {highRiskCount} high
-                          </div>
-                        )}
                       </div>
                       <Button
                         variant="ghost"

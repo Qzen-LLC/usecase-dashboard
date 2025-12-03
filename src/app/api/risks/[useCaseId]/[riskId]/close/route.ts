@@ -6,9 +6,11 @@ import { prismaClient } from '@/utils/db';
 // POST /api/risks/[useCaseId]/[riskId]/close - Close a risk
 export const POST = withAuth(async (
   request: Request,
-  { params, auth }: { params: { useCaseId: string; riskId: string }, auth: any }
+  { params, auth }: { params: Promise<{ useCaseId: string; riskId: string }>, auth: any }
 ) => {
   try {
+    const { useCaseId, riskId } = await params;
+    
     const userRecord = await prismaClient.user.findUnique({
       where: { clerkId: auth.userId! },
     });
@@ -19,7 +21,7 @@ export const POST = withAuth(async (
     const { closureReason } = await request.json();
 
     const risk = await prismaClient.risk.update({
-      where: { id: params.riskId },
+      where: { id: riskId },
       data: {
         status: 'CLOSED',
         closedAt: new Date(),
@@ -32,7 +34,7 @@ export const POST = withAuth(async (
         updatedByEmail: userRecord.email,
       }
     });
-    console.log('[CRUD_LOG] Risk closed:', { id: params.riskId, useCaseId: params.useCaseId, closedAt: risk.closedAt, updatedAt: risk.updatedAt, authoredBy: userRecord.id });
+    console.log('[CRUD_LOG] Risk closed:', { id: riskId, useCaseId, closedAt: risk.closedAt, updatedAt: risk.updatedAt, authoredBy: userRecord.id });
 
     return NextResponse.json(risk);
   } catch (error) {
