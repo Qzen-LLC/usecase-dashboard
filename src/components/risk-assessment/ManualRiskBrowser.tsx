@@ -342,12 +342,7 @@ export function ManualRiskBrowser({ open, onClose, useCaseId }: ManualRiskBrowse
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-2xl font-bold">Browse QUBE AI Risk Data</DialogTitle>
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
+            <DialogTitle className="text-2xl font-bold">Browse QUBE AI Risk Data</DialogTitle>
             <p className="text-sm text-muted-foreground mt-2">
               Explore and select risks from {allRisks.length}+ entries across {taxonomyList.length} sources
             </p>
@@ -492,7 +487,7 @@ export function ManualRiskBrowser({ open, onClose, useCaseId }: ManualRiskBrowse
           </div>
 
           {/* Risk List */}
-          <ScrollArea className="flex-1 mt-4">
+          <ScrollArea className="flex-1 mt-4 h-[calc(90vh-280px)]">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-purple-600" />

@@ -4,7 +4,13 @@ import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Shield, ShieldAlert, BookOpen, Zap, AlertTriangle } from 'lucide-react';
+import { Shield, ShieldAlert, BookOpen, Zap, AlertTriangle, Info } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import type { RiskRecommendations } from '@/lib/integrations/types';
 import { SecurityRecommendationsPanel } from './security-assessment/SecurityRecommendationsPanel';
 import { ManualMitreBrowser } from './security-assessment/ManualMitreBrowser';
@@ -21,6 +27,9 @@ export default function SecurityAssessment() {
 
   // Manual MITRE Browser state
   const [showManualBrowser, setShowManualBrowser] = useState(false);
+
+  // Info Dialog state
+  const [showInfoDialog, setShowInfoDialog] = useState(false);
 
   // Fetch AI-powered security recommendations
   const fetchSecurityRecommendations = async () => {
@@ -57,12 +66,12 @@ export default function SecurityAssessment() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="bg-gradient-to-r from-red-50 via-orange-50 to-amber-50 dark:from-red-950/20 dark:via-orange-950/20 dark:to-amber-950/20 border-l-4 border-red-500 p-6 rounded-2xl shadow-md">
+      <div className="bg-gradient-to-r from-red-50 via-orange-50 to-amber-50 dark:from-red-950/20 dark:via-orange-950/20 dark:to-amber-950/20 border-l-4 border-red-500 p-6 rounded-2xl shadow-md relative">
         <div className="flex items-center gap-4 mb-3">
           <div className="p-3 bg-gradient-to-br from-red-600 to-orange-600 rounded-xl shadow-lg">
             <ShieldAlert className="h-8 w-8 text-white" />
           </div>
-          <div>
+          <div className="flex-1">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
               Security Assessment - MITRE ATLAS
             </h2>
@@ -70,6 +79,14 @@ export default function SecurityAssessment() {
               Identify adversarial tactics and techniques targeting AI systems with MITRE's comprehensive framework
             </p>
           </div>
+          {/* Info Icon */}
+          <button
+            onClick={() => setShowInfoDialog(true)}
+            className="p-2 rounded-full hover:bg-white/50 dark:hover:bg-gray-800/50 transition-colors"
+            title="View MITRE ATLAS Framework details"
+          >
+            <Info className="h-5 w-5 text-red-600" />
+          </button>
         </div>
       </div>
 
@@ -183,69 +200,72 @@ export default function SecurityAssessment() {
         </Card>
       </div>
 
-      {/* MITRE ATLAS Overview */}
-      <Card className="border-gray-200 dark:border-gray-800 shadow-md">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold flex items-center gap-2">
-            <Shield className="h-5 w-5 text-red-600" />
-            MITRE ATLAS Framework for AI Security
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-2 space-y-6">
-          {/* MITRE ATLAS Info Card */}
-          <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-5">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="h-6 w-6 text-red-600 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <h3 className="font-semibold text-red-900 dark:text-red-200 mb-2">
-                  Adversarial Threat Landscape for AI Systems
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  MITRE ATLAS is a globally accessible knowledge base of adversary tactics and techniques based on
-                  real-world attack observations. It complements MITRE ATT&CK specifically for AI/ML systems.
-                </p>
-                <div className="grid md:grid-cols-3 gap-4 mt-4">
-                  <div className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-red-100 dark:border-red-900">
-                    <div className="text-2xl font-bold text-red-600">140+</div>
-                    <div className="text-xs text-muted-foreground mt-1">Adversarial Techniques</div>
-                  </div>
-                  <div className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-orange-100 dark:border-orange-900">
-                    <div className="text-2xl font-bold text-orange-600">14</div>
-                    <div className="text-xs text-muted-foreground mt-1">Attack Tactics</div>
-                  </div>
-                  <div className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-amber-100 dark:border-amber-900">
-                    <div className="text-2xl font-bold text-amber-600">25+</div>
-                    <div className="text-xs text-muted-foreground mt-1">Real-World Case Studies</div>
+      {/* MITRE ATLAS Info Dialog */}
+      <Dialog open={showInfoDialog} onOpenChange={setShowInfoDialog}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold flex items-center gap-2">
+              <Shield className="h-5 w-5 text-red-600" />
+              MITRE ATLAS Framework for AI Security
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6 mt-4">
+            {/* MITRE ATLAS Info Card */}
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-5">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-6 w-6 text-red-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-red-900 dark:text-red-200 mb-2">
+                    Adversarial Threat Landscape for AI Systems
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    MITRE ATLAS is a globally accessible knowledge base of adversary tactics and techniques based on
+                    real-world attack observations. It complements MITRE ATT&CK specifically for AI/ML systems.
+                  </p>
+                  <div className="grid md:grid-cols-3 gap-4 mt-4">
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-red-100 dark:border-red-900">
+                      <div className="text-2xl font-bold text-red-600">140+</div>
+                      <div className="text-xs text-muted-foreground mt-1">Adversarial Techniques</div>
+                    </div>
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-orange-100 dark:border-orange-900">
+                      <div className="text-2xl font-bold text-orange-600">14</div>
+                      <div className="text-xs text-muted-foreground mt-1">Attack Tactics</div>
+                    </div>
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-amber-100 dark:border-amber-900">
+                      <div className="text-2xl font-bold text-amber-600">25+</div>
+                      <div className="text-xs text-muted-foreground mt-1">Real-World Case Studies</div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Key Tactics Grid */}
-          <div>
-            <h3 className="font-semibold text-foreground mb-3">Key Adversarial Tactics</h3>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {[
-                { name: 'Reconnaissance', description: 'Gathering AI system information' },
-                { name: 'Initial Access', description: 'Gaining access to AI systems' },
-                { name: 'ML Attack Staging', description: 'Preparing ML-specific attacks' },
-                { name: 'Exfiltration', description: 'Stealing model data and outputs' },
-                { name: 'Impact', description: 'Manipulating AI system behavior' },
-                { name: 'Defense Evasion', description: 'Avoiding detection mechanisms' },
-              ].map((tactic) => (
-                <div
-                  key={tactic.name}
-                  className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3"
-                >
-                  <div className="font-semibold text-sm text-foreground mb-1">{tactic.name}</div>
-                  <div className="text-xs text-muted-foreground">{tactic.description}</div>
-                </div>
-              ))}
+            {/* Key Tactics Grid */}
+            <div>
+              <h3 className="font-semibold text-foreground mb-3">Key Adversarial Tactics</h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {[
+                  { name: 'Reconnaissance', description: 'Gathering AI system information' },
+                  { name: 'Initial Access', description: 'Gaining access to AI systems' },
+                  { name: 'ML Attack Staging', description: 'Preparing ML-specific attacks' },
+                  { name: 'Exfiltration', description: 'Stealing model data and outputs' },
+                  { name: 'Impact', description: 'Manipulating AI system behavior' },
+                  { name: 'Defense Evasion', description: 'Avoiding detection mechanisms' },
+                ].map((tactic) => (
+                  <div
+                    key={tactic.name}
+                    className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3"
+                  >
+                    <div className="font-semibold text-sm text-foreground mb-1">{tactic.name}</div>
+                    <div className="text-xs text-muted-foreground">{tactic.description}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </DialogContent>
+      </Dialog>
 
       {/* Security Recommendations Panel (Modal) */}
       {showRecommendationsPanel && recommendations && (
