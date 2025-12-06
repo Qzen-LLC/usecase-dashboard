@@ -139,21 +139,16 @@ export function ManualMitreBrowser({ open, onClose, useCaseId }: ManualMitreBrow
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-red-600 to-orange-600 rounded-lg">
-                <Shield className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <DialogTitle className="text-2xl font-bold">Browse MITRE ATLAS Techniques</DialogTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Explore all {allTechniques.length} adversarial techniques for AI systems
-                </p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-red-600 to-orange-600 rounded-lg">
+              <Shield className="h-6 w-6 text-white" />
             </div>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-5 w-5" />
-            </Button>
+            <div>
+              <DialogTitle className="text-2xl font-bold">Browse MITRE ATLAS Techniques</DialogTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Explore all {allTechniques.length} adversarial techniques for AI systems
+              </p>
+            </div>
           </div>
 
           {/* Search and Filters */}
