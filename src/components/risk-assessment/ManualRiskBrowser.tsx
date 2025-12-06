@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
@@ -487,7 +486,7 @@ export function ManualRiskBrowser({ open, onClose, useCaseId }: ManualRiskBrowse
           </div>
 
           {/* Risk List */}
-          <ScrollArea className="flex-1 mt-4 h-[calc(90vh-280px)]">
+          <div className="flex-1 mt-4 overflow-y-auto h-[calc(90vh-320px)] pr-2 border rounded-lg">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
@@ -518,7 +517,7 @@ export function ManualRiskBrowser({ open, onClose, useCaseId }: ManualRiskBrowse
                 ))}
               </div>
             )}
-          </ScrollArea>
+          </div>
 
           {/* Footer Actions */}
           <div className="flex items-center justify-between pt-4 border-t">
