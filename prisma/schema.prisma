@@ -1091,6 +1091,26 @@ model GuardrailJob {
   @@index([createdAt])
 }
 
+model EvaluationJob {
+  id                 String    @id @default(uuid())
+  useCaseId          String
+  guardrailsId       String?
+  generationStrategy String    @default("comprehensive")
+  testIntensity      String    @default("standard")
+  status             String    @default("pending") // pending, processing, completed, failed
+  progress           Int       @default(0)
+  currentStep        String?
+  result             Json?
+  error              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  completedAt        DateTime?
+
+  @@index([useCaseId])
+  @@index([status])
+  @@index([createdAt])
+}
+
 model ObservabilitySession {
   id             String    @id @default(dbgenerated("gen_random_uuid()"))
   sessionId      String    @unique

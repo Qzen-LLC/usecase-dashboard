@@ -3,7 +3,6 @@ import { withAuth } from '@/lib/auth-gateway';
 
 import { EvaluationContextAggregator } from '@/lib/evals/evaluation-context-aggregator';
 import { EvaluationGenerationEngine, GenerationStrategy } from '@/lib/evals/evaluation-generation-engine';
-import { EvaluationGenerationOrchestrator } from '@/lib/evals/evaluation-generation-orchestrator';
 import { prismaClient } from '@/utils/db';
 
 export const POST = withAuth(async (request: Request, { auth }) => {
@@ -12,13 +11,12 @@ export const POST = withAuth(async (request: Request, { auth }) => {
     // auth context is provided by withAuth wrapper
 
     const body = await request.json();
-    const { 
-      useCaseId, 
+    const {
+      useCaseId,
       guardrailsId,
       generationStrategy = 'comprehensive',
       testIntensity = 'standard',
-      focusAreas,
-      useOrchestrator = false // Flag to choose between engine and orchestrator
+      focusAreas
     } = body;
 
     if (!useCaseId) {
@@ -41,10 +39,7 @@ export const POST = withAuth(async (request: Request, { auth }) => {
     console.log('🚀 Starting LLM-powered evaluation generation...');
     console.log(`   Use Case: ${useCaseId}`);
     console.log(`   Guardrails ID received: ${guardrailsId}`);
-    console.log(`   Guardrails ID type: ${typeof guardrailsId}`);
-    console.log(`   Guardrails ID truthy: ${!!guardrailsId}`);
     console.log(`   Strategy: ${generationStrategy}, Intensity: ${testIntensity}`);
-    console.log(`   Mode: ${useOrchestrator ? 'Multi-Agent Orchestrator' : 'Direct LLM Engine'}`);
 
     // Step 1: Build comprehensive context
     const contextAggregator = new EvaluationContextAggregator();
@@ -86,34 +81,21 @@ export const POST = withAuth(async (request: Request, { auth }) => {
     
     console.log(`📊 Context built: ${context.guardrails.totalRules} guardrails, ${context.risks.identified.length} risks`);
 
-    // Step 2: Generate evaluations using selected approach
-    let evaluationConfig;
-    
-    if (useOrchestrator) {
-      // Use multi-agent orchestrator for comprehensive generation
-      console.log('🤖 Using multi-agent orchestrator...');
-      const orchestrator = new EvaluationGenerationOrchestrator();
-      const orchestrationResult = await orchestrator.orchestrateTestGeneration(context);
-      evaluationConfig = orchestrator.createEvaluationConfig(orchestrationResult, context);
-      
-      console.log(`✅ Orchestration complete: ${orchestrationResult.totalScenarios} scenarios from ${orchestrationResult.metadata.agents.length} agents`);
-    } else {
-      // Use direct LLM engine for faster generation
-      console.log('🧠 Using direct LLM engine...');
-      const engine = new EvaluationGenerationEngine();
-      const strategy: GenerationStrategy = {
-        type: generationStrategy as any,
-        intensity: testIntensity as any,
-        focusAreas,
-        maxTestsPerSuite: testIntensity === 'light' ? 5 : testIntensity === 'thorough' ? 20 : 10,
-        timeLimit: 60 // 60 seconds timeout
-      };
-      
-      evaluationConfig = await engine.generateEvaluations(context, strategy);
-      
-      const metaForLog = (evaluationConfig as any)?.metadata || {};
-      console.log(`✅ LLM generation complete: ${metaForLog.totalScenarios ?? evaluationConfig.testSuites?.reduce((sum: number, s: any) => sum + (s.scenarios?.length || 0), 0) ?? 0} scenarios`);
-    }
+    // Step 2: Generate evaluations using Direct LLM Engine
+    console.log('🧠 Using direct LLM engine...');
+    const engine = new EvaluationGenerationEngine();
+    const strategy: GenerationStrategy = {
+      type: generationStrategy as any,
+      intensity: testIntensity as any,
+      focusAreas,
+      maxTestsPerSuite: testIntensity === 'light' ? 5 : testIntensity === 'thorough' ? 20 : 10,
+      timeLimit: 60 // 60 seconds timeout
+    };
+
+    const evaluationConfig = await engine.generateEvaluations(context, strategy);
+
+    const metaForLog = (evaluationConfig as any)?.metadata || {};
+    console.log(`✅ LLM generation complete: ${metaForLog.totalScenarios ?? evaluationConfig.testSuites?.reduce((sum: number, s: any) => sum + (s.scenarios?.length || 0), 0) ?? 0} scenarios`);
 
     // Step 3: Save the generated evaluation configuration
     try {
@@ -145,12 +127,12 @@ export const POST = withAuth(async (request: Request, { auth }) => {
       evaluationConfig,
       summary: {
         totalSuites: evaluationConfig.testSuites.length,
-        totalScenarios: meta.totalScenarios ?? 
+        totalScenarios: meta.totalScenarios ??
                        evaluationConfig.testSuites.reduce((sum: number, suite: any) => sum + (suite.scenarios?.length || 0), 0),
         coverage: meta.coverage ?? 'Not calculated',
         confidence: evaluationConfig.scoringFramework?.confidence?.overall || 0.85,
-        generationMethod: useOrchestrator ? 'multi-agent' : 'direct-llm',
-        estimatedDuration: meta.estimatedDuration ?? 
+        generationMethod: 'direct-llm',
+        estimatedDuration: meta.estimatedDuration ??
                           evaluationConfig.testSuites.length * 5000 // Rough estimate
       },
       message: 'Evaluation configuration generated successfully using AI'

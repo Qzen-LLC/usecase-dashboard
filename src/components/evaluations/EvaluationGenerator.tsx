@@ -8,10 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { cleanWithDefaults } from '@/lib/utils/assessment-cleaner';
 import {
-  PlayCircle,
-  PauseCircle,
   CheckCircle2,
   XCircle,
   AlertTriangle,
@@ -29,7 +26,6 @@ import {
   ChevronRight,
   FlaskConical,
   Sparkles,
-  Settings2,
   Bot
 } from 'lucide-react';
 
@@ -72,7 +68,6 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
   const [useAIGeneration, setUseAIGeneration] = useState(true); // Default to AI generation
   const [generationStrategy, setGenerationStrategy] = useState<'comprehensive' | 'targeted' | 'rapid'>('comprehensive');
   const [testIntensity, setTestIntensity] = useState<'light' | 'standard' | 'thorough'>('standard');
-  const [useOrchestrator, setUseOrchestrator] = useState(false); // Use multi-agent orchestrator
   const [agentProgress, setAgentProgress] = useState<Record<string, string>>({}); // Track agent progress
   const [generationPhase, setGenerationPhase] = useState<string>('');
   
@@ -185,53 +180,103 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
     drift_detection: <Activity className="h-4 w-4" />
   };
 
+  // Poll for job status
+  const pollJobStatus = async (jobId: string): Promise<any> => {
+    const agents = ['Safety Agent', 'Performance Agent', 'Guardrail Agent'];
+    let pollCount = 0;
+    const maxPolls = 600; // 10 minutes max (1 second intervals) - LLM generation can take a while
+
+    return new Promise((resolve, reject) => {
+      const pollInterval = setInterval(async () => {
+        try {
+          pollCount++;
+
+          const response = await fetch(`/api/evaluations/job?jobId=${jobId}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch job status');
+          }
+
+          const data = await response.json();
+          const job = data.job;
+
+          if (!job) {
+            clearInterval(pollInterval);
+            reject(new Error('Job not found'));
+            return;
+          }
+
+          // Update progress from job
+          setProgress(job.progress || 0);
+          setGenerationPhase(job.currentStep || 'Processing...');
+
+          // Update agent progress based on job progress
+          const progressPercent = job.progress || 0;
+          const updatedAgentProgress: Record<string, string> = {};
+          agents.forEach((agent, index) => {
+            const agentThreshold = ((index + 1) / agents.length) * 80;
+            if (progressPercent >= agentThreshold) {
+              updatedAgentProgress[agent] = 'completed';
+            } else if (progressPercent >= agentThreshold - 25) {
+              updatedAgentProgress[agent] = 'analyzing';
+            } else {
+              updatedAgentProgress[agent] = 'pending';
+            }
+          });
+          setAgentProgress(updatedAgentProgress);
+
+          // Check if job is done
+          if (job.status === 'completed') {
+            clearInterval(pollInterval);
+            resolve(job.result);
+          } else if (job.status === 'failed') {
+            clearInterval(pollInterval);
+            reject(new Error(job.error || 'Job failed'));
+          } else if (job.status === 'pending' && pollCount > 30) {
+            // If still pending after 30 seconds, something went wrong with processing
+            clearInterval(pollInterval);
+            reject(new Error('Job processing did not start. Please try again.'));
+          } else if (pollCount >= maxPolls) {
+            clearInterval(pollInterval);
+            reject(new Error('Job timed out after 10 minutes. The AI generation is taking longer than expected.'));
+          }
+        } catch (error) {
+          console.error('Error polling job status:', error);
+          // Don't reject on individual poll failures, keep trying
+          if (pollCount >= maxPolls) {
+            clearInterval(pollInterval);
+            reject(error);
+          }
+        }
+      }, 1000); // Poll every second
+    });
+  };
+
   const generateEvaluations = async () => {
-    console.log('🎯 Starting generateEvaluations...');
-    console.log('🎯 guardrailsConfig prop present?', !!guardrailsConfig);
-    console.log('🎯 loadedGuardrailsConfig present?', !!loadedGuardrailsConfig);
-    console.log('🎯 effectiveGuardrailsConfig:', effectiveGuardrailsConfig);
-    
+    console.log('🎯 Starting generateEvaluations (async job)...');
+
     // Check if we have guardrails before proceeding
     if (!effectiveGuardrailsConfig) {
       console.error('❌ No guardrails config available');
       alert('Guardrails Required\n\nPlease generate guardrails first on the AI Guardrails tab before creating evaluations.');
       return;
     }
-    
+
     // Ensure we have a valid ID - this is critical for the backend
     if (!effectiveGuardrailsConfig.id) {
       console.error('❌ Guardrails config exists but missing ID');
-      console.error('   Config structure:', {
-        keys: Object.keys(effectiveGuardrailsConfig),
-        hasGuardrails: !!effectiveGuardrailsConfig.guardrails,
-        hasRules: !!effectiveGuardrailsConfig.rules
-      });
       alert('Guardrails configuration is missing ID. Please regenerate guardrails on the AI Guardrails tab.');
       return;
     }
-    
+
     console.log('✅ Guardrails validation passed');
     console.log('   - ID:', effectiveGuardrailsConfig.id);
-    console.log('   - Has guardrails structure:', !!effectiveGuardrailsConfig.guardrails);
-    
+
     setIsGenerating(true);
     setProgress(0);
-    setGenerationPhase('Initializing...');
-    
+    setGenerationPhase('Creating evaluation job...');
+
     // Initialize agent progress
-    const agents = useOrchestrator ? [
-      'Risk Analyst',
-      'Compliance Expert',
-      'Ethics Advisor',
-      'Security Architect',
-      'Business Strategist',
-      'Technical Optimizer'
-    ] : [
-      'Safety Agent',
-      'Performance Agent',
-      'Guardrail Agent'
-    ];
-    
+    const agents = ['Safety Agent', 'Performance Agent', 'Guardrail Agent'];
     const initialProgress: Record<string, string> = {};
     agents.forEach(agent => {
       initialProgress[agent] = 'pending';
@@ -239,138 +284,87 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
     setAgentProgress(initialProgress);
 
     try {
-      // Simulate agent progress
-      let currentAgentIndex = 0;
-      
-      const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + (90 / agents.length), 90));
-        
-        // Update agent status
-        if (currentAgentIndex < agents.length) {
-          const agent = agents[currentAgentIndex];
-          setAgentProgress(prev => ({ ...prev, [agent]: 'analyzing' }));
-          setGenerationPhase(`${agent} is analyzing...`);
-          
-          // Mark agent as complete after some time
-          setTimeout(() => {
-            setAgentProgress(prev => ({ ...prev, [agent]: 'completed' }));
-          }, 2000);
-          
-          currentAgentIndex++;
-        }
-      }, 3000);
-
-      // Choose API endpoint based on generation mode
-      const apiEndpoint = useAIGeneration ? '/api/evaluations/generate-v2' : '/api/evaluations/generate';
-
-      console.log('🔍 Use Case ID:', useCaseId);
-      console.log('🔍 Effective Guardrails config:', effectiveGuardrailsConfig);
-      console.log('🔍 Guardrails ID:', effectiveGuardrailsConfig?.id);
-
-      // Clean assessment data before sending - only pass user-filled fields
-      const cleanedAssessmentData = assessmentData
-        ? cleanWithDefaults(assessmentData)
-        : undefined;
-
-      if (assessmentData) {
-        console.log('🧹 Assessment data cleaned for evaluation generation');
-      }
-
-      // Ensure we have a valid guardrails ID
-      const guardrailsIdToSend = effectiveGuardrailsConfig?.id || null;
-      
-      console.log('📤 Request details:');
-      console.log('   - Use Case ID:', useCaseId);
-      console.log('   - Guardrails ID to send:', guardrailsIdToSend);
-      console.log('   - Effective Guardrails Config:', {
-        hasId: !!effectiveGuardrailsConfig?.id,
-        id: effectiveGuardrailsConfig?.id,
-        hasGuardrails: !!effectiveGuardrailsConfig?.guardrails,
-        hasRules: !!effectiveGuardrailsConfig?.rules,
-        keys: effectiveGuardrailsConfig ? Object.keys(effectiveGuardrailsConfig) : []
-      });
-
-      const requestBody = useAIGeneration ? {
-        useCaseId,
-        guardrailsId: guardrailsIdToSend,
-        generationStrategy,
-        testIntensity,
-        useOrchestrator
-      } : {
-        useCaseId,
-        guardrailsConfig: effectiveGuardrailsConfig,
-        assessmentData: cleanedAssessmentData  // Send cleaned data
-      };
-
-      console.log('📤 Full request body:', JSON.stringify(requestBody, null, 2).substring(0, 500));
-
-      const response = await fetch(apiEndpoint, {
+      // Step 1: Create the job
+      console.log('📋 Creating evaluation job...');
+      const createResponse = await fetch('/api/evaluations/job', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          useCaseId,
+          guardrailsId: effectiveGuardrailsConfig.id,
+          generationStrategy,
+          testIntensity
+        })
       });
 
-      clearInterval(progressInterval);
+      if (!createResponse.ok) {
+        const errorData = await createResponse.json();
+        throw new Error(errorData.error || 'Failed to create evaluation job');
+      }
+
+      const createData = await createResponse.json();
+      const jobId = createData.jobId;
+      console.log('✅ Job created:', jobId);
+
+      setProgress(5);
+      setGenerationPhase('Job queued, starting processing...');
+
+      // Step 2: Trigger processing and start polling simultaneously
+      console.log('🚀 Triggering job processing...');
+
+      // Start processing in background (don't await - let it run)
+      const processPromise = fetch('/api/evaluations/job/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId })
+      }).then(async (res) => {
+        if (res.ok) {
+          const data = await res.json();
+          console.log('✅ Process endpoint returned:', data.status);
+          return data;
+        } else {
+          const errorText = await res.text();
+          console.error('❌ Process endpoint error:', errorText);
+          return null;
+        }
+      }).catch(err => {
+        // Network error or timeout - job might still complete via polling
+        console.log('Process request error (may still complete via polling):', err?.message);
+        return null;
+      });
+
+      // Step 3: Poll for status (runs in parallel with processing)
+      console.log('📊 Polling for job status...');
+
+      // Race between polling completion and process completion
+      const result = await Promise.race([
+        pollJobStatus(jobId),
+        processPromise.then(data => {
+          // If process completed successfully, return its result
+          if (data?.status === 'completed' && data?.evaluationConfig) {
+            return {
+              evaluationConfig: data.evaluationConfig,
+              summary: data.summary
+            };
+          }
+          // Otherwise, let polling continue (return a promise that never resolves)
+          return new Promise(() => {});
+        })
+      ]);
+
+      // Step 4: Handle successful completion
       setProgress(100);
-      setGenerationPhase('Synthesizing results...');
-      
+      setGenerationPhase('Generation complete!');
+
       // Mark all agents as completed
       const completedProgress: Record<string, string> = {};
-      Object.keys(agentProgress).forEach(agent => {
+      agents.forEach(agent => {
         completedProgress[agent] = 'completed';
       });
       setAgentProgress(completedProgress);
 
-      if (!response.ok) {
-        let errorData: any = {};
-        let responseText = '';
-        
-        try {
-          responseText = await response.text();
-          console.error('📄 Raw response text:', responseText);
-          
-          if (responseText) {
-            try {
-              errorData = JSON.parse(responseText);
-            } catch (parseError) {
-              console.error('⚠️ Failed to parse error response as JSON, using raw text');
-              errorData = { message: responseText, raw: responseText };
-            }
-          }
-        } catch (e) {
-          console.error('⚠️ Failed to read response:', e);
-          errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
-        }
-        
-        console.error('❌ API Error Details:');
-        console.error('   Status:', response.status);
-        console.error('   Status Text:', response.statusText);
-        console.error('   Error Object:', errorData);
-        console.error('   Error Keys:', Object.keys(errorData));
-        console.error('   Error Message:', errorData.message || errorData.error || 'No message');
-        console.error('   Error Details:', errorData.details || 'No details');
-        
-        // Show specific error message based on error type
-        if (errorData.error === 'GUARDRAILS_REQUIRED' || errorData.message?.includes('guardrails')) {
-          const detailedMessage = errorData.details 
-            ? `Guardrails Required\n\n${errorData.details}\n\nPlease check the server logs for more details.`
-            : 'Guardrails Required\n\nPlease generate guardrails first on the AI Guardrails tab before creating evaluations.';
-          alert(detailedMessage);
-        } else if (errorData.error === 'LLM_CONFIGURATION_ERROR') {
-          alert('LLM Configuration Required\n\nOpenAI API key is not configured. Please check your environment configuration.');
-        } else {
-          const errorMsg = errorData.message || errorData.details || errorData.error || 'Failed to generate evaluations. Please try again.';
-          alert(`Generation Failed\n\n${errorMsg}`);
-        }
-        throw new Error(errorData.message || errorData.details || errorData.error || 'Failed to generate evaluations');
-      }
-      
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Handle response based on API version
-        const evalConfig = useAIGeneration ? data.evaluationConfig : data;
-        
+      if (result?.evaluationConfig) {
+        const evalConfig = result.evaluationConfig;
         setEvaluationConfig(evalConfig);
         setTestSuites(evalConfig.testSuites.map((suite: any) => ({
           ...suite,
@@ -379,30 +373,20 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
           coverage: suite.coverage?.percentage || 0,
           status: 'pending'
         })));
-        
-        // Show summary for AI generation
-        if (useAIGeneration && data.summary) {
-          console.log('✨ AI Generation Summary:', data.summary);
-        }
-        // Persist generated evaluation (pending status) and capture evaluationId
-        try {
-          const saveResp = await fetch('/api/evaluations/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ useCaseId, evaluationConfig: evalConfig })
-          });
-          if (saveResp.ok) {
-            const saveData = await saveResp.json();
-            if (saveData?.evaluationId) {
-              setEvaluationConfig((prev: any) => ({ ...(prev || evalConfig), id: saveData.evaluationId }));
-            }
-          }
-        } catch (err) {
-          console.error('Failed to persist generated evaluation config:', err);
-        }
+        console.log('✨ AI Generation Summary:', result.summary);
       }
+
     } catch (error) {
       console.error('Error generating evaluations:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      if (errorMessage.includes('guardrails')) {
+        alert('Guardrails Required\n\nPlease generate guardrails first on the AI Guardrails tab before creating evaluations.');
+      } else if (errorMessage.includes('LLM') || errorMessage.includes('OpenAI')) {
+        alert('LLM Configuration Required\n\nOpenAI API key is not configured. Please check your environment configuration.');
+      } else {
+        alert(`Generation Failed\n\n${errorMessage}`);
+      }
     } finally {
       setIsGenerating(false);
       setGenerationPhase('');
@@ -805,7 +789,7 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
             
             {useAIGeneration && (
               <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-sm font-medium mb-1 block text-foreground">Generation Strategy</label>
                     <select
@@ -830,22 +814,10 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
                       <option value="thorough">Thorough (15-20 tests)</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block text-foreground">Engine Mode</label>
-                    <select
-                      value={useOrchestrator ? 'orchestrator' : 'engine'}
-                      onChange={(e) => setUseOrchestrator(e.target.value === 'orchestrator')}
-                      className="w-full px-3 py-2 border rounded-md text-sm bg-background text-foreground [&>option]:bg-background [&>option]:text-foreground"
-                    >
-                      <option value="engine">Direct LLM</option>
-                      <option value="orchestrator">Multi-Agent</option>
-                    </select>
-                  </div>
                 </div>
                 <div className="text-xs text-muted-foreground">
                   <Info className="h-3 w-3 inline mr-1" />
-                  AI generation creates dynamic, context-aware test scenarios using GPT-4o. 
-                  {useOrchestrator ? ' Multi-agent mode uses specialized agents for comprehensive coverage.' : ' Direct mode is faster but less comprehensive.'}
+                  AI generation creates dynamic, context-aware test scenarios using GPT-4o.
                 </div>
                 
                 {/* Guardrails Status Indicator */}
