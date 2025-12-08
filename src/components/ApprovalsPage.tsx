@@ -914,11 +914,11 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
   const [success, setSuccess] = useState(false);
 
   // Chart and financial data state
-  // const [chartData, setChartData] = useState<{ month: string; desktop: number }[]>([]);
-  // const [riskApi, setRiskApi] = useState<any>(null);
+  const [chartData, setChartData] = useState<{ month: string; desktop: number }[]>([]);
+  const [riskApi, setRiskApi] = useState<any>(null);
   const [finops, setFinops] = useState<any>(null);
   const [qnAData, setQnAData] = useState<any>(null);
-  // const [riskResult, setRiskResult] = useState<any>(null);
+  const [riskResult, setRiskResult] = useState<any>(null);
   // Fetch financial data
   useEffect(() => {
     if (!useCaseId) 
@@ -926,37 +926,37 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
     fetch(`/api/get-finops?id=${useCaseId}&_t=${Date.now()}`)
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) setFinops(data);
+        if (Array.isArray(data) && data.length > 0) setFinops(data[0]);
       });
   }, [useCaseId]);
 
-  // // Fetch unified risk score to ensure parity with Risk Management
-  // useEffect(() => {
-  //   if (!useCaseId) return;
-  //   (async () => {
-  //     try {
-  //       const res = await fetch(`/api/risk-score/${useCaseId}`);
-  //       if (res.ok) {
-  //         const data = await res.json();
-  //         setRiskResult(data);
-  //         // Ensure chartData is set from API response for consistency
-  //         if (Array.isArray(data.chartData) && data.chartData.length > 0) {
-  //           setChartData(data.chartData);
-  //         } else {
-  //           setChartData([]);
-  //         }
-  //       } else {
-  //         // If API fails, clear chartData to avoid stale data
-  //         setChartData([]);
-  //         setRiskResult(null);
-  //       }
-  //     } catch (error) {
-  //       console.error('[ApprovalsPage] Error fetching risk score:', error);
-  //       setChartData([]);
-  //       setRiskResult(null);
-  //     }
-  //   })();
-  // }, [useCaseId, useCase]);
+  // Fetch unified risk score to ensure parity with Risk Management
+  useEffect(() => {
+    if (!useCaseId) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/risk-score/${useCaseId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setRiskResult(data);
+          // Ensure chartData is set from API response for consistency
+          if (Array.isArray(data.chartData) && data.chartData.length > 0) {
+            setChartData(data.chartData);
+          } else {
+            setChartData([]);
+          }
+        } else {
+          // If API fails, clear chartData to avoid stale data
+          setChartData([]);
+          setRiskResult(null);
+        }
+      } catch (error) {
+        console.error('[ApprovalsPage] Error fetching risk score:', error);
+        setChartData([]);
+        setRiskResult(null);
+      }
+    })();
+  }, [useCaseId, useCase]);
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -1010,18 +1010,18 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
   }, [useCaseId, useCase]);
 
   // Fetch risk metrics (score + radar) from backend for this use case
-  // useEffect(() => {
-  //   if (!useCaseId) return;
-  //   (async () => {
-  //     try {
-  //       const res = await fetch(`/api/risk-metrics/${useCaseId}`);
-  //       if (!res.ok) return;
-  //       const data = await res.json();
-  //       setRiskApi(data?.risk || null);
-  //       setChartData(Array.isArray(data?.risk?.chartData) ? data.risk.chartData : []);
-  //     } catch (_) {}
-  //   })();
-  // }, [useCaseId]);
+  useEffect(() => {
+    if (!useCaseId) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/risk-metrics/${useCaseId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setRiskApi(data?.risk || null);
+        setChartData(Array.isArray(data?.risk?.chartData) ? data.risk.chartData : []);
+      } catch (_) {}
+    })();
+  }, [useCaseId]);
 
   useEffect(() => {
     if (!useCaseId) return;
@@ -1139,23 +1139,22 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
                 }}
               />
             </div>
-            {/* Radar Chart
+            {/* Radar Chart */}
             {Array.isArray(chartData) && chartData.length > 0 && (
               <ChartRadarDots chartData={chartData} />
-            )} */}
+            )}
             {/* Summary Cards Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <Card className="flex flex-col items-center justify-center p-6">
-                {/* <div className="text-2xl font-bold text-destructive">{"$ " + (finops?.[0]?.value?.text || 0)}</div> */}
-                <div className="text-2xl font-bold text-green-600">{formatCurrency(finops?.[0]?.value?.text || 0)}</div>
+                <div className="text-2xl font-bold text-destructive">{formatCurrency(finops?.totalInvestment ?? 0)}</div>
                 <div className="text-muted-foreground mt-1">Total Investment</div>
               </Card>
               <Card className="flex flex-col items-center justify-center p-6">
-                <div className="text-2xl font-bold text-green-600">{formatCurrency(finops?.[4]?.value?.text || 0)}</div>
+                <div className="text-2xl font-bold text-green-600">{formatCurrency(finops?.cumValue ?? 0)}</div>
                 <div className="text-muted-foreground mt-1">Total Value Generated</div>
               </Card>
               <Card className="flex flex-col items-center justify-center p-6">
-                <div className="text-2xl font-bold text-blue-600">{(finops?.[0]?.value?.text || 0) + " %"}</div>
+                <div className="text-2xl font-bold text-blue-600">{typeof finops?.ROI === 'number' ? `${finops.ROI.toFixed(1)}%` : '0%'}</div>
                 <div className="text-muted-foreground mt-1">Net ROI</div>
               </Card>
               <Card className="flex flex-col items-center justify-center p-6">
@@ -1163,7 +1162,7 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
                 <div className="text-muted-foreground mt-1">Payback Period</div>
               </Card>
             </div>
-            {/* Risk Summary Card
+            {/* Risk Summary Card */}
             {chartData && chartData.length > 0 && riskApi && (() => {
               const riskScores = chartData.map((d: { month: string; desktop: number }) => d.desktop);
               const criticalCount = riskScores.filter((v: number) => v >= 8).length;
@@ -1235,9 +1234,9 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
                   )}
                 </div>
               );
-            })()} */}
+            })()}
             {/* After info messages, add a Risk Action Summary */}
-            {/* {(() => {
+            {(() => {
               if (!riskApi) return null;
               // Gather risk scores, info, and factors
               const riskScores = [
@@ -1284,10 +1283,10 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
                   </ul>
                 </div>
               );
-            })()} */}
+            })()}
           </>
         )}
-        {/* <h2 className="text-2xl font-bold mb-8 text-[#9461fd]">Approvals</h2> */}
+        <h2 className="text-2xl font-bold mb-8 text-[#9461fd]">Approvals</h2>
         {_error && (
           <div className="text-red-500 mb-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
             <div className="whitespace-pre-line">{_error}</div>

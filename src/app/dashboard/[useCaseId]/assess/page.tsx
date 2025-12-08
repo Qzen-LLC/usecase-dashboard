@@ -289,9 +289,9 @@ export default function AssessmentPage() {
     { id: 6, title: "Roadmap Position" },
     { id: 7, title: "Budget Planning" },
     { id: 8, title: "Financial Dashboard" },
-    { id: 9, title: "AI Risk Intelligence" },
-    { id: 10, title: "Security Assessment" },
-    { id: 11, title: "Approvals" },
+    { id: 9, title: "Approvals" },
+    { id: 10, title: "AI Risk Intelligence" },
+    { id: 11, title: "Security Assessment" },
     { id: 12, title: "AI Guardrails" },
     { id: 13, title: "AI Evaluations" },
     { id: 14, title: "Golden Dataset" },
@@ -1077,15 +1077,15 @@ const validateAssessmentData = useMemo(() => (data: any) => {
           </CardHeader>
         ) : currentStep === 9 ? (
           <CardHeader>
-            <CardTitle>AI Risk Intelligence</CardTitle>
+            <CardTitle>Approvals</CardTitle>
           </CardHeader>
         ) : currentStep === 10 ? (
           <CardHeader>
-            <CardTitle>Security Assessment</CardTitle>
+            <CardTitle>AI Risk Intelligence</CardTitle>
           </CardHeader>
         ) : currentStep === 11 ? (
           <CardHeader>
-            <CardTitle>Approvals</CardTitle>
+            <CardTitle>Security Assessment</CardTitle>
           </CardHeader>
         ) : currentStep === 12 ? (
           <CardHeader>
@@ -1199,21 +1199,21 @@ const validateAssessmentData = useMemo(() => (data: any) => {
               <FinancialDashboard />
             </div>
           ) : currentStep === 9 ? (
+            <div className={isReadOnly ? 'readonly-mode' : ''}>
+              <ApprovalsPage ref={approvalsPageRef} useCase={useCase} />
+            </div>
+          ) : currentStep === 10 ? (
             isReadOnly ? (
               <ReadOnlyAIRiskIntelligence />
             ) : (
               <AIRiskIntelligence />
             )
-          ) : currentStep === 10 ? (
+          ) : currentStep === 11 ? (
             isReadOnly ? (
               <ReadOnlySecurityAssessment />
             ) : (
               <SecurityAssessment />
             )
-          ) : currentStep === 11 ? (
-            <div className={isReadOnly ? 'readonly-mode' : ''}>
-              <ApprovalsPage ref={approvalsPageRef} useCase={useCase} />
-            </div>
           ) : currentStep === 12 ? (
             <div className={isReadOnly ? 'readonly-mode' : ''}>
               <GuardrailsGenerator

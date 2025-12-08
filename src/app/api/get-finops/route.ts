@@ -1,7 +1,8 @@
 import { prismaClient } from "@/utils/db";
 import { withAuth } from '@/lib/auth-gateway';
 
-const requiredQuestions = ["Initial Dev Cost", "Monthly API Cost", "Monthly Infrastructure", "Monthly Operations", "Monthly Value Generated", "Value Growth Rate (%)"]
+// Removed: import redis from '@/lib/redis';
+
 export const GET = withAuth(async (req: Request, { auth }) => {
     try {
         // auth context is provided by withAuth wrapper
@@ -26,17 +27,12 @@ export const GET = withAuth(async (req: Request, { auth }) => {
                 return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
             }
         }
-        const res = await prismaClient.answer.findMany({
+        const res = await prismaClient.finOps.findMany({
             where: {
                 useCaseId: id,
-                question: {
-                    text:{
-                        in: requiredQuestions,
-                    },
-                },
-            }
+            },
         });
-        console.log(res);
+        // Removed Redis set logic
         return new Response(JSON.stringify(res), {
             headers: {
                 'Content-Type': 'application/json',
