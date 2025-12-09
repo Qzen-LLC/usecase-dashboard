@@ -1139,10 +1139,6 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
                 }}
               />
             </div>
-            {/* Radar Chart */}
-            {Array.isArray(chartData) && chartData.length > 0 && (
-              <ChartRadarDots chartData={chartData} />
-            )}
             {/* Summary Cards Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <Card className="flex flex-col items-center justify-center p-6">
@@ -1162,128 +1158,6 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
                 <div className="text-muted-foreground mt-1">Payback Period</div>
               </Card>
             </div>
-            {/* Risk Summary Card */}
-            {chartData && chartData.length > 0 && riskApi && (() => {
-              const riskScores = chartData.map((d: { month: string; desktop: number }) => d.desktop);
-              const criticalCount = riskScores.filter((v: number) => v >= 8).length;
-              const highCount = riskScores.filter((v: number) => v >= 6 && v < 8).length;
-              const mediumCount = riskScores.filter((v: number) => v >= 4 && v < 6).length;
-              return (
-                <div className="mb-8">
-                  <ApprovalsRiskSummary
-                    score={riskApi.score}
-                    riskTier={riskApi.riskTier as 'critical' | 'high' | 'medium' | 'low'}
-                    trend="increasing"
-                    criticalCount={criticalCount}
-                    highCount={highCount}
-                    mediumCount={mediumCount}
-                  />
-                  {riskApi.regulatoryWarnings && riskApi.regulatoryWarnings.length > 0 && (
-                    <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded flex items-start gap-2 border border-gray-200 dark:border-gray-600">
-                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-gray-400 flex-shrink-0" />
-                      <div>
-                        <div className="font-semibold mb-1">Regulatory frameworks have been automatically inferred:</div>
-                        {riskApi.regulatoryWarnings.map((w: string, i: number) => <div key={i}>{w}</div>)}
-                      </div>
-                    </div>
-                  )}
-                  {riskApi.dataPrivacyInfo && riskApi.dataPrivacyInfo.length > 0 && (
-                    <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded flex items-start gap-2 border border-gray-200 dark:border-gray-600">
-                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-gray-400 flex-shrink-0" />
-                      <div>
-                        <div className="font-semibold mb-1">Data Privacy:</div>
-                        {riskApi.dataPrivacyInfo.map((w: string, i: number) => <div key={i}>{w}</div>)}
-                      </div>
-                    </div>
-                  )}
-                  {riskApi.securityInfo && riskApi.securityInfo.length > 0 && (
-                    <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded flex items-start gap-2 border border-gray-200 dark:border-gray-600">
-                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-gray-400 flex-shrink-0" />
-                      <div>
-                        <div className="font-semibold mb-1">Security:</div>
-                        {riskApi.securityInfo.map((w: string, i: number) => <div key={i}>{w}</div>)}
-                      </div>
-                    </div>
-                  )}
-                  {riskApi.operationalInfo && riskApi.operationalInfo.length > 0 && (
-                    <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded flex items-start gap-2 border border-gray-200 dark:border-gray-600">
-                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-gray-400" />
-                      <div>
-                        <div className="font-semibold mb-1">Operational:</div>
-                        {riskApi.operationalInfo.map((w: string, i: number) => <div key={i}>{w}</div>)}
-                      </div>
-                    </div>
-                  )}
-                  {riskApi.ethicalInfo && riskApi.ethicalInfo.length > 0 && (
-                    <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded flex items-start gap-2 border border-gray-200 dark:border-gray-600">
-                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-gray-400" />
-                      <div>
-                        <div className="font-semibold mb-1">Ethical:</div>
-                        {riskApi.ethicalInfo.map((w: string, i: number) => <div key={i}>{w}</div>)}
-                      </div>
-                    </div>
-                  )}
-                  {riskApi.genAIInfo && riskApi.genAIInfo.length > 0 && (
-                    <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-900 dark:text-purple-100 rounded flex items-start gap-2 border border-purple-200 dark:border-purple-600">
-                      <InformationCircleIcon className="w-5 h-5 mt-0.5 text-purple-400 flex-shrink-0" />
-                      <div>
-                        <div className="font-semibold mb-1">Gen AI Specific:</div>
-                        {riskApi.genAIInfo.map((w: string, i: number) => <div key={i}>{w}</div>)}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-            {/* After info messages, add a Risk Action Summary */}
-            {(() => {
-              if (!riskApi) return null;
-              // Gather risk scores, info, and factors
-              const riskScores = [
-                { label: 'Data Privacy', score: chartData[0]?.desktop || 0, info: riskApi.dataPrivacyInfo, factors: riskApi.dataPrivacyFactors },
-                { label: 'Security', score: chartData[1]?.desktop || 0, info: riskApi.securityInfo, factors: riskApi.securityFactors },
-                { label: 'Regulatory', score: chartData[2]?.desktop || 0, info: riskApi.regulatoryWarnings, factors: riskApi.regulatoryFactors },
-                { label: 'Ethical', score: chartData[3]?.desktop || 0, info: riskApi.ethicalInfo, factors: riskApi.ethicalFactors },
-                { label: 'Operational', score: chartData[4]?.desktop || 0, info: riskApi.operationalInfo, factors: riskApi.operationalFactors },
-                { label: 'Reputational', score: chartData[5]?.desktop || 0, info: [], factors: riskApi.reputationalFactors },
-              ];
-              
-              // Add Gen AI risk if applicable
-              if (chartData[6]) {
-                riskScores.push({ 
-                  label: 'Gen AI', 
-                  score: chartData[6]?.desktop || 0, 
-                  info: riskApi.genAIInfo || [], 
-                  factors: riskApi.genAIFactors || [] 
-                });
-              }
-              // Sort by score descending
-              const topRisks = riskScores.sort((a, b) => b.score - a.score).slice(0, 3);
-              return (
-                <div className="mt-8 p-6 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <InformationCircleIcon className="w-5 h-5 text-gray-400" />
-                    <span className="font-bold text-gray-900 dark:text-gray-100 text-lg">Risk Action Summary</span>
-                  </div>
-                  <ul className="list-disc pl-6 space-y-2">
-                    {topRisks.map((risk, idx) => (
-                      <li key={idx}>
-                        <span className="font-semibold">{risk.label} Risk ({risk.score}/10):</span>
-                        {risk.score >= 8 ? (
-                          <ul className="list-disc pl-6">
-                            {(risk.info && risk.info.length > 0 ? risk.info : risk.factors).map((msg, i) => <li key={i} className="text-gray-900 dark:text-gray-100">Action: {msg}</li>)}
-                          </ul>
-                        ) : risk.score >= 4 ? (
-                          <span className="text-gray-900 dark:text-gray-100 ml-2">Monitor this area. {risk.factors && risk.factors.length > 0 ? `Factors: ${risk.factors.join('; ')}` : ''}</span>
-                        ) : (
-                          <span className="text-gray-900 dark:text-gray-100 ml-2">No immediate action required.</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })()}
           </>
         )}
         <h2 className="text-2xl font-bold mb-8 text-[#9461fd]">Approvals</h2>
