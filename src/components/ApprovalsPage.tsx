@@ -3,6 +3,7 @@ import React, { useEffect, useState, forwardRef, useImperativeHandle } from "rea
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useParams, useRouter } from "next/navigation";
 import { ChartRadarDots } from "@/components/ui/radar-chart";
 import { ApprovalsRiskSummary } from "@/components/ui/approvals-risk-summary"
@@ -55,6 +56,48 @@ const finalQualifications = [
   "Productivity Driver",
   "Revenue Acceleration",
 ];
+
+interface Risk {
+  id: string;
+  category: string;
+  riskLevel: 'Low' | 'Medium' | 'High' | 'Critical';
+  likelihood?: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'MITIGATED' | 'ACCEPTED' | 'CLOSED';
+  riskScore: number;
+  description: string;
+  mitigationPlan?: string;
+  mitigationStrategy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const getRiskLevelColor = (level: string) => {
+  switch (level) {
+    case 'Critical':
+      return 'bg-red-500 text-white';
+    case 'High':
+      return 'bg-orange-500 text-white';
+    case 'Medium':
+      return 'bg-yellow-500 text-white';
+    case 'Low':
+      return 'bg-green-500 text-white';
+    default:
+      return 'bg-gray-500 text-white';
+  }
+};
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'OPEN':
+      return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
+    case 'IN_PROGRESS':
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300';
+    case 'CLOSED':
+      return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
+    default:
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300';
+  }
+};
 
 const getAnswer = (qnAData: QnAProps[] | null, stage: string, text: string) => {
   if (!qnAData || !Array.isArray(qnAData)) {
@@ -919,6 +962,7 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
   const [finops, setFinops] = useState<any>(null);
   const [qnAData, setQnAData] = useState<any>(null);
   const [riskResult, setRiskResult] = useState<any>(null);
+  const [risks, setRisks] = useState<Risk[]>([]);
   // Fetch financial data
   useEffect(() => {
     if (!useCaseId) 
@@ -1020,6 +1064,23 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
         setRiskApi(data?.risk || null);
         setChartData(Array.isArray(data?.risk?.chartData) ? data.risk.chartData : []);
       } catch (_) {}
+    })();
+  }, [useCaseId]);
+
+  // Fetch risks for this use case
+  useEffect(() => {
+    if (!useCaseId) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/risks/${useCaseId}`);
+        if (res.ok) {
+          const risksData = await res.json();
+          setRisks(Array.isArray(risksData) ? risksData : []);
+        }
+      } catch (error) {
+        console.error('[ApprovalsPage] Error fetching risks:', error);
+        setRisks([]);
+      }
     })();
   }, [useCaseId]);
 
@@ -1160,7 +1221,6 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
             </div>
           </>
         )}
-        <h2 className="text-2xl font-bold mb-8 text-[#9461fd]">Approvals</h2>
         {_error && (
           <div className="text-red-500 mb-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
             <div className="whitespace-pre-line">{_error}</div>
@@ -1171,7 +1231,67 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
             Assessment completed successfully! Redirecting...
           </div>
         )}
+        {/* Risks Display Section */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-4 text-[#9461fd]">Identified Risks</h2>
+          {risks.length === 0 ? (
+            <Card className="p-6">
+              <div className="text-center py-4">
+                <p className="text-muted-foreground">No risks identified for this use case.</p>
+              </div>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {risks.map((risk) => (
+                <Card 
+                  key={risk.id} 
+                  className="border-l-4 bg-neutral-50/50 dark:bg-neutral-800/30 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50 transition-colors rounded-md p-4" 
+                  style={{
+                    borderLeftColor: risk.riskLevel === 'Critical' ? '#ef4444' :
+                      risk.riskLevel === 'High' ? '#f97316' :
+                      risk.riskLevel === 'Medium' ? '#eab308' : '#22c55e'
+                  }}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <Badge className={`${getRiskLevelColor(risk.riskLevel)} text-xs px-2 py-0.5`}>
+                          {risk.riskLevel}
+                        </Badge>
+                        <Badge className={`${getStatusColor(risk.status)} text-xs px-2 py-0.5`}>
+                          {risk.status.replace('_', ' ')}
+                        </Badge>
+                        <span className="text-xs font-medium text-muted-foreground bg-neutral-100 dark:bg-neutral-700 px-2 py-0.5 rounded">
+                          Score: {risk.riskScore}/10
+                        </span>
+                      </div>
+                      <h4 className="font-semibold text-sm text-foreground mb-1">
+                        {risk.category}
+                      </h4>
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-2">
+                        {risk.description}
+                      </p>
+                      {/* {risk.mitigationPlan && (
+                        <div className="mt-2 pt-2 border-t border-neutral-200 dark:border-neutral-700">
+                          <p className="text-xs font-medium text-muted-foreground mb-1">Mitigation Plan:</p>
+                          <p className="text-sm text-foreground">{risk.mitigationPlan}</p>
+                        </div>
+                      )}
+                      {risk.mitigationStrategy && (
+                        <div className="mt-2 pt-2 border-t border-neutral-200 dark:border-neutral-700">
+                          <p className="text-xs font-medium text-muted-foreground mb-1">Mitigation Strategy:</p>
+                          <p className="text-sm text-foreground">{risk.mitigationStrategy}</p>
+                        </div>
+                      )} */}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
         {/* Final Usecase Qualification */}
+        <h2 className="text-2xl font-bold mb-8 text-[#9461fd]">Approvals</h2>
         <Card className="mb-6 p-6">
           <h3 className="font-semibold text-lg mb-4">Final Usecase Qualification</h3>
           <select value={form.finalQualification} onChange={e => setForm(f => ({ ...f, finalQualification: e.target.value }))} className="mb-2 border rounded px-3 py-2">
