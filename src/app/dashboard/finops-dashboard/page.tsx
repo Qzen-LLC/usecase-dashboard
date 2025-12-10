@@ -12,41 +12,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
-import { Bar, Pie } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
+  BarElement,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
   Tooltip,
-  Legend,
-  Filler
-} from 'chart.js';
-import { DollarSign, TrendingUp, Target, Activity, ArrowUpRight, ArrowDownRight, PieChart, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
+  Legend
+} from "chart.js";
+import { Bar } from 'react-chartjs-2';
+import {
+  DollarSign,
+  TrendingUp,
+  Activity,
+  Target,
+  ChevronLeft,
+  ChevronRight,
+  BarChart3
+} from "lucide-react";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 function formatCurrency(num: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
+    minimumFractionDigits: 0
   }).format(num);
 }
 
@@ -73,14 +64,14 @@ interface FinOpsData {
   totalInvestment: number;
   valueBase: number;
   valueGrowthRate: number;
-  budgetRange?: string;
   breakEvenMonth?: number;
-  useCase?: UseCase;
   organizationName?: string;
+  useCase?: UseCase;
 }
 
-const FinOpsDashboardPage = () => {
+export default function FinOpsDashboardPage() {
   const router = useRouter();
+  const { isReady } = useStableRender();
   const [finops, setFinops] = useState<FinOpsData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -89,357 +80,297 @@ const FinOpsDashboardPage = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  
-  // Use global stable render hook
-  const { isReady } = useStableRender();
 
-  // Filter and sort data - MUST be called before any conditional returns
+  // Filtering & Sorting ------------------------------------------------------
   const filteredFinops = useMemo(() => {
     let result = finops.filter(f =>
       f.useCase?.title.toLowerCase().includes(search.toLowerCase()) ||
-      (f.useCase?.owner || '').toLowerCase().includes(search.toLowerCase())
+      (f.useCase?.owner || "").toLowerCase().includes(search.toLowerCase())
     );
 
-    // Apply sorting if a filter column is selected
-    if (filterColumn !== 'none') {
-      result = [...result].sort((a, b) => {
-        const aValue = a[filterColumn] ?? 0;
-        const bValue = b[filterColumn] ?? 0;
-        
-        if (sortDirection === 'asc') {
-          return aValue - bValue;
-        } else {
-          return bValue - aValue;
-        } 
+    if (filterColumn !== "none") {
+      result.sort((a, b) => {
+        const aValue = (a[filterColumn] ?? 0) as number;
+        const bValue = (b[filterColumn] ?? 0) as number;
+        return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
       });
     }
 
     return result;
   }, [finops, search, filterColumn, sortDirection]);
 
-  // Paginate filtered data
+  // Pagination ---------------------------------------------------------------
+  const totalPages = Math.ceil(filteredFinops.length / itemsPerPage);
   const paginatedFinops = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    return filteredFinops.slice(start, end);
+    return filteredFinops.slice(start, start + itemsPerPage);
   }, [filteredFinops, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil(filteredFinops.length / itemsPerPage);
+  useEffect(() => setCurrentPage(1), [search, filterColumn, sortDirection]);
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, filterColumn, sortDirection]);
-
-  // Calculate summary metrics
-  const summaryMetrics = useMemo(() => {
-    if (filteredFinops.length === 0) {
+  // Summary Metrics ----------------------------------------------------------
+  const summary = useMemo(() => {
+    const count = filteredFinops.length;
+    if (count === 0)
       return {
         totalInvestment: 0,
         totalNetValue: 0,
-        totalROI: 0,
-        averageROI: 0,
+        avgROI: 0,
         totalUseCases: 0,
         positiveROI: 0,
-        negativeROI: 0,
+        negativeROI: 0
       };
-    }
 
-    const totalInvestment = filteredFinops.reduce((sum, item) => sum + item.totalInvestment, 0);
-    const totalNetValue = filteredFinops.reduce((sum, item) => sum + item.netValue, 0);
-    const totalROI = filteredFinops.reduce((sum, item) => sum + (item.ROI * item.totalInvestment / 100), 0);
-    const averageROI = filteredFinops.reduce((sum, item) => sum + item.ROI, 0) / filteredFinops.length;
-    const positiveROI = filteredFinops.filter(item => item.ROI > 0).length;
-    const negativeROI = filteredFinops.filter(item => item.ROI <= 0).length;
+    const totalInvestment = filteredFinops.reduce((s, x) => s + x.totalInvestment, 0);
+    const totalNet = filteredFinops.reduce((s, x) => s + x.netValue, 0);
+    const avgROI = filteredFinops.reduce((s, x) => s + x.ROI, 0) / count;
 
     return {
       totalInvestment,
-      totalNetValue,
-      totalROI,
-      averageROI,
-      totalUseCases: filteredFinops.length,
-      positiveROI,
-      negativeROI,
+      totalNetValue: totalNet,
+      avgROI,
+      totalUseCases: count,
+      positiveROI: filteredFinops.filter(x => x.ROI > 0).length,
+      negativeROI: filteredFinops.filter(x => x.ROI <= 0).length
     };
   }, [filteredFinops]);
 
-  // Prepare chart data
+  // Chart Data (Enterprise colors)
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true },
+      x: {
+        ticks: { autoSkip: false, maxRotation: 45, minRotation: 45 }
+      }
+    }
+  };
+
   const roiDistributionData = useMemo(() => {
-    const ranges = [
-      { label: '< 0%', min: -Infinity, max: 0 },
-      { label: '0-50%', min: 0, max: 50 },
-      { label: '50-100%', min: 50, max: 100 },
-      { label: '100-200%', min: 100, max: 200 },
-      { label: '> 200%', min: 200, max: Infinity },
+    const bins = [
+      { label: "< 0%", cond: (x: number) => x < 0 },
+      { label: "0–50%", cond: (x: number) => x >= 0 && x < 50 },
+      { label: "50–100%", cond: (x: number) => x >= 50 && x < 100 },
+      { label: "100–200%", cond: (x: number) => x >= 100 && x < 200 },
+      { label: "> 200%", cond: (x: number) => x >= 200 }
     ];
-
-    const counts = ranges.map(range => 
-      filteredFinops.filter(item => item.ROI > range.min && item.ROI <= range.max).length
+    const dataset = bins.map(b =>
+      filteredFinops.filter(f => b.cond(f.ROI)).length
     );
-
     return {
-      labels: ranges.map(r => r.label),
-      datasets: [{
-        label: 'Number of Use Cases',
-        data: counts,
-        backgroundColor: [
-          'rgba(239, 68, 68, 0.6)',
-          'rgba(251, 191, 36, 0.6)',
-          'rgba(34, 197, 94, 0.6)',
-          'rgba(59, 130, 246, 0.6)',
-          'rgba(139, 92, 246, 0.6)',
-        ],
-        borderColor: [
-          'rgba(239, 68, 68, 1)',
-          'rgba(251, 191, 36, 1)',
-          'rgba(34, 197, 94, 1)',
-          'rgba(59, 130, 246, 1)',
-          'rgba(139, 92, 246, 1)',
-        ],
-        borderWidth: 1,
-      }]
+      labels: bins.map(b => b.label),
+      datasets: [
+        {
+          label: "Count",
+          data: dataset,
+          backgroundColor: "rgba(100, 116, 139, 0.6)", // slate-500 muted
+          borderColor: "rgba(100, 116, 139, 1)"
+        }
+      ]
     };
   }, [filteredFinops]);
 
-  const investmentBreakdownData = useMemo(() => {
-    const topUseCases = [...filteredFinops]
+  const topInvestmentData = useMemo(() => {
+    const top = [...filteredFinops]
       .sort((a, b) => b.totalInvestment - a.totalInvestment)
       .slice(0, 10);
-
     return {
-      labels: topUseCases.map(item => {
-        const orgOrUser = item.organizationName || item.useCase?.owner || 'N/A';
-        return `AIUC-${item.useCase?.aiucId} (${orgOrUser})`;
-      }),
-      datasets: [{
-        label: 'Total Investment',
-        data: topUseCases.map(item => item.totalInvestment),
-        backgroundColor: 'rgba(59, 130, 246, 0.6)',
-        borderColor: 'rgba(59, 130, 246, 1)',
-        borderWidth: 1,
-      }]
+      labels: top.map(x => `AIUC-${x.useCase?.aiucId}`),
+      datasets: [
+        {
+          label: "Investment",
+          data: top.map(x => x.totalInvestment),
+          backgroundColor: "rgba(71, 85, 105, 0.6)", // slate-600
+          borderColor: "rgba(71, 85, 105, 1)"
+        }
+      ]
     };
   }, [filteredFinops]);
 
-  const roiComparisonData = useMemo(() => {
-    const topUseCases = [...filteredFinops]
-      .sort((a, b) => b.ROI - a.ROI)
-      .slice(0, 10);
-
+  const topROIData = useMemo(() => {
+    const top = [...filteredFinops].sort((a, b) => b.ROI - a.ROI).slice(0, 10);
     return {
-      labels: topUseCases.map(item => {
-        const orgOrUser = item.organizationName || item.useCase?.owner || 'N/A';
-        return `AIUC-${item.useCase?.aiucId} (${orgOrUser})`;
-      }),
-      datasets: [{
-        label: 'ROI (%)',
-        data: topUseCases.map(item => item.ROI),
-        backgroundColor: topUseCases.map(item => item.ROI > 0 ? 'rgba(34, 197, 94, 0.6)' : 'rgba(239, 68, 68, 0.6)'),
-        borderColor: topUseCases.map(item => item.ROI > 0 ? 'rgba(34, 197, 94, 1)' : 'rgba(239, 68, 68, 1)'),
-        borderWidth: 1,
-      }]
+      labels: top.map(x => `AIUC-${x.useCase?.aiucId}`),
+      datasets: [
+        {
+          label: "ROI",
+          data: top.map(x => x.ROI),
+          backgroundColor: top.map((x) => x.ROI >= 0 ? "rgba(34, 197, 94, 0.6)" : "rgba(239,68,68,0.6)"),
+          borderColor: top.map((x) => x.ROI >= 0 ? "rgba(34, 197, 94, 1)" : "rgba(239,68,68,1)")
+        }
+      ]
     };
   }, [filteredFinops]);
 
+  // Fetch data --------------------------------------------------------------
   useEffect(() => {
+    if (!isReady) return;
+
     async function fetchData() {
       setLoading(true);
       setError('');
       try {
-        const response = await fetch('/api/finops-dashboard');
-        if (!response.ok) {
-          throw new Error('Failed to fetch FinOps data');
-        }
-        const data = await response.json();
+        const res = await fetch('/api/finops-dashboard');
+        if (!res.ok) throw new Error("Failed to fetch FinOps data");
+        const data = await res.json();
         setFinops(data.finops || []);
-      } catch (err) {
-        setError('Failed to load FinOps data');
+      } catch (error) {
+        setError('Unable to load financial data.');
       }
       setLoading(false);
     }
-    
-    if (isReady) {
-      fetchData();
-    }
+
+    fetchData();
   }, [isReady]);
 
-  // Don't render until stable to prevent hydration mismatch
-  if (!isReady) {
+  const handleRowClick = (id: string) =>
+    router.push(`/dashboard/finops-dashboard/${id}`);
+
+  if (!isReady)
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-foreground font-medium">Loading FinOps Dashboard...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center text-sm text-muted-foreground">
+          Loading…
         </div>
       </div>
     );
-  }
 
-  const handleRowClick = (useCaseId: string) => {
-    router.push(`/dashboard/finops-dashboard/${useCaseId}`);
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: true,
-        position: 'top' as const,
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context: any) {
-            return `${context.dataset.label}: ${context.parsed.y}`;
-          }
-        }
-      }
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-      },
-      x: {
-        ticks: {
-          maxRotation: 45,
-          minRotation: 45,
-          autoSkip: false,
-        }
-      },
-    },
-  };
-
+  // ---------------------------------------------------------------------------
+  // UI Rendering
+  // ---------------------------------------------------------------------------
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-          </div>
-        </div>
-
-        {/* Summary Cards */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-5">
+        {/* KPI Cards (Power BI style) */}
         {!loading && !error && filteredFinops.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            <Card className="p-4 rounded-md">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Total Investment */}
+            <Card className="border border-border bg-card rounded-md p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Total Investment</p>
-                  <p className="text-lg font-bold text-foreground">{formatCurrency(summaryMetrics.totalInvestment)}</p>
-                </div>
-                <div className="p-2 bg-primary/10 rounded-md">
-                  <DollarSign className="w-5 h-5 text-primary" />
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-4 rounded-md">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Total Net Value</p>
-                  <p className="text-lg font-bold text-foreground">{formatCurrency(summaryMetrics.totalNetValue)}</p>
-                </div>
-                <div className="p-2 bg-success/10 rounded-md">
-                  <TrendingUp className="w-5 h-5 text-success" />
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-4 rounded-md">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Average ROI</p>
-                  <div className="flex items-center gap-1">
-                    <p className="text-lg font-bold text-foreground">{summaryMetrics.averageROI.toFixed(1)}%</p>
-                    {summaryMetrics.averageROI > 0 ? (
-                      <ArrowUpRight className="w-4 h-4 text-success" />
-                    ) : (
-                      <ArrowDownRight className="w-4 h-4 text-destructive" />
-                    )}
-                  </div>
-                </div>
-                <div className="p-2 bg-accent/10 rounded-md">
-                  <Target className="w-5 h-5 text-accent-foreground" />
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-4 rounded-md">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Total Use Cases</p>
-                  <p className="text-lg font-bold text-foreground">{summaryMetrics.totalUseCases}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {summaryMetrics.positiveROI} positive, {summaryMetrics.negativeROI} negative ROI
+                  <p className="text-[11px] uppercase text-muted-foreground mb-1">
+                    Total Investment
+                  </p>
+                  <p className="text-lg font-semibold">
+                    {formatCurrency(summary.totalInvestment)}
                   </p>
                 </div>
                 <div className="p-2 bg-muted rounded-md">
-                  <Activity className="w-5 h-5 text-muted-foreground" />
+                  <DollarSign className="w-5 h-5 text-muted-foreground" />
                 </div>
+              </div>
+            </Card>
+
+            {/* Total Net Value */}
+            <Card className="border border-border bg-card rounded-md p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] uppercase text-muted-foreground mb-1">
+                    Net Value Generated
+                  </p>
+                  <p className="text-lg font-semibold">
+                    {formatCurrency(summary.totalNetValue)}
+                  </p>
+                </div>
+                <div className="p-2 bg-muted rounded-md">
+                  <TrendingUp className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </div>
+            </Card>
+
+            {/* Avg ROI */}
+            <Card className="border border-border bg-card rounded-md p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] uppercase text-muted-foreground mb-1">
+                    Average ROI
+                  </p>
+                  <p className="text-lg font-semibold">
+                    {summary.avgROI.toFixed(1)}%
+                  </p>
+                </div>
+                <div className="p-2 bg-muted rounded-md">
+                  <Target className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </div>
+            </Card>
+
+            {/* Number of Use Cases */}
+            <Card className="border border-border bg-card rounded-md p-3">
+              <div>
+                <p className="text-[11px] uppercase text-muted-foreground mb-1">
+                  Use Cases Analyzed
+                </p>
+                <p className="text-lg font-semibold">
+                  {summary.totalUseCases}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {summary.positiveROI} positive, {summary.negativeROI} negative
+                </p>
               </div>
             </Card>
           </div>
         )}
 
-        {/* Charts Section */}
+        {/* Charts */}
         {!loading && !error && filteredFinops.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            <Card className="p-4 rounded-md">
-              <h3 className="text-sm font-semibold text-foreground mb-3">ROI Distribution</h3>
+            <Card className="p-3 border border-border bg-card rounded-md">
+              <p className="text-sm font-medium mb-2">ROI Distribution</p>
               <div className="h-64">
                 <Bar data={roiDistributionData} options={chartOptions} />
               </div>
             </Card>
 
-            <Card className="p-4 rounded-md">
-              <h3 className="text-sm font-semibold text-foreground mb-3">Top 10 Investments</h3>
+            <Card className="p-3 border border-border bg-card rounded-md">
+              <p className="text-sm font-medium mb-2">Top Investments</p>
               <div className="h-64">
-                <Bar data={investmentBreakdownData} options={chartOptions} />
+                <Bar data={topInvestmentData} options={chartOptions} />
               </div>
             </Card>
 
-            <Card className="p-4 rounded-md lg:col-span-2">
-              <h3 className="text-sm font-semibold text-foreground mb-3">Top 10 ROI Comparison</h3>
+            <Card className="p-3 border border-border bg-card rounded-md lg:col-span-2">
+              <p className="text-sm font-medium mb-2">Highest ROI Use Cases</p>
               <div className="h-64">
-                <Bar data={roiComparisonData} options={chartOptions} />
+                <Bar data={topROIData} options={chartOptions} />
               </div>
             </Card>
           </div>
         )}
 
-        {/* Search and Filters */}
-        <Card className="p-4 rounded-md">
+        {/* Search + Filters (Enterprise ribbon) */}
+        <Card className="border border-border bg-card rounded-md p-3">
           <div className="flex flex-col md:flex-row gap-3 items-center">
-            <div className="flex-1 max-w-md">
-              <Input
-                type="text"
-                placeholder="Search by use case or owner..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full"
-              />
-            </div>
-            <div className="flex gap-2 items-center">
+            <Input
+              placeholder="Search by use case or owner..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="max-w-xs h-9 text-sm"
+            />
+
+            <div className="flex items-center gap-2">
               <Select
                 value={filterColumn}
-                onValueChange={(value) => setFilterColumn(value as FilterColumn)}
+                onValueChange={(v) => setFilterColumn(v as FilterColumn)}
               >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Sort by..." />
+                <SelectTrigger className="w-[180px] h-9 text-sm">
+                  <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Sort By..</SelectItem>
-                  <SelectItem value="totalInvestment">Total Investment</SelectItem>
-                  <SelectItem value="ROI">Return on Investment</SelectItem>
-                  <SelectItem value="breakEvenMonth">Break Even Month</SelectItem>
+                  <SelectItem value="none">Sort by...</SelectItem>
+                  <SelectItem value="totalInvestment">Investment</SelectItem>
+                  <SelectItem value="ROI">ROI</SelectItem>
+                  <SelectItem value="breakEvenMonth">Break-even Month</SelectItem>
                 </SelectContent>
               </Select>
-              {filterColumn !== 'none' && (
+              {filterColumn !== "none" && (
                 <Select
                   value={sortDirection}
-                  onValueChange={(value) => setSortDirection(value as SortDirection)}
+                  onValueChange={(v) => setSortDirection(v as SortDirection)}
                 >
-                  <SelectTrigger className="w-[120px]">
+                  <SelectTrigger className="w-[120px] h-9 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -449,178 +380,178 @@ const FinOpsDashboardPage = () => {
                 </Select>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              <div className="text-xs text-muted-foreground">
-                {filteredFinops.length} of {finops.length} use cases
-              </div>
+
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                {filteredFinops.length} results
+              </span>
               <Select
-                value={itemsPerPage.toString()}
-                onValueChange={(value) => {
-                  setItemsPerPage(Number(value));
+                value={String(itemsPerPage)}
+                onValueChange={(v) => {
+                  setItemsPerPage(Number(v));
                   setCurrentPage(1);
                 }}
               >
-                <SelectTrigger className="w-[100px]">
+                <SelectTrigger className="w-[100px] h-9 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="10">10 per page</SelectItem>
-                  <SelectItem value="25">25 per page</SelectItem>
-                  <SelectItem value="50">50 per page</SelectItem>
-                  <SelectItem value="100">100 per page</SelectItem>
+                  <SelectItem value="10">10 / page</SelectItem>
+                  <SelectItem value="25">25 / page</SelectItem>
+                  <SelectItem value="50">50 / page</SelectItem>
                 </SelectContent>
               </Select>
+              {filterColumn !== "none" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={() => {
+                    setFilterColumn("none");
+                    setSortDirection("desc");
+                    setSearch("");
+                  }}
+                >
+                  Clear
+                </Button>
+              )}
             </div>
-            {filterColumn !== 'none' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setFilterColumn('none');
-                  setSortDirection('desc');
-                  setSearch('');
-                }}
-              >
-                Clear Filters
-              </Button>
-            )}
           </div>
         </Card>
 
         {/* Table Section */}
         {loading ? (
-          <Card className="p-12 rounded-md">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground font-medium">Loading FinOps data...</p>
-            </div>
+          <Card className="p-12 text-center border border-border bg-card rounded-md">
+            <p className="text-sm text-muted-foreground">Loading data…</p>
           </Card>
         ) : error ? (
-          <Card className="p-6 rounded-md bg-destructive/10 border-destructive/20">
-            <div className="text-destructive font-medium">{error}</div>
+          <Card className="p-6 border border-destructive bg-destructive/10 rounded-md">
+            <p className="text-destructive text-sm">{error}</p>
           </Card>
         ) : filteredFinops.length === 0 ? (
-          <Card className="p-12 rounded-md">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <BarChart3 className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">No FinOps data found</h3>
-              <p className="text-muted-foreground">No financial operations data matches your search criteria.</p>
+          <Card className="p-10 text-center border border-border rounded-md">
+            <div className="flex flex-col items-center gap-3">
+              <BarChart3 className="w-10 h-10 text-muted-foreground" />
+              <p className="text-sm font-medium">No results</p>
+              <p className="text-xs text-muted-foreground">
+                Your filters returned no data.
+              </p>
             </div>
           </Card>
         ) : (
-          <Card className="rounded-md overflow-hidden">
+          <Card className="border border-border rounded-md overflow-hidden">
+            {/* Table */}
             <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead>
                   <tr className="bg-muted border-b border-border">
-                    <th className="px-4 py-3 text-xs font-semibold text-foreground text-left">Use Case</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-foreground text-left">Owner</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-foreground text-left">Stage</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-foreground text-right">Investment</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-foreground text-right">Net Value</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-foreground text-right">ROI (%)</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-foreground text-right">Growth Rate</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground">Use Case</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground">Owner</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground">Stage</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-foreground">Investment</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-foreground">Net Value</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-foreground">ROI (%)</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-foreground">Growth</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {paginatedFinops.map((item, index) => (
-                    <tr 
-                      key={index} 
-                      className="bg-card hover:bg-muted/50 transition-colors duration-150 cursor-pointer"
+                  {paginatedFinops.map((item, i) => (
+                    <tr
+                      key={i}
+                      className="hover:bg-muted/40 cursor-pointer"
                       onClick={() => handleRowClick(item.useCaseId)}
                     >
                       <td className="px-4 py-3 text-xs">
-                        <div className="flex flex-col gap-0.5">
-                          <div className="font-mono text-xs text-muted-foreground">AIUC-{item.useCase?.aiucId}</div>
-                          <div className="font-medium text-foreground leading-tight">{item.useCase?.title}</div>
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground text-[11px] font-mono">
+                            AIUC-{item.useCase?.aiucId}
+                          </span>
+                          <span className="text-foreground text-sm font-medium">
+                            {item.useCase?.title}
+                          </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{item.useCase?.owner || '-'}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {item.useCase?.owner || "-"}
+                      </td>
                       <td className="px-4 py-3 text-xs">
-                        <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-primary/10 text-primary border border-primary/20 whitespace-nowrap">
-                          {item.useCase?.stage || '-'}
+                        <span className="rounded-sm px-2 py-0.5 text-[11px] bg-muted text-muted-foreground border border-border">
+                          {item.useCase?.stage || "-"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-right font-medium text-foreground">{formatCurrency(item.totalInvestment)}</td>
-                      <td className={`px-4 py-3 text-xs text-right font-medium ${item.netValue >= 0 ? 'text-success' : 'text-destructive'}`}>
+                      <td className="px-4 py-3 text-xs text-right font-medium text-foreground">
+                        {formatCurrency(item.totalInvestment)}
+                      </td>
+                      <td
+                        className={`px-4 py-3 text-xs text-right font-medium ${
+                          item.netValue >= 0 ? "text-green-600" : "text-red-600"
+                        }`}
+                      >
                         {formatCurrency(item.netValue)}
                       </td>
-                      <td className={`px-4 py-3 text-xs text-right font-medium ${item.ROI >= 0 ? 'text-success' : 'text-destructive'}`}>
-                        {item.ROI >= 0 ? '+' : ''}{item.ROI.toFixed(1)}%
+                      <td
+                        className={`px-4 py-3 text-xs text-right font-medium ${
+                          item.ROI >= 0 ? "text-green-600" : "text-red-600"
+                        }`}
+                      >
+                        {item.ROI >= 0 ? "+" : ""}
+                        {item.ROI.toFixed(1)}%
                       </td>
-                      <td className="px-4 py-3 text-xs text-right text-foreground">{(item.valueGrowthRate * 100).toFixed(1)}%</td>
+                      <td className="px-4 py-3 text-xs text-right text-foreground">
+                        {(item.valueGrowthRate * 100).toFixed(1)}%
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/30">
-                <div className="text-xs text-muted-foreground">
-                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredFinops.length)} of {filteredFinops.length} results
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                    className="flex items-center gap-1"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                    Previous
-                  </Button>
-                  
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                      if (
-                        page === 1 ||
-                        page === totalPages ||
-                        (page >= currentPage - 1 && page <= currentPage + 1)
-                      ) {
-                        return (
-                          <Button
-                            key={page}
-                            variant={currentPage === page ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setCurrentPage(page)}
-                            className="min-w-[2rem] h-8"
-                          >
-                            {page}
-                          </Button>
-                        );
-                      } else if (page === currentPage - 2 || page === currentPage + 2) {
-                        return (
-                          <span key={page} className="px-2 text-xs text-muted-foreground">
-                            ...
-                          </span>
-                        );
-                      }
-                      return null;
-                    })}
-                  </div>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                    className="flex items-center gap-1"
-                  >
-                    Next
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
+
+            {/* Pagination */}
+            <div className="px-4 py-3 bg-muted border-t border-border flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                Showing {(currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filteredFinops.length)} of {filteredFinops.length}
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(c => Math.max(1, c - 1))}
+                  className="h-8 text-xs px-2"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(page =>
+                    page === 1 ||
+                    page === totalPages ||
+                    Math.abs(page - currentPage) <= 1
+                  )
+                  .map(page => (
+                    <Button
+                      key={page}
+                      variant={page === currentPage ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(page)}
+                      className="h-8 text-xs min-w-[32px]"
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(c => Math.min(totalPages, c + 1))}
+                  className="h-8 text-xs px-2"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
               </div>
-            )}
+            </div>
           </Card>
         )}
       </div>
     </div>
   );
-};
-
-export default FinOpsDashboardPage;
+}

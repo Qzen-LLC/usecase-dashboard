@@ -53,62 +53,62 @@ import {
 } from '@dnd-kit/core';
 
 const stages = [
-  { 
-    id: 'discovery', 
-    title: 'Discovery', 
-    color: 'bg-gray-300 border-gray-400 dark:bg-gray-700/50 dark:border-gray-600/50', 
-    textColor: 'text-gray-900 dark:text-gray-100', 
-    accentColor: 'bg-gray-500' 
+  {
+    id: 'discovery',
+    title: 'Discovery',
+    color: 'bg-muted/60 border border-border',
+    textColor: 'text-foreground',
+    accentColor: 'bg-slate-500',
   },
-  { 
-    id: 'business-case', 
-    title: 'Business Case', 
-    color: 'bg-gray-300 border-gray-400 dark:bg-gray-700/50 dark:border-gray-600/50', 
-    textColor: 'text-gray-900 dark:text-gray-100', 
-    accentColor: 'bg-gray-500' 
+  {
+    id: 'business-case',
+    title: 'Business Case',
+    color: 'bg-muted/60 border border-border',
+    textColor: 'text-foreground',
+    accentColor: 'bg-slate-500',
   },
-  { 
-    id: 'proof-of-value', 
-    title: 'Proof of Value', 
-    color: 'bg-gray-300 border-gray-400 dark:bg-gray-700/50 dark:border-gray-600/50', 
-    textColor: 'text-gray-900 dark:text-gray-100', 
-    accentColor: 'bg-gray-500' 
+  {
+    id: 'proof-of-value',
+    title: 'Proof of Value',
+    color: 'bg-muted/60 border border-border',
+    textColor: 'text-foreground',
+    accentColor: 'bg-slate-500',
   },
-  { 
-    id: 'backlog', 
-    title: 'Backlog', 
-    color: 'bg-gray-300 border-gray-400 dark:bg-gray-700/50 dark:border-gray-600/50', 
-    textColor: 'text-gray-900 dark:text-gray-100', 
-    accentColor: 'bg-gray-500' 
+  {
+    id: 'backlog',
+    title: 'Backlog',
+    color: 'bg-muted/60 border border-border',
+    textColor: 'text-foreground',
+    accentColor: 'bg-slate-500',
   },
-  { 
-    id: 'in-progress', 
-    title: 'In Progress', 
-    color: 'bg-gray-300 border-gray-400 dark:bg-gray-700/50 dark:border-gray-600/50', 
-    textColor: 'text-gray-900 dark:text-gray-100', 
-    accentColor: 'bg-gray-500' 
+  {
+    id: 'in-progress',
+    title: 'In Progress',
+    color: 'bg-muted/60 border border-border',
+    textColor: 'text-foreground',
+    accentColor: 'bg-slate-500',
   },
-  { 
-    id: 'solution-validation', 
-    title: 'Solution Validation', 
-    color: 'bg-gray-300 border-gray-400 dark:bg-gray-700/50 dark:border-gray-600/50', 
-    textColor: 'text-gray-900 dark:text-gray-100', 
-    accentColor: 'bg-gray-500' 
+  {
+    id: 'solution-validation',
+    title: 'Solution Validation',
+    color: 'bg-muted/60 border border-border',
+    textColor: 'text-foreground',
+    accentColor: 'bg-slate-500',
   },
-  { 
-    id: 'pilot', 
-    title: 'Pilot', 
-    color: 'bg-gray-300 border-gray-400 dark:bg-gray-700/50 dark:border-gray-600/50', 
-    textColor: 'text-gray-900 dark:text-gray-100', 
-    accentColor: 'bg-gray-500' 
+  {
+    id: 'pilot',
+    title: 'Pilot',
+    color: 'bg-muted/60 border border-border',
+    textColor: 'text-foreground',
+    accentColor: 'bg-slate-500',
   },
-  { 
-    id: 'deployment', 
-    title: 'Deployment', 
-    color: 'bg-gray-300 border-gray-400 dark:bg-gray-700/50 dark:border-gray-600/50', 
-    textColor: 'text-gray-900 dark:text-gray-100', 
-    accentColor: 'bg-gray-500' 
-  }
+  {
+    id: 'deployment',
+    title: 'Deployment',
+    color: 'bg-muted/60 border border-border',
+    textColor: 'text-foreground',
+    accentColor: 'bg-slate-500',
+  },
 ] as const;
 
 const _STAGE_ORDER = [
@@ -123,16 +123,20 @@ const _STAGE_ORDER = [
 ];
 
 const _priorities = {
-  CRITICAL: { color: 'bg-red-500 text-white border-red-500', label: 'Critical' },
-  HIGH: { color: 'bg-orange-500 text-white border-orange-500', label: 'High' },
-  MEDIUM: { color: 'bg-yellow-500 text-black border-yellow-500', label: 'Medium' },
-  LOW: { color: 'bg-green-500 text-white border-green-500', label: 'Low' }
+  CRITICAL: { color: 'bg-red-600 text-white', label: 'Critical' },
+  HIGH: { color: 'bg-orange-500 text-white', label: 'High' },
+  MEDIUM: { color: 'bg-amber-400 text-zinc-900', label: 'Medium' },
+  LOW: { color: 'bg-emerald-500 text-white', label: 'Low' },
 } as const;
 
 const getNextStage = (currentStage: string) => {
   const idx = _STAGE_ORDER.indexOf(currentStage);
   return idx >= 0 && idx < _STAGE_ORDER.length - 1 ? _STAGE_ORDER[idx + 1] : currentStage;
-}
+};
+
+// Reusable card styling to match enterprise dashboard
+const baseCardClass =
+  'bg-card border border-border rounded-sm transition-colors hover:border-primary/40';
 
 // Draggable Use Case Card Component
 const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAiucId, stripHtmlTags, _priorities, handleDelete, isDeleting }: {
@@ -166,31 +170,29 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
   const stageAccentColor = currentStage?.accentColor || 'bg-primary';
 
   return (
-    <Card 
+    <Card
       ref={setNodeRef}
       style={style}
-      className={`bg-gray-50 dark:bg-gray-800/15 border-2 transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer relative overflow-hidden border-gray-200 dark:border-gray-600 ${
-        isDragging ? 'shadow-xl scale-105 z-50 border-primary' : ''
-      }`}
+      className={`${baseCardClass} cursor-pointer relative overflow-hidden`}
       onClick={onClick}
     >
       {/* Stage indicator bar */}
       <div className={`absolute top-0 left-0 right-0 h-1 ${stageAccentColor}`} />
-      <div className="p-3 pt-4">
-        {/* Drag Handle */}
-        <div 
+      <div className="p-3 pt-4 space-y-3">
+        {/* Drag handle + title */}
+        <div
           {...attributes}
           {...listeners}
-          className="cursor-grab active:cursor-grabbing mb-3 flex items-start justify-between group"
+          className="cursor-grab active:cursor-grabbing flex items-start justify-between group"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-start gap-2 flex-1">
             <GripVertical className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground mt-1 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-mono text-muted-foreground mb-1 bg-gray-100 dark:bg-black/20 px-2 py-1 rounded-md inline-block">
+              <div className="text-[11px] font-mono text-muted-foreground mb-1 bg-muted px-2 py-0.5 rounded-sm">
                 {formatAiucId(useCase.aiucId, useCase.id)}
               </div>
-              <h3 className="font-semibold text-sm text-foreground line-clamp-2 leading-tight mb-2">
+              <h3 className="font-semibold text-sm text-foreground line-clamp-2 leading-tight">
                 {useCase.title}
               </h3>
             </div>
@@ -202,12 +204,13 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
           {useCase.priority && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <span 
-                  className={`text-xs px-3 py-1.5 rounded-full font-semibold cursor-pointer shadow-sm ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-muted'}`}
+                <button
+                  className={`text-[11px] px-3 py-1.5 rounded-full font-medium cursor-pointer border ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-muted text-foreground'}`}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {_priorities[useCase.priority as keyof typeof _priorities]?.label || useCase.priority}
-                </span>
+                  {_priorities[useCase.priority as keyof typeof _priorities]?.label ||
+                    useCase.priority}
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((priority) => (
@@ -233,10 +236,10 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
               }
             }}
             disabled={isDeleting}
-            className={`p-1.5 rounded-md transition-colors ${
+            className={`p-1.5 rounded-sm transition-colors ${
               isDeleting 
                 ? 'text-muted-foreground cursor-not-allowed' 
-                : 'text-destructive hover:text-destructive/80 hover:bg-destructive/10'
+                : 'text-destructive hover:bg-destructive/10'
             }`}
             title={isDeleting ? "Deleting..." : "Delete use case"}
           >
@@ -248,9 +251,9 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
           </button>
         </div>
         
-        {/* Creator and Date */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-gray-200 dark:border-white/10">
-          <div className="flex items-center gap-1.5">
+        {/* Creator + date */}
+        <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-2 border-t border-border">
+          <div className="flex items-center gap-1.5 min-w-0">
             {useCase.creator.type === 'user' ? (
               <User className="w-3 h-3 flex-shrink-0" />
             ) : (
@@ -258,7 +261,7 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
             )}
             <span className="truncate font-medium">{useCase.creator.name}</span>
           </div>
-          <div className="text-xs text-muted-foreground/70 font-mono">
+          <div className="font-mono text-[10px] text-muted-foreground/80">
             {useCase.lastUpdated}
           </div>
         </div>
@@ -282,12 +285,12 @@ const DroppableStageColumn = ({ stage, stageUseCases, children }: {
       ref={setNodeRef}
       className={`transition-colors min-h-[300px] ${
         isOver 
-          ? 'bg-primary/5 border-2 border-primary/30 border-dashed rounded-lg' 
+          ? 'bg-primary/5 border-2 border-primary/30 border-dashed rounded-sm' 
           : ''
       }`}
     >
       {isOver && (
-        <div className="text-center text-primary text-xs font-medium py-4 mb-2 bg-primary/5 border border-primary/20 rounded-lg">
+        <div className="text-center text-primary text-[11px] font-medium py-3 mb-2 bg-primary/5 border border-primary/20 rounded-sm">
           Drop here to move to {stage.title}
         </div>
       )}
@@ -396,14 +399,15 @@ const Dashboard = () => {
     error: lockError
   } = useLock(selectedUseCaseForLock || '');
 
-  // Check if user is authenticated
   if (!isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
-          <div className="loading-spinner mx-auto mb-4" />
-          <p className="text-muted-foreground">Initializing...</p>
-        </div>
+        <Card className={`${baseCardClass} max-w-md`}>
+          <div className="p-6 text-center space-y-3">
+            <div className="loading-spinner mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">Initializing…</p>
+          </div>
+        </Card>
       </div>
     );
   }
@@ -411,9 +415,13 @@ const Dashboard = () => {
   if (!isSignedIn) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
-          <p className="text-muted-foreground">Please sign in to access the dashboard.</p>
-        </div>
+        <Card className={`${baseCardClass} max-w-md`}>
+          <div className="p-6 text-center space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Please sign in to access the use case board.
+            </p>
+          </div>
+        </Card>
       </div>
     );
   }
@@ -857,17 +865,18 @@ const Dashboard = () => {
   if (userError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
-          <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-foreground mb-2">Unable to Load User Data</h2>
-          <p className="text-muted-foreground mb-6">{userError}</p>
-          <button 
-            onClick={() => refetchUser()}
-            className="btn btn-primary px-6 py-2"
-          >
-            Try Again
-          </button>
-        </div>
+        <Card className={`${baseCardClass} max-w-md`}>
+          <div className="p-6 text-center space-y-3">
+            <AlertTriangle className="w-6 h-6 text-destructive mx-auto" />
+            <h2 className="text-sm font-semibold text-foreground">
+              Unable to load user data
+            </h2>
+            <p className="text-xs text-muted-foreground">{userError}</p>
+            <Button size="sm" onClick={() => refetchUser()}>
+              Retry
+            </Button>
+          </div>
+        </Card>
       </div>
     );
   }
@@ -875,17 +884,18 @@ const Dashboard = () => {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
-          <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-foreground mb-2">Unable to Load Dashboard</h2>
-          <p className="text-muted-foreground mb-6">{error.message}</p>
-          <button 
-            onClick={() => refetch()}
-            className="btn btn-primary px-6 py-2"
-          >
-            Try Again
-          </button>
-        </div>
+        <Card className={`${baseCardClass} max-w-md`}>
+          <div className="p-6 text-center space-y-3">
+            <AlertTriangle className="w-6 h-6 text-destructive mx-auto" />
+            <h2 className="text-sm font-semibold text-foreground">
+              Unable to load use cases
+            </h2>
+            <p className="text-xs text-muted-foreground">{error.message}</p>
+            <Button size="sm" onClick={() => refetch()}>
+              Retry
+            </Button>
+          </div>
+        </Card>
       </div>
     );
   }
@@ -893,12 +903,14 @@ const Dashboard = () => {
   if (isLoading || userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center max-w-md bg-card/90 rounded-2xl shadow-2xl border p-8">
-          <div className="loading-spinner mx-auto mb-4" />
-          <p className="text-muted-foreground">
-            {isLoading ? 'Loading use cases...' : 'Loading user data...'}
-          </p>
-        </div>
+        <Card className={`${baseCardClass} max-w-md`}>
+          <div className="p-6 text-center space-y-3">
+            <div className="loading-spinner mx-auto mb-1" />
+            <p className="text-sm text-muted-foreground">
+              {isLoading ? 'Loading use cases…' : 'Loading user data…'}
+            </p>
+          </div>
+        </Card>
       </div>
     );
   }
@@ -906,15 +918,10 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <ClerkInvitationHandler />
-      <div className="h-full p-3 flex flex-col min-h-0 w-full">
-        {/* Clean Header */}
-        <div className="flex-shrink-0 mb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-semibold text-foreground tracking-tight"></h1>
-            </div>
-            
-            {/* Quick Actions */}
+      <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col min-h-0">
+        {/* Header */}
+        <div className="flex-shrink-0 mb-3">
+          <div className="flex items-center justify-end">
             <div className="flex items-center gap-2">
               <Button onClick={() => router.push('/new-usecase')} size="sm">
                 <Plus className="w-4 h-4 mr-2" />
@@ -927,80 +934,89 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Clean Search and Filter Bar */}
-        <div className="flex-shrink-0 mb-4">
-          <div className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search use cases..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-10 bg-background"
-              />
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <select
-                value={filterBy}
-                onChange={(e) => setFilterBy(e.target.value)}
-                className="h-10 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-              >
-                <option value="all">All Priorities</option>
-                <option value="critical">Critical</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </select>
-              
-              {(userData?.role === 'QZEN_ADMIN') && (
+        {/* Search & Filters */}
+        <div className="flex-shrink-0 mb-3">
+          <div className={`bg-card border border-border rounded-sm p-3`}>
+            <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by title or owner"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 h-8 text-sm bg-background"
+                />
+              </div>
+              <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
                 <select
-                  value={selectedOrgId}
-                  onChange={e => setSelectedOrgId(e.target.value)}
-                  className="h-10 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors min-w-[130px]"
+                  value={filterBy}
+                  onChange={(e) => setFilterBy(e.target.value)}
+                  className="h-8 px-3 text-xs border border-border rounded-sm bg-background text-foreground"
                 >
-                  <option value="">All Organizations</option>
-                  {organizations.map(org => (
-                    <option key={org.id} value={org.id}>{org.name}</option>
+                  <option value="all">All Priorities</option>
+                  <option value="critical">Critical</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+                {userData?.role === 'QZEN_ADMIN' && (
+                  <select
+                    value={selectedOrgId}
+                    onChange={(e) => setSelectedOrgId(e.target.value)}
+                    className="h-8 px-3 text-xs border border-border rounded-sm bg-background text-foreground min-w-[140px]"
+                  >
+                    <option value="">All Organizations</option>
+                    {organizations.map((org) => (
+                      <option key={org.id} value={org.id}>
+                        {org.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <select
+                  value={selectedBusinessFunction}
+                  onChange={(e) => setSelectedBusinessFunction(e.target.value)}
+                  className="h-8 px-3 text-xs border border-border rounded-sm bg-background text-foreground min-w-[140px]"
+                >
+                  <option value="">All Functions</option>
+                  {businessFunctions.map((func) => (
+                    <option key={func} value={func}>
+                      {func}
+                    </option>
                   ))}
                 </select>
-              )}
-              
-              <select
-                value={selectedBusinessFunction}
-                onChange={e => setSelectedBusinessFunction(e.target.value)}
-                className="h-10 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors min-w-[130px]"
-              >
-                <option value="">All Functions</option>
-                {businessFunctions.map(func => (
-                  <option key={func} value={func}>{func}</option>
-                ))}
-              </select>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Validation Error Alert */}
+        {/* Validation Error */}
         {validationError.show && (
-          <Alert variant="destructive" className="mb-6 flex-shrink-0">
+          <Alert variant="destructive" className="mb-4 flex-shrink-0">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Missing Required Fields</AlertTitle>
+            <AlertTitle className="text-sm">Required fields missing</AlertTitle>
             <AlertDescription>
-              <div className="mt-3">
-                <p className="mb-3 text-sm">
-                  Please complete the following required fields for "{validationError.useCaseTitle}" before moving to the Business Case stage:
+              <div className="mt-2 text-xs space-y-2">
+                <p>
+                  Complete the following fields for "
+                  <span className="font-medium">{validationError.useCaseTitle}</span>" before
+                  moving to the Business Case stage:
                 </p>
-                <ul className="list-disc list-inside space-y-2 mb-4">
+                <ul className="list-disc list-inside space-y-1">
                   {validationError.fields.map((field, index) => (
-                    <li key={index} className="text-sm">{field}</li>
+                    <li key={index}>{field}</li>
                   ))}
                 </ul>
-                <div className="flex gap-3">
-                  {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && (
-                    <Button 
-                      size="sm" 
+                <div className="flex gap-2 pt-2 flex-wrap">
+                  {(userData?.role === 'USER' ||
+                    userData?.role === 'ORG_ADMIN' ||
+                    userData?.role === 'ORG_USER') && (
+                    <Button
+                      size="sm"
                       onClick={() => {
-                        const useCase = filteredUseCases.find(uc => uc.title === validationError.useCaseTitle);
+                        const useCase = filteredUseCases.find(
+                          (uc) => uc.title === validationError.useCaseTitle
+                        );
                         if (useCase) {
                           router.push(`/edit-usecase/${useCase.id}`);
                         }
@@ -1010,10 +1026,12 @@ const Dashboard = () => {
                       Edit Use Case
                     </Button>
                   )}
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => setValidationError({ show: false, fields: [], useCaseTitle: '' })}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      setValidationError({ show: false, fields: [], useCaseTitle: '' })
+                    }
                   >
                     Dismiss
                   </Button>
@@ -1023,30 +1041,34 @@ const Dashboard = () => {
           </Alert>
         )}
 
-        {/* Clean Kanban Board */}
-        <div className="relative min-h-[520px] bg-card rounded-lg border border-border">
+        {/* Kanban Board */}
+        <div className={`${baseCardClass} relative min-h-[520px] flex flex-col`}>
           {deletingUseCaseId && (
             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-              <div className="flex flex-col items-center gap-3 p-6 bg-card rounded-lg shadow-lg border">
-                <div className="loading-spinner" />
-                <p className="text-sm font-medium text-foreground">Deleting use case...</p>
-              </div>
+              <Card className={`${baseCardClass} max-w-xs`}>
+                <div className="p-4 flex flex-col items-center gap-2">
+                  <div className="loading-spinner" />
+                  <p className="text-sm font-medium text-foreground">
+                    Deleting use case…
+                  </p>
+                </div>
+              </Card>
             </div>
           )}
           
-          {/* Top horizontal scrollbar synchronized with content */}
-          <div 
+          {/* Top scrollbar */}
+          <div
             ref={scrollBarRef}
-            className="overflow-x-auto overflow-y-hidden border-b bg-background/70 mb-4"
+            className="overflow-x-auto overflow-y-hidden border-b bg-background/70 mb-3"
             onScroll={handleScrollBarScroll}
-            style={{ width: '100%', height: '17px', scrollbarGutter: 'stable both-edges' }}
+            style={{ width: '100%', height: 16 }}
           >
-            <div 
-              className="h-4 bg-transparent" 
-              style={{ 
-                width: contentScrollWidth ? `${contentScrollWidth + 32}px` : '100%',
-                minWidth: '100%'
-              }} 
+            <div
+              className="h-3 bg-transparent"
+              style={{
+                width: effectiveWidth,
+                minWidth: '100%',
+              }}
             />
           </div>
 
@@ -1070,29 +1092,37 @@ const Dashboard = () => {
                     return (
                       <div key={`column-${stage.id}`} className="flex-shrink-0 flex-1 min-w-[260px]">
                         <DroppableStageColumn stage={stage} stageUseCases={stageUseCases}>
-                          {/* Stage Header */}
+                          {/* Stage header */}
                           <div className="mb-3">
-                            <div className={`${stage.color} border-2 rounded-lg p-3 shadow-sm`}>
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className={`font-semibold text-sm ${stage.textColor}`}>{stage.title}</div>
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    {stageUseCases.length} {stageUseCases.length === 1 ? 'item' : 'items'}
-                                  </div>
+                            <div
+                              className={`rounded-sm px-3 py-2 flex items-center justify-between ${stage.color}`}
+                            >
+                              <div>
+                                <div
+                                  className={`text-sm font-medium ${stage.textColor}`}
+                                >
+                                  {stage.title}
                                 </div>
-                                <div className={`text-lg font-bold text-gray-900 dark:text-gray-300 bg-white/80 dark:bg-black/20 px-2 py-1 rounded-full`}>
-                                  {stageUseCases.length}
+                                <div className="text-[11px] text-muted-foreground mt-0.5">
+                                  {stageUseCases.length}{' '}
+                                  {stageUseCases.length === 1 ? 'item' : 'items'}
                                 </div>
+                              </div>
+                              <div className="text-xs font-semibold text-muted-foreground bg-background px-2 py-1 rounded-full">
+                                {stageUseCases.length}
                               </div>
                             </div>
                           </div>
-                          
-                          {/* Use Cases */}
+                          {/* Stage items */}
                           <div className="space-y-2 min-h-[200px]">
-                            <SortableContext id={stage.id} items={stageUseCases.map(uc => uc.id)} strategy={verticalListSortingStrategy}>
+                            <SortableContext
+                              id={stage.id}
+                              items={stageUseCases.map((uc) => uc.id)}
+                              strategy={verticalListSortingStrategy}
+                            >
                               {stageUseCases.length === 0 ? (
-                                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                                  <div className="text-sm text-muted-foreground">No items in this stage</div>
+                                <div className="border border-dashed border-border rounded-sm px-3 py-5 text-center text-xs text-muted-foreground">
+                                  No items in this stage
                                 </div>
                               ) : stageUseCases.map((useCase) => (
                                 <DraggableUseCaseCard
@@ -1130,41 +1160,43 @@ const Dashboard = () => {
                 const stageAccentColor = currentStage?.accentColor || 'bg-primary';
                 
                 return (
-                  <Card className={`${stageColor} border-2 ${stageAccentColor} p-3 w-60 shadow-2xl scale-105`}>
-                    <div className={`absolute top-0 left-0 right-0 h-1 ${stageAccentColor}`} />
-                    <div className="flex flex-col gap-2 pt-1">
+                  <Card
+                    className={`${baseCardClass} w-60 shadow-2xl relative overflow-hidden`}
+                  >
+                    <div
+                      className={`absolute top-0 left-0 right-0 h-1 ${stageAccentColor}`}
+                    />
+                    <div className="p-3 space-y-2 pt-4">
                       <div className="flex items-center justify-between">
-                        <div className="font-bold text-xs text-muted-foreground bg-gray-100 dark:bg-black/20 px-2 py-1 rounded-md">{formatAiucId(useCase.aiucId, useCase.id)}</div>
+                        <div className="text-[11px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-sm">
+                          {formatAiucId(useCase.aiucId, useCase.id)}
+                        </div>
                         {useCase.priority && (
-                          <span className={`text-xs px-3 py-1.5 rounded-full font-semibold shadow-sm ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-muted'}`}>
-                            {_priorities[useCase.priority as keyof typeof _priorities]?.label || useCase.priority}
+                          <span
+                            className={`text-[11px] px-3 py-1.5 rounded-full font-medium border ${_priorities[useCase.priority as keyof typeof _priorities]?.color || 'bg-muted text-foreground'}`}
+                          >
+                            {_priorities[useCase.priority as keyof typeof _priorities]
+                              ?.label || useCase.priority}
                           </span>
                         )}
                       </div>
-                      <div className="font-semibold text-sm text-foreground line-clamp-2 leading-tight">{useCase.title}</div>
-                      <div className="flex items-center gap-3 mt-2">
-                        <div className="flex items-center gap-1 text-xs text-primary">
-                          <span>{useCase.scores.operational}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-primary">
-                          <span>{useCase.scores.productivity}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-success">
-                          <span>{useCase.scores.revenue}</span>
-                        </div>
+                      <div className="font-semibold text-sm text-foreground line-clamp-2">
+                        {useCase.title}
                       </div>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground mt-2 pt-2 border-t border-gray-200 dark:border-white/10">
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-2 border-t border-border">
                         <span className="flex items-center gap-1.5">
                           {useCase.creator.type === 'user' ? (
-                            <User className="w-3 h-3 flex-shrink-0" />
+                            <User className="w-3 h-3" />
                           ) : (
-                            <Building2 className="w-3 h-3 flex-shrink-0" />
+                            <Building2 className="w-3 h-3" />
                           )}
-                          <span className="truncate font-medium">{useCase.creator.name}</span>
+                          <span className="truncate font-medium">
+                            {useCase.creator.name}
+                          </span>
                         </span>
-                        <div className="text-xs text-muted-foreground/70 font-mono">
+                        <span className="font-mono text-[10px] text-muted-foreground/80">
                           {useCase.lastUpdated}
-                        </div>
+                        </span>
                       </div>
                     </div>
                   </Card>
@@ -1175,56 +1207,110 @@ const Dashboard = () => {
           </DndContext>
         </div>
 
-        {/* Sheet Modal for Use Case Actions */}
+        {/* Sheet for use case actions */}
         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-          <SheetContent side="right" className="flex flex-col !p-0 !gap-0 overflow-hidden max-h-screen">
+          <SheetContent
+            side="right"
+            className="flex flex-col !p-0 !gap-0 overflow-hidden max-h-screen"
+          >
             {modalUseCase && (
               <div className="flex flex-col h-full min-h-0">
-                <SheetHeader className="flex-shrink-0 border-b p-4">
-                  <SheetTitle>{modalUseCase.title}</SheetTitle>
+                <SheetHeader className="flex-shrink-0 border-b px-4 py-3">
+                  <SheetTitle className="text-sm font-semibold">
+                    {modalUseCase.title}
+                  </SheetTitle>
+                  {modalUseCase.description && (
+                    <SheetDescription className="text-xs text-muted-foreground mt-1">
+                      {stripHtmlTags(modalUseCase.description)}
+                    </SheetDescription>
+                  )}
                 </SheetHeader>
-                <div className="flex-1 min-h-0 overflow-y-auto p-4">
-                  <div className="flex flex-col gap-3">
-                    {modalUseCase.description && (
-                      <div className="text-sm text-muted-foreground mb-2">
-                        <SheetDescription>{stripHtmlTags(modalUseCase.description)}</SheetDescription>
-                      </div>
+                <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3 text-xs">
+                  <div className="text-muted-foreground">
+                    ID:{' '}
+                    <span className="font-mono">
+                      {formatAiucId(modalUseCase.aiucId, modalUseCase.id)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs">
+                    <div className="flex items-center gap-1 text-primary">
+                      <span>Operational:</span>
+                      <span className="font-medium">
+                        {modalUseCase.scores.operational}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-primary">
+                      <span>Productivity:</span>
+                      <span className="font-medium">
+                        {modalUseCase.scores.productivity}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                      <span>Revenue:</span>
+                      <span className="font-medium">
+                        {modalUseCase.scores.revenue}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-foreground font-semibold">
+                      <span>Overall:</span>
+                      <span>{getOverallScore(modalUseCase.scores)}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    {modalUseCase.creator.type === 'user' ? (
+                      <User className="w-3.5 h-3.5" />
+                    ) : (
+                      <Building2 className="w-3.5 h-3.5" />
                     )}
-                    <div className="text-xs text-muted-foreground">ID: {formatAiucId(modalUseCase.aiucId, modalUseCase.id)}</div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1 text-xs text-primary">{modalUseCase.scores.operational}</div>
-                      <div className="flex items-center gap-1 text-xs text-primary">{modalUseCase.scores.productivity}</div>
-                      <div className="flex items-center gap-1 text-xs text-success">{modalUseCase.scores.revenue}</div>
-                      <div className="flex items-center gap-1 text-xs text-primary font-bold">{getOverallScore(modalUseCase.scores)}</div>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      {modalUseCase.creator.type === 'user' ? (
-                        <User className="w-4 h-4" />
-                      ) : (
-                        <Building2 className="w-4 h-4" />
-                      )}
-                      Created by: {modalUseCase.creator.name}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Updated {modalUseCase.lastUpdated}</div>
+                    <span>
+                      Created by <span className="font-medium">{modalUseCase.creator.name}</span>
+                    </span>
+                  </div>
+                  <div className="text-muted-foreground">
+                    Updated <span className="font-mono">{modalUseCase.lastUpdated}</span>
                   </div>
                 </div>
-                <SheetFooter className="flex-shrink-0 sticky bottom-0 z-10 bg-background border-t pt-4 pb-4 px-4 flex flex-wrap gap-2 justify-start sm:justify-end">
-                  <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                    <Button size="sm" variant="outline" onClick={() => { handleView(modalUseCase.id); setIsSheetOpen(false); }}>
-                      <Eye className="w-4 h-4 mr-2" /> View
+                <SheetFooter className="flex-shrink-0 border-t px-4 py-3 flex flex-wrap gap-2 justify-end">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      handleView(modalUseCase.id);
+                      setIsSheetOpen(false);
+                    }}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    View
+                  </Button>
+                  {(userData?.role === 'USER' ||
+                    userData?.role === 'ORG_ADMIN' ||
+                    userData?.role === 'ORG_USER') && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        handleEdit(modalUseCase.id);
+                        setIsSheetOpen(false);
+                      }}
+                    >
+                      <EditIcon className="w-4 h-4 mr-2" />
+                      Edit
                     </Button>
-                    {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && (
-                      <Button size="sm" variant="outline" onClick={() => { handleEdit(modalUseCase.id); setIsSheetOpen(false); }}>
-                        <EditIcon className="w-4 h-4 mr-2" /> Edit
-                      </Button>
-                    )}
-                    {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER' || userData?.role === 'QZEN_ADMIN') && modalUseCase.stage !== 'deployment' && (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => { 
-                          handleMoveToStage(modalUseCase.id, getNextStage(modalUseCase.stage)); 
-                          setIsSheetOpen(false); 
+                  )}
+                  {(userData?.role === 'USER' ||
+                    userData?.role === 'ORG_ADMIN' ||
+                    userData?.role === 'ORG_USER' ||
+                    userData?.role === 'QZEN_ADMIN') &&
+                    modalUseCase.stage !== 'deployment' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          handleMoveToStage(
+                            modalUseCase.id,
+                            getNextStage(modalUseCase.stage)
+                          );
+                          setIsSheetOpen(false);
                         }}
                         className="whitespace-nowrap"
                       >
@@ -1232,15 +1318,27 @@ const Dashboard = () => {
                         Next Stage
                       </Button>
                     )}
-                    {(userData?.role === 'USER' || userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER' || userData?.role === 'QZEN_ADMIN') && modalUseCase.stage !== 'discovery' && (
-                      <Button size="sm" variant="outline" onClick={() => { handleAssess(modalUseCase.id); setIsSheetOpen(false); }}>
+                  {(userData?.role === 'USER' ||
+                    userData?.role === 'ORG_ADMIN' ||
+                    userData?.role === 'ORG_USER' ||
+                    userData?.role === 'QZEN_ADMIN') &&
+                    modalUseCase.stage !== 'discovery' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          handleAssess(modalUseCase.id);
+                          setIsSheetOpen(false);
+                        }}
+                      >
                         Assess
                       </Button>
                     )}
-                    <SheetClose asChild>
-                      <Button size="sm" variant="secondary">Close</Button>
-                    </SheetClose>
-                  </div>
+                  <SheetClose asChild>
+                    <Button size="sm" variant="secondary">
+                      Close
+                    </Button>
+                  </SheetClose>
                 </SheetFooter>
               </div>
             )}

@@ -122,6 +122,11 @@ export default function RiskManagementPage() {
   const [expandedUseCase, setExpandedUseCase] = useState<string | null>(null);
   const [useCaseRisks, setUseCaseRisks] = useState<Record<string, any>>({});
 
+  // Common compact enterprise styles
+  const cardClass = 'bg-card border border-border rounded-sm transition-colors hover:border-primary/40';
+  const kpiLabel = 'text-[11px] uppercase tracking-wide text-muted-foreground';
+  const kpiValue = 'text-lg font-semibold text-foreground';
+
   useEffect(() => {
     fetchData();
   }, [selectedOrgId]);
@@ -410,28 +415,28 @@ export default function RiskManagementPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading risk data...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
+        Loading risk management…
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="w-5 h-5" />
-              Unable to Load Risk Management
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className={`${cardClass} max-w-md`}>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm text-destructive">
+              <AlertTriangle className="w-4 h-4" />
+              Unable to load risk management
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <Button onClick={fetchData}>Try Again</Button>
+          <CardContent className="space-y-3 text-sm">
+            <p className="text-muted-foreground">{error}</p>
+            <Button onClick={fetchData} size="sm" className="text-xs">
+              <RefreshCw className="w-3 h-3 mr-1" />
+              Try again
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -439,70 +444,78 @@ export default function RiskManagementPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-4 max-w-7xl">
+    <div className="min-h-screen max-w-7xl mx-auto px-4 py-4">
       {/* Header */}
-      <div className="mb-4">
-        <p className="text-xs text-muted-foreground">
-          Comprehensive risk assessment and monitoring organized by use case
+      <div className="mb-3">
+        <p className="text-[11px] text-muted-foreground">
+          Consolidated view of AI use cases and associated risk posture.
         </p>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
-        <Card className="bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-700 rounded-md">
-          <CardHeader className="pb-1.5 px-4 pt-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Total Use Cases</CardTitle>
+      <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
+        <Card className={cardClass}>
+          <CardHeader className="px-3 pt-3 pb-1.5">
+            <CardTitle className={kpiLabel}>Use Cases</CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-xl font-bold text-foreground">{filteredUseCases.length}</div>
+          <CardContent className="px-3 pb-3">
+            <div className={kpiValue}>{filteredUseCases.length}</div>
           </CardContent>
         </Card>
-        <Card className="bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-700 rounded-md">
-          <CardHeader className="pb-1.5 px-4 pt-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Total Risks</CardTitle>
+        <Card className={cardClass}>
+          <CardHeader className="px-3 pt-3 pb-1.5">
+            <CardTitle className={kpiLabel}>Total Risks</CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-xl font-bold text-foreground">{totalRisks}</div>
+          <CardContent className="px-3 pb-3">
+            <div className={kpiValue}>{totalRisks}</div>
           </CardContent>
         </Card>
-        <Card className="bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-700 rounded-md">
-          <CardHeader className="pb-1.5 px-4 pt-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Critical Severity</CardTitle>
+        <Card className={cardClass}>
+          <CardHeader className="px-3 pt-3 pb-1.5">
+            <CardTitle className={kpiLabel}>Critical Severity</CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-xl font-bold text-red-600 dark:text-red-500">{criticalSeverityCount}</div>
+          <CardContent className="px-3 pb-3">
+            <div className={`${kpiValue} text-red-600 dark:text-red-500`}>
+              {criticalSeverityCount}
+            </div>
           </CardContent>
         </Card>
-        <Card className="bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-700 rounded-md">
-          <CardHeader className="pb-1.5 px-4 pt-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">High Severity</CardTitle>
+        <Card className={cardClass}>
+          <CardHeader className="px-3 pt-3 pb-1.5">
+            <CardTitle className={kpiLabel}>High Severity</CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-xl font-bold text-orange-600 dark:text-orange-500">{highSeverityCount}</div>
+          <CardContent className="px-3 pb-3">
+            <div className={`${kpiValue} text-orange-600 dark:text-orange-500`}>
+              {highSeverityCount}
+            </div>
           </CardContent>
         </Card>
-        <Card className="bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-700 rounded-md">
-          <CardHeader className="pb-1.5 px-4 pt-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">High Likelihood</CardTitle>
+        <Card className={cardClass}>
+          <CardHeader className="px-3 pt-3 pb-1.5">
+            <CardTitle className={kpiLabel}>High Likelihood</CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-xl font-bold text-yellow-600 dark:text-yellow-500">{highLikelihoodCount}</div>
+          <CardContent className="px-3 pb-3">
+            <div className={`${kpiValue} text-amber-600 dark:text-amber-400`}>
+              {highLikelihoodCount}
+            </div>
           </CardContent>
         </Card>
-      </div>
+      </section>
 
-      {/* Executive Dashboard - Heat Map & Status Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+      {/* Executive Overview: Heatmap + Status/Category */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
         {/* Risk Heatmap */}
-        <Card className="bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 rounded-md">
-          <CardHeader className="px-4 pt-4 pb-3">
-            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+        <Card className={cardClass}>
+          <CardHeader className="px-3 pt-3 pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
               <AlertTriangle className="w-4 h-4" />
               Risk Heatmap
             </CardTitle>
-            <CardDescription className="text-xs">Severity vs. Likelihood Matrix</CardDescription>
+            <CardDescription className="text-xs">
+              Distribution of risks by severity and likelihood.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="px-4 pb-4">
+          <CardContent className="px-3 pb-3">
             {(() => {
               // Calculate risk distribution for heatmap
               const allRisks = useCases.flatMap(uc => uc.risks);
@@ -613,8 +626,8 @@ export default function RiskManagementPage() {
                         return (
                           <div
                             key={likelihood}
-                            className={`${colors.bg} ${colors.text} rounded h-12 flex items-center justify-center font-bold text-sm transition-all hover:scale-105 cursor-pointer`}
-                            title={`${severity} Severity / ${likelihood} Likelihood: ${count} risks`}
+                            className={`${colors.bg} ${colors.text} rounded-sm h-10 flex items-center justify-center text-xs transition-all hover:scale-105 cursor-pointer`}
+                            title={`${severity} / ${likelihood}: ${count} risk(s)`}
                           >
                             {count}
                           </div>
@@ -622,10 +635,8 @@ export default function RiskManagementPage() {
                       })}
                     </div>
                   ))}
-                  <div className="text-[10px] text-muted-foreground pt-1.5 border-t border-neutral-200 dark:border-neutral-700">
-                    <div className="flex justify-center">
-                      <span>Darker = More Risks</span>
-                    </div>
+                  <div className="text-[10px] text-muted-foreground pt-1 border-t border-border text-center">
+                    Darker cells indicate higher concentration of risks.
                   </div>
                 </div>
               );
@@ -633,15 +644,17 @@ export default function RiskManagementPage() {
           </CardContent>
         </Card>
 
-        {/* Risk Status & Category Breakdown */}
-        <div className="space-y-4">
-          {/* Status Breakdown */}
-          <Card className="bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 rounded-md">
-            <CardHeader className="px-4 pt-4 pb-3">
-              <CardTitle className="text-sm font-semibold">Risk Status</CardTitle>
-              <CardDescription className="text-xs">Distribution by workflow status</CardDescription>
+        {/* Status + Categories */}
+        <div className="space-y-3">
+          {/* Status */}
+          <Card className={cardClass}>
+            <CardHeader className="px-3 pt-3 pb-2">
+              <CardTitle className="text-sm font-medium">Risk Status</CardTitle>
+              <CardDescription className="text-xs">
+                Distribution across workflow stages.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="px-4 pb-4">
+            <CardContent className="px-3 pb-3">
               {(() => {
                 const allRisks = useCases.flatMap(uc => uc.risks);
                 const openCount = allRisks.filter(r => r.status === 'OPEN').length;
@@ -650,69 +663,73 @@ export default function RiskManagementPage() {
                 const closedCount = allRisks.filter(r => r.status === 'CLOSED').length;
                 const total = allRisks.length || 1;
 
+                const rowClass = 'flex items-center justify-between text-xs';
+                const barBg = 'w-full bg-muted rounded-full h-1.5';
+                const barInner = 'h-1.5 rounded-full transition-all';
+
                 return (
                   <div className="space-y-3">
                     <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
+                      <div className={rowClass}>
                         <div className="flex items-center gap-1.5">
-                          <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
-                          <span className="text-xs">Open</span>
+                          <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                          <span>Open</span>
                         </div>
-                        <span className="text-xs font-semibold">{openCount}</span>
+                        <span className="font-semibold">{openCount}</span>
                       </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                      <div className={barBg}>
                         <div
-                          className="bg-red-500 h-1.5 rounded-full transition-all"
+                          className={`${barInner} bg-red-500`}
                           style={{ width: `${(openCount / total) * 100}%` }}
-                        ></div>
+                        />
                       </div>
                     </div>
 
                     <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
+                      <div className={rowClass}>
                         <div className="flex items-center gap-1.5">
-                          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
-                          <span className="text-xs">In Progress</span>
+                          <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                          <span>In Progress</span>
                         </div>
-                        <span className="text-xs font-semibold">{inProgressCount}</span>
+                        <span className="font-semibold">{inProgressCount}</span>
                       </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                      <div className={barBg}>
                         <div
-                          className="bg-yellow-500 h-1.5 rounded-full transition-all"
+                          className={`${barInner} bg-amber-500`}
                           style={{ width: `${(inProgressCount / total) * 100}%` }}
-                        ></div>
+                        />
                       </div>
                     </div>
 
                     <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
+                      <div className={rowClass}>
                         <div className="flex items-center gap-1.5">
-                          <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
-                          <span className="text-xs">Mitigated</span>
+                          <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                          <span>Mitigated</span>
                         </div>
-                        <span className="text-xs font-semibold">{mitigatedCount}</span>
+                        <span className="font-semibold">{mitigatedCount}</span>
                       </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                      <div className={barBg}>
                         <div
-                          className="bg-green-500 h-1.5 rounded-full transition-all"
+                          className={`${barInner} bg-blue-500`}
                           style={{ width: `${(mitigatedCount / total) * 100}%` }}
-                        ></div>
+                        />
                       </div>
                     </div>
 
                     <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
+                      <div className={rowClass}>
                         <div className="flex items-center gap-1.5">
-                          <div className="w-2.5 h-2.5 rounded-full bg-gray-500"></div>
-                          <span className="text-xs">Closed</span>
+                          <div className="w-2.5 h-2.5 rounded-full bg-gray-500" />
+                          <span>Closed</span>
                         </div>
-                        <span className="text-xs font-semibold">{closedCount}</span>
+                        <span className="font-semibold">{closedCount}</span>
                       </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                      <div className={barBg}>
                         <div
-                          className="bg-gray-500 h-1.5 rounded-full transition-all"
+                          className={`${barInner} bg-gray-500`}
                           style={{ width: `${(closedCount / total) * 100}%` }}
-                        ></div>
+                        />
                       </div>
                     </div>
                   </div>
@@ -721,13 +738,15 @@ export default function RiskManagementPage() {
             </CardContent>
           </Card>
 
-          {/* Category Breakdown */}
-          <Card className="bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 rounded-md">
-            <CardHeader className="px-4 pt-4 pb-3">
-              <CardTitle className="text-sm font-semibold">Risk Categories</CardTitle>
-              <CardDescription className="text-xs">Distribution by risk type</CardDescription>
+          {/* Categories */}
+          <Card className={cardClass}>
+            <CardHeader className="px-3 pt-3 pb-2">
+              <CardTitle className="text-sm font-medium">Risk Categories</CardTitle>
+              <CardDescription className="text-xs">
+                Breakdown by risk classification.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="px-4 pb-4">
+            <CardContent className="px-3 pb-3">
               {(() => {
                 const allRisks = useCases.flatMap(uc => uc.risks);
                 const categories = ['technical', 'data', 'operational', 'regulatory', 'ethical', 'business'];
@@ -747,99 +766,116 @@ export default function RiskManagementPage() {
 
                 const total = allRisks.length || 1;
 
+                if (!categoryCounts.length) {
+                  return (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      No categorized risks available.
+                    </p>
+                  );
+                }
+
                 return (
-                  <div className="space-y-2.5">
+                  <div className="space-y-2">
                     {categoryCounts.map(({ category, label, count }) => (
-                      <div key={category} className="flex items-center justify-between text-xs">
+                      <div
+                        key={category}
+                        className="flex items-center justify-between text-xs"
+                      >
                         <span className="text-muted-foreground">{label}</span>
                         <div className="flex items-center gap-2">
-                          <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                          <div className="w-24 bg-muted rounded-full h-1.5">
                             <div
-                              className="bg-blue-500 h-1.5 rounded-full transition-all"
+                              className="h-1.5 rounded-full bg-primary/80 transition-all"
                               style={{ width: `${(count / total) * 100}%` }}
-                            ></div>
+                            />
                           </div>
-                          <span className="font-semibold w-6 text-right text-xs">{count}</span>
+                          <span className="font-semibold w-6 text-right">{count}</span>
                         </div>
                       </div>
                     ))}
-                    {categoryCounts.length === 0 && (
-                      <p className="text-xs text-muted-foreground text-center py-3">No risks found</p>
-                    )}
                   </div>
                 );
               })()}
             </CardContent>
           </Card>
         </div>
-      </div>
+      </section>
 
       {/* Filters */}
-      <div className="bg-neutral-50/50 dark:bg-neutral-900/30 rounded-md p-3 mb-4 border border-neutral-200 dark:border-neutral-700">
-        <div className="flex flex-col sm:flex-row gap-3">
-          {/* Organization Filter (for QZEN_ADMIN) */}
-          {userData?.role === 'QZEN_ADMIN' && organizations.length > 0 && (
+      <section className={`${cardClass} mb-4`}>
+        <div className="p-3 space-y-3">
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Org filter for admin */}
+            {userData?.role === 'QZEN_ADMIN' && organizations.length > 0 && (
+              <div className="flex-1">
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
+                  Organization
+                </label>
+                <Select
+                  value={selectedOrgId === '' ? 'ALL' : selectedOrgId}
+                  onValueChange={(v) => setSelectedOrgId(v === 'ALL' ? '' : v)}
+                >
+                  <SelectTrigger className="h-8 text-xs bg-background">
+                    <SelectValue placeholder="All organizations" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Organizations</SelectItem>
+                    {organizations.map((org) => (
+                      <SelectItem key={org.id} value={org.id}>
+                        <div className="flex items-center gap-2">
+                          <Building className="w-3.5 h-3.5" />
+                          <span className="text-xs">{org.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Search */}
             <div className="flex-1">
-              <label className="block text-xs font-medium text-foreground mb-1.5">
-                Filter by Organization
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
+                Search Use Cases
               </label>
-              <Select
-                value={selectedOrgId === '' ? 'ALL' : selectedOrgId}
-                onValueChange={(v) => setSelectedOrgId(v === 'ALL' ? '' : v)}
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Title, ID, organization, or owner"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-8 pl-8 text-xs bg-background"
+                />
+              </div>
+            </div>
+
+            {/* Refresh */}
+            <div className="flex items-end">
+              <Button
+                onClick={fetchData}
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
               >
-                <SelectTrigger className="bg-white dark:bg-neutral-900 h-9 text-sm">
-                  <SelectValue placeholder="All Organizations" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">All Organizations</SelectItem>
-                  {organizations.map(org => (
-                    <SelectItem key={org.id} value={org.id}>
-                      <div className="flex items-center gap-2">
-                        <Building className="w-3.5 h-3.5" />
-                        <span className="text-sm">{org.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                Refresh
+              </Button>
             </div>
-          )}
-
-          {/* Search */}
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-foreground mb-1.5">
-              Search Use Cases
-            </label>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Search by title, ID, organization, or owner..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 h-9 text-sm bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700"
-              />
-            </div>
-          </div>
-
-          {/* Refresh Button */}
-          <div className="flex items-end">
-            <Button onClick={fetchData} variant="outline" className="h-9 text-xs">
-              <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-              Refresh
-            </Button>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Use Cases with Risks */}
-      <div className="space-y-4">
+      {/* Use Cases & Risk Details */}
+      <section className="space-y-3">
         {filteredUseCases.length === 0 ? (
-          <Card className="bg-neutral-50/50 dark:bg-neutral-900/30 border-neutral-200 dark:border-neutral-700 rounded-md">
-            <CardContent className="pt-6">
-              <div className="text-center py-8">
-                <Shield className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
+          <Card className={cardClass}>
+            <CardContent className="py-10">
+              <div className="flex flex-col items-center text-center space-y-2">
+                <Shield className="w-8 h-8 text-muted-foreground mb-1" />
                 <p className="text-xs text-muted-foreground">
-                  {searchTerm ? 'No use cases found matching your search.' : 'No use cases with risks found.'}
+                  {searchTerm
+                    ? 'No use cases match your search.'
+                    : 'No use cases with associated risks found.'}
                 </p>
               </div>
             </CardContent>
@@ -856,64 +892,100 @@ export default function RiskManagementPage() {
             const riskCalc = useCaseRisks[useCase.id] || null;
 
             return (
-              <Card key={useCase.id} className="overflow-hidden bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow rounded-md">
-                <CardHeader 
-                  className="cursor-pointer hover:bg-neutral-50/50 dark:hover:bg-neutral-800/50 transition-colors px-4 pt-4 pb-3"
+              <Card
+                key={useCase.id}
+                className={`${cardClass} overflow-hidden`}
+              >
+                {/* Header Row */}
+                <CardHeader
+                  className="px-3 pt-3 pb-2 cursor-pointer hover:bg-muted/40 transition-colors"
                   onClick={() => toggleUseCaseExpansion(useCase.id)}
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                        <CardTitle className="text-sm font-semibold leading-tight">
-                          {formatAiucId(useCase.aiucId, useCase.id)} - {useCase.title}
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <CardTitle className="text-sm font-medium leading-tight">
+                          {formatAiucId(useCase.aiucId, useCase.id)} – {useCase.title}
                         </CardTitle>
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] px-1.5 py-0 rounded"
+                        >
                           {useCase.stage}
                         </Badge>
                       </div>
-                      <CardDescription className="text-xs mt-0.5">
-                        {useCase.organization?.name && (
-                          <span className="flex items-center gap-1">
-                            <Building className="w-3 h-3" />
-                            {useCase.organization.name}
-                          </span>
-                        )}
-                        {useCase.user && (
-                          <span className={useCase.organization?.name ? "ml-2" : ""}>
-                            Owner: {useCase.user.firstName} {useCase.user.lastName}
-                          </span>
-                        )}
+                      <CardDescription className="text-[11px]">
+                        <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
+                          {useCase.organization?.name && (
+                            <span className="flex items-center gap-1">
+                              <Building className="w-3 h-3" />
+                              {useCase.organization.name}
+                            </span>
+                          )}
+                          {useCase.user && (
+                            <span>
+                              Owner: {useCase.user.firstName} {useCase.user.lastName}
+                            </span>
+                          )}
+                        </div>
                       </CardDescription>
                     </div>
+
                     <div className="flex items-center gap-3 flex-shrink-0">
-                      <div className="text-right min-w-[100px]">
-                        <div className="text-[10px] text-muted-foreground">Overall Risk</div>
+                      {/* Overall risk */}
+                      <div className="text-right min-w-[120px]">
+                        <div className="text-[10px] text-muted-foreground">
+                          Overall Risk
+                        </div>
                         {riskCalc && riskCalc.score > 1.5 ? (
-                          <div className="flex items-center justify-end gap-1.5 mt-0.5">
-                            <span className="text-lg font-bold text-foreground">{riskCalc.score}</span>
-                            <Badge className={`text-[10px] px-1.5 py-0 ${getRiskLevelColor((riskCalc.riskTier || '').charAt(0).toUpperCase() + (riskCalc.riskTier || '').slice(1))}`}>
-                              {((riskCalc.riskTier || '') as string).charAt(0).toUpperCase() + ((riskCalc.riskTier || '') as string).slice(1)}
+                          <div className="flex items-center justify-end gap-1 mt-0.5">
+                            <span className="text-lg font-semibold text-foreground">
+                              {riskCalc.score}
+                            </span>
+                            <Badge
+                              className={`text-[10px] px-1.5 py-0 ${getRiskLevelColor(
+                                (riskCalc.riskTier || '')
+                                  .charAt(0)
+                                  .toUpperCase() +
+                                  (riskCalc.riskTier || '').slice(1)
+                              )}`}
+                            >
+                              {((riskCalc.riskTier || '') as string)
+                                .charAt(0)
+                                .toUpperCase() +
+                                ((riskCalc.riskTier || '') as string).slice(1)}
                             </Badge>
                           </div>
                         ) : (
                           <div className="flex flex-col items-end gap-1 mt-0.5">
-                            <div className="text-[10px] text-muted-foreground">Insufficient data</div>
+                            <div className="text-[10px] text-muted-foreground">
+                              Insufficient data
+                            </div>
                             <Button
-                              onClick={() => router.push(`/dashboard/${useCase.id}/assess`)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/dashboard/${useCase.id}/assess`);
+                              }}
                               variant="outline"
                               size="sm"
-                              className="text-[10px] h-6 px-2 border-yellow-300 bg-yellow-50 hover:bg-yellow-100 text-yellow-800 dark:border-yellow-700 dark:bg-yellow-950/20 dark:hover:bg-yellow-950/30 dark:text-yellow-400"
+                              className="h-7 text-[10px] px-2"
                             >
                               <FileText className="w-3 h-3 mr-1" />
-                              Complete Assessment
+                              Complete assessment
                             </Button>
                           </div>
                         )}
                       </div>
+
+                      {/* Risk count */}
                       <div className="text-right min-w-[70px]">
                         <div className="text-[10px] text-muted-foreground">Risks</div>
-                        <div className="text-lg font-bold text-foreground">{riskCount}</div>
+                        <div className="text-lg font-semibold text-foreground">
+                          {riskCount}
+                        </div>
                       </div>
+
+                      {/* Manage button */}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -921,175 +993,226 @@ export default function RiskManagementPage() {
                           e.stopPropagation();
                           router.push(`/dashboard/${useCase.id}/risks?from=risks`);
                         }}
-                        className="mr-1 text-xs h-7 px-2"
+                        className="h-7 px-2 text-xs"
                       >
                         <ExternalLink className="w-3 h-3 mr-1" />
                         Manage
                       </Button>
+
                       {isExpanded ? (
-                        <ChevronUp className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        <ChevronUp className="w-4 h-4 text-muted-foreground" />
                       ) : (
-                        <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
                       )}
                     </div>
                   </div>
                 </CardHeader>
 
+                {/* Expanded Content */}
                 {isExpanded && (
-                  <CardContent className="pt-0 px-4 pb-4">
+                  <CardContent className="px-3 pb-3 pt-1 space-y-3">
+                    {/* Incomplete Assessment Notice */}
                     {riskCalc && riskCalc.score <= 1.5 && (
-                      <div className="mb-3 p-3 rounded-md border-2 border-yellow-300 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-700">
+                      <div className="border border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700 rounded-sm p-3">
                         <div className="flex items-start gap-2">
-                          <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
-                          <div className="flex-1">
-                            <h4 className="text-xs font-semibold text-yellow-900 dark:text-yellow-200 mb-1">
-                              Assessment Incomplete
+                          <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5" />
+                          <div className="flex-1 space-y-1">
+                            <h4 className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                              Assessment incomplete
                             </h4>
-                            <p className="text-xs text-yellow-800 dark:text-yellow-300 mb-2">
-                              The assessment appears to be incomplete. Please complete the assessment to get accurate risk calculations.
+                            <p className="text-[11px] text-amber-800 dark:text-amber-300">
+                              Complete the assessment to enable full risk calculations and
+                              radar scoring for this use case.
                             </p>
                             <Button
-                              onClick={() => router.push(`/dashboard/${useCase.id}/assess`)}
+                              onClick={() =>
+                                router.push(`/dashboard/${useCase.id}/assess`)
+                              }
                               variant="outline"
                               size="sm"
-                              className="text-xs h-7 px-3 border-yellow-400 bg-yellow-100 hover:bg-yellow-200 text-yellow-900 dark:border-yellow-600 dark:bg-yellow-950/30 dark:hover:bg-yellow-950/40 dark:text-yellow-200"
+                              className="h-7 text-[11px] px-3"
                             >
-                              <FileText className="w-3 h-3 mr-1.5" />
-                              Go to Assessment Dashboard
-                              <ArrowRight className="w-3 h-3 ml-1.5" />
+                              <FileText className="w-3 h-3 mr-1" />
+                              Go to assessment
+                              <ArrowRight className="w-3 h-3 ml-1" />
                             </Button>
                           </div>
                         </div>
                       </div>
                     )}
+
+                    {/* Radar Chart */}
                     {riskCalc && riskCalc.chartData && riskCalc.chartData.length > 0 && (
-                      <div className="mb-3 p-3 rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/50">
-                        <div className="mb-2 text-xs font-semibold text-foreground">Risk Radar</div>
+                      <div className="border border-border rounded-sm p-3 bg-muted/40">
+                        <div className="mb-2 text-xs font-semibold text-foreground">
+                          Risk Radar
+                        </div>
                         <ChartRadarDots chartData={riskCalc.chartData} />
                       </div>
                     )}
+
+                    {/* Risk Feedback */}
                     {riskCalc && (
-                      <div className="mb-3 p-3 rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/30">
-                        <div className="mb-2 text-xs font-semibold text-foreground">Risk Feedback</div>
-                        {riskCalc.regulatoryWarnings && riskCalc.regulatoryWarnings.length > 0 && (
-                          <div className="mb-2">
-                            <div className="text-[10px] font-medium text-muted-foreground mb-1">Regulatory Warnings</div>
-                            <ul className="list-disc pl-4 text-xs text-foreground space-y-0.5">
-                              {riskCalc.regulatoryWarnings.map((w: string, idx: number) => (
-                                <li key={idx}>{w}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {riskCalc.dataPrivacyInfo && riskCalc.dataPrivacyInfo.length > 0 && (
-                          <div className="mb-2">
-                            <div className="text-[10px] font-medium text-muted-foreground mb-1">Data Privacy</div>
-                            <ul className="list-disc pl-4 text-xs text-foreground space-y-0.5">
-                              {riskCalc.dataPrivacyInfo.map((m: string, idx: number) => (
-                                <li key={idx}>{m}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
+                      <div className="border border-border rounded-sm p-3 bg-muted/30 space-y-2">
+                        <div className="text-xs font-semibold text-foreground">
+                          Risk Feedback
+                        </div>
+                        {riskCalc.regulatoryWarnings &&
+                          riskCalc.regulatoryWarnings.length > 0 && (
+                            <div>
+                              <div className="text-[10px] font-medium text-muted-foreground mb-0.5">
+                                Regulatory Warnings
+                              </div>
+                              <ul className="list-disc pl-4 text-[11px] space-y-0.5">
+                                {riskCalc.regulatoryWarnings.map(
+                                  (w: string, idx: number) => (
+                                    <li key={idx}>{w}</li>
+                                  )
+                                )}
+                              </ul>
+                            </div>
+                          )}
+
+                        {riskCalc.dataPrivacyInfo &&
+                          riskCalc.dataPrivacyInfo.length > 0 && (
+                            <div>
+                              <div className="text-[10px] font-medium text-muted-foreground mb-0.5">
+                                Data Privacy
+                              </div>
+                              <ul className="list-disc pl-4 text-[11px] space-y-0.5">
+                                {riskCalc.dataPrivacyInfo.map(
+                                  (m: string, idx: number) => (
+                                    <li key={idx}>{m}</li>
+                                  )
+                                )}
+                              </ul>
+                            </div>
+                          )}
+
                         {riskCalc.securityInfo && riskCalc.securityInfo.length > 0 && (
-                          <div className="mb-2">
-                            <div className="text-[10px] font-medium text-muted-foreground mb-1">Security</div>
-                            <ul className="list-disc pl-4 text-xs text-foreground space-y-0.5">
-                              {riskCalc.securityInfo.map((m: string, idx: number) => (
-                                <li key={idx}>{m}</li>
-                              ))}
+                          <div>
+                            <div className="text-[10px] font-medium text-muted-foreground mb-0.5">
+                              Security
+                            </div>
+                            <ul className="list-disc pl-4 text-[11px] space-y-0.5">
+                              {riskCalc.securityInfo.map(
+                                (m: string, idx: number) => (
+                                  <li key={idx}>{m}</li>
+                                )
+                              )}
                             </ul>
                           </div>
                         )}
-                        {riskCalc.operationalInfo && riskCalc.operationalInfo.length > 0 && (
-                          <div className="mb-2">
-                            <div className="text-[10px] font-medium text-muted-foreground mb-1">Operational</div>
-                            <ul className="list-disc pl-4 text-xs text-foreground space-y-0.5">
-                              {riskCalc.operationalInfo.map((m: string, idx: number) => (
-                                <li key={idx}>{m}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
+
+                        {riskCalc.operationalInfo &&
+                          riskCalc.operationalInfo.length > 0 && (
+                            <div>
+                              <div className="text-[10px] font-medium text-muted-foreground mb-0.5">
+                                Operational
+                              </div>
+                              <ul className="list-disc pl-4 text-[11px] space-y-0.5">
+                                {riskCalc.operationalInfo.map(
+                                  (m: string, idx: number) => (
+                                    <li key={idx}>{m}</li>
+                                  )
+                                )}
+                              </ul>
+                            </div>
+                          )}
+
                         {riskCalc.ethicalInfo && riskCalc.ethicalInfo.length > 0 && (
-                          <div className="mb-0">
-                            <div className="text-[10px] font-medium text-muted-foreground mb-1">Ethical</div>
-                            <ul className="list-disc pl-4 text-xs text-foreground space-y-0.5">
-                              {riskCalc.ethicalInfo.map((m: string, idx: number) => (
-                                <li key={idx}>{m}</li>
-                              ))}
+                          <div>
+                            <div className="text-[10px] font-medium text-muted-foreground mb-0.5">
+                              Ethical
+                            </div>
+                            <ul className="list-disc pl-4 text-[11px] space-y-0.5">
+                              {riskCalc.ethicalInfo.map(
+                                (m: string, idx: number) => (
+                                  <li key={idx}>{m}</li>
+                                )
+                              )}
                             </ul>
                           </div>
                         )}
                       </div>
                     )}
+
+                    {/* No Risks / Risk List */}
                     {riskCount === 0 ? (
-                      <div className="border-2 border-dashed border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-md p-6">
-                        <div className="flex flex-col items-center justify-center text-center space-y-3">
-                          <div className="p-3 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full">
-                            <Sparkles className="h-6 w-6 text-white" />
-                          </div>
-                          <div className="space-y-1">
-                            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                              No Risks Found
-                            </h4>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 max-w-sm">
-                              Generate risks using AI Risk Intelligence in the Assess Dashboard
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-1.5 pt-1">
-                            <Info className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                            <p className="text-[10px] text-gray-600 dark:text-gray-400">
-                              AI-powered recommendations from industry-leading sources
-                            </p>
-                          </div>
+                      <div className="border border-dashed border-border rounded-sm p-4 bg-muted/20">
+                        <div className="flex flex-col items-start gap-2">
+                          <h4 className="text-xs font-semibold text-foreground">
+                            No risks recorded
+                          </h4>
+                          <p className="text-[11px] text-muted-foreground">
+                            Use the assessment workflow to generate an initial set of risk
+                            insights and AI-driven recommendations.
+                          </p>
                           <Button
-                            onClick={() => router.push(`/dashboard/${useCase.id}/assess?step=10`)}
-                            className="mt-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-xs h-7 px-3"
+                            onClick={() =>
+                              router.push(`/dashboard/${useCase.id}/assess?step=10`)
+                            }
                             size="sm"
+                            className="h-7 text-[11px] px-3"
                           >
-                            <Sparkles className="h-3 w-3 mr-1.5" />
-                            Go to AI Risk Intelligence
-                            <ArrowRight className="h-3 w-3 ml-1.5" />
+                            Go to risk assessment
+                            <ArrowRight className="w-3 h-3 ml-1" />
                           </Button>
                         </div>
                       </div>
                     ) : (
                       <div className="space-y-2">
                         {useCase.risks.map((risk) => (
-                          <Card 
-                            key={risk.id} 
-                            className="border-l-4 bg-neutral-50/50 dark:bg-neutral-800/30 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50 transition-colors rounded-md" 
+                          <Card
+                            key={risk.id}
+                            className={`${cardClass} border-l-4 bg-muted/20`}
                             style={{
-                              borderLeftColor: risk.riskLevel === 'Critical' ? '#ef4444' :
-                                risk.riskLevel === 'High' ? '#f97316' :
-                                risk.riskLevel === 'Medium' ? '#eab308' : '#22c55e'
+                              borderLeftColor:
+                                risk.riskLevel === 'Critical'
+                                  ? '#ef4444'
+                                  : risk.riskLevel === 'High'
+                                  ? '#f97316'
+                                  : risk.riskLevel === 'Medium'
+                                  ? '#eab308'
+                                  : '#22c55e',
                             }}
                           >
-                            <CardContent className="pt-3 px-3 pb-3">
+                            <CardContent className="px-3 py-3">
                               <div className="flex items-start justify-between">
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                                    <Badge className={`${getRiskLevelColor(risk.riskLevel)} text-[10px] px-1.5 py-0`}>
+                                    <Badge
+                                      className={`${getRiskLevelColor(
+                                        risk.riskLevel
+                                      )} text-[10px] px-1.5 py-0 rounded`}
+                                    >
                                       {risk.riskLevel}
                                     </Badge>
-                                    <Badge className={`${getStatusColor(risk.status)} text-[10px] px-1.5 py-0`}>
+                                    <Badge
+                                      className={`${getStatusColor(
+                                        risk.status
+                                      )} text-[10px] px-1.5 py-0 rounded`}
+                                    >
                                       {risk.status.replace('_', ' ')}
                                     </Badge>
-                                    <span className="text-[10px] font-medium text-muted-foreground bg-neutral-100 dark:bg-neutral-700 px-1.5 py-0.5 rounded">
+                                    <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                                       Score: {risk.riskScore}/10
                                     </span>
                                   </div>
-                                  <h4 className="font-semibold text-xs text-foreground mb-1">
+                                  <h4 className="text-xs font-semibold text-foreground mb-1">
                                     {risk.category}
                                   </h4>
-                                  <p className="text-xs text-muted-foreground leading-relaxed">
+                                  <p className="text-[11px] text-muted-foreground leading-relaxed">
                                     {risk.description}
                                   </p>
                                   {risk.mitigationStrategy && (
-                                    <div className="mt-1.5 pt-1.5 border-t border-neutral-200 dark:border-neutral-700">
-                                      <p className="text-[10px] font-medium text-muted-foreground mb-0.5">Mitigation Strategy:</p>
-                                      <p className="text-xs text-foreground">{risk.mitigationStrategy}</p>
+                                    <div className="mt-1.5 pt-1.5 border-t border-border">
+                                      <p className="text-[10px] font-medium text-muted-foreground mb-0.5">
+                                        Mitigation strategy
+                                      </p>
+                                      <p className="text-[11px] text-foreground">
+                                        {risk.mitigationStrategy}
+                                      </p>
                                     </div>
                                   )}
                                 </div>
@@ -1105,7 +1228,7 @@ export default function RiskManagementPage() {
             );
           })
         )}
-      </div>
+      </section>
     </div>
   );
 }

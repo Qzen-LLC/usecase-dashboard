@@ -272,7 +272,7 @@ const ExecutiveDashboard = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-sm animate-spin mx-auto"></div>
           <div className="space-y-1">
             <h3 className="text-base font-semibold text-foreground">Loading Executive Dashboard</h3>
             <p className="text-xs text-muted-foreground">Gathering portfolio insights and metrics...</p>
@@ -286,17 +286,17 @@ const ExecutiveDashboard = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="max-w-md w-full">
-          <Card className="p-6 text-center space-y-4">
-            <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-              <AlertTriangle className="w-6 h-6 text-destructive" />
+          <Card className="p-4 text-center space-y-3 rounded-sm">
+            <div className="w-10 h-10 bg-destructive/10 rounded-sm flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
             </div>
             <div className="space-y-1">
-              <h2 className="text-lg font-bold text-foreground">Unable to Load Dashboard</h2>
+              <h2 className="text-base font-semibold text-foreground">Unable to Load Dashboard</h2>
               <p className="text-xs text-muted-foreground">{error?.message}</p>
             </div>
             <button 
               onClick={handleRefresh}
-              className="w-full bg-primary text-primary-foreground font-medium py-2 px-4 text-sm rounded-md hover:bg-primary/90 transition-colors duration-150"
+              className="w-full bg-primary text-primary-foreground font-medium py-1.5 px-3 text-xs rounded-sm hover:bg-primary/90 transition-colors duration-150"
             >
               <RefreshCw className={`w-4 h-4 inline mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
               Try Again
@@ -310,12 +310,12 @@ const ExecutiveDashboard = () => {
   if (!metrics) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="p-6 text-center space-y-3">
-          <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto">
-            <AlertTriangle className="w-6 h-6 text-muted-foreground" />
+        <Card className="p-4 text-center space-y-2 rounded-sm">
+          <div className="w-10 h-10 bg-muted rounded-sm flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-5 h-5 text-muted-foreground" />
           </div>
           <div className="space-y-1">
-            <h2 className="text-base font-semibold text-foreground">No Data Available</h2>
+            <h2 className="text-sm font-semibold text-foreground">No Data Available</h2>
             <p className="text-xs text-muted-foreground">No metrics data available for this organization.</p>
           </div>
         </Card>
@@ -324,59 +324,59 @@ const ExecutiveDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         
         {/* Action Buttons */}
-        <div className="mb-6 flex justify-end">
+        <div className="mb-3 flex justify-end">
           <div className="flex items-center gap-2">
             <button
               onClick={handleRefresh}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-card border border-border rounded-md hover:bg-muted transition-colors duration-150"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-card border border-border rounded-sm hover:bg-muted transition-colors duration-150"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
               Refresh
             </button>
             <button 
               onClick={handleExport}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors duration-150"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-sm hover:bg-primary/90 transition-colors duration-150"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3 h-3" />
               Export
             </button>
           </div>
         </div>
 
         {/* Clean KPI Cards */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
 
           {/* Total Use Cases */}
-          <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-            <div className="p-4">
+          <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 rounded-sm">
+            <div className="p-2.5">
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">Total Use Cases</p>
-                <p className="text-2xl font-bold text-foreground">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Total Use Cases</p>
+                <p className="text-lg font-semibold text-foreground">
                   {Math.round(animatedValues.totalUseCases || 0)}
                 </p>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 bg-success rounded-full"></div>
-                  <span className="text-xs text-muted-foreground">Active</span>
+                <div className="flex items-center gap-1">
+                  <div className="w-1 h-1 bg-success rounded-full"></div>
+                  <span className="text-[10px] text-muted-foreground">Active</span>
                 </div>
               </div>
             </div>
           </Card>
 
           {/* Portfolio Score */}
-          <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-            <div className="p-4">
+          <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 rounded-sm">
+            <div className="p-2.5">
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">Portfolio Score</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {(animatedValues.portfolioScore || 0).toFixed(1)}/10
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Portfolio Score</p>
+                <p className="text-lg font-semibold text-foreground">
+                  {(animatedValues.portfolioScore || 0).toFixed(1)}
                 </p>
-                <div className="w-full bg-muted rounded-full h-1.5">
+                <div className="w-full bg-muted rounded-sm h-1">
                   <div 
-                    className="bg-primary h-1.5 rounded-full transition-all duration-1000 ease-out"
+                    className="bg-primary/70 h-1 rounded-sm transition-all duration-1000 ease-out"
                     style={{ width: `${(animatedValues.portfolioScore || 0) * 10}%` }}
                   ></div>
                 </div>
@@ -385,32 +385,32 @@ const ExecutiveDashboard = () => {
           </Card>
 
           {/* Complexity */}
-          <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-            <div className="p-4">
+          <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 rounded-sm">
+            <div className="p-2.5">
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">Avg Complexity</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {(animatedValues.complexity || 0).toFixed(1)}/10
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Avg Complexity</p>
+                <p className="text-lg font-semibold text-foreground">
+                  {(animatedValues.complexity || 0).toFixed(1)}
                 </p>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 bg-warning rounded-full"></div>
-                  <span className="text-xs text-muted-foreground">Moderate</span>
+                <div className="flex items-center gap-1">
+                  <div className="w-1 h-1 bg-warning rounded-full"></div>
+                  <span className="text-[10px] text-muted-foreground">Moderate</span>
                 </div>
               </div>
             </div>
           </Card>
 
           {/* Confidence */}
-          <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-            <div className="p-4">
+          <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 rounded-sm">
+            <div className="p-2.5">
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">Avg Confidence</p>
-                <p className="text-2xl font-bold text-foreground">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Avg Confidence</p>
+                <p className="text-lg font-semibold text-foreground">
                   {Math.round(animatedValues.confidence || 0)}%
                 </p>
-                <div className="w-full bg-muted rounded-full h-1.5">
+                <div className="w-full bg-muted rounded-sm h-1">
                   <div 
-                    className="bg-primary h-1.5 rounded-full transition-all duration-1000 ease-out"
+                    className="bg-primary/70 h-1 rounded-sm transition-all duration-1000 ease-out"
                     style={{ width: `${animatedValues.confidence || 0}%` }}
                   ></div>
                 </div>
@@ -421,25 +421,25 @@ const ExecutiveDashboard = () => {
         </section>
 
         {/* Portfolio Health Section */}
-        <section className="mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-1 h-4 bg-primary rounded-full"></div>
-            <h2 className="text-lg font-semibold text-foreground tracking-tight">Portfolio Health</h2>
+        <section className="mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1 h-4 bg-primary rounded-sm"></div>
+            <h2 className="text-base font-semibold text-foreground tracking-tight">Portfolio Health</h2>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {/* Stage Distribution */}
             {(() => {
               const hasStageData = Object.keys(metrics.portfolio.stageDistribution ?? {}).length > 0;
               if (!hasStageData) {
                 return (
-                  <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                    <div className="p-4">
-                      <div className="mb-4">
-                        <h3 className="text-base font-semibold text-foreground">Stage Distribution</h3>
-                        <p className="text-xs text-muted-foreground mt-1">Use cases by development stage</p>
+                  <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 rounded-sm">
+                    <div className="p-3">
+                      <div className="mb-3">
+                        <h3 className="text-sm font-medium text-foreground">Stage Distribution</h3>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Use cases by development stage</p>
                       </div>
-                      <div className="h-72 flex items-center justify-center">
-                        <p className="text-sm text-muted-foreground">No stage data available</p>
+                      <div className="h-64 flex items-center justify-center">
+                        <p className="text-xs text-muted-foreground">No stage data available</p>
                       </div>
                     </div>
                   </Card>
@@ -448,34 +448,12 @@ const ExecutiveDashboard = () => {
               
               const stageData = Object.entries(metrics.portfolio.stageDistribution || {}).sort((a, b) => (b[1] as number) - (a[1] as number));
               
-              // Color palette that works with both light and dark themes
+              // All bars use blue color
               const getComputedColor = (index: number) => {
                 if (isDarkMode) {
-                  // Brighter colors for dark mode
-                  const darkPalette = [
-                    'rgb(96, 165, 250)',   // Light Blue
-                    'rgb(74, 222, 128)',   // Light Green
-                    'rgb(251, 146, 60)',  // Orange
-                    'rgb(196, 181, 253)',  // Light Purple
-                    'rgb(244, 114, 182)',  // Light Pink
-                    'rgb(125, 211, 252)',  // Light Sky Blue
-                    'rgb(250, 204, 21)',  // Bright Yellow
-                    'rgb(248, 113, 113)',  // Light Red
-                  ];
-                  return darkPalette[index % darkPalette.length];
+                  return 'rgba(140, 160, 255, 0.9)'; // Light Blue for dark mode
                 } else {
-                  // Standard colors for light mode
-                  const lightPalette = [
-                    'rgb(59, 130, 246)',   // Blue
-                    'rgb(34, 197, 94)',   // Green
-                    'rgb(251, 146, 60)',  // Orange
-                    'rgb(168, 85, 247)',  // Purple
-                    'rgb(236, 72, 153)',  // Pink
-                    'rgb(14, 165, 233)',  // Sky Blue
-                    'rgb(234, 179, 8)',   // Yellow
-                    'rgb(239, 68, 68)',   // Red
-                  ];
-                  return lightPalette[index % lightPalette.length];
+                  return 'rgba(70, 90, 200, 0.9)'; // Blue for light mode
                 }
               };
               
@@ -490,7 +468,7 @@ const ExecutiveDashboard = () => {
                   label: 'Use Cases',
                   data: stageData.map(([, count]) => count as number),
                   backgroundColor: stageData.map((_, index) => getComputedColor(index)),
-                  borderRadius: 6,
+                  borderRadius: 2,
                   borderSkipped: false,
                   maxBarThickness: 50,
                 }]
@@ -517,7 +495,7 @@ const ExecutiveDashboard = () => {
                     borderWidth: 1,
                     padding: 12,
                     displayColors: true,
-                    cornerRadius: 6,
+                    cornerRadius: 2,
                     callbacks: {
                       label: function(context: any) {
                         return `${context.parsed.y} use case${context.parsed.y !== 1 ? 's' : ''}`;
@@ -568,13 +546,13 @@ const ExecutiveDashboard = () => {
               };
 
               return (
-                <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                  <div className="p-4">
-                    <div className="mb-4">
-                      <h3 className="text-base font-semibold text-foreground">Stage Distribution</h3>
-                      <p className="text-xs text-muted-foreground mt-1">Use cases by development stage</p>
+                <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 rounded-sm">
+                  <div className="p-3">
+                    <div className="mb-3">
+                      <h3 className="text-sm font-medium text-foreground">Stage Distribution</h3>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Use cases by development stage</p>
                     </div>
-                    <div className="h-72 chart-container" style={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
+                    <div className="h-64 chart-container" style={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
                       <Bar 
                         key={`stage-${isDarkMode}`} 
                         data={chartData} 
@@ -595,14 +573,14 @@ const ExecutiveDashboard = () => {
                 Object.values(priorityDist).some((count: any) => count > 0);
               if (!hasPriorityData) {
                 return (
-                  <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                    <div className="p-4">
-                      <div className="mb-4">
-                        <h3 className="text-base font-semibold text-foreground">Priority Distribution</h3>
-                        <p className="text-xs text-muted-foreground mt-1">Use cases by priority level</p>
+                  <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 rounded-sm">
+                    <div className="p-3">
+                      <div className="mb-3">
+                        <h3 className="text-sm font-medium text-foreground">Priority Distribution</h3>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Use cases by priority level</p>
                       </div>
-                      <div className="h-72 flex items-center justify-center">
-                        <p className="text-sm text-muted-foreground">No priority data available</p>
+                      <div className="h-64 flex items-center justify-center">
+                        <p className="text-xs text-muted-foreground">No priority data available</p>
                       </div>
                     </div>
                   </Card>
@@ -616,19 +594,12 @@ const ExecutiveDashboard = () => {
                 return bPriority - aPriority;
               });
 
-              // Priority-specific colors
+              // All bars use blue color
               const getPriorityColor = (priority: string) => {
-                const priorityLower = priority.toLowerCase();
                 if (isDarkMode) {
-                  if (priorityLower === 'high') return 'rgb(248, 113, 113)'; // Light Red
-                  if (priorityLower === 'medium') return 'rgb(250, 204, 21)'; // Bright Yellow
-                  if (priorityLower === 'low') return 'rgb(74, 222, 128)'; // Light Green
-                  return 'rgb(156, 163, 175)'; // Gray
+                  return 'rgba(140, 160, 255, 0.9)'; // Light Blue for dark mode
                 } else {
-                  if (priorityLower === 'high') return 'rgb(239, 68, 68)'; // Red
-                  if (priorityLower === 'medium') return 'rgb(234, 179, 8)'; // Yellow
-                  if (priorityLower === 'low') return 'rgb(34, 197, 94)'; // Green
-                  return 'rgb(107, 114, 128)'; // Gray
+                  return 'rgba(70, 90, 200, 0.9)'; // Blue for light mode
                 }
               };
               
@@ -638,7 +609,7 @@ const ExecutiveDashboard = () => {
                   label: 'Use Cases',
                   data: priorityData.map(([, count]) => count as number),
                   backgroundColor: priorityData.map(([priority]) => getPriorityColor(priority)),
-                  borderRadius: 6,
+                  borderRadius: 2,
                   borderSkipped: false,
                   maxBarThickness: 50,
                 }]
@@ -665,7 +636,7 @@ const ExecutiveDashboard = () => {
                     borderWidth: 1,
                     padding: 12,
                     displayColors: true,
-                    cornerRadius: 6,
+                    cornerRadius: 2,
                     callbacks: {
                       label: function(context: any) {
                         return `${context.parsed.y} use case${context.parsed.y !== 1 ? 's' : ''}`;
@@ -714,13 +685,13 @@ const ExecutiveDashboard = () => {
               };
 
               return (
-                <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                  <div className="p-4">
-                    <div className="mb-4">
-                      <h3 className="text-base font-semibold text-foreground">Priority Distribution</h3>
-                      <p className="text-xs text-muted-foreground mt-1">Use cases by priority level</p>
+                <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 rounded-sm">
+                  <div className="p-3">
+                    <div className="mb-3">
+                      <h3 className="text-sm font-medium text-foreground">Priority Distribution</h3>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Use cases by priority level</p>
                     </div>
-                    <div className="h-72 chart-container" style={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
+                    <div className="h-64 chart-container" style={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
                       <Bar 
                         key={`priority-${isDarkMode}`} 
                         data={chartData} 
@@ -738,55 +709,55 @@ const ExecutiveDashboard = () => {
 
         {/* Financial Metrics Section */}
         {metrics.financial && (
-          <section className="mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-1 h-4 bg-primary rounded-full"></div>
-              <h2 className="text-lg font-semibold text-foreground tracking-tight">Financial Metrics</h2>
+          <section className="mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-1 h-4 bg-primary rounded-sm"></div>
+              <h2 className="text-base font-semibold text-foreground tracking-tight">Financial Metrics</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               {/* Total Investment */}
-              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-4">
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 rounded-sm">
+                <div className="p-2.5">
                   <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">Total Investment</p>
-                    <p className="text-xl font-bold text-foreground">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Total Investment</p>
+                    <p className="text-lg font-semibold text-foreground">
                       {formatCurrency(metrics.financial.totalInvestment ?? 0)}
                     </p>
-                    <div className="flex items-center gap-1.5">
-                      <TrendingUp className="w-3.5 h-3.5 text-success" />
-                      <span className="text-xs text-muted-foreground">Growing</span>
+                    <div className="flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3 text-success" />
+                      <span className="text-[10px] text-muted-foreground">Growing</span>
                     </div>
                   </div>
                 </div>
               </Card>
 
               {/* Total ROI */}
-              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-4">
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 rounded-sm">
+                <div className="p-2.5">
                   <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">Total ROI</p>
-                    <p className="text-xl font-bold text-foreground">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Total ROI</p>
+                    <p className="text-lg font-semibold text-foreground">
                       {formatCurrency(metrics.financial.totalROI ?? 0)}
                     </p>
-                    <div className="flex items-center gap-1.5">
-                      <ArrowUpRight className="w-3.5 h-3.5 text-success" />
-                      <span className="text-xs text-muted-foreground">Positive</span>
+                    <div className="flex items-center gap-1">
+                      <ArrowUpRight className="w-3 h-3 text-success" />
+                      <span className="text-[10px] text-muted-foreground">Positive</span>
                     </div>
                   </div>
                 </div>
               </Card>
 
               {/* Average ROI */}
-              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-4">
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 rounded-sm">
+                <div className="p-2.5">
                   <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">Average ROI</p>
-                    <p className="text-xl font-bold text-foreground">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Average ROI</p>
+                    <p className="text-lg font-semibold text-foreground">
                       {(metrics.financial.averageROI ?? 0).toFixed(1)}%
                     </p>
-                    <div className="w-full bg-muted rounded-full h-1.5">
+                    <div className="w-full bg-muted rounded-sm h-1">
                       <div 
-                        className="bg-primary h-1.5 rounded-full transition-all duration-1000 ease-out"
+                        className="bg-primary/70 h-1 rounded-sm transition-all duration-1000 ease-out"
                         style={{ width: `${Math.min((metrics.financial.averageROI ?? 0) * 2, 100)}%` }}
                       ></div>
                     </div>
@@ -795,16 +766,16 @@ const ExecutiveDashboard = () => {
               </Card>
 
               {/* Average Cost per Use Case */}
-              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-4">
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 rounded-sm">
+                <div className="p-2.5">
                   <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">Avg Cost per Use Case</p>
-                    <p className="text-xl font-bold text-foreground">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Avg Cost per Use Case</p>
+                    <p className="text-lg font-semibold text-foreground">
                       {formatCurrency((metrics.financial.totalInvestment ?? 0) / (metrics.portfolio.totalUseCases || 1))}
                     </p>
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
-                      <span className="text-xs text-muted-foreground">Per Case</span>
+                    <div className="flex items-center gap-1">
+                      <div className="w-1 h-1 bg-primary rounded-full"></div>
+                      <span className="text-[10px] text-muted-foreground">Per Case</span>
                     </div>
                   </div>
                 </div>
@@ -815,25 +786,25 @@ const ExecutiveDashboard = () => {
 
         {/* Risk Assessment Section */}
         {metrics.risk && (
-          <section className="mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-1 h-4 bg-primary rounded-full"></div>
-              <h2 className="text-lg font-semibold text-foreground tracking-tight">Risk Assessment</h2>
+          <section className="mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-1 h-4 bg-primary rounded-sm"></div>
+              <h2 className="text-base font-semibold text-foreground tracking-tight">Risk Assessment</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               {/* High Risk */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 cursor-pointer">
-                    <div className="p-4">
+                  <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 cursor-pointer rounded-sm">
+                    <div className="p-2.5">
                       <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground">High Risk Use Cases</p>
-                        <p className="text-2xl font-bold text-foreground">
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">High Risk</p>
+                        <p className="text-lg font-semibold text-foreground">
                           {metrics.risk.riskDistribution?.High ?? 0}
                         </p>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-1.5 h-1.5 bg-destructive rounded-full"></div>
-                          <span className="text-xs text-muted-foreground">Critical</span>
+                        <div className="flex items-center gap-1">
+                          <div className="w-1 h-1 bg-destructive rounded-full"></div>
+                          <span className="text-[10px] text-muted-foreground">Critical</span>
                         </div>
                       </div>
                     </div>
@@ -842,7 +813,7 @@ const ExecutiveDashboard = () => {
                 <TooltipContent 
                   side="top" 
                   hideArrow
-                  className="max-w-xs bg-card text-foreground border border-border shadow-lg p-3"
+                  className="max-w-xs bg-card text-foreground border border-border shadow-lg p-2.5 rounded-sm"
                 >
                   <div className="space-y-2">
                     <p className="font-semibold text-sm">High Risk Use Cases:</p>
@@ -862,16 +833,16 @@ const ExecutiveDashboard = () => {
               {/* Medium Risk */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 cursor-pointer">
-                    <div className="p-4">
+                  <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 cursor-pointer rounded-sm">
+                    <div className="p-2.5">
                       <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground">Medium Risk Use Cases</p>
-                        <p className="text-2xl font-bold text-foreground">
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Medium Risk</p>
+                        <p className="text-lg font-semibold text-foreground">
                           {metrics.risk.riskDistribution?.Medium ?? 0}
                         </p>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-1.5 h-1.5 bg-warning rounded-full"></div>
-                          <span className="text-xs text-muted-foreground">Monitor</span>
+                        <div className="flex items-center gap-1">
+                          <div className="w-1 h-1 bg-warning rounded-full"></div>
+                          <span className="text-[10px] text-muted-foreground">Monitor</span>
                         </div>
                       </div>
                     </div>
@@ -880,7 +851,7 @@ const ExecutiveDashboard = () => {
                 <TooltipContent 
                   side="top" 
                   hideArrow
-                  className="max-w-xs bg-card text-foreground border border-border shadow-lg p-3"
+                  className="max-w-xs bg-card text-foreground border border-border shadow-lg p-2.5 rounded-sm"
                 >
                   <div className="space-y-2">
                     <p className="font-semibold text-sm">Medium Risk Use Cases:</p>
@@ -900,16 +871,16 @@ const ExecutiveDashboard = () => {
               {/* Low Risk */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 cursor-pointer">
-                    <div className="p-4">
+                  <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 cursor-pointer rounded-sm">
+                    <div className="p-2.5">
                       <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground">Low Risk Use Cases</p>
-                        <p className="text-2xl font-bold text-foreground">
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Low Risk</p>
+                        <p className="text-lg font-semibold text-foreground">
                           {metrics.risk.riskDistribution?.Low ?? 0}
                         </p>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-1.5 h-1.5 bg-success rounded-full"></div>
-                          <span className="text-xs text-muted-foreground">Safe</span>
+                        <div className="flex items-center gap-1">
+                          <div className="w-1 h-1 bg-success rounded-full"></div>
+                          <span className="text-[10px] text-muted-foreground">Safe</span>
                         </div>
                       </div>
                     </div>
@@ -918,7 +889,7 @@ const ExecutiveDashboard = () => {
                 <TooltipContent 
                   side="top" 
                   hideArrow
-                  className="max-w-xs bg-card text-foreground border border-border shadow-lg p-3"
+                  className="max-w-xs bg-card text-foreground border border-border shadow-lg p-2.5 rounded-sm"
                 >
                   <div className="space-y-2">
                     <p className="font-semibold text-sm">Low Risk Use Cases:</p>
@@ -936,16 +907,16 @@ const ExecutiveDashboard = () => {
               </Tooltip>
 
               {/* Total Assessed */}
-              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-4">
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 rounded-sm">
+                <div className="p-2.5">
                   <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">Total Assessed</p>
-                    <p className="text-2xl font-bold text-foreground">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Total Assessed</p>
+                    <p className="text-lg font-semibold text-foreground">
                       {metrics.risk.totalAssessed ?? 0}
                     </p>
-                    <div className="flex items-center gap-1.5">
-                      <CheckCircle className="w-3.5 h-3.5 text-primary" />
-                      <span className="text-xs text-muted-foreground">Complete</span>
+                    <div className="flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3 text-primary" />
+                      <span className="text-[10px] text-muted-foreground">Complete</span>
                     </div>
                   </div>
                 </div>
@@ -956,33 +927,33 @@ const ExecutiveDashboard = () => {
 
         {/* Strategic Insights Section */}
         {metrics.strategic && (
-          <section className="mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-1 h-4 bg-primary rounded-full"></div>
-              <h2 className="text-lg font-semibold text-foreground tracking-tight">Strategic Insights</h2>
+          <section className="mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-1 h-4 bg-primary rounded-sm"></div>
+              <h2 className="text-base font-semibold text-foreground tracking-tight">Strategic Insights</h2>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
               {/* Business Function Performance */}
-              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-4">
-                  <div className="mb-3">
-                    <h3 className="text-base font-semibold text-foreground">Business Function Performance</h3>
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 rounded-sm">
+                <div className="p-3">
+                  <div className="mb-2.5">
+                    <h3 className="text-sm font-medium text-foreground">Business Function Performance</h3>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     {metrics.strategic.businessFunctionPerformance?.map((func: any, index: number) => (
-                      <div key={func.function} className="flex items-center justify-between p-2 bg-muted/50 rounded-md hover:bg-muted transition-colors duration-150">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${
+                      <div key={func.function} className="flex items-center justify-between p-1.5 bg-muted/50 rounded-sm hover:bg-muted transition-colors duration-150">
+                        <div className="flex items-center gap-1.5">
+                          <div className={`w-1.5 h-1.5 rounded-full ${
                             index === 0 ? 'bg-primary' :
                             index === 1 ? 'bg-success' :
                             index === 2 ? 'bg-warning' :
                             index === 3 ? 'bg-secondary' : 'bg-muted-foreground'
                           }`}></div>
-                          <span className="text-xs font-medium text-foreground">
+                          <span className="text-[11px] font-medium text-foreground">
                             {func.function}
                           </span>
                         </div>
-                        <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs font-medium rounded">
+                        <span className="px-1.5 py-0.5 bg-primary text-primary-foreground text-[10px] font-medium rounded-sm">
                           {func.count}
                         </span>
                       </div>
@@ -992,27 +963,27 @@ const ExecutiveDashboard = () => {
               </Card>
               
               {/* Portfolio Balance */}
-              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-4">
-                  <div className="mb-3">
-                    <h3 className="text-base font-semibold text-foreground">Portfolio Balance</h3>
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 rounded-sm">
+                <div className="p-3">
+                  <div className="mb-2.5">
+                    <h3 className="text-sm font-medium text-foreground">Portfolio Balance</h3>
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 bg-success/10 rounded-md">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 bg-success rounded-full"></div>
-                        <span className="text-xs font-medium text-foreground">Quick Wins</span>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between p-2 bg-success/10 rounded-sm">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 bg-success rounded-full"></div>
+                        <span className="text-[11px] font-medium text-foreground">Quick Wins</span>
                       </div>
-                      <span className="px-3 py-1.5 bg-success text-success-foreground text-base font-bold rounded">
+                      <span className="px-2 py-1 bg-success text-success-foreground text-sm font-semibold rounded-sm">
                         {metrics.strategic.portfolioBalance?.quickWins ?? 0}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-primary/10 rounded-md">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 bg-primary rounded-full"></div>
-                        <span className="text-xs font-medium text-foreground">High Impact Low Complexity</span>
+                    <div className="flex items-center justify-between p-2 bg-primary/10 rounded-sm">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        <span className="text-[11px] font-medium text-foreground">High Impact Low Complexity</span>
                       </div>
-                      <span className="px-3 py-1.5 bg-primary text-primary-foreground text-base font-bold rounded">
+                      <span className="px-2 py-1 bg-primary text-primary-foreground text-sm font-semibold rounded-sm">
                         {metrics.strategic.portfolioBalance?.highImpactLowComplexity ?? 0}
                       </span>
                     </div>
@@ -1021,26 +992,26 @@ const ExecutiveDashboard = () => {
               </Card>
               
               {/* Average ROI by Function */}
-              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150">
-                <div className="p-4">
-                  <div className="mb-3">
-                    <h3 className="text-base font-semibold text-foreground">Average ROI by Function</h3>
+              <Card className="bg-card border border-border hover:shadow-md transition-shadow duration-150 rounded-sm">
+                <div className="p-3">
+                  <div className="mb-2.5">
+                    <h3 className="text-sm font-medium text-foreground">Average ROI by Function</h3>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     {metrics.strategic.businessFunctionPerformance?.slice(0, 5).map((func: any, index: number) => (
-                      <div key={func.function} className="flex items-center justify-between p-2 bg-muted/50 rounded-md hover:bg-muted transition-colors duration-150">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${
+                      <div key={func.function} className="flex items-center justify-between p-1.5 bg-muted/50 rounded-sm hover:bg-muted transition-colors duration-150">
+                        <div className="flex items-center gap-1.5">
+                          <div className={`w-1.5 h-1.5 rounded-full ${
                             index === 0 ? 'bg-primary' :
                             index === 1 ? 'bg-success' :
                             index === 2 ? 'bg-warning' :
                             index === 3 ? 'bg-secondary' : 'bg-muted-foreground'
                           }`}></div>
-                          <span className="text-xs font-medium text-foreground">
+                          <span className="text-[11px] font-medium text-foreground">
                             {func.function}
                           </span>
                         </div>
-                        <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs font-medium rounded">
+                        <span className="px-1.5 py-0.5 bg-primary text-primary-foreground text-[10px] font-medium rounded-sm">
                           {func.averageROI.toFixed(1)}%
                         </span>
                       </div>

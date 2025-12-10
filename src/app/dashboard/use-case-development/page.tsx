@@ -6,15 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { 
-  Code2, 
-  Plus, 
-  Search, 
+import {
+  Code2,
+  Search,
   ChevronRight,
   FileText,
   GitBranch,
-  Rocket,
-  Clock
+  Clock,
 } from 'lucide-react';
 import { useUserClient } from '@/hooks/useAuthClient';
 
@@ -29,21 +27,42 @@ interface UseCase {
 }
 
 // Eligible stages for Use Case Development (Business Case and beyond)
-const ELIGIBLE_STAGES = ['business-case', 'proof-of-value', 'backlog', 'in-progress', 'solution-validation', 'pilot', 'deployment'];
+const ELIGIBLE_STAGES = [
+  'business-case',
+  'proof-of-value',
+  'backlog',
+  'in-progress',
+  'solution-validation',
+  'pilot',
+  'deployment',
+];
 
 const stageBadgeColors: Record<string, string> = {
-  'business-case': 'bg-neutral-100 text-neutral-700 dark:bg-muted dark:text-muted-foreground',
-  'proof-of-value': 'bg-neutral-100 text-neutral-700 dark:bg-muted dark:text-muted-foreground',
-  'backlog': 'bg-neutral-100 text-neutral-700 dark:bg-muted dark:text-muted-foreground',
-  'in-progress': 'bg-neutral-100 text-neutral-700 dark:bg-muted dark:text-muted-foreground',
-  'solution-validation': 'bg-neutral-100 text-neutral-700 dark:bg-muted dark:text-muted-foreground',
-  'pilot': 'bg-neutral-100 text-neutral-700 dark:bg-muted dark:text-muted-foreground',
-  'deployment': 'bg-neutral-100 text-neutral-700 dark:bg-muted dark:text-muted-foreground'
+  'business-case':
+    'bg-muted text-foreground/80 border border-border/60 dark:bg-neutral-900 dark:text-neutral-100',
+  'proof-of-value':
+    'bg-muted text-foreground/80 border border-border/60 dark:bg-neutral-900 dark:text-neutral-100',
+  backlog:
+    'bg-muted text-foreground/80 border border-border/60 dark:bg-neutral-900 dark:text-neutral-100',
+  'in-progress':
+    'bg-muted text-foreground/80 border border-border/60 dark:bg-neutral-900 dark:text-neutral-100',
+  'solution-validation':
+    'bg-muted text-foreground/80 border border-border/60 dark:bg-neutral-900 dark:text-neutral-100',
+  pilot:
+    'bg-muted text-foreground/80 border border-border/60 dark:bg-neutral-900 dark:text-neutral-100',
+  deployment:
+    'bg-muted text-foreground/80 border border-border/60 dark:bg-neutral-900 dark:text-neutral-100',
 };
+
+const formatStageLabel = (stage: string) =>
+  stage
+    ?.split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 
 export default function UseCaseDevelopmentDashboard() {
   const router = useRouter();
-  const { user } = useUserClient<any>();
+  const { user } = useUserClient<any>(); // keeping for parity, even if not used directly
   const [useCases, setUseCases] = useState<UseCase[]>([]);
   const [filteredUseCases, setFilteredUseCases] = useState<UseCase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,26 +71,28 @@ export default function UseCaseDevelopmentDashboard() {
 
   useEffect(() => {
     fetchUseCases();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     filterUseCases();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useCases, searchTerm, selectedStage]);
 
   const fetchUseCases = async () => {
     try {
+      setLoading(true);
       const response = await fetch('/api/read-usecases');
       if (!response.ok) throw new Error('Failed to fetch use cases');
-      
+
       const data = await response.json();
-      // The API returns { useCases: [...] }
-      const allUseCases = data.useCases || [];
-      
+      const allUseCases = (data.useCases || []) as UseCase[];
+
       // Filter for eligible stages only
-      const eligibleUseCases = allUseCases.filter((uc: UseCase) => 
+      const eligibleUseCases = allUseCases.filter((uc) =>
         ELIGIBLE_STAGES.includes(uc.stage?.toLowerCase() || '')
       );
-      
+
       setUseCases(eligibleUseCases);
       setFilteredUseCases(eligibleUseCases);
     } catch (error) {
@@ -84,17 +105,17 @@ export default function UseCaseDevelopmentDashboard() {
   const filterUseCases = () => {
     let filtered = [...useCases];
 
-    // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(uc => 
-        uc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        uc.businessFunction?.toLowerCase().includes(searchTerm.toLowerCase())
+      const q = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (uc) =>
+          uc.title.toLowerCase().includes(q) ||
+          uc.businessFunction?.toLowerCase().includes(q)
       );
     }
 
-    // Filter by stage
     if (selectedStage !== 'all') {
-      filtered = filtered.filter(uc => uc.stage === selectedStage);
+      filtered = filtered.filter((uc) => uc.stage === selectedStage);
     }
 
     setFilteredUseCases(filtered);
@@ -104,197 +125,217 @@ export default function UseCaseDevelopmentDashboard() {
     router.push(`/dashboard/use-case-development/${useCaseId}`);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
     });
-  };
+
+  const totalUseCases = useCases.length;
+  const inDevelopmentCount = useCases.filter(
+    (uc) => uc.stage === 'in-progress'
+  ).length;
+  const readyForPilotCount = useCases.filter(
+    (uc) => uc.stage === 'pilot'
+  ).length;
+  const totalPrompts = useCases.reduce(
+    (sum, uc) => sum + (uc.promptTemplates?.length || 0),
+    0
+  );
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent"></div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-xs text-muted-foreground">
+            Loading use case development workspace...
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-7xl">
-      {/* Header */}
-      <div className="mb-6">
-        <p className="text-xs text-muted-foreground">
-          Create and manage prompt templates for your AI use cases
-        </p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        {/* KPI Row (Stats) */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+          <Card className="bg-card border border-border rounded-md hover:shadow-sm transition-shadow">
+            <CardContent className="px-3 py-3">
+              <p className="text-[11px] font-medium text-muted-foreground mb-1">
+                Total Eligible Use Cases
+              </p>
+              <p className="text-xl font-semibold text-foreground">
+                {totalUseCases}
+              </p>
+            </CardContent>
+          </Card>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
-        <Card className="rounded-md bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-700">
-          <CardHeader className="pb-1.5 px-4 pt-4">
-            <CardDescription className="text-xs">Total Use Cases</CardDescription>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-xl font-bold text-foreground">{useCases.length}</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-md bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-700">
-          <CardHeader className="pb-1.5 px-4 pt-4">
-            <CardDescription className="text-xs">In Development</CardDescription>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-xl font-bold text-foreground">
-              {useCases.filter(uc => uc.stage === 'in-progress').length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-md bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-700">
-          <CardHeader className="pb-1.5 px-4 pt-4">
-            <CardDescription className="text-xs">Ready for Pilot</CardDescription>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-xl font-bold text-foreground">
-              {useCases.filter(uc => uc.stage === 'pilot').length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-md bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-700">
-          <CardHeader className="pb-1.5 px-4 pt-4">
-            <CardDescription className="text-xs">Total Prompts</CardDescription>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-xl font-bold text-foreground">0</div>
-          </CardContent>
-        </Card>
-      </div>
+          <Card className="bg-card border border-border rounded-md hover:shadow-sm transition-shadow">
+            <CardContent className="px-3 py-3">
+              <p className="text-[11px] font-medium text-muted-foreground mb-1">
+                In Development
+              </p>
+              <p className="text-xl font-semibold text-foreground">
+                {inDevelopmentCount}
+              </p>
+            </CardContent>
+          </Card>
 
-      {/* Filters */}
-      <div className="bg-neutral-50/50 dark:bg-neutral-900/30 rounded-lg p-4 mb-4 border border-neutral-200 dark:border-neutral-700">
-        <div className="flex flex-col md:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-muted-foreground w-3.5 h-3.5" />
-            <Input
-              type="text"
-              placeholder="Search use cases..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-9 text-sm rounded-md bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700"
-            />
-          </div>
-          <div className="flex gap-1.5 flex-wrap">
-            <Button
-              variant={selectedStage === 'all' ? 'default' : 'outline'}
-              onClick={() => setSelectedStage('all')}
-              size="sm"
-              className="text-xs h-8 px-3 rounded-md"
-            >
-              All Stages
-            </Button>
-            {ELIGIBLE_STAGES.map(stage => (
+          <Card className="bg-card border border-border rounded-md hover:shadow-sm transition-shadow">
+            <CardContent className="px-3 py-3">
+              <p className="text-[11px] font-medium text-muted-foreground mb-1">
+                Ready for Pilot
+              </p>
+              <p className="text-xl font-semibold text-foreground">
+                {readyForPilotCount}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card border border-border rounded-md hover:shadow-sm transition-shadow">
+            <CardContent className="px-3 py-3">
+              <p className="text-[11px] font-medium text-muted-foreground mb-1">
+                Total Prompts
+              </p>
+              <p className="text-xl font-semibold text-foreground">
+                {totalPrompts}
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Filters */}
+        <section className="bg-card border border-border rounded-md mb-5">
+          <div className="p-3 flex flex-col md:flex-row gap-3 items-start md:items-center">
+            {/* Search */}
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search by use case or business function..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8 h-9 text-xs bg-background border-border"
+              />
+            </div>
+
+            {/* Stage Filters (compact, enterprise segmented buttons) */}
+            <div className="flex flex-wrap gap-1.5">
               <Button
-                key={stage}
-                variant={selectedStage === stage ? 'default' : 'outline'}
-                onClick={() => setSelectedStage(stage)}
+                variant={selectedStage === 'all' ? 'default' : 'outline'}
                 size="sm"
-                className="text-xs h-8 px-3 rounded-md"
+                className="h-8 px-3 text-[11px]"
+                onClick={() => setSelectedStage('all')}
               >
-                {stage.split('-').map(word => 
-                  word.charAt(0).toUpperCase() + word.slice(1)
-                ).join(' ')}
+                All Stages
               </Button>
-            ))}
+              {ELIGIBLE_STAGES.map((stage) => (
+                <Button
+                  key={stage}
+                  variant={selectedStage === stage ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-8 px-3 text-[11px]"
+                  onClick={() => setSelectedStage(stage)}
+                >
+                  {formatStageLabel(stage)}
+                </Button>
+              ))}
+            </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Use Cases Grid */}
-      {filteredUseCases.length === 0 ? (
-        <Card className="p-8 text-center rounded-md bg-neutral-50/50 dark:bg-neutral-900/30 border-neutral-200 dark:border-neutral-700">
-          <div className="flex flex-col items-center gap-3">
-            <FileText className="w-12 h-12 text-muted-foreground/50" />
-            <h3 className="text-base font-semibold text-foreground">
-              No use cases in development stages
-            </h3>
-            <p className="text-xs text-muted-foreground max-w-md">
-              Use cases will appear here once they reach the Backlog stage or beyond.
-              Move your use cases through the pipeline to start developing prompts.
-            </p>
-          </div>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredUseCases.map((useCase) => (
-            <Card 
-              key={useCase.id} 
-              className="hover:shadow-lg transition-shadow cursor-pointer group rounded-md bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700"
-              onClick={() => handleUseCaseClick(useCase.id)}
-            >
-              <CardHeader className="px-4 pt-4 pb-3">
-                <div className="flex justify-between items-start mb-1.5">
-                  <Badge className={`text-xs px-2 py-0.5 rounded ${stageBadgeColors[useCase.stage] || 'bg-neutral-100 text-neutral-700 dark:bg-muted dark:text-muted-foreground'}`}>
-                    {useCase.stage?.split('-').map(word => 
-                      word.charAt(0).toUpperCase() + word.slice(1)
-                    ).join(' ')}
-                  </Badge>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+        {/* Use Cases Grid */}
+        {filteredUseCases.length === 0 ? (
+          <Card className="bg-card border border-border rounded-md">
+            <CardContent className="py-8 px-4">
+              <div className="flex flex-col items-center text-center gap-3 max-w-md mx-auto">
+                <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-muted-foreground" />
                 </div>
-                <CardTitle className="text-base line-clamp-2 text-foreground">
-                  {useCase.title}
-                </CardTitle>
-                <CardDescription className="text-xs text-muted-foreground">
-                  {useCase.businessFunction}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <div className="space-y-2.5">
-                  {/* Prompt Stats */}
-                  <div className="flex items-center justify-between text-xs bg-neutral-50 dark:bg-neutral-800/50 rounded-md p-2">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <FileText className="w-3.5 h-3.5" />
-                      <span>{useCase.promptTemplates?.length || 0} Prompts</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <GitBranch className="w-3.5 h-3.5" />
-                      <span>0 Versions</span>
-                    </div>
-                  </div>
+                <h3 className="text-sm font-semibold text-foreground">
+                  No use cases in development stages
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Use cases will appear here once they move into Backlog or
+                  later stages. Advance use cases through the pipeline to begin
+                  structured prompt development.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {filteredUseCases.map((useCase) => {
+              const stageClass =
+                stageBadgeColors[useCase.stage] ||
+                'bg-muted text-foreground/80 border border-border/60';
+              const promptCount = useCase.promptTemplates?.length || 0;
 
-                  {/* Dates */}
-                  <div className="flex items-center justify-between text-xs text-muted-foreground bg-neutral-50 dark:bg-neutral-800/50 rounded-md p-2">
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      <span>Created {formatDate(useCase.createdAt)}</span>
+              return (
+                <Card
+                  key={useCase.id}
+                  className="bg-card border border-border rounded-md hover:shadow-md transition-shadow cursor-pointer group"
+                  onClick={() => handleUseCaseClick(useCase.id)}
+                >
+                  <CardHeader className="px-3 pt-3 pb-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <Badge
+                        className={`text-[10px] font-medium px-2 py-0.5 rounded-sm ${stageClass}`}
+                      >
+                        {formatStageLabel(useCase.stage)}
+                      </Badge>
+                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
                     </div>
-                  </div>
+                    <CardTitle className="mt-1 text-sm font-semibold leading-snug line-clamp-2 text-foreground">
+                      {useCase.title}
+                    </CardTitle>
+                    {useCase.businessFunction && (
+                      <CardDescription className="mt-0.5 text-[11px] text-muted-foreground">
+                        {useCase.businessFunction}
+                      </CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent className="px-3 pb-3">
+                    <div className="space-y-2.5">
+                      {/* Prompt & Version Row */}
+                      <div className="flex items-center justify-between text-[11px] bg-muted/60 dark:bg-neutral-900/60 rounded-sm px-2 py-1.5">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>{promptCount} prompts</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <GitBranch className="w-3.5 h-3.5" />
+                          <span>0 versions</span>
+                        </div>
+                      </div>
 
-                  {/* Action Button */}
-                  <Button 
-                    className="w-full mt-3 rounded-md text-xs h-8 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 border-neutral-200 dark:border-neutral-700"
-                    variant="outline"
-                    size="sm"
-                  >
-                    <Code2 className="w-3.5 h-3.5 mr-1.5" />
-                    Manage Prompts
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                      {/* Dates Row (Created) */}
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground bg-muted/40 dark:bg-neutral-900/50 rounded-sm px-2 py-1.5">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          <span>Created {formatDate(useCase.createdAt)}</span>
+                        </div>
+                      </div>
 
-      {/* Quick Actions */}
-      <div className="fixed bottom-4 right-4">
-        <Button
-          size="lg"
-          variant="outline"
-          className="rounded-md shadow-lg text-sm h-10 px-4"
-          onClick={() => router.push('/new-usecase')}
-        >
-          <Plus className="w-4 h-4 mr-1.5" />
-          New Use Case
-        </Button>
+                      {/* Primary Action */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full h-8 mt-2 text-[11px] justify-center border-border bg-background hover:bg-muted"
+                      >
+                        <Code2 className="w-3.5 h-3.5 mr-1.5" />
+                        Manage prompts
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </section>
+        )}
       </div>
     </div>
   );
