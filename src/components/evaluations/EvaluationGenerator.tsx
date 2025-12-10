@@ -14,7 +14,6 @@ import {
   AlertTriangle,
   FileText,
   Download,
-  RefreshCw,
   Activity,
   Shield,
   Zap,
@@ -897,7 +896,7 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
                       </div>
                       <div>
                         {status === 'completed' && <CheckCircle2 className="h-4 w-4 text-green-600" />}
-                        {status === 'analyzing' && <RefreshCw className="h-4 w-4 text-blue-600 animate-spin" />}
+                        {status === 'analyzing' && <div className="h-4 w-4" />}
                         {status === 'pending' && <div className="h-4 w-4" />}
                       </div>
                     </div>
@@ -985,7 +984,7 @@ const EvaluationGenerator: React.FC<EvaluationGeneratorProps> = ({
                                 <div className="flex items-center gap-1">
                                   {suite.status === 'passed' && <CheckCircle2 className="h-4 w-4 text-green-600" />}
                                   {suite.status === 'failed' && <XCircle className="h-4 w-4 text-red-600" />}
-                                  {suite.status === 'running' && <RefreshCw className="h-4 w-4 animate-spin" />}
+                                  {suite.status === 'running' && <div className="h-4 w-4" />}
                                   {suite.status === 'pending' && <AlertTriangle className="h-4 w-4 text-yellow-600" />}
                                   <span className="text-sm capitalize">{suite.status}</span>
                                 </div>

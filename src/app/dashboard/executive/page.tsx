@@ -272,7 +272,6 @@ const ExecutiveDashboard = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-sm animate-spin mx-auto"></div>
           <div className="space-y-1">
             <h3 className="text-base font-semibold text-foreground">Loading Executive Dashboard</h3>
             <p className="text-xs text-muted-foreground">Gathering portfolio insights and metrics...</p>

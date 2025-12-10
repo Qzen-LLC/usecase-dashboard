@@ -11,17 +11,15 @@ export default function ThemeToggle() {
   // Return a placeholder during SSR to prevent hydration mismatch
   if (!mounted) {
     return (
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Toggle theme"
-          className="h-9 w-9"
-          disabled
-        >
-          <div className="h-4 w-4" />
-        </Button>
-      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Toggle theme"
+        className="h-7 w-7 p-0"
+        disabled
+      >
+        <div className="h-3.5 w-3.5" />
+      </Button>
     );
   }
 
@@ -30,17 +28,15 @@ export default function ThemeToggle() {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label="Toggle theme"
-        onClick={handleToggle}
-        className="h-9 w-9 hover:bg-muted"
-      >
-        {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-      </Button>
-    </div>
+    <Button
+      variant="ghost"
+      size="icon"
+      aria-label="Toggle theme"
+      onClick={handleToggle}
+      className="h-7 w-7 hover:bg-muted p-0"
+    >
+      {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+    </Button>
   );
 }
 

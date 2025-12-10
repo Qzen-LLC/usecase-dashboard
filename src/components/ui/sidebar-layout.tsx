@@ -21,7 +21,9 @@ import {
   GraduationCap,
   Leaf,
   Eye,
-  Building2
+  Building2,
+  MoreVertical,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from './button';
 import { UserButton } from '@/components/auth';
@@ -244,7 +246,6 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
   if (!mounted || !dataReady || !userLoaded) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -261,19 +262,19 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
       {/* Sidebar */}
       <div className={`${isCollapsed ? 'w-16' : 'w-56'} bg-card border-r border-border shadow-sm transition-all duration-300 ease-in-out flex flex-col font-brandSans`}>
         {/* Logo and Brand */}
-        <div className="border-b border-border h-[60px] flex items-center">
+        <div className="border-b border-border h-[60px] flex items-center overflow-hidden">
           {isCollapsed ? (
-            <div className="flex flex-col items-center justify-center gap-2 p-2 w-full h-full">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md bg-white">
-                <Image src="https://vgwacd4qotpurdv6.public.blob.vercel-storage.com/logo/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
+            <div className="flex flex-col items-center justify-start gap-1.5 pt-2.5 pb-1.5 px-1.5 w-full h-full">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md bg-white shrink-0 overflow-hidden">
+                <Image src="https://vgwacd4qotpurdv6.public.blob.vercel-storage.com/logo/logo.png" alt="Logo" width={32} height={32} className="object-contain w-full h-full" priority />
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={toggleSidebar}
-                className="p-1 hover:bg-muted rounded-lg transition-colors"
+                className="p-0.5 hover:bg-muted rounded-lg transition-colors shrink-0 h-auto min-h-0"
               >
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                <ChevronRight className="w-3 h-3 text-muted-foreground" />
               </Button>
             </div>
           ) : (
@@ -428,6 +429,48 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
             )}
           </button>
         </div>
+
+        {/* User Info and Theme Toggle */}
+        <div className="border-t border-border">
+          {isCollapsed ? (
+            <div className="flex flex-col items-center gap-2 p-2">
+              {isSignedIn && (
+                <div className="[&>div]:w-7 [&>div]:h-7 [&>div>button]:h-7 [&>div>button]:w-7 [&>div>button]:p-0">
+                  <UserButton afterSignOutUrl="/" />
+                </div>
+              )}
+              <ThemeToggle />
+            </div>
+          ) : (
+            <div className="px-2.5 py-2">
+              {isSignedIn ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-foreground truncate">
+                      {(user as any)?.fullName || (user as any)?.emailAddresses?.[0]?.emailAddress || 'User'}
+                    </p>
+                    {userData?.role && (
+                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                        {userData.role === 'ORG_ADMIN' ? 'Admin' : userData.role === 'ORG_USER' ? 'User' : userData.role === 'QZEN_ADMIN' ? 'Admin' : userData.role}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <ThemeToggle />
+                    <div className="[&>div]:w-7 [&>div]:h-7 [&>div>button]:h-7 [&>div>button]:w-7 [&>div>button]:p-0">
+                      <UserButton afterSignOutUrl="/" />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground flex-1 font-medium">Guest</span>
+                  <ThemeToggle />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Secondary Side Panel for Organization Setup */}
@@ -477,60 +520,68 @@ function SidebarLayoutContent({ children }: SidebarLayoutProps) {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Navigation Bar */}
-        <header className="bg-card border-b border-border shadow-sm h-[60px] flex items-center">
-          <div className="flex items-center justify-between px-6 w-full">
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col">
-                <h1 className="text-lg font-semibold text-foreground">
-                  {(() => {
-                    // Check Organization Setup sub-items first
-                    const activeSubItem = organizationSetupItems.find(item => 
-                      item.href && (pathname === item.href || pathname.startsWith(item.href))
-                    );
-                    if (activeSubItem) return activeSubItem.title;
-                    
-                    // Then check main sidebar items
-                    const activeItem = sidebarItems.find(item => 
-                      item.href && (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href)))
-                    );
-                    return activeItem?.title || 'Dashboard';
-                  })()}
-                </h1>
-                {(userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && userData?.organization?.name && (
-                  <span className="text-xs text-muted-foreground font-normal">
-                    {userData.organization.name}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <ThemeToggle />
-              {isSignedIn ? (
-                <div className="flex items-center gap-2">
-                  <UserButton afterSignOutUrl="/" />
-                  <div className="flex flex-col">
-                    <span className="text-sm text-muted-foreground font-medium">
-                      {(user as any)?.fullName || (user as any)?.emailAddresses?.[0]?.emailAddress || 'User'}
-                    </span>
-                    {(userData?.role === 'ORG_ADMIN' || userData?.role === 'ORG_USER') && userData?.organization?.name && (
-                      <span className="text-xs text-muted-foreground">
-                        {userData.organization.name}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-                    <Users className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <span className="text-sm text-muted-foreground">Guest</span>
-                </div>
-              )}
-            </div>
+        {/* Breadcrumb Navigation */}
+        <nav className="bg-card border-b border-border px-6 py-3">
+          <div className="flex items-center gap-2 text-sm">
+            <Link 
+              href="/dashboard" 
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            >
+              <Home className="w-3.5 h-3.5" />
+              <span>Dashboard</span>
+            </Link>
+            {(() => {
+              // Check Organization Setup sub-items first
+              const activeSubItem = organizationSetupItems.find(item => 
+                item.href && (pathname === item.href || pathname.startsWith(item.href))
+              );
+              if (activeSubItem) {
+                return (
+                  <>
+                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted text-foreground">
+                      <activeSubItem.icon className="w-3.5 h-3.5" />
+                      <span>{activeSubItem.title}</span>
+                    </div>
+                  </>
+                );
+              }
+              
+              // Then check main sidebar items - handle nested routes like /dashboard/[useCaseId]/risks
+              const activeItem = sidebarItems.find(item => {
+                if (!item.href || item.href === '/dashboard') return false;
+                // For exact match
+                if (pathname === item.href) return true;
+                // For nested routes, check if pathname matches the pattern
+                // e.g., /dashboard/[useCaseId]/risks should match /dashboard/risks
+                const routeSegment = item.href.replace('/dashboard/', '');
+                if (routeSegment && pathname.includes(`/${routeSegment}`)) {
+                  return true;
+                }
+                // Also check if pathname starts with item.href
+                if (pathname.startsWith(item.href)) {
+                  return true;
+                }
+                return false;
+              });
+              
+              if (activeItem && activeItem.href !== '/dashboard') {
+                const Icon = activeItem.icon;
+                return (
+                  <>
+                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted text-foreground">
+                      <Icon className="w-3.5 h-3.5" />
+                      <span>{activeItem.title}</span>
+                    </div>
+                  </>
+                );
+              }
+              
+              return null;
+            })()}
           </div>
-        </header>
+        </nav>
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto bg-background">

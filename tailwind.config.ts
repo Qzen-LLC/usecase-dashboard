@@ -60,7 +60,7 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+        sans: ["Segoe UI", "Inter", "system-ui", "-apple-system", "sans-serif"],
         brandSans: ["Segoe UI", "Inter", "system-ui", "-apple-system", "sans-serif"],
         mono: ["JetBrains Mono", "Fira Code", "monospace"],
       },

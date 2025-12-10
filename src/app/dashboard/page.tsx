@@ -243,11 +243,7 @@ const DraggableUseCaseCard = ({ useCase, onClick, handlePriorityChange, formatAi
             }`}
             title={isDeleting ? "Deleting..." : "Delete use case"}
           >
-            {isDeleting ? (
-              <div className="w-3.5 h-3.5 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Trash2 className="w-4 h-4" />
-            )}
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
         
@@ -404,7 +400,6 @@ const Dashboard = () => {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Card className={`${baseCardClass} max-w-md`}>
           <div className="p-6 text-center space-y-3">
-            <div className="loading-spinner mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">Initializing…</p>
           </div>
         </Card>
@@ -905,7 +900,6 @@ const Dashboard = () => {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Card className={`${baseCardClass} max-w-md`}>
           <div className="p-6 text-center space-y-3">
-            <div className="loading-spinner mx-auto mb-1" />
             <p className="text-sm text-muted-foreground">
               {isLoading ? 'Loading use cases…' : 'Loading user data…'}
             </p>
@@ -1047,7 +1041,6 @@ const Dashboard = () => {
             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
               <Card className={`${baseCardClass} max-w-xs`}>
                 <div className="p-4 flex flex-col items-center gap-2">
-                  <div className="loading-spinner" />
                   <p className="text-sm font-medium text-foreground">
                     Deleting use case…
                   </p>

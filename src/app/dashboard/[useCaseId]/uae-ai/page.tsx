@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, FileText, CheckCircle, AlertCircle, Clock, Upload, Save, ChevronRight, ChevronDown, Shield, Loader2, Star, Lock } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle, AlertCircle, Clock, Upload, Save, ChevronRight, ChevronDown, Shield, Star, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { FileUpload } from '@/components/ui/file-upload';
 import { uaeAiScoringSystem, getMaturityLevelDetails, getRiskImpactLevelDetails, getScoreLevelDetails } from '@/lib/framework-data/uae-ai-scoring';
@@ -537,7 +537,6 @@ export default function UaeAiAssessmentPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading UAE AI Assessment...</p>
         </div>
       </div>

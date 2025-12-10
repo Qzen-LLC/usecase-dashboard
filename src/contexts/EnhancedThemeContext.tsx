@@ -162,15 +162,15 @@ export const useThemeColors = () => {
 
   const colors = {
     light: {
-      background: 'hsl(0 0% 100%)',
+      background: 'hsl(210 20% 96%)', /* slate-100 */
       foreground: 'hsl(0 0% 0%)',
       primary: 'hsl(221.2 83.2% 53.3%)',
       secondary: 'hsl(210 40% 98%)',
-      muted: 'hsl(210 40% 96%)',
-      accent: 'hsl(210 40% 96%)',
+      muted: 'hsl(214 32% 91%)', /* slate-200 */
+      accent: 'hsl(214 32% 91%)', /* slate-200 */
       destructive: 'hsl(0 84.2% 60.2%)',
-      border: 'hsl(214.3 31.8% 91.4%)',
-      input: 'hsl(214.3 31.8% 91.4%)',
+      border: 'hsl(214 32% 84%)', /* slate-300 */
+      input: 'hsl(214 32% 84%)', /* slate-300 */
       ring: 'hsl(221.2 83.2% 53.3%)',
     },
     dark: {

@@ -376,7 +376,6 @@ export function ManualRiskBrowser({ open, onClose, useCaseId }: ManualRiskBrowse
               >
                 {isAISearching ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Searching...
                   </>
                 ) : (
@@ -489,7 +488,6 @@ export function ManualRiskBrowser({ open, onClose, useCaseId }: ManualRiskBrowse
           <div className="flex-1 mt-4 overflow-y-auto h-[calc(90vh-320px)] pr-2 border rounded-lg">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
                 <span className="ml-3 text-muted-foreground">Loading risks...</span>
               </div>
             ) : filteredRisks.length === 0 ? (
@@ -535,7 +533,6 @@ export function ManualRiskBrowser({ open, onClose, useCaseId }: ManualRiskBrowse
               >
                 {importing ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Importing...
                   </>
                 ) : (

@@ -1,7 +1,6 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
-import { Loader2, RefreshCw } from "lucide-react"
 
 const enhancedLoadingVariants = cva(
   "flex items-center justify-center",
@@ -103,7 +102,7 @@ const EnhancedLoading = React.forwardRef<HTMLDivElement, EnhancedLoadingProps>(
             </div>
           )
         default:
-          return <Loader2 className={cn("animate-spin", size)} />
+          return <div className={cn("rounded-full border-2 border-current border-t-transparent", size === "sm" && "h-4 w-4", size === "default" && "h-6 w-6", size === "lg" && "h-8 w-8", size === "xl" && "h-12 w-12")} />
       }
     }
 

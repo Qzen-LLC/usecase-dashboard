@@ -148,7 +148,6 @@ export default function UseCaseDevelopmentDashboard() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-3">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-xs text-muted-foreground">
             Loading use case development workspace...
           </p>

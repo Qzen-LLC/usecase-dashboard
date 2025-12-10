@@ -141,7 +141,6 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-3">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-xs text-muted-foreground">
             Initializing admin console...
           </p>
@@ -300,7 +299,6 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-3">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-xs text-muted-foreground">
             Loading admin dashboard...
           </p>
@@ -396,70 +394,57 @@ export default function AdminDashboard() {
 
         {/* Tabs */}
         <div className="border-b border-border">
-          <div className="flex items-center gap-6 text-xs">
-            <button
-              onClick={() => setActiveSection("organizations")}
-              className={`pb-2 border-b-2 -mb-[1px] transition-colors ${
-                activeSection === "organizations"
-                  ? "border-primary text-foreground font-medium"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Organizations
-            </button>
-            <button
-              onClick={() => setActiveSection("questions")}
-              className={`pb-2 border-b-2 -mb-[1px] transition-colors ${
-                activeSection === "questions"
-                  ? "border-primary text-foreground font-medium"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Question Management
-            </button>
-            <button
-              onClick={() => setActiveSection("models")}
-              className={`pb-2 border-b-2 -mb-[1px] transition-colors ${
-                activeSection === "models"
-                  ? "border-primary text-foreground font-medium"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Model Management
-            </button>
+          <div className="flex items-end justify-between">
+            <div className="flex items-center gap-6 text-xs">
+              <button
+                onClick={() => setActiveSection("organizations")}
+                className={`pb-2 border-b-2 transition-colors ${
+                  activeSection === "organizations"
+                    ? "border-primary text-foreground font-medium"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Organizations
+              </button>
+              <button
+                onClick={() => setActiveSection("questions")}
+                className={`pb-2 border-b-2 transition-colors ${
+                  activeSection === "questions"
+                    ? "border-primary text-foreground font-medium"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Question Management
+              </button>
+              <button
+                onClick={() => setActiveSection("models")}
+                className={`pb-2 border-b-2 transition-colors ${
+                  activeSection === "models"
+                    ? "border-primary text-foreground font-medium"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Model Management
+              </button>
+            </div>
+            <div className="h-7 mb-2">
+              {activeSection === "organizations" && (
+                <Button
+                  size="sm"
+                  onClick={() => setShowCreateOrg(true)}
+                  className="text-xs h-7 px-3"
+                >
+                  <Plus className="w-3 h-3 mr-1.5" />
+                  New Organization
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Organizations Section */}
         {activeSection === "organizations" && (
           <section className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="space-y-1">
-                <h2 className="text-sm font-semibold text-foreground">
-                  Organizations
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  Manage tenants, users, and their AI portfolios.
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge
-                  variant="outline"
-                  className="px-2 py-1 text-[11px] rounded-full"
-                >
-                  {organizations.length}{" "}
-                  {organizations.length === 1 ? "organization" : "organizations"}
-                </Badge>
-                <Button
-                  size="sm"
-                  onClick={() => setShowCreateOrg(true)}
-                  className="text-xs"
-                >
-                  <Plus className="w-3.5 h-3.5 mr-1.5" />
-                  New Organization
-                </Button>
-              </div>
-            </div>
 
             {organizations.length === 0 ? (
               <Card className="bg-card border border-border rounded-md">
@@ -581,11 +566,7 @@ export default function AdminDashboard() {
                         onClick={() => handleDeleteOrganization(org.id, org.name)}
                         disabled={deleteLoading === org.id}
                       >
-                        {deleteLoading === org.id ? (
-                            <div className="w-3.5 h-3.5 border-2 border-destructive border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                            <Trash2 className="w-3.5 h-3.5" />
-                        )}
+                        <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
                   </CardContent>
