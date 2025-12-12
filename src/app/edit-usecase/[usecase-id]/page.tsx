@@ -833,7 +833,6 @@ const AIUseCaseTool = () => {
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formData.aiucId ? `AIUC-${formData.aiucId} ${formData.title}` : formData.title}
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">Edit Use Case</p>
             </div>
             {showError && (
               <div className="mb-4 text-red-600 dark:text-red-400 font-semibold">

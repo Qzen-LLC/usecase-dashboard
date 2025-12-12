@@ -917,7 +917,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {inviteError && (
-                  <div className="p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-xs text-red-800 dark:text-red-100">
+                  <div className="p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-xs text-red-900 dark:text-red-100 font-medium">
                     {inviteError}
                   </div>
                 )}
