@@ -200,7 +200,7 @@ export default function AssessmentPage() {
     if (!useCaseId) return;
     (async () => {
       try {
-        const res = await fetch(`/api/risk-metrics/${useCaseId}`);
+        const res = await fetch(`/ics/${useCaseId}`);
         if (!res.ok) return;
         const data = await res.json();
         setRiskApi(data?.risk || null);

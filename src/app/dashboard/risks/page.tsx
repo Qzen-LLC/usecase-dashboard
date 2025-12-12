@@ -120,7 +120,6 @@ export default function RiskManagementPage() {
   const [selectedOrgId, setSelectedOrgId] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedUseCase, setExpandedUseCase] = useState<string | null>(null);
-  const [useCaseRisks, setUseCaseRisks] = useState<Record<string, any>>({});
 
   // Common compact enterprise styles
   const cardClass = 'bg-card border border-border rounded-sm transition-colors hover:border-primary/40';
@@ -153,65 +152,6 @@ export default function RiskManagementPage() {
       setUseCases(data.useCases);
       setOrganizations(data.organizations || []);
       
-      // Fetch risk metrics (score + radar) for each use case using Q/A answers
-      // Helper function to fetch with retry logic for 401 errors
-      const fetchWithRetry = async (url: string, retries = 1): Promise<Response | null> => {
-        for (let attempt = 0; attempt <= retries; attempt++) {
-          try {
-            const res = await fetch(url, { 
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include'
-            });
-            
-            // If 401 and we have retries left, wait and retry
-            if (res.status === 401 && attempt < retries) {
-              // Wait with exponential backoff: 1s, 2s
-              await new Promise(resolve => setTimeout(resolve, (attempt + 1) * 1000));
-              continue;
-            }
-            
-            return res;
-          } catch (error) {
-            // If last attempt, return null
-            if (attempt === retries) {
-              return null;
-            }
-            // Wait before retry
-            await new Promise(resolve => setTimeout(resolve, (attempt + 1) * 1000));
-          }
-        }
-        return null;
-      };
-      
-      // Process sequentially with delay to avoid auth issues
-      const riskPairs: Array<[string, any]> = [];
-      for (let i = 0; i < (data.useCases || []).length; i++) {
-        const uc = data.useCases[i];
-        // Add a small delay between requests (except for the first one)
-        if (i > 0) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        try {
-          const res = await fetchWithRetry(`/api/risk-metrics/${uc.id}`, 1);
-          if (!res || !res.ok) {
-            // Only log if it's not a 401 (401s are handled silently after retry)
-            if (res && res.status !== 401) {
-              console.error(`Failed to fetch risk metrics for ${uc.id}:`, res.status, res.statusText);
-            }
-            riskPairs.push([uc.id, null]);
-            continue;
-          }
-          const r = await res.json();
-          riskPairs.push([uc.id, r?.risk || null]);
-        } catch (error) {
-          console.error(`Error fetching risk metrics for ${uc.id}:`, error);
-          riskPairs.push([uc.id, null]);
-        }
-      }
-      const riskMap: Record<string, any> = {};
-      for (const [id, risk] of riskPairs) riskMap[id] = risk;
-      setUseCaseRisks(riskMap);
-      
       // Set initial organization filter for QZEN_ADMIN
       if (data.userRole === 'QZEN_ADMIN' && !selectedOrgId && data.organizations.length > 0) {
         // Don't auto-select, let user choose
@@ -228,140 +168,6 @@ export default function RiskManagementPage() {
     setExpandedUseCase(expandedUseCase === useCaseId ? null : useCaseId);
   };
 
-  // Log risk calculation details when a use case is expanded
-  useEffect(() => {
-    if (!expandedUseCase || !useCaseRisks[expandedUseCase]) return;
-    
-    const riskCalc = useCaseRisks[expandedUseCase];
-    const useCase = useCases.find(uc => uc.id === expandedUseCase);
-    
-    if (!riskCalc || !riskCalc.chartData) return;
-    
-    console.group(`🔍 Risk Calculation Breakdown - ${useCase?.title || expandedUseCase}`);
-    
-    // Radar Chart Values (Category Scores)
-    console.log('\n📊 RADAR CHART VALUES (Category Scores 0-10):');
-    const weights = {
-      dataPrivacy: 0.25,
-      security: 0.20,
-      regulatory: 0.30,
-      ethical: 0.10,
-      operational: 0.10,
-      reputational: 0.05
-    };
-    
-    const categoryMap: Record<string, { score: number; weight: number }> = {};
-    
-    riskCalc.chartData.forEach((item: { month: string; desktop: number }) => {
-      const category = item.month;
-      const score = item.desktop;
-      let weight = 0;
-      
-      if (category === 'Data Privacy') {
-        weight = weights.dataPrivacy;
-        categoryMap.dataPrivacy = { score, weight };
-      } else if (category === 'Security') {
-        weight = weights.security;
-        categoryMap.security = { score, weight };
-      } else if (category === 'Regulatory') {
-        weight = weights.regulatory;
-        categoryMap.regulatory = { score, weight };
-      } else if (category === 'Ethical') {
-        weight = weights.ethical;
-        categoryMap.ethical = { score, weight };
-      } else if (category === 'Operational') {
-        weight = weights.operational;
-        categoryMap.operational = { score, weight };
-      } else if (category === 'Reputational') {
-        weight = weights.reputational;
-        categoryMap.reputational = { score, weight };
-      }
-      
-      console.log(`  ${category}: ${score}/10`);
-    });
-    
-    // Overall Score Calculation
-    console.log('\n🧮 OVERALL RISK SCORE CALCULATION:');
-    console.log('Formula: Weighted Average of Category Scores');
-    console.log('\nWeights:');
-    console.log(`  Data Privacy: ${weights.dataPrivacy} (25%)`);
-    console.log(`  Security: ${weights.security} (20%)`);
-    console.log(`  Regulatory: ${weights.regulatory} (30%)`);
-    console.log(`  Ethical: ${weights.ethical} (10%)`);
-    console.log(`  Operational: ${weights.operational} (10%)`);
-    console.log(`  Reputational: ${weights.reputational} (5%)`);
-    
-    console.log('\nStep-by-step calculation:');
-    let weightedSum = 0;
-    let calculationSteps: string[] = [];
-    
-    if (categoryMap.dataPrivacy) {
-      const contribution = categoryMap.dataPrivacy.score * categoryMap.dataPrivacy.weight;
-      weightedSum += contribution;
-      calculationSteps.push(`  Data Privacy: ${categoryMap.dataPrivacy.score} × ${categoryMap.dataPrivacy.weight} = ${contribution.toFixed(2)}`);
-    }
-    if (categoryMap.security) {
-      const contribution = categoryMap.security.score * categoryMap.security.weight;
-      weightedSum += contribution;
-      calculationSteps.push(`  Security: ${categoryMap.security.score} × ${categoryMap.security.weight} = ${contribution.toFixed(2)}`);
-    }
-    if (categoryMap.regulatory) {
-      const contribution = categoryMap.regulatory.score * categoryMap.regulatory.weight;
-      weightedSum += contribution;
-      calculationSteps.push(`  Regulatory: ${categoryMap.regulatory.score} × ${categoryMap.regulatory.weight} = ${contribution.toFixed(2)}`);
-    }
-    if (categoryMap.ethical) {
-      const contribution = categoryMap.ethical.score * categoryMap.ethical.weight;
-      weightedSum += contribution;
-      calculationSteps.push(`  Ethical: ${categoryMap.ethical.score} × ${categoryMap.ethical.weight} = ${contribution.toFixed(2)}`);
-    }
-    if (categoryMap.operational) {
-      const contribution = categoryMap.operational.score * categoryMap.operational.weight;
-      weightedSum += contribution;
-      calculationSteps.push(`  Operational: ${categoryMap.operational.score} × ${categoryMap.operational.weight} = ${contribution.toFixed(2)}`);
-    }
-    if (categoryMap.reputational) {
-      const contribution = categoryMap.reputational.score * categoryMap.reputational.weight;
-      weightedSum += contribution;
-      calculationSteps.push(`  Reputational: ${categoryMap.reputational.score} × ${categoryMap.reputational.weight} = ${contribution.toFixed(2)}`);
-    }
-    
-    calculationSteps.forEach(step => console.log(step));
-    
-    const finalScore = parseFloat(weightedSum.toFixed(1));
-    console.log(`\n  Sum: ${weightedSum.toFixed(4)}`);
-    console.log(`  Final Score (rounded to 1 decimal): ${finalScore}`);
-    
-    // Risk Tier Determination
-    console.log('\n🎯 RISK TIER DETERMINATION:');
-    console.log('Thresholds:');
-    console.log('  Critical: ≥ 8.0');
-    console.log('  High: ≥ 6.0 and < 8.0');
-    console.log('  Medium: ≥ 4.0 and < 6.0');
-    console.log('  Low: < 4.0');
-    
-    let tier = '';
-    if (finalScore >= 8) {
-      tier = 'Critical';
-    } else if (finalScore >= 6) {
-      tier = 'High';
-    } else if (finalScore >= 4) {
-      tier = 'Medium';
-    } else {
-      tier = 'Low';
-    }
-    
-    console.log(`\n  Score: ${finalScore}`);
-    console.log(`  Tier: ${tier}`);
-    
-    // Summary
-    console.log('\n📋 SUMMARY:');
-    console.log(`  Overall Risk Score: ${finalScore}/10`);
-    console.log(`  Risk Tier: ${tier}`);
-    console.log(`  Radar Chart Points: ${riskCalc.chartData.length} categories`);
-    
-    console.groupEnd();
-  }, [expandedUseCase, useCaseRisks, useCases]);
 
   // Filter use cases based on search term
   const filteredUseCases = useCases.filter(uc => {
@@ -889,8 +695,6 @@ export default function RiskManagementPage() {
             ).length;
             const isExpanded = expandedUseCase === useCase.id;
 
-            const riskCalc = useCaseRisks[useCase.id] || null;
-
             return (
               <Card
                 key={useCase.id}
@@ -932,52 +736,6 @@ export default function RiskManagementPage() {
                     </div>
 
                     <div className="flex items-center gap-3 flex-shrink-0">
-                      {/* Overall risk */}
-                      <div className="text-right min-w-[120px]">
-                        <div className="text-[10px] text-muted-foreground">
-                          Overall Risk
-                        </div>
-                        {riskCalc && riskCalc.score > 1.5 ? (
-                          <div className="flex items-center justify-end gap-1 mt-0.5">
-                            <span className="text-lg font-semibold text-foreground">
-                              {riskCalc.score}
-                            </span>
-                            <Badge
-                              className={`text-[10px] px-1.5 py-0 ${getRiskLevelColor(
-                                (riskCalc.riskTier || '')
-                                  .charAt(0)
-                                  .toUpperCase() +
-                                  (riskCalc.riskTier || '').slice(1)
-                              )}`}
-                            >
-                              {((riskCalc.riskTier || '') as string)
-                                .charAt(0)
-                                .toUpperCase() +
-                                ((riskCalc.riskTier || '') as string).slice(1)}
-                            </Badge>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-end gap-1 mt-0.5">
-                            <div className="text-[10px] text-muted-foreground">
-                              Insufficient data
-                            </div>
-                            <Button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(`/dashboard/${useCase.id}/assess`);
-                              }}
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-[10px] px-2"
-                            >
-                              <FileText className="w-3 h-3 mr-1" />
-                              Complete assessment
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Risk count */}
                       <div className="text-right min-w-[70px]">
                         <div className="text-[10px] text-muted-foreground">Risks</div>
                         <div className="text-lg font-semibold text-foreground">
@@ -1010,134 +768,7 @@ export default function RiskManagementPage() {
 
                 {/* Expanded Content */}
                 {isExpanded && (
-                  <CardContent className="px-3 pb-3 pt-1 space-y-3">
-                    {/* Incomplete Assessment Notice */}
-                    {riskCalc && riskCalc.score <= 1.5 && (
-                      <div className="border border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700 rounded-sm p-3">
-                        <div className="flex items-start gap-2">
-                          <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5" />
-                          <div className="flex-1 space-y-1">
-                            <h4 className="text-xs font-semibold text-amber-900 dark:text-amber-200">
-                              Assessment incomplete
-                            </h4>
-                            <p className="text-[11px] text-amber-800 dark:text-amber-300">
-                              Complete the assessment to enable full risk calculations and
-                              radar scoring for this use case.
-                            </p>
-                            <Button
-                              onClick={() =>
-                                router.push(`/dashboard/${useCase.id}/assess`)
-                              }
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-[11px] px-3"
-                            >
-                              <FileText className="w-3 h-3 mr-1" />
-                              Go to assessment
-                              <ArrowRight className="w-3 h-3 ml-1" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Radar Chart */}
-                    {riskCalc && riskCalc.chartData && riskCalc.chartData.length > 0 && (
-                      <div className="border border-border rounded-sm p-3 bg-muted/40">
-                        <div className="mb-2 text-xs font-semibold text-foreground">
-                          Risk Radar
-                        </div>
-                        <ChartRadarDots chartData={riskCalc.chartData} />
-                      </div>
-                    )}
-
-                    {/* Risk Feedback */}
-                    {riskCalc && (
-                      <div className="border border-border rounded-sm p-3 bg-muted/30 space-y-2">
-                        <div className="text-xs font-semibold text-foreground">
-                          Risk Feedback
-                        </div>
-                        {riskCalc.regulatoryWarnings &&
-                          riskCalc.regulatoryWarnings.length > 0 && (
-                            <div>
-                              <div className="text-[10px] font-medium text-muted-foreground mb-0.5">
-                                Regulatory Warnings
-                              </div>
-                              <ul className="list-disc pl-4 text-[11px] space-y-0.5">
-                                {riskCalc.regulatoryWarnings.map(
-                                  (w: string, idx: number) => (
-                                    <li key={idx}>{w}</li>
-                                  )
-                                )}
-                              </ul>
-                            </div>
-                          )}
-
-                        {riskCalc.dataPrivacyInfo &&
-                          riskCalc.dataPrivacyInfo.length > 0 && (
-                            <div>
-                              <div className="text-[10px] font-medium text-muted-foreground mb-0.5">
-                                Data Privacy
-                              </div>
-                              <ul className="list-disc pl-4 text-[11px] space-y-0.5">
-                                {riskCalc.dataPrivacyInfo.map(
-                                  (m: string, idx: number) => (
-                                    <li key={idx}>{m}</li>
-                                  )
-                                )}
-                              </ul>
-                            </div>
-                          )}
-
-                        {riskCalc.securityInfo && riskCalc.securityInfo.length > 0 && (
-                          <div>
-                            <div className="text-[10px] font-medium text-muted-foreground mb-0.5">
-                              Security
-                            </div>
-                            <ul className="list-disc pl-4 text-[11px] space-y-0.5">
-                              {riskCalc.securityInfo.map(
-                                (m: string, idx: number) => (
-                                  <li key={idx}>{m}</li>
-                                )
-                              )}
-                            </ul>
-                          </div>
-                        )}
-
-                        {riskCalc.operationalInfo &&
-                          riskCalc.operationalInfo.length > 0 && (
-                            <div>
-                              <div className="text-[10px] font-medium text-muted-foreground mb-0.5">
-                                Operational
-                              </div>
-                              <ul className="list-disc pl-4 text-[11px] space-y-0.5">
-                                {riskCalc.operationalInfo.map(
-                                  (m: string, idx: number) => (
-                                    <li key={idx}>{m}</li>
-                                  )
-                                )}
-                              </ul>
-                            </div>
-                          )}
-
-                        {riskCalc.ethicalInfo && riskCalc.ethicalInfo.length > 0 && (
-                          <div>
-                            <div className="text-[10px] font-medium text-muted-foreground mb-0.5">
-                              Ethical
-                            </div>
-                            <ul className="list-disc pl-4 text-[11px] space-y-0.5">
-                              {riskCalc.ethicalInfo.map(
-                                (m: string, idx: number) => (
-                                  <li key={idx}>{m}</li>
-                                )
-                              )}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* No Risks / Risk List */}
+                  <CardContent className="pt-0 px-4 pb-4">
                     {riskCount === 0 ? (
                       <div className="border border-dashed border-border rounded-sm p-4 bg-muted/20">
                         <div className="flex flex-col items-start gap-2">

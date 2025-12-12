@@ -974,34 +974,6 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
       });
   }, [useCaseId]);
 
-  // Fetch unified risk score to ensure parity with Risk Management
-  useEffect(() => {
-    if (!useCaseId) return;
-    (async () => {
-      try {
-        const res = await fetch(`/api/risk-score/${useCaseId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setRiskResult(data);
-          // Ensure chartData is set from API response for consistency
-          if (Array.isArray(data.chartData) && data.chartData.length > 0) {
-            setChartData(data.chartData);
-          } else {
-            setChartData([]);
-          }
-        } else {
-          // If API fails, clear chartData to avoid stale data
-          setChartData([]);
-          setRiskResult(null);
-        }
-      } catch (error) {
-        console.error('[ApprovalsPage] Error fetching risk score:', error);
-        setChartData([]);
-        setRiskResult(null);
-      }
-    })();
-  }, [useCaseId, useCase]);
-
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
@@ -1052,20 +1024,6 @@ const ApprovalsPage = forwardRef<any, ApprovalsPageProps>(({ useCase }, ref) => 
       fetchQuestions();
     }
   }, [useCaseId, useCase]);
-
-  // Fetch risk metrics (score + radar) from backend for this use case
-  useEffect(() => {
-    if (!useCaseId) return;
-    (async () => {
-      try {
-        const res = await fetch(`/api/risk-metrics/${useCaseId}`);
-        if (!res.ok) return;
-        const data = await res.json();
-        setRiskApi(data?.risk || null);
-        setChartData(Array.isArray(data?.risk?.chartData) ? data.risk.chartData : []);
-      } catch (_) {}
-    })();
-  }, [useCaseId]);
 
   // Fetch risks for this use case
   useEffect(() => {
